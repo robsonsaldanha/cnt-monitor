@@ -1,6 +1,6 @@
 ﻿; Instalador do Monitor do PC (Inno Setup 6)
 #ifndef Versao
-  #define Versao "2.0.0"
+  #define Versao "2.1.0"
 #endif
 
 [Setup]
@@ -31,7 +31,6 @@ Name: "pt"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
 
 [Tasks]
 Name: "desktop"; Description: "Criar atalho na Área de Trabalho"
-Name: "iniciar"; Description: "Mostrar o ícone perto do relógio sempre que o Windows ligar"
 Name: "pawnio"; Description: "Instalar o driver PawnIO (necessário para ler a temperatura do processador)"
 
 [Files]
@@ -42,7 +41,9 @@ Source: "PawnIO_setup.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall skipifso
 [Icons]
 Name: "{autoprograms}\Monitor do PC"; Filename: "{app}\MonitorPC.exe"
 Name: "{autodesktop}\Monitor do PC"; Filename: "{app}\MonitorPC.exe"; Tasks: desktop
-Name: "{commonstartup}\Monitor do PC"; Filename: "{app}\MonitorPC.exe"; Parameters: "--bandeja"; Tasks: iniciar
+
+[InstallDelete]
+Type: files; Name: "{commonstartup}\Monitor do PC.lnk"
 
 [Run]
 Filename: "{tmp}\PawnIO_setup.exe"; Parameters: "-install -silent"; StatusMsg: "Instalando o driver PawnIO..."; Flags: waituntilterminated skipifdoesntexist; Tasks: pawnio
@@ -57,6 +58,7 @@ Filename: "{app}\MonitorPC.exe"; Description: "Abrir o Monitor do PC agora"; Fla
 Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM MonitorPC.exe"; Flags: runhidden; RunOnceId: "fechaicone"
 Filename: "{sys}\sc.exe"; Parameters: "stop MonitorPC"; Flags: runhidden waituntilterminated; RunOnceId: "paraservico"
 Filename: "{sys}\timeout.exe"; Parameters: "/t 3 /nobreak"; Flags: runhidden waituntilterminated; RunOnceId: "espera"
+Filename: "{sys}\reg.exe"; Parameters: "delete HKLM\Software\Microsoft\Windows\CurrentVersion\Run /v MonitorDoPC /f"; Flags: runhidden waituntilterminated; RunOnceId: "removeinicio"
 Filename: "{sys}\sc.exe"; Parameters: "delete MonitorPC"; Flags: runhidden waituntilterminated; RunOnceId: "removeservico"
 
 [UninstallDelete]

@@ -3,7 +3,7 @@ import os
 import time
 import sqlite3
 
-from . import config
+from . import config, configuracao
 
 OUTROS = "Windows e outros (não atribuído)"
 
@@ -45,8 +45,8 @@ def iniciar():
     con.close()
 
 
-def limpar():
-    lim = int(time.time() - config.RETENCAO)
+def limpar(dias=7):
+    lim = int(time.time() - dias * 86400)
     con = conectar()
     for t in ("geral", "apps", "procs", "temps"):
         con.execute(f"DELETE FROM {t} WHERE ts < ?", (lim,))
@@ -150,8 +150,8 @@ def lentidao(desde, ate=None):
     ate = ate or int(time.time())
     con = conectar()
     linhas = con.execute(
-        "SELECT ts, cpu, mem_pct, temp_cpu FROM geral WHERE ts BETWEEN ? AND ? AND (mem_pct>=? OR cpu>=?) ORDER BY ts",
-        (desde, ate, config.LIMIAR_MEM, config.LIMIAR_CPU)).fetchall()
+        "SELECT ts, cpu, mem_pct, temp_cpu FROM geral WHERE ts BETWEEN ? AND ? AND (mem_pct>=? OR cpu>=? OR temp_cpu>=?) ORDER BY ts",
+        (desde, ate, configuracao.obter("limiar_mem"), configuracao.obter("limiar_cpu"), configuracao.obter("limiar_temp"))).fetchall()
     eps = []
     for ts, cpu, mem, tc in linhas:
         if eps and ts - eps[-1]["fim"] <= 60:
@@ -196,7 +196,7 @@ def relatorio(desde, ate):
         "SELECT COUNT(*), AVG(cpu), MAX(cpu), AVG(mem_pct), MAX(mem_pct), MAX(mem_usada), MAX(mem_total), "
         "SUM(ler), SUM(gravar), SUM(env), SUM(rec), AVG(gpu), MAX(gpu), AVG(temp_cpu), MAX(temp_cpu), "
         "AVG(temp_gpu), MAX(temp_gpu), MAX(temp_disco), SUM(mem_pct>=?), SUM(cpu>=?), MIN(ts), MAX(ts) "
-        "FROM geral WHERE ts BETWEEN ? AND ?", (config.LIMIAR_MEM, config.LIMIAR_CPU, desde, ate)).fetchone()
+        "FROM geral WHERE ts BETWEEN ? AND ?", (configuracao.obter("limiar_mem"), configuracao.obter("limiar_cpu"), desde, ate)).fetchone()
     geral = None
     if g and g[0]:
         geral = {"amostras": g[0], "tempo_monitorado": g[0] * G, "cpu_med": g[1], "cpu_max": g[2],
@@ -231,7 +231,18 @@ def relatorio(desde, ate):
     con.close()
     return {"desde": desde, "ate": ate, "geral": geral, "programas": progs, "processos": procs, "remotos": rem,
             "temperaturas": temps, "linha": linha, "passo_linha": passo,
-            "episodios": lentidao(desde, ate), "limiar_mem": config.LIMIAR_MEM, "limiar_cpu": config.LIMIAR_CPU}
+            "episodios": lentidao(desde, ate), "limiar_mem": configuracao.obter("limiar_mem"),
+            "limiar_cpu": configuracao.obter("limiar_cpu"), "limiar_temp": configuracao.obter("limiar_temp")}
+
+
+def apagar_tudo():
+    con = conectar()
+    for t in ("geral", "apps", "procs", "temps", "remotos"):
+        con.execute(f"DELETE FROM {t}")
+    con.commit()
+    con.execute("PRAGMA incremental_vacuum")
+    con.commit()
+    con.close()
 
 
 def info():

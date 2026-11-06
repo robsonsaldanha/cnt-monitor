@@ -1,4 +1,5 @@
-"""Ícone do Monitor do PC perto do relógio. Abre a janela do programa.
+"""Ícone do Monitor do PC perto do relógio. Abre a janela do programa e executa as ações
+que precisam da sessão do usuário (mostrar janela de um programa, abrir pasta, fechar janela).
 
   MonitorPC.exe            -> abre a janela (e o ícone, se ainda não estiver aberto)
   MonitorPC.exe --bandeja  -> só o ícone (usado ao ligar o Windows)
@@ -11,7 +12,9 @@ import shutil
 import threading
 import subprocess
 import webbrowser
+import urllib.error
 import urllib.request
+from collections import defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -30,6 +33,7 @@ def _log():
         sys.stderr = sys.stderr or f
 
 
+# ------------------------------------------------------------------ janela do monitor
 def navegador():
     if not WIN:
         return None
@@ -49,21 +53,175 @@ def abrir_janela(aba=""):
     nav = navegador()
     if nav:
         perfil = os.path.join(PASTA_USUARIO, "janela")
-        subprocess.Popen([nav, f"--app={url}", f"--user-data-dir={perfil}", "--window-size=1440,900",
+        subprocess.Popen([nav, f"--app={url}", f"--user-data-dir={perfil}", "--window-size=1480,920",
                           "--no-first-run", "--no-default-browser-check", "--disable-extensions",
                           "--disable-sync"], close_fds=True)
     else:
         webbrowser.open(url)
 
 
-def ler_agora():
-    try:
-        with urllib.request.urlopen(config.URL + "api/agora", timeout=3) as r:
-            return json.loads(r.read())
-    except Exception:
-        return None
+# ------------------------------------------------------------------ API do serviço
+_token = {"v": None}
 
 
+def token():
+    if _token["v"] is None:
+        try:
+            with open(config.TOKEN, encoding="utf-8") as f:
+                _token["v"] = f.read().strip()
+        except OSError:
+            _token["v"] = ""
+    return _token["v"]
+
+
+def api_get(caminho, timeout=3, com_token=False):
+    req = urllib.request.Request(config.URL + caminho, headers={"X-Token": token()} if com_token else {})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read())
+
+
+def api_post(caminho, dados, timeout=5):
+    req = urllib.request.Request(config.URL + caminho, data=json.dumps(dados).encode("utf-8"), method="POST",
+                                 headers={"X-Token": token(), "Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read())
+
+
+# ------------------------------------------------------------------ janelas dos programas (Windows)
+if WIN:
+    import ctypes
+    from ctypes import wintypes as wt
+    user32 = ctypes.WinDLL("user32", use_last_error=True)
+    dwm = ctypes.WinDLL("dwmapi")
+    _ENUM = ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM)
+    user32.GetWindowLongW.restype = ctypes.c_long
+
+
+def listar_janelas():
+    """{pid: [(hwnd, titulo, minimizada, area)]} das janelas de programa (as que aparecem na barra de tarefas)."""
+    out = defaultdict(list)
+    if not WIN:
+        return out
+
+    def cb(h, _l):
+        try:
+            if not user32.IsWindowVisible(h) or user32.GetWindow(h, 4):  # GW_OWNER
+                return True
+            if user32.GetWindowLongW(h, -20) & 0x80:  # WS_EX_TOOLWINDOW
+                return True
+            n = user32.GetWindowTextLengthW(h)
+            if n <= 0:
+                return True
+            cloak = wt.DWORD(0)
+            if dwm.DwmGetWindowAttribute(h, 14, ctypes.byref(cloak), 4) == 0 and cloak.value:
+                return True
+            buf = ctypes.create_unicode_buffer(n + 1)
+            user32.GetWindowTextW(h, buf, n + 1)
+            pid = wt.DWORD(0)
+            user32.GetWindowThreadProcessId(h, ctypes.byref(pid))
+            r = wt.RECT()
+            user32.GetWindowRect(h, ctypes.byref(r))
+            out[pid.value].append((h, buf.value, bool(user32.IsIconic(h)), (r.right - r.left) * (r.bottom - r.top)))
+        except Exception:
+            pass
+        return True
+
+    user32.EnumWindows(_ENUM(cb), 0)
+    return out
+
+
+def trazer_para_frente(h):
+    if user32.IsIconic(h):
+        user32.ShowWindow(h, 9)  # SW_RESTORE
+    else:
+        user32.ShowWindow(h, 5)  # SW_SHOW
+    user32.keybd_event(0x12, 0, 0, 0)   # Alt (o Windows só deixa trazer para frente depois de uma tecla)
+    user32.keybd_event(0x12, 0, 2, 0)
+    user32.SetForegroundWindow(h)
+    user32.BringWindowToTop(h)
+
+
+def executar(a):
+    tipo = a.get("tipo")
+    if not WIN:
+        return False, "Só no Windows"
+    if tipo == "mostrar":
+        js = listar_janelas()
+        cands = [j for p in a.get("pids", []) for j in js.get(p, [])]
+        if cands:
+            cands.sort(key=lambda j: (j[2], -j[3]))  # prefere não minimizada e maior
+            h = cands[0][0]
+            trazer_para_frente(h)
+            return True, f'Janela "{cands[0][1][:60]}" aberta.'
+        exe = a.get("exe")
+        if exe and os.path.exists(exe):
+            os.startfile(exe)
+            return True, "Esse programa não tinha janela aberta (estava só perto do relógio). Pedi para ele abrir."
+        return False, "Esse programa não tem janela para mostrar."
+    if tipo == "fechar_janelas":
+        js = listar_janelas()
+        n = 0
+        for p in a.get("pids", []):
+            for h, _t, _m, _a in js.get(p, []):
+                user32.PostMessageW(h, 0x0010, 0, 0)  # WM_CLOSE (igual a clicar no X)
+                n += 1
+        if n:
+            return True, f"Pedi para fechar {n} janela(s). Se o programa perguntar algo (salvar?), responda na janela dele."
+        return False, "Nenhuma janela aberta para fechar. Use “Forçar encerramento” se quiser encerrar mesmo assim."
+    if tipo == "pasta":
+        c = a.get("caminho", "")
+        if os.path.exists(c):
+            subprocess.Popen(f'explorer.exe /select,"{c}"')
+            return True, "Pasta aberta."
+        pasta = os.path.dirname(c)
+        if os.path.isdir(pasta):
+            os.startfile(pasta)
+            return True, "Pasta aberta."
+        return False, "Essa pasta não existe mais."
+    if tipo == "abrir_exe":
+        c = a.get("caminho", "")
+        if os.path.exists(c):
+            os.startfile(c)
+            return True, "Programa aberto."
+        return False, "Arquivo não encontrado."
+    return False, "Ação desconhecida."
+
+
+def loop_fila():
+    while True:
+        try:
+            acoes = api_get("api/fila?espera=20", timeout=30, com_token=True).get("acoes", [])
+            for a in acoes:
+                try:
+                    ok, msg = executar(a)
+                except Exception as e:  # noqa: BLE001
+                    ok, msg = False, str(e)
+                try:
+                    api_post("api/fila/resultado", {"id": a.get("id"), "ok": ok, "msg": msg})
+                except Exception:
+                    pass
+        except urllib.error.HTTPError as e:
+            if e.code == 403:
+                _token["v"] = None  # serviço reiniciou: lê o token novo
+            time.sleep(3)
+        except Exception:
+            time.sleep(3)
+
+
+def loop_janelas():
+    while True:
+        try:
+            js = listar_janelas()
+            api_post("api/janelas", {"janelas": {str(p): [t[:120] for _h, t, _m, _a in v] for p, v in js.items()}})
+        except urllib.error.HTTPError as e:
+            if e.code == 403:
+                _token["v"] = None
+        except Exception:
+            pass
+        time.sleep(2)
+
+
+# ------------------------------------------------------------------ ícone
 def desenhar(mem, cpu, ok=True):
     from PIL import Image, ImageDraw
     img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
@@ -88,10 +246,13 @@ def desenhar(mem, cpu, ok=True):
     return img
 
 
-def atualizar():
+def atualizar_icone():
     ultimo = None
     while True:
-        e = ler_agora()
+        try:
+            e = api_get("api/agora")
+        except Exception:
+            e = None
         try:
             if ICONE is not None:
                 if e:
@@ -110,15 +271,15 @@ def atualizar():
                     ICONE.title = "Monitor do PC — serviço não está respondendo"
         except Exception:
             pass
-        time.sleep(5)
+        time.sleep(3)
 
 
 def instancia_unica():
     if not WIN:
         return True
-    import ctypes
-    ctypes.windll.kernel32.CreateMutexW(None, False, "Local\\MonitorPC-Bandeja")
-    return ctypes.windll.kernel32.GetLastError() != 183
+    import ctypes as ct
+    ct.windll.kernel32.CreateMutexW(None, False, "Local\\MonitorPC-Bandeja")
+    return ct.windll.kernel32.GetLastError() != 183
 
 
 def main():
@@ -131,17 +292,18 @@ def main():
         return
     if not so_icone:
         threading.Timer(0.5, abrir_janela).start()
+    for alvo in (loop_fila, loop_janelas, atualizar_icone):
+        threading.Thread(target=alvo, daemon=True).start()
     import pystray
     menu = pystray.Menu(
         pystray.MenuItem("Abrir Monitor do PC", lambda *_: abrir_janela(), default=True),
+        pystray.MenuItem("Programas", lambda *_: abrir_janela("programas")),
         pystray.MenuItem("Relatório", lambda *_: abrir_janela("relatorio")),
-        pystray.MenuItem("Rede e conexões", lambda *_: abrir_janela("rede")),
-        pystray.MenuItem("Temperatura", lambda *_: abrir_janela("hardware")),
+        pystray.MenuItem("Configurações", lambda *_: abrir_janela("config")),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Fechar ícone (o monitoramento continua)", lambda *_: ICONE.stop()),
     )
     ICONE = pystray.Icon("monitor-pc", desenhar(0, 0), "Monitor do PC", menu)
-    threading.Thread(target=atualizar, daemon=True).start()
     ICONE.run()
 
 

@@ -38,6 +38,7 @@ jobs:
         run: |
           pyinstaller --noconfirm --clean --console --name MonitorPCServico --icon instalador/icone.ico `
             --paths src --hidden-import win32timezone --hidden-import servicemanager `
+            --hidden-import win32com.client --hidden-import pythoncom --hidden-import win32api `
             --collect-all pythonnet --collect-all clr_loader `
             --add-data "src/ui;ui" --add-data "lhm;lhm" src/servico.py
           pyinstaller --noconfirm --clean --windowed --name MonitorPC --icon instalador/icone.ico `
@@ -70,7 +71,7 @@ jobs:
         shell: pwsh
         run: |
           $setup = (Get-ChildItem saida\MonitorDoPC-Setup-*.exe)[0].FullName
-          Start-Process $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/TASKS=pawnio,iniciar,desktop','/LOG=setup.log' -Wait
+          Start-Process $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/TASKS=pawnio,desktop','/LOG=setup.log' -Wait
           sc.exe query MonitorPC
           sc.exe query PawnIO
           Start-Sleep 20
@@ -84,7 +85,8 @@ jobs:
           $prog = (Get-ChildItem api\api-agora.json).Length; Write-Host "agora.json: $prog bytes"
           Start-Process "C:\Program Files\Monitor do PC\MonitorPC.exe" -ArgumentList '--bandeja'
           Start-Sleep 6
-          Get-Process MonitorPC, MonitorPCServico -ErrorAction SilentlyContinue | Format-Table Name, Id, WorkingSet64
+          Get-Process MonitorPC, MonitorPCServico -ErrorAction SilentlyContinue | Format-Table Name, Id, WorkingSet64, CPU
+          ./build/teste-acoes.ps1
           Copy-Item C:\ProgramData\MonitorPC\servico.log api\ -ErrorAction SilentlyContinue
           Get-Content C:\ProgramData\MonitorPC\servico.log -ErrorAction SilentlyContinue | Select-Object -Last 30
           python build/resumo_teste.py --api api

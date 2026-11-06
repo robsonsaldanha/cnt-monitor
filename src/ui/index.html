@@ -3,23 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="token" content="__TOKEN__">
 <title>Monitor do PC</title>
 <style>
 :root{
   --bg:#f3f4f7; --painel:#fff; --painel2:#f0f2f6; --borda:#e0e3ea; --txt:#1a1d24; --txt2:#5b6272; --txt3:#8a91a0;
-  --acento:#4f6bed; --ok:#2e9d58; --alerta:#c98010; --perigo:#d64545; --barra:#e6e9f0; --grade:#eceef3;
+  --acento:#4f6bed; --ok:#2e9d58; --alerta:#c98010; --perigo:#d64545; --barra:#e6e9f0; --grade:#eceef3; --sel:#e9edfd;
   --sombra:0 1px 2px rgba(20,25,40,.05),0 3px 12px rgba(20,25,40,.04);
   --c1:#4f6bed; --c2:#e07b2a; --c3:#1f9e74; --c4:#c2479f; --c5:#b29b14; --c6:#1793c2; --c7:#7a5af0; --c8:#d1495b;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   --bg:#14161b; --painel:#1c1f26; --painel2:#232731; --borda:#2c313c; --txt:#eceef3; --txt2:#a3aabb; --txt3:#737b8c;
-  --acento:#8aa0ff; --ok:#5fcf86; --alerta:#f3b24c; --perigo:#f06b6b; --barra:#2b303b; --grade:#252932;
+  --acento:#8aa0ff; --ok:#5fcf86; --alerta:#f3b24c; --perigo:#f06b6b; --barra:#2b303b; --grade:#252932; --sel:#262c3d;
   --sombra:0 1px 2px rgba(0,0,0,.3);
   --c1:#7aa2ff; --c2:#f6a35b; --c3:#5fd0a5; --c4:#e57bd6; --c5:#e3cc5a; --c6:#5cc4e8; --c7:#a993ff; --c8:#ff7a8a;
 }}
 :root[data-theme="dark"]{
   --bg:#14161b; --painel:#1c1f26; --painel2:#232731; --borda:#2c313c; --txt:#eceef3; --txt2:#a3aabb; --txt3:#737b8c;
-  --acento:#8aa0ff; --ok:#5fcf86; --alerta:#f3b24c; --perigo:#f06b6b; --barra:#2b303b; --grade:#252932;
+  --acento:#8aa0ff; --ok:#5fcf86; --alerta:#f3b24c; --perigo:#f06b6b; --barra:#2b303b; --grade:#252932; --sel:#262c3d;
   --sombra:0 1px 2px rgba(0,0,0,.3);
   --c1:#7aa2ff; --c2:#f6a35b; --c3:#5fd0a5; --c4:#e57bd6; --c5:#e3cc5a; --c6:#5cc4e8; --c7:#a993ff; --c8:#ff7a8a;
 }
@@ -27,71 +28,79 @@
 html,body{margin:0;background:var(--bg);color:var(--txt);font:13.5px/1.45 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif}
 .n{font-variant-numeric:tabular-nums}
 button{font:inherit;color:inherit}
-.app{display:grid;grid-template-columns:212px 1fr;min-height:100vh}
-nav.lateral{background:var(--painel);border-right:1px solid var(--borda);padding:14px 10px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:2px}
-nav.lateral .marca{display:flex;align-items:center;gap:10px;padding:4px 8px 14px;font:600 15px/1.2 "Segoe UI Variable Display","Segoe UI",system-ui}
-nav.lateral .marca svg{flex:none}
-nav.lateral button{display:flex;align-items:center;gap:10px;background:none;border:0;border-radius:8px;padding:8px 10px;text-align:left;cursor:pointer;color:var(--txt2)}
+a{color:var(--acento)}
+.app{display:grid;grid-template-columns:214px 1fr;min-height:100vh}
+nav.lateral{background:var(--painel);border-right:1px solid var(--borda);padding:14px 10px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:1px;overflow:auto}
+nav.lateral .marca{display:flex;align-items:center;gap:10px;padding:4px 8px 12px;font:600 15px/1.2 "Segoe UI Variable Display","Segoe UI",system-ui}
+nav.lateral button{display:flex;align-items:center;gap:10px;background:none;border:0;border-radius:8px;padding:7px 10px;text-align:left;cursor:pointer;color:var(--txt2)}
 nav.lateral button svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 nav.lateral button:hover{background:var(--painel2);color:var(--txt)}
 nav.lateral button[aria-current="page"]{background:color-mix(in srgb,var(--acento) 14%,transparent);color:var(--txt);font-weight:600}
+nav.lateral .sep{height:1px;background:var(--borda);margin:6px 8px}
 nav.lateral .cont{margin-left:auto;background:var(--perigo);color:#fff;border-radius:9px;padding:0 6px;font-size:11px;font-weight:600}
 nav.lateral .rod{margin-top:auto;color:var(--txt3);font-size:11.5px;padding:8px 10px;line-height:1.5}
-nav.lateral .rod .vivo{display:flex;align-items:center;gap:6px;color:var(--txt2)}
+.vivo{display:flex;align-items:center;gap:6px;color:var(--txt2)}
 .vivo i{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block}
 .vivo.off i{background:var(--perigo)}
 main{padding:18px 22px 40px;min-width:0}
-h1{font:600 21px/1.2 "Segoe UI Variable Display","Segoe UI",system-ui;margin:0 0 3px}
+h1{font:600 21px/1.2 "Segoe UI Variable Display","Segoe UI",system-ui;margin:0 0 3px;display:flex;align-items:center;gap:10px}
 .sub{color:var(--txt2);margin:0 0 14px}
 h2{font-size:14px;font-weight:600;margin:0}
 .aviso{background:color-mix(in srgb,var(--alerta) 12%,var(--painel));border:1px solid color-mix(in srgb,var(--alerta) 35%,var(--borda));border-radius:10px;padding:9px 12px;margin-bottom:12px;font-size:12.5px}
 .aviso.erro{background:color-mix(in srgb,var(--perigo) 12%,var(--painel));border-color:color-mix(in srgb,var(--perigo) 40%,var(--borda))}
 .grade{display:grid;gap:12px}
-.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
-.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
-.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
-.g6{grid-template-columns:repeat(6,minmax(0,1fr))}
+.g6{grid-template-columns:repeat(6,minmax(0,1fr))} .g5{grid-template-columns:repeat(5,minmax(0,1fr))} .g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))} .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .painel{background:var(--painel);border:1px solid var(--borda);border-radius:12px;box-shadow:var(--sombra);min-width:0}
 .pad{padding:12px 14px}
 .cab{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--borda);flex-wrap:wrap}
 .cab .desc{color:var(--txt3);font-size:12px}
-.cab .dir{margin-left:auto;display:flex;gap:8px;align-items:center}
-.card{padding:12px 14px 8px}
-.card .rot{color:var(--txt2);font-size:12.5px;display:flex;justify-content:space-between;gap:6px}
-.card .val{font:600 25px/1.15 "Segoe UI Variable Display","Segoe UI",system-ui;margin-top:2px;white-space:nowrap}
-.card .val small{font-size:14px;font-weight:500;color:var(--txt2)}
-.card .det{color:var(--txt3);font-size:12px;min-height:17px}
+.cab .dir{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.card{padding:12px 14px 8px;text-align:left;border:1px solid var(--borda);font:inherit;color:inherit}
+button.card{cursor:pointer;width:100%;background:var(--painel)}
+button.card:hover{border-color:var(--acento)}
+.card .rot{color:var(--txt2);font-size:12.5px;display:flex;justify-content:space-between;gap:6px;align-items:center}
+.card .rot .ir{color:var(--txt3);font-size:11px}
+.card .val{font:600 25px/1.15 "Segoe UI Variable Display","Segoe UI",system-ui;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .det{color:var(--txt3);font-size:12px;min-height:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .card canvas{width:100%;height:36px;display:block;margin-top:4px}
 .ok{color:var(--ok)} .quente{color:var(--alerta);font-weight:600} .muito{color:var(--perigo);font-weight:600}
 .mut{color:var(--txt3)} .mut2{color:var(--txt2)}
-input[type=search],input[type=datetime-local],select{background:var(--painel2);border:1px solid var(--borda);color:var(--txt);border-radius:8px;padding:6px 10px;font:inherit}
-input[type=search]{width:240px}
-.seg{display:inline-flex;background:var(--painel2);border:1px solid var(--borda);border-radius:8px;padding:2px;gap:2px}
+input[type=search],input[type=datetime-local],select,input[type=number]{background:var(--painel2);border:1px solid var(--borda);color:var(--txt);border-radius:8px;padding:6px 10px;font:inherit}
+input[type=search]{width:260px}
+.seg{display:inline-flex;background:var(--painel2);border:1px solid var(--borda);border-radius:8px;padding:2px;gap:2px;flex-wrap:wrap}
 .seg button{background:none;border:0;border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--txt2);font-size:12.5px}
 .seg button[aria-pressed="true"]{background:var(--acento);color:#fff}
-.btn{background:var(--painel2);border:1px solid var(--borda);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12.5px}
-.btn:hover{border-color:var(--acento)}
+.btn{background:var(--painel2);border:1px solid var(--borda);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12.5px;display:inline-flex;align-items:center;gap:6px}
+.btn:hover:not(:disabled){border-color:var(--acento)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
 .btn.pri{background:var(--acento);border-color:var(--acento);color:#fff}
-.tw{overflow:auto;max-height:calc(100vh - 220px)}
+.btn.perigo{color:var(--perigo)}
+.tw{overflow:auto;max-height:calc(100vh - 210px)}
 .tw.curta{max-height:420px}
 table{width:100%;border-collapse:collapse}
 th{position:sticky;top:0;background:var(--painel);z-index:1;color:var(--txt2);font-weight:500;font-size:12px;text-align:right;padding:8px 10px;border-bottom:1px solid var(--borda);cursor:pointer;user-select:none;white-space:nowrap}
 th.e,td.e{text-align:left}
 th.ativo{color:var(--txt)}
 th.ativo.desc::after{content:" ▾";font-size:10px} th.ativo.asc::after{content:" ▴";font-size:10px}
-td{padding:6px 10px;border-bottom:1px solid var(--grade);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+td{padding:5px 10px;border-bottom:1px solid var(--grade);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 td.e{white-space:normal;word-break:break-word;min-width:110px}
 tbody tr.cl{cursor:pointer}
 tbody tr.cl:hover td{background:var(--painel2)}
+tbody tr.marcado td{background:var(--sel)!important}
 tr.outros td{color:var(--txt2);font-style:italic}
 .nm{font-weight:500}
 .pid{color:var(--txt3);font-size:11.5px;margin-left:6px}
 .mc{display:flex;align-items:center;gap:8px;justify-content:flex-end}
-.mb{width:84px;height:5px;border-radius:3px;background:var(--barra);overflow:hidden;flex:none}
+.mb{display:inline-block;vertical-align:middle;width:80px;height:5px;border-radius:3px;background:var(--barra);overflow:hidden;flex:none}
+.hw .mb{display:block;width:100%;margin:3px 0 5px}
+.arv td.e{white-space:nowrap}
 .mb i{display:block;height:100%;border-radius:3px;background:var(--acento)}
-.tag{display:inline-block;border-radius:6px;padding:0 6px;font-size:11px;background:var(--painel2);border:1px solid var(--borda);color:var(--txt2)}
+.tag{display:inline-block;border-radius:6px;padding:0 6px;font-size:11px;background:var(--painel2);border:1px solid var(--borda);color:var(--txt2);white-space:nowrap}
 .tag.int{color:var(--acento);border-color:color-mix(in srgb,var(--acento) 40%,var(--borda))}
 .tag.loc{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 40%,var(--borda))}
+.tag.des{color:var(--txt3)} .tag.on{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 40%,var(--borda))}
+.esc{display:inline-flex;vertical-align:-2px;margin-left:6px;color:var(--txt3)} .esc svg{width:13px;height:13px}
 .vazio{color:var(--txt3);padding:22px 14px;text-align:center}
 .lista{list-style:none;margin:0;padding:0}
 .lista li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:6px 14px;border-bottom:1px solid var(--grade)}
@@ -99,11 +108,12 @@ tr.outros td{color:var(--txt2);font-style:italic}
 .lista li.cl{cursor:pointer} .lista li.cl:hover{background:var(--painel2)}
 .lista li .mb{grid-column:1/-1;width:100%;height:4px}
 .nucleos{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:6px;padding:12px 14px}
+.nucleos.grande{grid-template-columns:repeat(auto-fill,minmax(80px,1fr))} .nucleos.grande .nuc{height:70px}
 .nuc{background:var(--painel2);border-radius:6px;height:46px;position:relative;overflow:hidden}
-.nuc i{position:absolute;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--acento) 55%,transparent)}
+.nuc i{position:absolute;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--acento) 55%,transparent);transition:height .2s}
 .nuc span{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;line-height:1.2}
 .nuc span b{font-size:12px}
-.kv{display:grid;grid-template-columns:max-content 1fr;gap:5px 14px;padding:12px 14px;font-size:12.5px}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:5px 14px;padding:12px 14px;font-size:12.5px;margin:0}
 .kv dt{color:var(--txt2)} .kv dd{margin:0;word-break:break-all}
 .temps{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .tt{padding:12px 14px}
@@ -113,36 +123,90 @@ tr.outros td{color:var(--txt2);font-style:italic}
 .graf canvas{width:100%;display:block;cursor:crosshair}
 .leg{display:flex;flex-wrap:wrap;gap:3px 14px;margin:4px 0 8px;font-size:12px;color:var(--txt2)}
 .leg span::before{content:"";display:inline-block;width:10px;height:3px;border-radius:2px;background:var(--c);margin-right:6px;vertical-align:middle}
-.dica{position:fixed;pointer-events:none;background:var(--painel);border:1px solid var(--borda);box-shadow:0 6px 20px rgba(0,0,0,.25);border-radius:8px;padding:8px 10px;font-size:12px;min-width:180px;display:none;z-index:50}
+.dica{position:fixed;pointer-events:none;background:var(--painel);border:1px solid var(--borda);box-shadow:0 6px 20px rgba(0,0,0,.25);border-radius:8px;padding:8px 10px;font-size:12px;min-width:180px;display:none;z-index:60}
 .dica .t{color:var(--txt2);margin-bottom:4px}
 .dica .l{display:flex;justify-content:space-between;gap:14px}
 .dica .l span::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:6px}
-.gav{position:fixed;top:0;right:0;bottom:0;width:min(860px,96vw);background:var(--bg);border-left:1px solid var(--borda);box-shadow:-10px 0 40px rgba(0,0,0,.25);z-index:30;transform:translateX(100%);transition:transform .2s;display:flex;flex-direction:column}
+/* árvore */
+.arv td:first-child{padding-left:8px}
+.arv .car{display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;border-radius:4px;color:var(--txt3);cursor:pointer;flex:none;transition:transform .12s}
+.arv .car:hover{background:var(--barra);color:var(--txt)}
+.arv .car.ab{transform:rotate(90deg)}
+.arv .car.vz{visibility:hidden}
+.arv .no{display:flex;align-items:center;gap:4px}
+.arv .lig{color:var(--txt3);font-family:Consolas,monospace;white-space:pre;font-size:12px}
+.arv tr.prog td{background:color-mix(in srgb,var(--painel2) 45%,transparent);font-weight:500}
+.arv tr.proc td{font-size:12.5px}
+/* gaveta */
+.gav{position:fixed;top:0;right:0;bottom:0;width:min(900px,96vw);background:var(--bg);border-left:1px solid var(--borda);box-shadow:-10px 0 40px rgba(0,0,0,.25);z-index:30;transform:translateX(100%);transition:transform .2s;display:flex;flex-direction:column}
 .gav.aberta{transform:none}
-.gav .topo{display:flex;align-items:flex-start;gap:12px;padding:16px 18px 10px;border-bottom:1px solid var(--borda);background:var(--painel)}
+.gav .topo{display:flex;align-items:flex-start;gap:12px;padding:16px 18px 10px;background:var(--painel)}
 .gav .topo h1{font-size:18px}
-.gav .fechar{margin-left:auto;background:var(--painel2);border:1px solid var(--borda);border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:16px}
+.gav .fechar{margin-left:auto;background:var(--painel2);border:1px solid var(--borda);border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:16px;flex:none}
+.gav .acoes{display:flex;gap:6px;flex-wrap:wrap;padding:0 18px 10px;background:var(--painel)}
 .gav .corpo{overflow:auto;padding:14px 18px 30px;flex:1}
-.gav .abas2{display:flex;gap:2px;padding:0 18px;background:var(--painel);border-bottom:1px solid var(--borda)}
+.gav .abas2{display:flex;gap:2px;padding:0 18px;background:var(--painel);border-bottom:1px solid var(--borda);flex-wrap:wrap}
 .gav .abas2 button{background:none;border:0;padding:8px 12px;cursor:pointer;color:var(--txt2);border-bottom:2px solid transparent;margin-bottom:-1px}
 .gav .abas2 button[aria-selected="true"]{color:var(--txt);border-bottom-color:var(--acento);font-weight:600}
 .fundo{position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:29;display:none}
 .fundo.on{display:block}
-.mini{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
-.mini .card .val{font-size:20px}
+.mini{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.mini .card{background:var(--painel);border-radius:12px}
+.mini .card .val{font-size:19px}
+/* menu do botão direito */
+.menu{position:fixed;z-index:80;background:var(--painel);border:1px solid var(--borda);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.3);padding:5px;min-width:250px;display:none}
+.menu button{display:flex;width:100%;align-items:center;gap:10px;background:none;border:0;border-radius:6px;padding:7px 10px;text-align:left;cursor:pointer}
+.menu button:hover:not(:disabled){background:var(--painel2)}
+.menu button:disabled{opacity:.4;cursor:not-allowed}
+.menu button.perigo{color:var(--perigo)}
+.menu button svg{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.menu .tit{padding:6px 10px 4px;color:var(--txt3);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:320px}
+.menu hr{border:0;border-top:1px solid var(--borda);margin:4px 2px}
+.menu .mot{font-size:11px;color:var(--txt3);margin-left:auto;padding-left:10px}
+/* modal e avisos */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:90;display:none;align-items:center;justify-content:center}
+.modal.on{display:flex}
+.modal .cx{background:var(--painel);border:1px solid var(--borda);border-radius:14px;padding:18px 20px;width:min(460px,92vw);box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.modal .cx h2{font-size:16px;margin-bottom:8px}
+.modal .cx p{color:var(--txt2);margin:0 0 16px;line-height:1.5}
+.modal .bts{display:flex;gap:8px;justify-content:flex-end}
+.modal .btn.perigo{background:var(--perigo);border-color:var(--perigo);color:#fff}
+.toasts{position:fixed;right:18px;bottom:18px;z-index:95;display:flex;flex-direction:column;gap:8px;max-width:420px}
+.toast{background:var(--painel);border:1px solid var(--borda);border-left:4px solid var(--ok);border-radius:10px;padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.25);font-size:13px}
+.toast.erro{border-left-color:var(--perigo)}
+/* configurações */
+.cfg{max-width:860px}
+.cfg .item{display:grid;grid-template-columns:1fr auto;gap:4px 20px;padding:12px 14px;border-bottom:1px solid var(--grade);align-items:center}
+.cfg .item:last-child{border-bottom:0}
+.cfg .item b{font-weight:500}
+.cfg .item small{grid-column:1;color:var(--txt3);font-size:12px}
+.cfg .item .ctl{grid-row:1/3;grid-column:2}
+.sw{position:relative;width:40px;height:22px;display:inline-block;flex:none}
+.sw input{opacity:0;width:0;height:0;position:absolute}
+.sw span{position:absolute;inset:0;background:var(--barra);border-radius:11px;cursor:pointer;transition:.15s;border:1px solid var(--borda)}
+.sw span::before{content:"";position:absolute;width:16px;height:16px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.15s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.sw input:checked+span{background:var(--acento);border-color:var(--acento)}
+.sw input:checked+span::before{transform:translateX(18px)}
+.sw input:disabled+span{opacity:.5;cursor:not-allowed}
 .ep{display:grid;grid-template-columns:200px 1fr;gap:14px;padding:11px 14px;border-bottom:1px solid var(--grade);cursor:pointer}
 .ep:hover{background:var(--painel2)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{background:var(--painel2);border:1px solid var(--borda);border-radius:999px;padding:1px 9px;font-size:12px}
-.secao{margin-top:16px}
+.secao{margin-top:14px}
 .rel-cab{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
 .so-impressao{display:none}
+.hw{padding:12px 14px}
+.hw .t{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.hw .t b{font-size:14px}
+.hw .big{font:600 24px/1.2 "Segoe UI Variable Display","Segoe UI",system-ui;margin:4px 0}
+.hw .lin{display:flex;justify-content:space-between;color:var(--txt2);font-size:12.5px;padding:2px 0}
 code{font-family:"Cascadia Mono",Consolas,monospace;font-size:12px;background:var(--painel2);padding:1px 5px;border-radius:5px}
-@media (max-width:1100px){.g4,.g6{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:1fr 1fr}.mini{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:760px){.app{grid-template-columns:1fr}nav.lateral{position:static;height:auto;flex-direction:row;flex-wrap:wrap}nav.lateral .rod{display:none}.g2,.g3{grid-template-columns:1fr}}
+@media (max-width:1250px){.g6{grid-template-columns:repeat(3,minmax(0,1fr))}.mini{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:900px){.g4,.g5{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:1fr 1fr}.lado2{grid-template-columns:1fr!important}}
+@media (max-width:760px){.app{grid-template-columns:1fr}nav.lateral{position:static;height:auto;flex-direction:row;flex-wrap:wrap}nav.lateral .rod,nav.lateral .sep{display:none}.g2,.g3,.g6{grid-template-columns:1fr}}
 @media print{
   :root{--bg:#fff;--painel:#fff;--painel2:#f3f4f7;--borda:#ddd;--txt:#000;--txt2:#444;--txt3:#666;--grade:#eee;--sombra:none}
-  nav.lateral,.nao-imprimir,.gav,.fundo{display:none!important}
+  nav.lateral,.nao-imprimir,.gav,.fundo,.toasts,.menu{display:none!important}
   .app{display:block} main{padding:0} .tw{max-height:none;overflow:visible}
   .painel{break-inside:avoid} .so-impressao{display:block}
   section{display:none!important} section#v-relatorio{display:block!important}
@@ -154,70 +218,93 @@ code{font-family:"Cascadia Mono",Consolas,monospace;font-size:12px;background:va
 <nav class="lateral" id="nav">
   <div class="marca"><svg width="26" height="26" viewBox="0 0 64 64"><rect x="2" y="2" width="60" height="60" rx="14" fill="#1c1e26"/><rect x="10" y="10" width="28" height="44" rx="4" fill="#373a46"/><rect x="10" y="26" width="28" height="28" rx="4" fill="#66bb6a"/><rect x="44" y="10" width="10" height="44" rx="4" fill="#373a46"/><rect x="44" y="38" width="10" height="16" rx="4" fill="#ffb74d"/></svg>Monitor do PC</div>
   <button data-v="geral"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Visão geral</button>
-  <button data-v="programas"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 8h18M8 21h8"/></svg>Programas</button>
+  <button data-v="programas"><svg viewBox="0 0 24 24"><path d="M4 4h6v5H4zM14 15h6v5h-6zM7 9v8.5h7M14 7h6v5h-6zM7 9.5h7"/></svg>Programas</button>
   <button data-v="processos"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Processos</button>
+  <button data-v="inicializacao"><svg viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M6.3 7.5a8 8 0 1 0 11.4 0"/></svg>Inicialização</button>
   <button data-v="rede"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>Rede e IPs</button>
-  <button data-v="hardware"><svg viewBox="0 0 24 24"><path d="M10 14V5a2 2 0 1 1 4 0v9a4 4 0 1 1-4 0z"/></svg>Temperatura</button>
+  <button data-v="hardware"><svg viewBox="0 0 24 24"><path d="M10 14V5a2 2 0 1 1 4 0v9a4 4 0 1 1-4 0z"/></svg>Temperatura e hardware</button>
+  <div class="sep"></div>
   <button data-v="historico"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 4 8-9"/><path d="M3 21h18"/></svg>Histórico</button>
   <button data-v="lentidao"><svg viewBox="0 0 24 24"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg>Lentidão<span class="cont" id="contLent" hidden></span></button>
   <button data-v="relatorio"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>Relatório</button>
+  <div class="sep"></div>
+  <button data-v="config"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Configurações</button>
   <div class="rod"><div class="vivo" id="vivo"><i></i><span>conectando…</span></div><div id="rodInfo"></div></div>
 </nav>
 
 <main>
 <div id="avisos"></div>
 
-<!-- ============ VISÃO GERAL ============ -->
 <section id="v-geral">
-  <h1>Visão geral</h1><p class="sub" id="geralSub">Atualiza a cada 5 segundos.</p>
+  <h1>Visão geral</h1><p class="sub" id="geralSub">—</p>
   <div class="grade g6" id="cards"></div>
-  <div class="grade g2 secao">
+  <div class="grade g2 secao lado2">
     <div class="painel"><div class="cab"><h2>Processador por núcleo</h2><span class="desc" id="cpuNome"></span></div><div class="nucleos" id="nucleos"></div></div>
     <div class="painel"><div class="cab"><h2>Memória</h2><span class="desc" id="memDesc"></span></div><div class="pad" id="memDet"></div></div>
   </div>
-  <div class="grade g4 secao" id="tops"></div>
+  <div class="grade g5 secao" id="tops"></div>
 </section>
 
-<!-- ============ PROGRAMAS ============ -->
-<section id="v-programas" hidden>
-  <h1>Programas</h1><p class="sub">Cada programa soma tudo o que ele abriu (ex.: Maestri + agentes Claude Code). Clique para ver os detalhes, IPs e histórico.</p>
-  <div class="painel">
-    <div class="cab"><input type="search" id="bProg" placeholder="Procurar programa ou processo…"><span class="desc" id="progInfo"></span></div>
-    <div class="tw" id="tProg"></div>
+<section id="v-recurso" hidden>
+  <h1><a href="#geral" style="text-decoration:none;font-weight:400;color:var(--txt3)">Visão geral ›</a> <span id="rTit"></span></h1>
+  <p class="sub" id="rSub"></p>
+  <div class="grade g5" id="rCards"></div>
+  <div class="painel secao graf">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h2 id="rGTit">Ao vivo</h2>
+      <div class="seg" id="segRec" style="margin-left:auto"><button data-r="60" aria-pressed="true">1 min</button><button data-r="300" aria-pressed="false">5 min</button><button data-r="900" aria-pressed="false">15 min</button><button data-h="1" aria-pressed="false">1 h</button><button data-h="24" aria-pressed="false">24 h</button><button data-h="168" aria-pressed="false">7 dias</button></div></div>
+    <div class="leg" id="rLeg"></div><canvas id="rGraf" height="300"></canvas>
+  </div>
+  <div id="rExtra"></div>
+  <div class="grade g2 secao lado2">
+    <div class="painel"><div class="cab"><h2 id="rTopProgT">Programas</h2><span class="desc">clique para detalhes · botão direito para ações</span></div><div class="tw curta" id="rTopProg"></div></div>
+    <div class="painel"><div class="cab"><h2 id="rTopProcT">Processos</h2></div><div class="tw curta" id="rTopProc"></div></div>
   </div>
 </section>
 
-<!-- ============ PROCESSOS ============ -->
+<section id="v-programas" hidden>
+  <h1>Programas</h1><p class="sub">Cada programa com todos os processos que ele abriu, em árvore. Um <code>claude.exe</code> aberto pelo Maestri fica dentro do Maestri; um aberto pelo Vynex Forge fica dentro do Vynex Forge. Clique no nome para detalhes, na setinha para abrir, e use o botão direito para ações.</p>
+  <div class="painel">
+    <div class="cab"><input type="search" id="bProg" placeholder="Procurar programa, processo ou PID…">
+      <div class="dir"><button class="btn" id="expTudo">Expandir tudo</button><button class="btn" id="recTudo">Recolher tudo</button><span class="desc" id="progInfo"></span></div></div>
+    <div class="tw arv" id="tArv"></div>
+  </div>
+</section>
+
 <section id="v-processos" hidden>
-  <h1>Processos</h1><p class="sub">Todos os processos abertos, um por linha. Clique para ver caminho, linha de comando, conexões e IPs.</p>
+  <h1>Processos</h1><p class="sub">Todos os processos, um por linha. Clique para detalhes; botão direito para abrir, abrir a pasta ou encerrar.</p>
   <div class="painel">
     <div class="cab"><input type="search" id="bProc" placeholder="Procurar por nome, PID, programa, usuário…"><span class="desc" id="procInfo"></span></div>
     <div class="tw" id="tProc"></div>
   </div>
 </section>
 
-<!-- ============ REDE ============ -->
+<section id="v-inicializacao" hidden>
+  <h1>Inicialização</h1><p class="sub">Programas que abrem sozinhos quando o Windows liga. Desativar não apaga nada: o programa só deixa de abrir sozinho (é a mesma opção do Gerenciador de Tarefas e pode ser revertida).</p>
+  <div class="grade g4" id="iniCards"></div>
+  <div class="painel secao">
+    <div class="cab"><input type="search" id="bIni" placeholder="Procurar…"><span class="desc" id="iniInfo"></span><div class="dir"><button class="btn" id="iniAtualizar">Atualizar</button></div></div>
+    <div class="tw" id="tIni"></div>
+  </div>
+</section>
+
 <section id="v-rede" hidden>
   <h1>Rede e IPs</h1><p class="sub">Quanto cada programa envia e recebe, com quais IPs ele conversa e todas as conexões abertas.</p>
   <div class="grade g4" id="redeCards"></div>
-  <div class="grade g2 secao">
+  <div class="grade g2 secao lado2">
     <div class="painel"><div class="cab"><h2>Programas usando a rede</h2><span class="desc">agora</span></div><div class="tw curta" id="tRedeProg"></div></div>
     <div class="painel"><div class="cab"><h2>Placas de rede</h2></div><div class="tw curta" id="tIfs"></div></div>
   </div>
   <div class="painel secao">
-    <div class="cab"><h2>IPs contatados</h2><span class="desc" id="remDesc">tráfego medido por IP desde que o serviço iniciou</span>
-      <div class="dir"><input type="search" id="bRem" placeholder="Filtrar IP, nome ou programa…"></div></div>
+    <div class="cab"><h2>IPs contatados</h2><span class="desc" id="remDesc"></span><div class="dir"><input type="search" id="bRem" placeholder="Filtrar IP, nome ou programa…"></div></div>
     <div class="tw" id="tRem"></div>
   </div>
   <div class="painel secao">
     <div class="cab"><h2>Conexões abertas</h2><span class="desc" id="connDesc"></span>
-      <div class="dir"><div class="seg" id="segConn"><button data-f="ext" aria-pressed="true">Com a internet/rede</button><button data-f="todas" aria-pressed="false">Todas</button><button data-f="esc" aria-pressed="false">Portas abertas</button></div>
-      <input type="search" id="bConn" placeholder="Filtrar…"></div></div>
+      <div class="dir"><div class="seg" id="segConn"><button data-f="ext" aria-pressed="true">Com a internet/rede</button><button data-f="todas" aria-pressed="false">Todas</button><button data-f="esc" aria-pressed="false">Portas abertas</button></div><input type="search" id="bConn" placeholder="Filtrar…"></div></div>
     <div class="tw" id="tConn"></div>
   </div>
 </section>
 
-<!-- ============ HARDWARE ============ -->
 <section id="v-hardware" hidden>
   <h1>Temperatura e hardware</h1><p class="sub" id="hwSub">Sensores de temperatura, uso, frequência, ventoinhas e consumo.</p>
   <div id="hwAviso"></div>
@@ -227,18 +314,19 @@ code{font-family:"Cascadia Mono",Consolas,monospace;font-size:12px;background:va
       <div class="seg" id="segTemp" style="margin-left:auto"><button data-h="1" aria-pressed="true">1 h</button><button data-h="6" aria-pressed="false">6 h</button><button data-h="24" aria-pressed="false">24 h</button><button data-h="168" aria-pressed="false">7 dias</button></div></div>
     <div class="leg" id="legTemp"></div><canvas id="grTemp" height="230"></canvas>
   </div>
-  <div class="grade g2 secao">
+  <h2 class="secao" style="margin-bottom:8px">Placas de vídeo</h2><div class="grade g2" id="hwGpus"></div>
+  <h2 class="secao" style="margin-bottom:8px">Discos</h2><div class="grade g3" id="hwDiscos"></div>
+  <div class="grade g2 secao lado2">
     <div class="painel"><div class="cab"><h2>Este computador</h2></div><dl class="kv" id="hwInfo"></dl></div>
-    <div class="painel"><div class="cab"><h2>Discos</h2></div><div id="hwDiscos"></div></div>
+    <div class="painel"><div class="cab"><h2>Espaço nas unidades</h2></div><div id="hwPart"></div></div>
   </div>
   <div id="hwSensores"></div>
 </section>
 
-<!-- ============ HISTÓRICO ============ -->
 <section id="v-historico" hidden>
-  <h1>Histórico</h1><p class="sub">Clique em qualquer ponto de um gráfico para ver quem estava usando mais naquele momento. Guardado por 7 dias.</p>
+  <h1>Histórico</h1><p class="sub">Clique em qualquer ponto de um gráfico para ver quem estava usando mais naquele momento.</p>
   <div class="rel-cab"><div class="seg" id="segHist"><button data-h="1" aria-pressed="true">1 hora</button><button data-h="6" aria-pressed="false">6 horas</button><button data-h="24" aria-pressed="false">24 horas</button><button data-h="72" aria-pressed="false">3 dias</button><button data-h="168" aria-pressed="false">7 dias</button></div></div>
-  <div style="display:grid;grid-template-columns:1fr 320px;gap:12px">
+  <div style="display:grid;grid-template-columns:1fr 320px;gap:12px" class="lado2">
     <div class="grade">
       <div class="painel graf"><h2>Memória e CPU</h2><div class="leg" id="lgH1"></div><canvas id="grH1" height="200"></canvas></div>
       <div class="painel graf"><h2>Memória por programa</h2><div class="leg" id="lgH2"></div><canvas id="grH2" height="220"></canvas></div>
@@ -250,16 +338,14 @@ code{font-family:"Cascadia Mono",Consolas,monospace;font-size:12px;background:va
   </div>
 </section>
 
-<!-- ============ LENTIDÃO ============ -->
 <section id="v-lentidao" hidden>
   <h1>Momentos de lentidão</h1><p class="sub" id="lentSub"></p>
-  <div style="display:grid;grid-template-columns:1fr 340px;gap:12px">
+  <div style="display:grid;grid-template-columns:1fr 340px;gap:12px" class="lado2">
     <div class="painel" id="eps"></div>
     <div class="painel" id="lentDet" style="align-self:start;position:sticky;top:12px"><div class="cab"><h2>Detalhes</h2></div><div class="vazio">Clique num momento para ver todos os programas e processos daquela hora.</div></div>
   </div>
 </section>
 
-<!-- ============ RELATÓRIO ============ -->
 <section id="v-relatorio" hidden>
   <h1>Relatório</h1>
   <p class="sub nao-imprimir">Resumo completo de um período: uso médio e máximo, quem mais pesou, IPs mais acessados, temperaturas e lentidões.</p>
@@ -270,64 +356,144 @@ code{font-family:"Cascadia Mono",Consolas,monospace;font-size:12px;background:va
   </div>
   <div id="relCorpo"><div class="vazio">Carregando…</div></div>
 </section>
+
+<section id="v-config" hidden>
+  <h1>Configurações</h1><p class="sub">As mudanças são salvas na hora.</p>
+  <div class="cfg" id="cfgCorpo"></div>
+</section>
 </main>
 </div>
 
 <div class="fundo" id="fundo"></div>
-<aside class="gav" id="gav" aria-hidden="true"><div class="topo"><div><h1 id="gTit"></h1><div class="mut2" id="gSub"></div></div><button class="fechar" id="gFechar" title="Fechar">✕</button></div><div class="abas2" id="gAbas"></div><div class="corpo" id="gCorpo"></div></aside>
+<aside class="gav" id="gav" aria-hidden="true"><div class="topo"><div style="min-width:0"><h1 id="gTit"></h1><div class="mut2" id="gSub" style="word-break:break-all"></div></div><button class="fechar" id="gFechar" title="Fechar (Esc)">✕</button></div><div class="acoes" id="gAcoes"></div><div class="abas2" id="gAbas"></div><div class="corpo" id="gCorpo"></div></aside>
 <div class="dica" id="dica"></div>
+<div class="menu" id="menu"></div>
+<div class="modal" id="modal"><div class="cx"><h2 id="mTit"></h2><p id="mTxt"></p><div class="bts"><button class="btn" id="mNao">Cancelar</button><button class="btn pri" id="mSim">Confirmar</button></div></div></div>
+<div class="toasts" id="toasts"></div>
 
 <script>
 'use strict';
 /* =================== utilidades =================== */
 const $ = s => document.querySelector(s);
+const TOKEN = document.querySelector('meta[name=token]').content;
 const API = p => fetch('/api/' + p, {cache:'no-store'}).then(r => { if(!r.ok) throw new Error(r.status); return r.json(); });
+const POST = (p,d) => fetch('/api/' + p, {method:'POST', headers:{'X-Token':TOKEN,'Content-Type':'application/json'}, body:JSON.stringify(d||{})}).then(r => r.json());
 const nf0 = new Intl.NumberFormat('pt-BR',{maximumFractionDigits:0});
 const nf1 = new Intl.NumberFormat('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
 const nf2 = new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const KB=1024, MB=KB*1024, GB=MB*1024, TB=GB*1024;
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const COR = i => css('--c'+((i%8)+1));
+let CFG = {intervalo_ms:250, rede_em_bits:false, confirmar_encerrar:true, permitir_encerrar:true, limiar_mem:88, limiar_cpu:85, limiar_temp:90, tema:'auto'};
 function esc(s){ return s==null?'':String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fB(b){ if(b==null) return '—'; b=+b; if(b>=TB) return nf2.format(b/TB)+' TB'; if(b>=MB*1000) return nf2.format(b/GB)+' GB'; if(b>=MB*10) return nf0.format(b/MB)+' MB'; if(b>=MB) return nf1.format(b/MB)+' MB'; if(b>=KB) return nf0.format(b/KB)+' KB'; return nf0.format(b)+' B'; }
 function fR(b){ if(b==null) return '—'; b=+b; if(b>=MB) return nf1.format(b/MB)+' MB/s'; if(b>=KB*0.95) return nf0.format(b/KB)+' KB/s'; if(b>0) return '<1 KB/s'; return '0'; }
+function fN(b){ if(!CFG.rede_em_bits) return fR(b); if(b==null) return '—'; const v=b*8; if(v>=1e6) return nf1.format(v/1e6)+' Mb/s'; if(v>=1e3) return nf0.format(v/1e3)+' Kb/s'; return v>0?'<1 Kb/s':'0'; }
 function fP(v,d){ return v==null?'—':(d===0?nf0:nf1).format(v)+'%'; }
 function fT(v){ return v==null?'—':nf0.format(v)+' °C'; }
 function hh(d){ return d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+function hhs(d){ return d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
 function quando(ts){ if(!ts) return '—'; const d=new Date(ts*1000), h=new Date(); h.setHours(0,0,0,0); const dd=new Date(d); dd.setHours(0,0,0,0);
   const dif=Math.round((h-dd)/864e5); if(dif===0) return 'hoje '+hh(d); if(dif===1) return 'ontem '+hh(d);
   return d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'}).replace('.','')+' '+hh(d); }
 function dur(s){ s=Math.max(0,Math.round(s||0)); if(s<60) return s+' s'; const m=Math.round(s/60); if(m<60) return m+' min'; const h=Math.floor(m/60); if(h<48) return h+' h'+(m%60?' '+(m%60)+' min':''); return Math.floor(h/24)+' d '+(h%24)+' h'; }
 function nivel(v,a,m){ return v==null?'':v>=a?'muito':v>=m?'quente':''; }
-function nivT(v){ return nivel(v,85,75); }
+const nivT = v => nivel(v, CFG.limiar_temp, CFG.limiar_temp-10);
+const nivM = v => nivel(v, CFG.limiar_mem, CFG.limiar_mem-13);
+const nivC = v => nivel(v, CFG.limiar_cpu, CFG.limiar_cpu-25);
 function tagIP(t){ return t==='internet'?'<span class="tag int">internet</span>':t==='rede local'?'<span class="tag loc">rede local</span>':t?`<span class="tag">${esc(t)}</span>`:''; }
 function barra(v,tot,mult){ return `<span class="mb"><i style="width:${Math.min(100,(v||0)/(tot||1)*100*(mult||1))}%"></i></span>`; }
 function seg(el, cb){ el.addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b) return; el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed', x===b)); cb(b.dataset); }); }
+const ESCUDO = m => `<span class="esc" title="Protegido: ${esc(m)} — não pode ser encerrado por aqui"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg></span>`;
+const exeNome = p => (p||'').split(/[\\/]/).pop();
+
+/* =================== avisos, confirmação e menu =================== */
+function toast(msg, erro){ const t=document.createElement('div'); t.className='toast'+(erro?' erro':''); t.textContent=msg; $('#toasts').appendChild(t); setTimeout(()=>t.remove(), erro?7000:4500); }
+function confirmar(tit, txt, bt, perigo){ return new Promise(ok=>{ $('#mTit').textContent=tit; $('#mTxt').textContent=txt; const s=$('#mSim'); s.textContent=bt||'Confirmar'; s.className='btn '+(perigo?'perigo':'pri');
+  $('#modal').classList.add('on'); const fim=v=>{ $('#modal').classList.remove('on'); s.onclick=null; $('#mNao').onclick=null; ok(v); }; s.onclick=()=>fim(true); $('#mNao').onclick=()=>fim(false); s.focus(); }); }
+let MENU_ABERTO=false;
+const IC = {
+  janela:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>',
+  det:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>',
+  pasta:'<svg viewBox="0 0 24 24"><path d="M3 6h6l2 2h10v11H3z"/></svg>',
+  copiar:'<svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/></svg>',
+  web:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>',
+  fechar:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  matar:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 8l8 8M16 8l-8 8"/></svg>',
+  arvore:'<svg viewBox="0 0 24 24"><path d="M5 4v14h6M5 11h6"/><rect x="13" y="8" width="7" height="6" rx="1"/><rect x="13" y="15" width="7" height="6" rx="1"/></svg>',
+  prog:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8"/></svg>',
+  liga:'<svg viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M6.3 7.5a8 8 0 1 0 11.4 0"/></svg>',
+};
+function abrirMenu(e, titulo, itens){ e.preventDefault(); const m=$('#menu');
+  m.innerHTML=(titulo?`<div class="tit">${esc(titulo)}</div>`:'')+itens.map((it,i)=>it==='-'?'<hr>':`<button data-i="${i}" ${it.des?'disabled':''} class="${it.perigo?'perigo':''}" title="${esc(it.dica||'')}">${IC[it.ic]||''}<span>${esc(it.t)}</span>${it.des&&it.mot?`<span class="mot">${esc(it.mot)}</span>`:''}</button>`).join('');
+  m.style.display='block'; MENU_ABERTO=true;
+  const w=m.offsetWidth, h=m.offsetHeight; m.style.left=Math.min(e.clientX, innerWidth-w-6)+'px'; m.style.top=Math.min(e.clientY, innerHeight-h-6)+'px';
+  m.onclick=ev=>{ const b=ev.target.closest('button[data-i]'); if(!b||b.disabled) return; fecharMenu(); itens[+b.dataset.i].f(); }; }
+function fecharMenu(){ $('#menu').style.display='none'; MENU_ABERTO=false; document.querySelectorAll('tr.marcado').forEach(t=>t.classList.remove('marcado')); }
+addEventListener('mousedown',e=>{ if(MENU_ABERTO && !e.target.closest('#menu')) fecharMenu(); });
+addEventListener('scroll',()=>{ if(MENU_ABERTO) fecharMenu(); },true);
+addEventListener('keydown',e=>{ if(e.key==='Escape'){ if(MENU_ABERTO) fecharMenu(); else if($('#modal').classList.contains('on')) $('#mNao').click(); else fecharGaveta(); } });
+async function copiar(txt){ try{ await navigator.clipboard.writeText(txt); toast('Copiado.'); }catch(_){ toast('Não consegui copiar.',1); } }
+async function acao(d){ let r; try{ r=await POST('acao',d); }catch(_){ toast('O serviço não respondeu.',1); return; }
+  if(r.erro){ toast(r.erro,1); return; }
+  if(r.pendente){ for(let i=0;i<24;i++){ await new Promise(s=>setTimeout(s,250)); const x=await API('acao/resultado?id='+r.id).catch(()=>null); if(x&&x.resultado){ toast(x.resultado.msg,!x.resultado.ok); return; } } toast('Pedido enviado.'); return; }
+  toast(r.msg, !r.ok); }
+const pesquisar = q => window.open('https://www.google.com/search?q='+encodeURIComponent(q),'_blank');
+
+function menuPrograma(e, g){ if(!g||g.outros) return;
+  const prot = g.protegido, perm=CFG.permitir_encerrar;
+  abrirMenu(e, g.nome, [
+    {t:'Mostrar janela / abrir', ic:'janela', f:()=>acao({tipo:'mostrar',programa:g.nome})},
+    {t:'Ver detalhes', ic:'det', f:()=>abrirPrograma(g.nome)},
+    {t:'Abrir local do arquivo', ic:'pasta', des:!g.exe, mot:!g.exe?'protegido':'', f:()=>acao({tipo:'pasta',programa:g.nome})},
+    {t:'Copiar caminho', ic:'copiar', des:!g.exe, f:()=>copiar(g.exe)},
+    {t:'Pesquisar na internet', ic:'web', f:()=>pesquisar(`${exeNome(g.exe)||g.nome} o que é`)},
+    '-',
+    {t:'Fechar programa (como clicar no X)', ic:'fechar', des:prot, mot:prot?'do Windows':'', f:async()=>{ if(CFG.confirmar_encerrar && !await confirmar(`Fechar ${g.nome}?`,'Vou pedir para todas as janelas desse programa fecharem, como se você clicasse no X. Se tiver algo sem salvar, o programa deve perguntar.','Fechar')) return; acao({tipo:'fechar_janelas',programa:g.nome}); }},
+    {t:'Forçar encerramento do programa', ic:'matar', perigo:1, des:prot||!perm, mot:prot?'do Windows':!perm?'desligado':'', f:async()=>{ if(CFG.confirmar_encerrar && !await confirmar(`Forçar o encerramento de ${g.nome}?`,`Os ${g.nproc} processos desse programa serão encerrados na hora. O que não estiver salvo será perdido. Processos do Windows nunca são encerrados.`,'Forçar encerramento',1)) return; acao({tipo:'forcar_programa',programa:g.nome}); }},
+  ]); }
+function menuProcesso(e, p){ if(!p) return; const prot=p.protegido, perm=CFG.permitir_encerrar;
+  abrirMenu(e, `${p.nome} · PID ${p.pid}`, [
+    {t:'Mostrar janela / abrir', ic:'janela', f:()=>acao({tipo:'mostrar',pid:p.pid,inicio:p.inicio})},
+    {t:'Ver detalhes do processo', ic:'det', f:()=>abrirProcesso(p.pid)},
+    {t:`Ver programa “${p.programa}”`, ic:'prog', f:()=>abrirPrograma(p.programa)},
+    {t:'Abrir local do arquivo', ic:'pasta', des:!p.exe, mot:!p.exe?'protegido':'', f:()=>acao({tipo:'pasta',pid:p.pid,inicio:p.inicio})},
+    {t:'Copiar caminho', ic:'copiar', des:!p.exe, f:()=>copiar(p.exe)},
+    {t:'Copiar PID', ic:'copiar', f:()=>copiar(String(p.pid))},
+    {t:'Pesquisar na internet', ic:'web', f:()=>pesquisar(`${p.nome} o que é`)},
+    '-',
+    {t:'Fechar janela (como clicar no X)', ic:'fechar', des:!!prot, mot:prot?'do Windows':'', f:()=>acao({tipo:'fechar_janelas',pid:p.pid,inicio:p.inicio})},
+    {t:'Encerrar processo', ic:'matar', perigo:1, des:!!prot||!perm, mot:prot?'do Windows':!perm?'desligado':'', f:async()=>{ if(CFG.confirmar_encerrar && !await confirmar(`Encerrar ${p.nome} (PID ${p.pid})?`,'O processo será encerrado na hora. O que não estiver salvo nele será perdido.','Encerrar',1)) return; acao({tipo:'encerrar',pid:p.pid,inicio:p.inicio}); }},
+    {t:'Encerrar árvore de processos', ic:'arvore', perigo:1, des:!!prot||!perm, mot:prot?'do Windows':'', f:async()=>{ if(CFG.confirmar_encerrar && !await confirmar(`Encerrar ${p.nome} e tudo o que ele abriu?`,'Esse processo e todos os subprocessos dele serão encerrados na hora. Processos do Windows nunca são encerrados.','Encerrar árvore',1)) return; acao({tipo:'encerrar_arvore',pid:p.pid,inicio:p.inicio}); }},
+  ]); }
 
 /* =================== tabelas ordenáveis =================== */
 function Tabela(el, cols, opts={}){
-  const st = {col: opts.ordem || cols.find(c=>c.ord)?.k || cols[1]?.k, desc: opts.desc!==false, linhas:[]};
+  const st = {col: opts.ordem || cols[1]?.k, desc: opts.desc!==false, linhas:[], vis:[]};
   el.addEventListener('click', e=>{
     const th=e.target.closest('th'); if(th){ const k=th.dataset.k; if(st.col===k) st.desc=!st.desc; else { st.col=k; st.desc=!cols.find(c=>c.k===k).texto; } render(); return; }
+    if(e.target.closest('a,button,input,label')) return;
     const tr=e.target.closest('tr[data-i]'); if(tr && opts.clique) opts.clique(st.vis[+tr.dataset.i]);
   });
+  el.addEventListener('contextmenu', e=>{ const tr=e.target.closest('tr[data-i]'); if(tr && opts.menu){ const r=st.vis[+tr.dataset.i]; if(r&&!r.outros){ tr.classList.add('marcado'); opts.menu(e, r); } } });
   function val(r,c){ return c.v ? c.v(r) : r[c.k]; }
   function render(){
+    if(MENU_ABERTO) return;
     const c = cols.find(x=>x.k===st.col) || cols[0];
     const fixos = st.linhas.filter(r=>r.outros), rs = st.linhas.filter(r=>!r.outros);
     rs.sort((a,b)=>{ let x=val(a,c), y=val(b,c); if(typeof x==='string'||typeof y==='string'){ const cmp=String(x??'').localeCompare(String(y??''),'pt-BR'); return st.desc?-cmp:cmp; } x=x??-1; y=y??-1; return st.desc? y-x : x-y; });
-    st.vis = rs.slice(0, opts.limite||2000).concat(fixos);
+    st.vis = rs.slice(0, opts.limite||3000).concat(fixos);
     let h='<table><thead><tr>'+cols.map(x=>`<th data-k="${x.k}" class="${x.e?'e ':''}${x.k===st.col?'ativo '+(st.desc?'desc':'asc'):''}" ${x.tit?`title="${esc(x.tit)}"`:''}>${x.t}</th>`).join('')+'</tr></thead><tbody>';
     if(!st.vis.length) h+=`<tr><td colspan="${cols.length}" class="vazio">${opts.vazio||'Nada por aqui.'}</td></tr>`;
     st.vis.forEach((r,i)=>{ h+=`<tr data-i="${i}" class="${opts.clique&&!r.outros?'cl':''} ${r.outros?'outros':''}">`+cols.map(x=>`<td class="${x.e?'e':''} ${x.cls?x.cls(r):''}">${x.f?x.f(r):esc(val(r,x)??'—')}</td>`).join('')+'</tr>'; });
     el.innerHTML = h+'</tbody></table>';
   }
-  return { def(l){ st.linhas=l||[]; render(); } };
+  return { def(l){ st.linhas=l||[]; render(); }, render };
 }
 
 /* =================== gráficos =================== */
 function prep(cv,h){ const dpr=devicePixelRatio||1, w=cv.clientWidth; h=h||+cv.getAttribute('height'); cv.style.height=h+'px'; cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr); const c=cv.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0); return {c,w,h}; }
-function spark(cv, vals, max, cor){ if(!cv.clientWidth) return; const {c,w,h}=prep(cv,36); c.clearRect(0,0,w,h); vals=vals.filter(v=>v!=null); if(vals.length<2) return;
+function spark(cv, vals, max, cor){ if(!cv||!cv.clientWidth) return; const {c,w,h}=prep(cv,36); c.clearRect(0,0,w,h); vals=vals.filter(v=>v!=null); if(vals.length<2) return;
   const mx=max||Math.max(1,...vals)*1.15, X=i=>i/(vals.length-1)*w, Y=v=>h-2-(Math.min(v,mx)/mx)*(h-4);
   c.beginPath(); vals.forEach((v,i)=>i?c.lineTo(X(i),Y(v)):c.moveTo(X(i),Y(v))); c.strokeStyle=cor; c.lineWidth=1.6; c.stroke(); c.lineTo(w,h); c.lineTo(0,h); c.closePath(); c.globalAlpha=.13; c.fillStyle=cor; c.fill(); c.globalAlpha=1; }
 function niceMax(v){ if(v<=0) return 1; const e=Math.pow(10,Math.floor(Math.log10(v))); for(const k of [1,1.2,1.5,2,2.5,3,4,5,6,8,10]) if(k*e>=v*1.05) return k*e; return 10*e; }
@@ -338,11 +504,11 @@ class Grafico{
     cv.addEventListener('mousemove',e=>this.mover(e)); cv.addEventListener('mouseleave',()=>{this.hover=null;dica.style.display='none';this.desenhar();});
     cv.addEventListener('click',e=>{const t=this.tDe(e); if(t!=null&&this.o.clique) this.o.clique(t);}); }
   def(d){ this.d=d; this.desenhar(); }
-  A(){ return {l:58,r:12,t:8,b:22}; }
+  A(){ return {l:62,r:12,t:8,b:22}; }
   tDe(e){ if(!this.d) return null; const r=this.cv.getBoundingClientRect(),a=this.A(),f=(e.clientX-r.left-a.l)/(r.width-a.l-a.r); return f<0||f>1?null:this.d.t0+f*(this.d.t1-this.d.t0); }
   mover(e){ const t=this.tDe(e); this.hover=t; this.desenhar(); if(t==null){dica.style.display='none';return;}
     const ls=[]; for(const s of this.d.series){ const p=perto(s.pts,t,this.d.passo*1.6); if(p&&p[1]!=null) ls.push(`<div class="l"><span style="--c:${s.cor}">${esc(s.nome)}</span><b class="n">${(s.fmt||this.o.fmt)(p[1])}</b></div>`); }
-    if(!ls.length){dica.style.display='none';return;} dica.innerHTML=`<div class="t">${quando(t)}</div>`+ls.join(''); dica.style.display='block';
+    if(!ls.length){dica.style.display='none';return;} dica.innerHTML=`<div class="t">${this.d.t1-this.d.t0<3600?hhs(new Date(t*1000)):quando(t)}</div>`+ls.join(''); dica.style.display='block';
     dica.style.left=Math.min(e.clientX+14,innerWidth-dica.offsetWidth-8)+'px'; dica.style.top=Math.min(e.clientY+14,innerHeight-dica.offsetHeight-8)+'px'; }
   desenhar(){ if(!this.cv.clientWidth) return; const {c,w,h}=prep(this.cv); c.clearRect(0,0,w,h); if(!this.d) return;
     const a=this.A(),W=w-a.l-a.r,H=h-a.t-a.b,d=this.d;
@@ -350,145 +516,268 @@ class Grafico{
     const ymax=this.o.ymax||niceMax(Math.max(this.o.ymin||1,...todos)); const X=t=>a.l+(t-d.t0)/(d.t1-d.t0)*W, Y=v=>a.t+H-(v/ymax)*H;
     c.font='11px "Segoe UI",system-ui'; c.fillStyle=css('--txt3'); c.strokeStyle=css('--grade'); c.lineWidth=1;
     for(let i=0;i<=4;i++){ const v=ymax*i/4,y=Math.round(Y(v))+.5; c.beginPath(); c.moveTo(a.l,y); c.lineTo(w-a.r,y); c.stroke(); c.textAlign='right'; c.textBaseline='middle'; c.fillText(this.o.eixo(v),a.l-8,y); }
-    c.textAlign='center'; c.textBaseline='top'; const n=Math.max(2,Math.floor(W/110));
-    for(let i=0;i<=n;i++){ const t=d.t0+(d.t1-d.t0)*i/n, dt=new Date(t*1000); const r=(d.t1-d.t0)>36*3600?dt.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit'}).replace('.','')+' '+hh(dt):hh(dt); c.fillText(r,Math.min(Math.max(X(t),a.l+22),w-a.r-22),h-a.b+5); }
+    c.textAlign='center'; c.textBaseline='top'; const n=Math.max(2,Math.floor(W/110)), span=d.t1-d.t0;
+    for(let i=0;i<=n;i++){ const t=d.t0+span*i/n, dt=new Date(t*1000); const r=span>36*3600?dt.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit'}).replace('.','')+' '+hh(dt):span<=1800?hhs(dt):hh(dt); c.fillText(r,Math.min(Math.max(X(t),a.l+24),w-a.r-24),h-a.b+5); }
     if(this.o.limiar){ const y=Y(this.o.limiar); c.save(); c.setLineDash([4,4]); c.strokeStyle=css('--perigo'); c.globalAlpha=.55; c.beginPath(); c.moveTo(a.l,y); c.lineTo(w-a.r,y); c.stroke(); c.restore(); }
-    const gap=Math.max(d.passo*4,240);
-    for(const s of d.series){ c.beginPath(); let ant=null; for(const p of s.pts){ if(p[1]==null){ant=null;continue;} const x=X(p[0]),y=Y(p[1]); if(ant!=null&&p[0]-ant<=gap) c.lineTo(x,y); else c.moveTo(x,y); ant=p[0]; } c.strokeStyle=s.cor; c.lineWidth=s.grossa?2.2:1.6; c.lineJoin='round'; c.stroke(); }
+    const gap=Math.max(d.passo*4,this.o.gap||240);
+    for(const s of d.series){ c.beginPath(); let ant=null; for(const p of s.pts){ if(p[1]==null){ant=null;continue;} const x=X(p[0]),y=Y(Math.min(p[1],ymax)); if(ant!=null&&p[0]-ant<=gap) c.lineTo(x,y); else c.moveTo(x,y); ant=p[0]; } c.strokeStyle=s.cor; c.lineWidth=s.grossa?2.2:1.6; c.lineJoin='round'; c.stroke();
+      if(s.area){ c.lineTo(X(s.pts[s.pts.length-1]?.[0]||d.t1),a.t+H); c.lineTo(X(s.pts[0]?.[0]||d.t0),a.t+H); c.closePath(); c.globalAlpha=.1; c.fillStyle=s.cor; c.fill(); c.globalAlpha=1; } }
     if(this.marca!=null){ const x=Math.round(X(this.marca))+.5; c.strokeStyle=css('--acento'); c.lineWidth=2; c.beginPath(); c.moveTo(x,a.t); c.lineTo(x,a.t+H); c.stroke(); }
     if(this.hover!=null){ const x=Math.round(X(this.hover))+.5; c.strokeStyle=css('--txt3'); c.lineWidth=1; c.beginPath(); c.moveTo(x,a.t); c.lineTo(x,a.t+H); c.stroke(); }
-    if(!todos.length){ c.fillStyle=css('--txt3'); c.textAlign='center'; c.textBaseline='middle'; c.font='13px "Segoe UI",system-ui'; c.fillText('Ainda sem dados neste período — o histórico vai se formando com o tempo.',a.l+W/2,a.t+H/2); } }
+    if(!todos.length){ c.fillStyle=css('--txt3'); c.textAlign='center'; c.textBaseline='middle'; c.font='13px "Segoe UI",system-ui'; c.fillText('Ainda sem dados neste período.',a.l+W/2,a.t+H/2); } }
 }
 function legenda(el,series,extra){ el.innerHTML=series.map(s=>`<span style="--c:${s.cor}">${esc(s.nome)}</span>`).join('')+(extra||''); }
 const eixoPct=v=>nf0.format(v)+'%', eixoB=v=>v>=GB?nf1.format(v/GB)+' GB':nf0.format(v/MB)+' MB', eixoR=v=>v>=MB?nf1.format(v/MB)+' MB/s':nf0.format(v/KB)+' KB/s', eixoT=v=>nf0.format(v)+'°';
+const eixoN=v=>CFG.rede_em_bits?(v*8>=1e6?nf1.format(v*8/1e6)+' Mb/s':nf0.format(v*8/1e3)+' Kb/s'):eixoR(v);
 
 /* =================== navegação =================== */
-const VISTAS=['geral','programas','processos','rede','hardware','historico','lentidao','relatorio'];
-let vista='geral';
-function ir(v){ if(!VISTAS.includes(v)) v='geral'; vista=v; for(const x of VISTAS) $('#v-'+x).hidden = x!==v;
-  document.querySelectorAll('#nav button[data-v]').forEach(b=>{ if(b.dataset.v===v) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
-  if(location.hash!=='#'+v) history.replaceState(null,'','#'+v); atualizarVista(true); }
+const VISTAS=['geral','recurso','programas','processos','inicializacao','rede','hardware','historico','lentidao','relatorio','config'];
+let vista='geral', recurso='cpu';
+function ir(h){ h=(h||'geral').replace(/^#/,''); let v=h, r=null; if(h.startsWith('recurso/')){ v='recurso'; r=h.split('/')[1]; } if(!VISTAS.includes(v)) v='geral';
+  if(v==='recurso' && r==='temp'){ v='hardware'; }
+  vista=v; if(r) recurso=r; for(const x of VISTAS) $('#v-'+x).hidden = x!==v;
+  document.querySelectorAll('#nav button[data-v]').forEach(b=>{ if(b.dataset.v===v||(v==='recurso'&&b.dataset.v==='geral')) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
+  const alvo = v==='recurso'?'recurso/'+recurso:v; if(location.hash!=='#'+alvo) history.replaceState(null,'','#'+alvo);
+  scrollTo(0,0); entrar(); }
 $('#nav').addEventListener('click',e=>{ const b=e.target.closest('button[data-v]'); if(b) ir(b.dataset.v); });
-addEventListener('hashchange',()=>ir(location.hash.slice(1)));
+addEventListener('hashchange',()=>ir(location.hash));
 
-/* =================== estado ao vivo =================== */
-let E=null, STATUS=null;
+/* =================== ciclo ao vivo =================== */
+let E=null, PROCS=[], STATUS=null, SERIE=[], ultSeg=0, contRede=0, contHw=0;
+function pontoSerie(e){ return [Math.floor(e.ts), e.cpu, e.mem_pct, e.ler, e.gravar, e.env, e.rec, e.temp_cpu, e.temp_gpu, e.uso_gpu,
+  Object.fromEntries((e.discos||[]).map(d=>[d.id,[d.ler,d.gravar,d.ativo]])), Object.fromEntries((e.gpus||[]).map(g=>[g.id,[g.uso,g.mem_ded_usada]])), e.disco_ativo]; }
 async function ciclo(){
-  try{ E=await API('agora'); $('#vivo').className='vivo'; $('#vivo span').textContent='ao vivo · a cada 5 s'; }
-  catch(_){ $('#vivo').className='vivo off'; $('#vivo span').textContent='serviço não responde'; E=null; }
-  if(E){ if(vista==='geral') vGeral(); if(vista==='programas') vProgramas(); }
-  atualizarVista(false);
+  const precisaProcs = ['programas','processos','recurso'].includes(vista) || gavAtual;
+  try{
+    const [e,p] = await Promise.all([API('agora'), precisaProcs?API('processos'):Promise.resolve(null)]);
+    E=e; if(p) PROCS=p;
+    $('#vivo').className='vivo'; $('#vivo span').textContent=`ao vivo · a cada ${CFG.intervalo_ms<1000?CFG.intervalo_ms+' ms':(CFG.intervalo_ms/1000)+' s'}`;
+  }catch(_){ $('#vivo').className='vivo off'; $('#vivo span').textContent='serviço não responde'; E=null; return; }
+  if(!E) return;
+  if(Math.floor(E.ts)>ultSeg){ ultSeg=Math.floor(E.ts); SERIE.push(pontoSerie(E)); if(SERIE.length>900) SERIE.shift(); }
+  if(vista==='geral') vGeral(); else if(vista==='recurso') vRecurso(false); else if(vista==='programas') vArvore(); else if(vista==='processos') renderProc();
+  else if(vista==='rede' && (contRede++ % Math.max(1,Math.round(1000/CFG.intervalo_ms)))===0) vRede();
+  else if(vista==='hardware' && (contHw++ % Math.max(1,Math.round(2000/CFG.intervalo_ms)))===0) vHardware(false);
+  if(gavAtual) gavAtual.tick();
 }
+async function loop(){ const t0=performance.now(); await ciclo(); setTimeout(loop, Math.max(60, CFG.intervalo_ms-(performance.now()-t0))); }
+function entrar(){ fecharMenu();
+  if(vista==='geral'&&E) vGeral(); if(vista==='recurso') vRecurso(true); if(vista==='programas') vArvore(); if(vista==='processos') renderProc();
+  if(vista==='inicializacao') vIni(); if(vista==='rede') vRede(); if(vista==='hardware') vHardware(true);
+  if(vista==='historico') vHistorico(); if(vista==='lentidao') vLentidao(); if(vista==='relatorio') vRelatorio(); if(vista==='config') vConfig(); }
 async function cicloStatus(){ try{ STATUS=await API('status'); avisos(); $('#rodInfo').innerHTML=`v${esc(STATUS.versao)} · histórico de ${STATUS.banco.desde?dur(Date.now()/1000-STATUS.banco.desde):'0 min'}<br>${fB(STATUS.banco.tamanho)} em disco`; }catch(_){} }
 function avisos(){ const a=[]; if(!STATUS) return;
   if(!STATUS.admin) a.push(['erro','O serviço não está rodando como administrador — rede por programa e temperatura ficam limitadas.']);
-  if(STATUS.admin && !STATUS.rede_ok) a.push(['','A medição de rede por programa não iniciou: '+esc(STATUS.rede_erro||'')]);
+  if(STATUS.admin && CFG.rede_por_programa && !STATUS.rede_ok) a.push(['','A medição de rede por programa não iniciou: '+esc(STATUS.rede_erro||'')]);
+  if(!STATUS.bandeja_online) a.push(['','O ícone do Monitor do PC perto do relógio está fechado — “Mostrar janela”, “Abrir pasta” e “Fechar janela” precisam dele. Abra o Monitor do PC pelo menu Iniciar.']);
   $('#avisos').innerHTML=a.map(([c,t])=>`<div class="aviso ${c}">${t}</div>`).join(''); }
-function atualizarVista(forcar){
-  if(vista==='processos') vProcessos(); else if(vista==='rede') vRede(); else if(vista==='hardware') vHardware(forcar);
-  else if(forcar && vista==='historico') vHistorico(); else if(forcar && vista==='lentidao') vLentidao(); else if(forcar && vista==='relatorio') vRelatorio();
-  else if(forcar && E){ if(vista==='geral') vGeral(); if(vista==='programas') vProgramas(); }
-  if(gavAtual) gavAtual.atualizar();
-}
 
 /* =================== VISÃO GERAL =================== */
-function vGeral(){ const e=E; if(!e) return; const c=e.curto||[];
-  const cards=[
-    ['Memória', fP(e.mem_pct), nivel(e.mem_pct,88,75), `${fB(e.mem_usada)} de ${fB(e.mem_total)}`, c.map(x=>x[2]), 100, COR(0)],
-    ['CPU', fP(e.cpu), nivel(e.cpu,85,60), `${e.n_nucleos} núcleos${e.freq?' · '+nf1.format(e.freq/1000)+' GHz':''}`, c.map(x=>x[1]), 100, COR(1)],
-    ['Disco', fR(e.ler+e.gravar), '', `ler ${fR(e.ler)} · gravar ${fR(e.gravar)}`, c.map(x=>x[3]), null, COR(2)],
-    ['Rede', fR(e.env+e.rec), '', `↑ ${fR(e.env)} · ↓ ${fR(e.rec)}`, c.map(x=>x[4]), null, COR(3)],
-    ['Temp. CPU', fT(e.temp_cpu), nivT(e.temp_cpu), e.temp_disco!=null?`SSD ${fT(e.temp_disco)}`:(e.temp_cpu==null?'veja a guia Temperatura':'processador'), c.map(x=>x[5]), null, COR(7)],
-    ['GPU', e.uso_gpu!=null?fP(e.uso_gpu):fT(e.temp_gpu), e.uso_gpu!=null?'':nivT(e.temp_gpu), e.temp_gpu!=null?`temperatura ${fT(e.temp_gpu)}`:'placa de vídeo', c.map(x=>e.uso_gpu!=null?x[7]:x[6]), e.uso_gpu!=null?100:null, COR(5)],
-  ];
-  $('#cards').innerHTML=cards.map((k,i)=>`<div class="painel card"><div class="rot"><span>${k[0]}</span></div><div class="val n ${k[2]}">${k[1]}</div><div class="det n">${k[3]}</div><canvas id="sp${i}"></canvas></div>`).join('');
-  cards.forEach((k,i)=>spark($('#sp'+i),k[4],k[5],k[6]));
-  $('#geralSub').textContent=`${e.nproc} processos · ${nf0.format(e.nthreads)} threads · ${e.nconn} conexões · PC ligado há ${dur(Date.now()/1000-e.ligado_desde)}`;
+function cardsDados(e){ const s=SERIE.slice(-60), col=i=>s.map(x=>x[i]);
+  const g0=(e.gpus||[]).slice().sort((a,b)=>b.uso-a.uso)[0];
+  return [
+    ['memoria','Memória', fP(e.mem_pct), nivM(e.mem_pct), `${fB(e.mem_usada)} de ${fB(e.mem_total)}`, col(2), 100, COR(0)],
+    ['cpu','CPU', fP(e.cpu), nivC(e.cpu), `${e.n_nucleos} núcleos${e.freq?' · '+nf2.format(e.freq/1000)+' GHz':''}`, col(1), 100, COR(1)],
+    ['disco','Disco', fR(e.ler+e.gravar), nivel(e.disco_ativo,90,70), `${(e.discos||[]).length} disco(s) · ativo ${fP(e.disco_ativo,0)}`, s.map(x=>x[3]+x[4]), null, COR(2)],
+    ['rede','Rede', fN(e.env+e.rec), '', `↑ ${fN(e.env)} · ↓ ${fN(e.rec)}`, s.map(x=>x[5]+x[6]), null, COR(3)],
+    ['temp','Temperatura', fT(e.temp_cpu), nivT(e.temp_cpu), e.temp_cpu==null?'veja a guia Temperatura':`CPU${e.temp_gpu!=null?' · GPU '+fT(e.temp_gpu):''}${e.temp_disco!=null?' · SSD '+fT(e.temp_disco):''}`, col(7), null, COR(7)],
+    ['gpu','GPU', e.uso_gpu!=null?fP(e.uso_gpu):'—', '', g0?`${(e.gpus||[]).length} placa(s) · ${esc(g0.nome)}`:'placa de vídeo', col(9), 100, COR(5)],
+  ]; }
+function vGeral(){ const e=E; if(!e) return;
+  const cs=cardsDados(e);
+  if(!$('#cards').children.length) $('#cards').innerHTML=cs.map(k=>`<button class="painel card" data-ir="recurso/${k[0]}"><div class="rot"><span>${k[1]}</span><span class="ir">detalhes ›</span></div><div class="val n"></div><div class="det n"></div><canvas></canvas></button>`).join('');
+  [...$('#cards').children].forEach((el,i)=>{ const k=cs[i]; const v=el.querySelector('.val'); v.textContent=k[2]; v.className='val n '+k[3]; el.querySelector('.det').textContent=k[4]; spark(el.querySelector('canvas'),k[5],k[6],k[7]); });
+  $('#geralSub').textContent=`${e.nproc} processos · ${nf0.format(e.nthreads)} threads · ${nf0.format(e.nhandles)} handles · ${e.nconn} conexões · PC ligado há ${dur(Date.now()/1000-e.ligado_desde)}`;
   $('#nucleos').innerHTML=e.nucleos.map((v,i)=>`<div class="nuc" title="Núcleo ${i}: ${fP(v)}"><i style="height:${v}%"></i><span><b>${nf0.format(v)}%</b>${i}</span></div>`).join('');
   $('#memDesc').textContent=`${fB(e.mem_disp)} livres`;
+  $('#memDet').innerHTML=memComposicao(e);
   const progs=e.programas.filter(g=>!g.outros);
-  const top=progs.slice().sort((a,b)=>b.mem-a.mem).slice(0,5);
-  $('#memDet').innerHTML=`<div style="display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--barra)">${top.map((g,i)=>`<i title="${esc(g.nome)}: ${fB(g.mem)}" style="width:${g.mem/e.mem_total*100}%;background:${COR(i)}"></i>`).join('')}<i title="Outros" style="width:${Math.max(0,(e.mem_usada-top.reduce((s,g)=>s+g.mem,0))/e.mem_total*100)}%;background:var(--txt3);opacity:.5"></i></div>
-    <div class="leg" style="margin-top:8px">${top.map((g,i)=>`<span style="--c:${COR(i)}">${esc(g.nome)} ${fB(g.mem)}</span>`).join('')}<span style="--c:var(--txt3)">resto ${fB(e.mem_usada-top.reduce((s,g)=>s+g.mem,0))}</span></div>
-    <div class="mut" style="font-size:12px">Arquivo de paginação: ${fB(e.swap_usada)} de ${fB(e.swap_total)} (${fP(e.swap_pct)})</div>`;
-  const rk=(t,k,f)=>{ const l=progs.slice().sort((a,b)=>(k(b)||0)-(k(a)||0)).filter(g=>(k(g)||0)>0).slice(0,6); const mx=Math.max(1,...l.map(k));
-    return `<div class="painel"><div class="cab"><h2>${t}</h2></div><ul class="lista">${l.map(g=>`<li class="cl" data-prog="${esc(g.nome)}"><span>${esc(g.nome)}</span><b class="n">${f(g)}</b>${barra(k(g),mx)}</li>`).join('')||'<li class="mut">nada agora</li>'}</ul></div>`; };
-  $('#tops').innerHTML=rk('Mais memória',g=>g.mem,g=>fB(g.mem))+rk('Mais CPU',g=>g.cpu,g=>fP(g.cpu))+rk('Mais disco',g=>g.ler+g.gravar,g=>fR(g.ler+g.gravar))+rk('Mais rede',g=>(g.env||0)+(g.rec||0),g=>fR(g.env+g.rec));
+  const rk=(t,rec,k,f)=>{ const l=progs.slice().sort((a,b)=>(k(b)||0)-(k(a)||0)).filter(g=>(k(g)||0)>0).slice(0,6); const mx=Math.max(1,...l.map(k));
+    return `<div class="painel"><div class="cab"><h2>${t}</h2><a href="#recurso/${rec}" class="desc" style="margin-left:auto">ver tudo ›</a></div><ul class="lista">${l.map(g=>`<li class="cl" data-prog="${esc(g.nome)}"><span>${esc(g.nome)}</span><b class="n">${f(g)}</b>${barra(k(g),mx)}</li>`).join('')||'<li class="mut">nada agora</li>'}</ul></div>`; };
+  $('#tops').innerHTML=rk('Mais memória','memoria',g=>g.mem,g=>fB(g.mem))+rk('Mais CPU','cpu',g=>g.cpu,g=>fP(g.cpu))+rk('Mais disco','disco',g=>g.ler+g.gravar,g=>fR(g.ler+g.gravar))+rk('Mais rede','rede',g=>(g.env||0)+(g.rec||0),g=>fN(g.env+g.rec))+rk('Mais GPU','gpu',g=>g.gpu,g=>fP(g.gpu));
 }
-document.addEventListener('click',e=>{ const li=e.target.closest('[data-prog]'); if(li) abrirPrograma(li.dataset.prog); const lp=e.target.closest('[data-pid]'); if(lp) abrirProcesso(+lp.dataset.pid); });
+function memComposicao(e){ const progs=e.programas.filter(g=>!g.outros); const top=progs.slice().sort((a,b)=>b.mem-a.mem).slice(0,6); const soma=top.reduce((s,g)=>s+g.mem,0);
+  return `<div style="display:flex;height:16px;border-radius:8px;overflow:hidden;background:var(--barra)">${top.map((g,i)=>`<i title="${esc(g.nome)}: ${fB(g.mem)}" style="width:${g.mem/e.mem_total*100}%;background:${COR(i)}"></i>`).join('')}<i title="Resto" style="width:${Math.max(0,(e.mem_usada-soma)/e.mem_total*100)}%;background:var(--txt3);opacity:.5"></i></div>
+    <div class="leg" style="margin-top:8px">${top.map((g,i)=>`<span style="--c:${COR(i)}">${esc(g.nome)} ${fB(g.mem)}</span>`).join('')}<span style="--c:var(--txt3)">resto ${fB(e.mem_usada-soma)}</span><span style="--c:var(--barra)">livre ${fB(e.mem_disp)}</span></div>
+    <div class="mut" style="font-size:12px">Arquivo de paginação: ${fB(e.swap_usada)} de ${fB(e.swap_total)} (${fP(e.swap_pct)})</div>`; }
+document.addEventListener('click',e=>{ const c=e.target.closest('[data-ir]'); if(c){ ir(c.dataset.ir); return; } const li=e.target.closest('li[data-prog]'); if(li) abrirPrograma(li.dataset.prog); const lp=e.target.closest('[data-pid]'); if(lp && !lp.closest('tr')) abrirProcesso(+lp.dataset.pid); });
+document.addEventListener('contextmenu',e=>{ const li=e.target.closest('li[data-prog]'); if(li&&E){ menuPrograma(e, E.programas.find(g=>g.nome===li.dataset.prog)); } });
 
-/* =================== PROGRAMAS =================== */
-const colMem = tot => ({k:'mem',t:'Memória',f:r=>`<div class="mc"><span>${fB(r.mem)}</span>${barra(r.mem,tot(),3)}</div>`});
-const tProg=Tabela($('#tProg'),[
-  {k:'nome',t:'Programa',e:1,texto:1,f:r=>`<span class="nm">${esc(r.nome)}</span>`},
-  {k:'nproc',t:'Proc.',tit:'Processos'},
-  colMem(()=>E?.mem_total),
-  {k:'cpu',t:'CPU',f:r=>fP(r.cpu),cls:r=>nivel(r.cpu,50,20)},
-  {k:'ler',t:'Disco ler',f:r=>fR(r.ler)},{k:'gravar',t:'Disco gravar',f:r=>fR(r.gravar)},
-  {k:'env',t:'Rede ↑',tit:'Enviando',f:r=>fR(r.env)},{k:'rec',t:'Rede ↓',tit:'Recebendo',f:r=>fR(r.rec)},
-  {k:'nconn',t:'Conexões'},{k:'nips',t:'IPs',tit:'IPs diferentes com quem conversa'},
-  {k:'threads',t:'Threads',f:r=>r.outros?'':nf0.format(r.threads)},
-],{ordem:'mem',clique:r=>abrirPrograma(r.nome)});
-$('#bProg').oninput=vProgramas;
-function vProgramas(){ if(!E) return; const f=$('#bProg').value.trim().toLowerCase();
-  const l=E.programas.filter(g=>!f||g.nome.toLowerCase().includes(f)); tProg.def(l);
+/* =================== DETALHE DE CADA RECURSO =================== */
+const REC = {
+  cpu:{t:'Processador (CPU)', met:p=>p.cpu, fmt:p=>fP(p.cpu), col:'CPU'},
+  memoria:{t:'Memória (RAM)', met:p=>p.mem, fmt:p=>fB(p.mem), col:'Memória'},
+  disco:{t:'Discos', met:p=>(p.ler||0)+(p.gravar||0), fmt:p=>fR((p.ler||0)+(p.gravar||0)), col:'Disco'},
+  rede:{t:'Rede', met:p=>(p.env||0)+(p.rec||0), fmt:p=>fN((p.env||0)+(p.rec||0)), col:'Rede'},
+  gpu:{t:'Placas de vídeo (GPU)', met:p=>p.gpu, fmt:p=>fP(p.gpu), col:'GPU'},
+};
+let faixaRec={r:60}, grRec=new Grafico($('#rGraf'),{fmt:v=>nf1.format(v),eixo:v=>nf0.format(v),gap:5}), HISTREC=null;
+seg($('#segRec'),d=>{ faixaRec=d.r?{r:+d.r}:{h:+d.h}; HISTREC=null; vRecurso(true); });
+let tRecProg=null, tRecProc=null, recAtual=null;
+function vRecurso(entrando){ const R=REC[recurso]; if(!R){ ir('geral'); return; } const e=E;
+  if(entrando||recAtual!==recurso){ recAtual=recurso; $('#rTit').textContent=R.t; $('#rTopProgT').textContent=`Programas que mais usam ${R.col.toLowerCase()}`; $('#rTopProcT').textContent=`Processos que mais usam ${R.col.toLowerCase()}`;
+    $('#rCards').innerHTML=''; $('#rExtra').innerHTML='';
+    const cMem=()=>({k:'mem',t:'Memória',f:r=>fB(r.mem)});
+    const colsP=[{k:'nome',t:'Programa',e:1,texto:1,f:r=>`<span class="nm">${esc(r.nome)}</span>${r.protegido?ESCUDO('Windows'):''}`},{k:'met',t:R.col,v:R.met,f:R.fmt},cMem(),{k:'cpu',t:'CPU',f:r=>fP(r.cpu)},{k:'nproc',t:'Proc.'}];
+    if(recurso==='disco') colsP.splice(2,0,{k:'ler',t:'Ler',f:r=>fR(r.ler)},{k:'gravar',t:'Gravar',f:r=>fR(r.gravar)});
+    if(recurso==='rede') colsP.splice(2,0,{k:'env',t:'↑',f:r=>fN(r.env)},{k:'rec',t:'↓',f:r=>fN(r.rec)},{k:'nconn',t:'Con.'});
+    if(recurso==='gpu') colsP.splice(2,0,{k:'gpu_mem',t:'Mem. de vídeo',f:r=>fB(r.gpu_mem)});
+    tRecProg=Tabela($('#rTopProg'),colsP,{ordem:'met',clique:r=>abrirPrograma(r.nome),menu:menuPrograma,limite:25});
+    const colsQ=[{k:'nome',t:'Processo',e:1,texto:1,f:r=>`<span class="nm">${esc(r.nome)}</span><span class="pid">${r.pid}</span>${r.protegido?ESCUDO(r.protegido):''}`},{k:'programa',t:'Programa',e:1,texto:1},{k:'met',t:R.col,v:R.met,f:R.fmt}];
+    if(recurso==='disco') colsQ.push({k:'ler',t:'Ler',f:r=>fR(r.ler)},{k:'gravar',t:'Gravar',f:r=>fR(r.gravar)});
+    if(recurso==='rede') colsQ.push({k:'env',t:'↑',f:r=>fN(r.env)},{k:'rec',t:'↓',f:r=>fN(r.rec)});
+    if(recurso==='gpu') colsQ.push({k:'gpu_mem',t:'Mem. vídeo',f:r=>fB(r.gpu_mem)});
+    if(recurso!=='memoria') colsQ.push(cMem());
+    tRecProc=Tabela($('#rTopProc'),colsQ,{ordem:'met',clique:r=>abrirProcesso(r.pid),menu:menuProcesso,limite:30});
+    if(faixaRec.h) carregarHistRec();
+  }
+  if(!e) return;
+  const card=(t,v,d,c)=>`<div class="painel card"><div class="rot"><span>${t}</span></div><div class="val n ${c||''}" style="font-size:22px">${v}</div><div class="det n">${d||''}</div></div>`;
+  let cards='', extra=null, sub='';
+  if(recurso==='cpu'){ cards=card('Uso agora',fP(e.cpu),'',nivC(e.cpu))+card('Frequência',e.freq?nf2.format(e.freq/1000)+' GHz':'—','')+card('Núcleos',`${e.n_fisicos} / ${e.n_nucleos}`,'físicos / lógicos')+card('Processos',nf0.format(e.nproc),`${nf0.format(e.nthreads)} threads`)+card('Temperatura',fT(e.temp_cpu),'',nivT(e.temp_cpu));
+    extra=`<div class="painel secao"><div class="cab"><h2>Uso por núcleo</h2></div><div class="nucleos grande">${e.nucleos.map((v,i)=>`<div class="nuc" title="Núcleo ${i}: ${fP(v)}"><i style="height:${v}%"></i><span><b>${nf0.format(v)}%</b>núcleo ${i}</span></div>`).join('')}</div></div>`; }
+  if(recurso==='memoria'){ cards=card('Em uso',fP(e.mem_pct),`${fB(e.mem_usada)} de ${fB(e.mem_total)}`,nivM(e.mem_pct))+card('Disponível',fB(e.mem_disp),'')+card('Comprometida (programas)',fB(e.commit),'reservada pelos processos')+card('Arquivo de paginação',fP(e.swap_pct),`${fB(e.swap_usada)} de ${fB(e.swap_total)}`)+card('Programas',nf0.format(e.programas.length-1),`${e.nproc} processos`);
+    extra=`<div class="painel secao"><div class="cab"><h2>Quem está ocupando a memória</h2></div><div class="pad">${memComposicao(e)}</div></div>`; }
+  if(recurso==='disco'){ cards=card('Lendo',fR(e.ler),'todos os discos')+card('Gravando',fR(e.gravar),'todos os discos')+card('Tempo ativo (máx.)',fP(e.disco_ativo,0),'',nivel(e.disco_ativo,90,70))+card('Discos',nf0.format((e.discos||[]).length),'físicos')+card('Temperatura',fT(e.temp_disco),'mais quente',nivT(e.temp_disco));
+    extra=`<div class="grade g3 secao">${(e.discos||[]).map(d=>`<div class="painel hw"><div class="t"><b>${esc(d.nome)}</b><span class="mut">${esc((d.letras||[]).join(' ')||d.id)}</span></div><div class="big n ${nivel(d.ativo,90,70)}">${fP(d.ativo,0)} <small class="mut2" style="font-size:12px;font-weight:400">ativo</small></div>
+      <div class="lin"><span>Lendo</span><b class="n">${fR(d.ler)}</b></div><div class="lin"><span>Gravando</span><b class="n">${fR(d.gravar)}</b></div><div class="lin"><span>Tipo</span><span>${esc([d.tipo,d.barramento].filter(Boolean).join(' · ')||'—')}${d.tamanho?' · '+fB(d.tamanho):''}</span></div></div>`).join('')||'<div class="painel vazio">Nenhum disco encontrado.</div>'}</div>`; }
+  if(recurso==='rede'){ cards=card('Enviando',fN(e.env),'')+card('Recebendo',fN(e.rec),'')+card('Conexões',nf0.format(e.nconn),'abertas')+card('Placas ativas',nf0.format((e.placas||[]).length),'')+card('Rede por programa',e.rede_por_programa?'Ligada':'Desligada','',e.rede_por_programa?'ok':'quente');
+    extra=`<div class="painel secao"><div class="cab"><h2>Placas de rede</h2><a class="desc" href="#rede" style="margin-left:auto">IPs e conexões ›</a></div><div class="tw curta"><table><thead><tr><th class="e">Placa</th><th>Enviando</th><th>Recebendo</th><th>Total enviado</th><th>Total recebido</th></tr></thead><tbody>${(e.placas||[]).sort((a,b)=>(b.env+b.rec)-(a.env+a.rec)).map(p=>`<tr><td class="e">${esc(p.nome)}</td><td>${fN(p.env)}</td><td>${fN(p.rec)}</td><td>${fB(p.env_tot)}</td><td>${fB(p.rec_tot)}</td></tr>`).join('')}</tbody></table></div></div>`; }
+  if(recurso==='gpu'){ const gs=e.gpus||[]; cards=card('Uso (maior)',fP(e.uso_gpu),'')+card('Placas',nf0.format(gs.length),'')+card('Temperatura',fT(e.temp_gpu),'',nivT(e.temp_gpu))+card('Memória de vídeo',fB(gs.reduce((s,g)=>s+g.mem_ded_usada,0)),'dedicada em uso')+card('Por processo',e.gpu_por_processo?'Ligado':'Desligado','',e.gpu_por_processo?'ok':'quente');
+    extra=`<div class="grade g2 secao">${gs.map(g=>cardGpu(g)).join('')||'<div class="painel vazio">Nenhuma placa de vídeo encontrada.</div>'}</div>`; }
+  $('#rCards').innerHTML=cards; if(extra!==null) $('#rExtra').innerHTML=extra;
+  $('#rSub').textContent=sub||`Atualiza a cada ${CFG.intervalo_ms<1000?CFG.intervalo_ms+' ms':CFG.intervalo_ms/1000+' s'} · valores de CPU, disco e rede são a média do último segundo.`;
+  const R2=REC[recurso]; const progs=e.programas.filter(g=>!g.outros&&(R2.met(g)||0)>0); tRecProg.def(progs); tRecProc.def(PROCS.filter(p=>(R2.met(p)||0)>0));
+  desenharGrafRec();
+}
+function cardGpu(g){ const eng=Object.entries(g.engines||{}).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  return `<div class="painel hw"><div class="t"><b>${esc(g.nome)}</b><span class="mut">GPU ${g.indice}</span></div><div class="big n">${fP(g.uso)} <small class="mut2" style="font-size:12px;font-weight:400">uso</small>${g.temp!=null?` · <span class="${nivT(g.temp)}">${fT(g.temp)}</span>`:''}</div>
+    ${eng.map(([k,v])=>`<div class="lin"><span>${esc(k)}</span><b class="n">${fP(v)}</b></div>`).join('')}
+    <div class="lin"><span>Memória dedicada</span><b class="n">${fB(g.mem_ded_usada)} de ${fB(g.mem_ded_total)}</b></div>${barra(g.mem_ded_usada,g.mem_ded_total)}
+    <div class="lin"><span>Memória compartilhada</span><span class="n">${fB(g.mem_comp_usada)} de ${fB(g.mem_comp_total)}</span></div></div>`; }
+async function carregarHistRec(){ try{ HISTREC=await API('historico?horas='+faixaRec.h); desenharGrafRec(); }catch(_){} }
+function desenharGrafRec(){ let d, series=[], o={};
+  if(faixaRec.r){ const s=SERIE.filter(x=>x[0]>=Date.now()/1000-faixaRec.r); const agora=Date.now()/1000; d={t0:agora-faixaRec.r,t1:agora,passo:1}; const col=i=>s.map(x=>[x[0],x[i]]);
+    $('#rGTit').textContent='Ao vivo';
+    if(recurso==='cpu'){ series=[{nome:'CPU',cor:COR(1),grossa:1,area:1,pts:col(1)}]; o={ymax:100,fmt:v=>fP(v),eixo:eixoPct}; }
+    if(recurso==='memoria'){ series=[{nome:'Memória',cor:COR(0),grossa:1,area:1,pts:col(2)}]; o={ymax:100,fmt:v=>fP(v),eixo:eixoPct,limiar:CFG.limiar_mem}; }
+    if(recurso==='disco'){ series=[{nome:'Lendo (total)',cor:COR(2),grossa:1,pts:col(3)},{nome:'Gravando (total)',cor:COR(4),grossa:1,pts:col(4)}];
+      const ids=[...new Set(s.flatMap(x=>Object.keys(x[10]||{})))]; if(ids.length>1) ids.forEach((id,i)=>{ const dn=(E.discos||[]).find(z=>z.id===id); series.push({nome:`${dn?dn.nome:id} (ler+gravar)`,cor:COR(i+5),pts:s.map(x=>[x[0],x[10]&&x[10][id]?x[10][id][0]+x[10][id][1]:null])}); });
+      o={fmt:fR,eixo:eixoR,ymin:KB*100}; }
+    if(recurso==='rede'){ series=[{nome:'Enviando',cor:COR(3),grossa:1,pts:col(5)},{nome:'Recebendo',cor:COR(5),grossa:1,pts:col(6)}]; o={fmt:fN,eixo:eixoN,ymin:KB*50}; }
+    if(recurso==='gpu'){ const ids=[...new Set(s.flatMap(x=>Object.keys(x[11]||{})))]; series=ids.map((id,i)=>{ const g=(E.gpus||[]).find(z=>z.id===id); return {nome:g?g.nome:id,cor:COR(i+5),grossa:1,pts:s.map(x=>[x[0],x[11]&&x[11][id]?x[11][id][0]:null])}; }); o={ymax:100,fmt:v=>fP(v),eixo:eixoPct}; }
+    o.gap=5;
+  } else { if(!HISTREC){ return; } const H=HISTREC; d={t0:H.desde,t1:H.ate,passo:H.passo}; const col=i=>H.geral.map(r=>[r[0],r[i]]); $('#rGTit').textContent='Histórico';
+    if(recurso==='cpu'){ series=[{nome:'CPU (média)',cor:COR(1),grossa:1,pts:col(1)},{nome:'Temperatura CPU (°C)',cor:COR(7),pts:col(8),fmt:fT}]; o={ymax:100,fmt:v=>fP(v),eixo:eixoPct}; }
+    if(recurso==='memoria'){ series=[{nome:'Memória (máxima)',cor:COR(0),grossa:1,pts:col(2)}]; o={ymax:100,fmt:v=>fP(v),eixo:eixoPct,limiar:CFG.limiar_mem}; }
+    if(recurso==='disco'){ series=[{nome:'Lendo',cor:COR(2),grossa:1,pts:col(3)},{nome:'Gravando',cor:COR(4),grossa:1,pts:col(4)}]; o={fmt:fR,eixo:eixoR,ymin:KB*100}; }
+    if(recurso==='rede'){ series=[{nome:'Enviando',cor:COR(3),grossa:1,pts:col(5)},{nome:'Recebendo',cor:COR(5),grossa:1,pts:col(6)}]; o={fmt:fN,eixo:eixoN,ymin:KB*50}; }
+    if(recurso==='gpu'){ series=[{nome:'Uso da GPU',cor:COR(5),grossa:1,pts:col(7)},{nome:'Temperatura GPU (°C)',cor:COR(7),pts:col(9),fmt:fT}]; o={ymax:100,fmt:v=>fP(v),eixo:eixoPct}; }
+  }
+  grRec.o={...o, clique: faixaRec.h?(t=>abrirMomentoGaveta(t)):null}; grRec.def({...d,series}); legenda($('#rLeg'),series, o.limiar?`<span style="--c:${css('--perigo')}">limite de lentidão</span>`:''); }
+async function abrirMomentoGaveta(t){ const el=document.createElement('div'); await verMomento(t, el); gavAtual=null; $('#gTit').textContent='Neste momento'; $('#gSub').textContent=''; $('#gAcoes').innerHTML=''; $('#gAbas').innerHTML=''; $('#gCorpo').innerHTML=''; $('#gCorpo').appendChild(el); el.className='painel';
+  $('#gav').classList.add('aberta'); $('#fundo').classList.add('on'); }
+
+/* =================== PROGRAMAS (árvore) =================== */
+let ordemArv={k:'mem',desc:true}, abertos=new Set(), recolhidos=new Set();
+const COLS_ARV=[['nome','Nome',1],['pid','Proc. / PID'],['mem','Memória'],['cpu','CPU'],['disco','Disco'],['rede','Rede'],['gpu','GPU'],['nconn','Conexões']];
+const valArv=(r,k)=>k==='disco'?(r.ler||0)+(r.gravar||0):k==='rede'?(r.env||0)+(r.rec||0):k==='pid'?(r.nproc??r.pid):k==='nome'?r.nome:r[k];
+$('#bProg').oninput=()=>vArvore(); $('#expTudo').onclick=()=>{ (E?.programas||[]).forEach(g=>abertos.add(g.nome)); recolhidos.clear(); vArvore(); }; $('#recTudo').onclick=()=>{ abertos.clear(); vArvore(); };
+function ordenar(l){ const k=ordemArv.k, s=ordemArv.desc?-1:1; return l.sort((a,b)=>{ const x=valArv(a,k), y=valArv(b,k); if(k==='nome') return s*String(x||'').localeCompare(String(y||''),'pt-BR'); return s*((x||0)-(y||0)); }); }
+function linhasArvore(procs, prefixo){ // devolve HTML das linhas de processos de um programa, em árvore
+  const pids=new Set(procs.map(p=>p.pid)), filhos=new Map(), raizes=[];
+  for(const p of procs){ const pai=procs.find(q=>q.pid===p.ppid); if(pai && pids.has(p.ppid) && pai.inicio<=p.inicio+1 && p.ppid!==p.pid){ if(!filhos.has(p.ppid)) filhos.set(p.ppid,[]); filhos.get(p.ppid).push(p); } else raizes.push(p); }
+  let h=''; const tot=E?.mem_total||1;
+  const rec=(p,niv,ult,trilha)=>{ const fs=ordenar(filhos.get(p.pid)||[]), tem=fs.length>0, fech=recolhidos.has(p.pid);
+    const lig=niv===0?'':trilha+(ult?'└─ ':'├─ ');
+    h+=`<tr class="proc cl" data-tipo="proc" data-pid="${p.pid}"><td class="e"><div class="no" style="padding-left:${(prefixo?22:0)}px"><span class="lig">${lig}</span><span class="car ${tem?(fech?'':'ab'):'vz'}" data-car="p${p.pid}">›</span><span>${esc(p.nome)}</span>${p.janelas?`<span class="tag" title="janelas abertas">${p.janelas} jan.</span>`:''}${p.protegido?ESCUDO(p.protegido):''}</div></td>
+      <td><span class="mut">${p.pid}</span></td><td><div class="mc"><span>${fB(p.mem)}</span>${barra(p.mem,tot,3)}</div></td><td class="${nivel(p.cpu,50,20)}">${fP(p.cpu)}</td><td title="ler ${fR(p.ler)} · gravar ${fR(p.gravar)}">${fR(p.ler+p.gravar)}</td><td title="↑ ${fN(p.env)} · ↓ ${fN(p.rec)}">${fN(p.env+p.rec)}</td><td>${p.gpu?fP(p.gpu):'<span class="mut">—</span>'}</td><td>${p.nconn||'<span class="mut">0</span>'}</td></tr>`;
+    if(tem && !fech) fs.forEach((f,i)=>rec(f,niv+1,i===fs.length-1,niv===0?'':trilha+(ult?'   ':'│  '))); };
+  ordenar(raizes).forEach((r,i)=>rec(r,0,i===raizes.length-1,''));
+  return h; }
+function vArvore(){ if(!E||MENU_ABERTO) return; const f=$('#bProg').value.trim().toLowerCase(), tot=E.mem_total;
+  const porProg=new Map(); for(const p of PROCS){ if(!porProg.has(p.programa)) porProg.set(p.programa,[]); porProg.get(p.programa).push(p); }
+  let progs=E.programas.filter(g=>!g.outros); const outros=E.programas.find(g=>g.outros);
+  if(f) progs=progs.filter(g=>g.nome.toLowerCase().includes(f)||(porProg.get(g.nome)||[]).some(p=>p.nome.toLowerCase().includes(f)||String(p.pid)===f));
+  progs=ordenar(progs.slice());
+  let h='<table><thead><tr>'+COLS_ARV.map(([k,t,e])=>`<th data-k="${k}" class="${e?'e ':''}${ordemArv.k===k?'ativo '+(ordemArv.desc?'desc':'asc'):''}">${t}</th>`).join('')+'</tr></thead><tbody>';
+  for(const g of progs){ const ab=abertos.has(g.nome)||(f&&f.length>1);
+    h+=`<tr class="prog cl" data-tipo="prog" data-nome="${esc(g.nome)}"><td class="e"><div class="no"><span class="car ${ab?'ab':''}" data-car="g">›</span><span class="nm">${esc(g.nome)}</span>${g.janelas?`<span class="tag" title="janelas abertas">${g.janelas} jan.</span>`:''}${g.protegido?ESCUDO('faz parte do Windows'):''}</div></td>
+      <td>${g.nproc}</td><td><div class="mc"><span>${fB(g.mem)}</span>${barra(g.mem,tot,3)}</div></td><td class="${nivel(g.cpu,50,20)}">${fP(g.cpu)}</td><td title="ler ${fR(g.ler)} · gravar ${fR(g.gravar)}">${fR(g.ler+g.gravar)}</td><td title="↑ ${fN(g.env)} · ↓ ${fN(g.rec)}">${fN(g.env+g.rec)}</td><td>${g.gpu?fP(g.gpu):'<span class="mut">—</span>'}</td><td>${g.nconn}</td></tr>`;
+    if(ab) h+=linhasArvore(porProg.get(g.nome)||[], true); }
+  if(outros && !f) h+=`<tr class="outros" title="Memória do próprio Windows (kernel, drivers, cache) que não pertence a nenhum programa"><td class="e"><div class="no"><span class="car vz">›</span>${esc(outros.nome)}</div></td><td></td><td><div class="mc"><span>${fB(outros.mem)}</span>${barra(outros.mem,tot,3)}</div></td><td colspan="5"></td></tr>`;
+  $('#tArv').innerHTML=h+'</tbody></table>';
   $('#progInfo').textContent=`${E.programas.length-1} programas · ${E.nproc} processos`; }
+$('#tArv').addEventListener('click',e=>{ const th=e.target.closest('th'); if(th){ const k=th.dataset.k; ordemArv = ordemArv.k===k?{k,desc:!ordemArv.desc}:{k,desc:k!=='nome'}; vArvore(); return; }
+  const tr=e.target.closest('tr[data-tipo]'); if(!tr) return; const car=e.target.closest('.car');
+  if(tr.dataset.tipo==='prog'){ const n=tr.dataset.nome; if(car){ abertos.has(n)?abertos.delete(n):abertos.add(n); vArvore(); } else abrirPrograma(n); }
+  else { const pid=+tr.dataset.pid; if(car && !car.classList.contains('vz')){ recolhidos.has(pid)?recolhidos.delete(pid):recolhidos.add(pid); vArvore(); } else abrirProcesso(pid); } });
+$('#tArv').addEventListener('dblclick',e=>{ const tr=e.target.closest('tr[data-tipo=prog]'); if(tr){ const n=tr.dataset.nome; abertos.has(n)?abertos.delete(n):abertos.add(n); vArvore(); } });
+$('#tArv').addEventListener('contextmenu',e=>{ const tr=e.target.closest('tr[data-tipo]'); if(!tr) return; tr.classList.add('marcado');
+  if(tr.dataset.tipo==='prog') menuPrograma(e, E.programas.find(g=>g.nome===tr.dataset.nome)); else menuProcesso(e, PROCS.find(p=>p.pid===+tr.dataset.pid)); });
 
 /* =================== PROCESSOS =================== */
-let PROCS=[];
 const tProc=Tabela($('#tProc'),[
-  {k:'nome',t:'Processo',e:1,texto:1,f:r=>`<span class="nm">${esc(r.nome)}</span>`},
+  {k:'nome',t:'Processo',e:1,texto:1,f:r=>`<span class="nm">${esc(r.nome)}</span>${r.protegido?ESCUDO(r.protegido):''}`},
   {k:'pid',t:'PID'},{k:'programa',t:'Programa',e:1,texto:1},{k:'usuario',t:'Usuário',e:1,texto:1},
-  colMem(()=>E?.mem_total),
+  {k:'mem',t:'Memória',f:r=>`<div class="mc"><span>${fB(r.mem)}</span>${barra(r.mem,E?.mem_total,3)}</div>`},
   {k:'cpu',t:'CPU',f:r=>fP(r.cpu),cls:r=>nivel(r.cpu,50,20)},
   {k:'ler',t:'Ler',f:r=>fR(r.ler)},{k:'gravar',t:'Gravar',f:r=>fR(r.gravar)},
-  {k:'env',t:'Rede ↑',f:r=>fR(r.env)},{k:'rec',t:'Rede ↓',f:r=>fR(r.rec)},
+  {k:'env',t:'Rede ↑',f:r=>fN(r.env)},{k:'rec',t:'Rede ↓',f:r=>fN(r.rec)},{k:'gpu',t:'GPU',f:r=>r.gpu?fP(r.gpu):'—'},
   {k:'nconn',t:'Con.',tit:'Conexões'},{k:'threads',t:'Threads'},{k:'handles',t:'Handles'},
-],{ordem:'mem',clique:r=>abrirProcesso(r.pid)});
+],{ordem:'mem',clique:r=>abrirProcesso(r.pid),menu:menuProcesso});
 $('#bProc').oninput=()=>renderProc();
-async function vProcessos(){ try{ PROCS=await API('processos'); renderProc(); }catch(_){} }
 function renderProc(){ const f=$('#bProc').value.trim().toLowerCase();
   const l=PROCS.filter(p=>!f||String(p.pid)===f||p.nome.toLowerCase().includes(f)||(p.programa||'').toLowerCase().includes(f)||(p.usuario||'').toLowerCase().includes(f));
   tProc.def(l); $('#procInfo').textContent=`${l.length} de ${PROCS.length} processos`; }
 
+/* =================== INICIALIZAÇÃO =================== */
+let INI=[];
+const tIni=Tabela($('#tIni'),[
+  {k:'nome',t:'Programa',e:1,texto:1,f:r=>`<span class="nm">${esc(r.nome)}</span>${r.descricao&&r.descricao!==r.nome?`<div class="mut" style="font-size:12px">${esc(r.descricao)}</div>`:''}${!r.existe?' <span class="tag des">arquivo não encontrado</span>':''}`},
+  {k:'empresa',t:'Empresa',e:1,texto:1,f:r=>esc(r.empresa||'—')},
+  {k:'ativo',t:'Inicia com o Windows',v:r=>r.ativo?1:0,f:r=>`<label class="sw" title="${r.ativo?'Desativar':'Ativar'}"><input type="checkbox" data-ini="${r.id}" ${r.ativo?'checked':''}><span></span></label>`},
+  {k:'rodando',t:'Aberto agora',v:r=>r.mem||0,f:r=>r.rodando?`<span class="tag on">aberto</span> ${fB(r.mem)}`:'<span class="mut">não</span>'},
+  {k:'origem',t:'Onde está',e:1,texto:1},{k:'escopo',t:'Para quem',e:1,texto:1},
+  {k:'comando',t:'Comando',e:1,texto:1,f:r=>`<code style="font-size:11px">${esc(r.comando)}</code>`},
+],{ordem:'nome',desc:false,clique:r=>{ if(r.programa) abrirPrograma(r.programa); },menu:(e,r)=>abrirMenu(e,r.nome,[
+  {t:r.ativo?'Desativar (não iniciar com o Windows)':'Ativar (iniciar com o Windows)', ic:'liga', f:()=>alternarIni(r.id,!r.ativo)},
+  {t:'Abrir local do arquivo', ic:'pasta', des:!r.existe, f:()=>acao({tipo:'pasta',caminho:r.exe})},
+  {t:'Ver programa aberto', ic:'prog', des:!r.programa, f:()=>abrirPrograma(r.programa)},
+  {t:'Copiar comando', ic:'copiar', f:()=>copiar(r.comando)},
+  {t:'Pesquisar na internet', ic:'web', f:()=>pesquisar(`${exeNome(r.exe)||r.nome} inicialização o que é`)}])});
+$('#tIni').addEventListener('change',e=>{ const c=e.target.closest('input[data-ini]'); if(c) alternarIni(c.dataset.ini, c.checked); });
+$('#bIni').oninput=renderIni; $('#iniAtualizar').onclick=vIni;
+async function alternarIni(id, ativo){ const r=await POST('acao',{tipo:'inicializacao',id,ativo}).catch(()=>null); if(r) toast(r.msg,!r.ok); vIni(); }
+async function vIni(){ try{ INI=await API('inicializacao'); }catch(_){ return; } renderIni();
+  const at=INI.filter(i=>i.ativo), ab=INI.filter(i=>i.rodando);
+  const card=(t,v,d)=>`<div class="painel card"><div class="rot"><span>${t}</span></div><div class="val n">${v}</div><div class="det">${d}</div></div>`;
+  $('#iniCards').innerHTML=card('Programas na inicialização',INI.length,'registro + pastas Inicializar')+card('Ativados',at.length,'abrem sozinhos ao ligar')+card('Desativados',INI.length-at.length,'não abrem sozinhos')+card('Abertos agora',ab.length,`usando ${fB(ab.reduce((s,i)=>s+i.mem,0))} de memória`); }
+function renderIni(){ const f=$('#bIni').value.trim().toLowerCase(); const l=INI.filter(i=>!f||[i.nome,i.descricao,i.empresa,i.comando].some(x=>(x||'').toLowerCase().includes(f))); tIni.def(l); $('#iniInfo').textContent=`${l.length} itens`; }
+
 /* =================== REDE =================== */
 let REDE=null, filtroConn='ext';
-const tRedeProg=Tabela($('#tRedeProg'),[
-  {k:'nome',t:'Programa',e:1,texto:1,f:r=>`<span class="nm">${esc(r.nome)}</span>`},
-  {k:'env',t:'Enviando',f:r=>fR(r.env)},{k:'rec',t:'Recebendo',f:r=>fR(r.rec)},{k:'nconn',t:'Conexões'},{k:'nips',t:'IPs'},
-],{ordem:'rec',clique:r=>abrirPrograma(r.nome),limite:60});
-const tIfs=Tabela($('#tIfs'),[
-  {k:'nome',t:'Placa',e:1,texto:1},{k:'ips',t:'IP',e:1,f:r=>esc((r.ips||[]).join(', '))},{k:'velocidade',t:'Velocidade',f:r=>r.velocidade?nf0.format(r.velocidade)+' Mb/s':'—'},
-  {k:'env_tot',t:'Enviado',f:r=>fB(r.env_tot)},{k:'rec_tot',t:'Recebido',f:r=>fB(r.rec_tot)},
-],{ordem:'rec_tot'});
+const tRedeProg=Tabela($('#tRedeProg'),[{k:'nome',t:'Programa',e:1,texto:1,f:r=>`<span class="nm">${esc(r.nome)}</span>`},{k:'env',t:'Enviando',f:r=>fN(r.env)},{k:'rec',t:'Recebendo',f:r=>fN(r.rec)},{k:'nconn',t:'Conexões'},{k:'nips',t:'IPs'}],
+  {ordem:'rec',clique:r=>abrirPrograma(r.nome),menu:(e,r)=>menuPrograma(e,E?.programas.find(g=>g.nome===r.nome)),limite:60});
+const tIfs=Tabela($('#tIfs'),[{k:'nome',t:'Placa',e:1,texto:1},{k:'ips',t:'IP',e:1,f:r=>esc((r.ips||[]).join(', '))},{k:'env',t:'↑',f:r=>fN(r.env)},{k:'rec',t:'↓',f:r=>fN(r.rec)},{k:'velocidade',t:'Velocidade',f:r=>r.velocidade?nf0.format(r.velocidade)+' Mb/s':'—'},{k:'rec_tot',t:'Recebido',f:r=>fB(r.rec_tot)}],{ordem:'rec_tot'});
 const tRem=Tabela($('#tRem'),[
-  {k:'programa',t:'Programa',e:1,texto:1,f:r=>`<span class="nm">${esc(r.programa)}</span>`},
-  {k:'ip',t:'IP',e:1,texto:1,f:r=>`<code>${esc(r.ip)}</code>`},
-  {k:'host',t:'Nome (DNS)',e:1,texto:1,f:r=>esc(r.host||'')||'<span class="mut">—</span>'},
-  {k:'tipo',t:'Tipo',e:1,texto:1,f:r=>tagIP(r.tipo)},
-  {k:'env',t:'↑ agora',f:r=>fR(r.env)},{k:'rec',t:'↓ agora',f:r=>fR(r.rec)},
-  {k:'env_tot',t:'Enviado',f:r=>fB(r.env_tot)},{k:'rec_tot',t:'Recebido',f:r=>fB(r.rec_tot)},
-  {k:'ult',t:'Último tráfego',f:r=>quando(r.ult)},
-],{ordem:'rec_tot',clique:r=>abrirPrograma(r.programa),limite:400,vazio:'Nenhum tráfego medido ainda.'});
+  {k:'programa',t:'Programa',e:1,texto:1,f:r=>`<span class="nm">${esc(r.programa)}</span>`},{k:'ip',t:'IP',e:1,texto:1,f:r=>`<code>${esc(r.ip)}</code>`},
+  {k:'host',t:'Nome (DNS)',e:1,texto:1,f:r=>esc(r.host||'')||'<span class="mut">—</span>'},{k:'tipo',t:'Tipo',e:1,texto:1,f:r=>tagIP(r.tipo)},
+  {k:'env',t:'↑ agora',f:r=>fN(r.env)},{k:'rec',t:'↓ agora',f:r=>fN(r.rec)},{k:'env_tot',t:'Enviado',f:r=>fB(r.env_tot)},{k:'rec_tot',t:'Recebido',f:r=>fB(r.rec_tot)},{k:'ult',t:'Último tráfego',f:r=>quando(r.ult)},
+],{ordem:'rec_tot',clique:r=>abrirPrograma(r.programa),menu:(e,r)=>abrirMenu(e,r.ip,[{t:'Ver programa',ic:'prog',f:()=>abrirPrograma(r.programa)},{t:'Copiar IP',ic:'copiar',f:()=>copiar(r.ip)},{t:'Pesquisar esse IP',ic:'web',f:()=>pesquisar(`${r.ip} ${r.host||''} quem é`)}]),limite:500,vazio:'Nenhum tráfego medido ainda.'});
 const tConn=Tabela($('#tConn'),[
-  {k:'programa',t:'Programa',e:1,texto:1,f:r=>`<span class="nm">${esc(r.programa)}</span>`},
-  {k:'processo',t:'Processo',e:1,texto:1,f:r=>`${esc(r.processo)}<span class="pid">${r.pid}</span>`},
-  {k:'proto',t:'Protocolo',e:1,texto:1},
-  {k:'local',t:'Local',e:1,texto:1,v:r=>r.lip+':'+r.lport,f:r=>`<code>${esc(r.lip)}:${r.lport}</code>`},
+  {k:'programa',t:'Programa',e:1,texto:1,f:r=>`<span class="nm">${esc(r.programa)}</span>`},{k:'processo',t:'Processo',e:1,texto:1,f:r=>`${esc(r.processo)}<span class="pid">${r.pid}</span>`},
+  {k:'proto',t:'Protocolo',e:1,texto:1},{k:'local',t:'Local',e:1,texto:1,v:r=>r.lip+':'+r.lport,f:r=>`<code>${esc(r.lip)}:${r.lport}</code>`},
   {k:'remoto',t:'Remoto',e:1,texto:1,v:r=>r.rip,f:r=>r.rip?`<code>${esc(r.rip)}:${r.rport}</code>`:'<span class="mut">—</span>'},
-  {k:'host',t:'Nome (DNS)',e:1,texto:1,f:r=>esc(r.host||'')},
-  {k:'tipo',t:'Tipo',e:1,texto:1,f:r=>tagIP(r.tipo)},
-  {k:'servico',t:'Serviço',e:1,texto:1},
-  {k:'estado',t:'Estado',e:1,texto:1},
-],{ordem:'programa',desc:false,clique:r=>abrirProcesso(r.pid),limite:1500});
-seg($('#segConn'),d=>{filtroConn=d.f; renderConn();});
-$('#bConn').oninput=renderConn; $('#bRem').oninput=renderRem;
-async function vRede(){ try{ REDE=await API('rede'); }catch(_){ return; }
+  {k:'host',t:'Nome (DNS)',e:1,texto:1,f:r=>esc(r.host||'')},{k:'tipo',t:'Tipo',e:1,texto:1,f:r=>tagIP(r.tipo)},{k:'servico',t:'Serviço',e:1,texto:1},{k:'estado',t:'Estado',e:1,texto:1},
+],{ordem:'programa',desc:false,clique:r=>abrirProcesso(r.pid),menu:(e,r)=>menuProcesso(e,PROCS.find(p=>p.pid===r.pid)||{pid:r.pid,nome:r.processo,programa:r.programa,protegido:'?'}),limite:2000});
+seg($('#segConn'),d=>{filtroConn=d.f; renderConn();}); $('#bConn').oninput=renderConn; $('#bRem').oninput=renderRem;
+async function vRede(){ try{ REDE=await API('rede'); }catch(_){ return; } if(MENU_ABERTO) return;
   const r=REDE, ext=r.conexoes.filter(c=>c.rip&&c.tipo!=='este PC'), ips=new Set(ext.map(c=>c.rip)); r.remotos.forEach(x=>ips.add(x.ip));
   const card=(t,v,d)=>`<div class="painel card"><div class="rot"><span>${t}</span></div><div class="val n">${v}</div><div class="det">${d}</div></div>`;
-  $('#redeCards').innerHTML=card('Enviando',fR(r.env),'todas as placas')+card('Recebendo',fR(r.rec),'todas as placas')+card('Conexões',nf0.format(r.conexoes.length),`${ext.length} com outros computadores`)+card('IPs diferentes',nf0.format(ips.size),'conectados ou com tráfego');
+  $('#redeCards').innerHTML=card('Enviando',fN(r.env),'todas as placas')+card('Recebendo',fN(r.rec),'todas as placas')+card('Conexões',nf0.format(r.conexoes.length),`${ext.length} com outros computadores`)+card('IPs diferentes',nf0.format(ips.size),'conectados ou com tráfego');
   tRedeProg.def(r.programas.filter(p=>(p.env||0)+(p.rec||0)>0||p.nconn>0)); tIfs.def(r.interfaces);
-  $('#remDesc').textContent=r.ativo?`tráfego medido por IP desde ${quando(r.desde)} (inclui TCP e UDP)`:'medição por IP indisponível — '+(r.erro||'');
+  $('#remDesc').textContent=r.ativo?`tráfego por IP desde ${quando(r.desde)} (TCP e UDP)`:'medição por IP desligada ou indisponível — '+(r.erro||'veja Configurações');
   renderRem(); renderConn(); }
 function renderRem(){ if(!REDE) return; const f=$('#bRem').value.trim().toLowerCase(); tRem.def(REDE.remotos.filter(x=>!f||x.ip.includes(f)||(x.host||'').toLowerCase().includes(f)||x.programa.toLowerCase().includes(f))); }
 function renderConn(){ if(!REDE) return; const f=$('#bConn').value.trim().toLowerCase();
@@ -503,29 +792,28 @@ async function carregarTempHist(){ try{ const d=await API('temps_hist?horas='+ho
 async function vHardware(forcar){ try{ HW=await API('hardware'); }catch(_){ return; } if(forcar) carregarTempHist();
   const h=HW, temps=h.sensores.filter(s=>s.tipo_en==='Temperature'&&!s.limite);
   let av=''; const temCpu=temps.some(s=>s.tipo_hw==='Processador');
-  if(!temCpu) av+=`<div class="aviso">A temperatura do processador não está disponível${h.pawnio===false?': o driver <b>PawnIO</b> não está instalado. Rode o instalador do Monitor do PC de novo e marque “Driver PawnIO”.':'.'}${temps.some(s=>s.fonte==='ACPI')?' Mostrando as zonas térmicas da placa-mãe no lugar.':''}</div>`;
+  if(!temCpu) av+=`<div class="aviso">A temperatura do processador não está disponível${h.pawnio===false?': o driver <b>PawnIO</b> não está instalado. Rode o instalador de novo e deixe marcado “Driver PawnIO”.':'.'}${temps.some(s=>s.fonte==='ACPI')?' Mostrando as zonas térmicas da placa-mãe no lugar.':''}</div>`;
   if(!h.sensores.length) av+=`<div class="aviso">Nenhum sensor encontrado. ${esc((h.avisos||[]).join(' '))}</div>`;
-  $('#hwAviso').innerHTML=av;
-  $('#hwSub').textContent=`Fontes: ${(h.fontes||[]).join(', ')||'—'} · ${h.sensores.length} sensores`;
+  $('#hwAviso').innerHTML=av; $('#hwSub').textContent=`Fontes: ${(h.fontes||[]).join(', ')||'—'} · ${h.sensores.length} sensores`;
   const princ=[]; const add=(rot,s)=>{ if(s) princ.push([rot,s]); };
-  const pick=(hw,nomes)=>{ const c=temps.filter(s=>s.tipo_hw===hw); for(const n of nomes){ const s=c.find(x=>x.nome.toLowerCase().includes(n)); if(s) return s; } return c.sort((a,b)=>b.valor-a.valor)[0]; };
-  add('Processador',pick('Processador',['cpu package','core max','core average','tctl/tdie'])); add('Placa de vídeo',pick('Placa de vídeo',['gpu core','gpu hot spot']));
-  const vistos=new Set(); temps.filter(s=>s.tipo_hw==='Armazenamento').forEach(s=>{ if(!vistos.has(s.hw)){ vistos.add(s.hw); add(s.hw,s); } }); temps.filter(s=>s.fonte==='ACPI').slice(0,3).forEach(s=>add(s.nome,s));
-  temps.filter(s=>s.tipo_hw==='Placa-mãe'&&s.fonte!=='ACPI').slice(0,2).forEach(s=>add(s.nome,s));
-  $('#hwTemps').innerHTML=princ.map(([r,s])=>`<div class="painel tt"><div class="r">${esc(r)}</div><div class="v n ${nivT(s.valor)}">${fT(s.valor)}</div><div class="r n">mín ${fT(s.min)} · máx ${fT(s.max)}</div></div>`).join('')||'<div class="painel tt mut">Sem temperaturas.</div>';
+  const pick=(hw,nomes,lst)=>{ const c=(lst||temps).filter(s=>s.tipo_hw===hw); for(const n of nomes){ const s=c.find(x=>x.nome.toLowerCase().includes(n)); if(s) return s; } return c.sort((a,b)=>b.valor-a.valor)[0]; };
+  add('Processador',pick('Processador',['cpu package','core max','tctl','core average']));
+  const vis=new Set(); temps.filter(s=>s.tipo_hw==='Placa de vídeo'||s.tipo_hw==='Vídeo integrado').forEach(s=>{ if(!vis.has(s.hw)){ vis.add(s.hw); add(s.hw, pick(s.tipo_hw,['gpu core','gpu hot spot'],temps.filter(x=>x.hw===s.hw))); } });
+  temps.filter(s=>s.tipo_hw==='Armazenamento').forEach(s=>{ if(!vis.has(s.hw)){ vis.add(s.hw); add(s.hw,s); } }); temps.filter(s=>s.fonte==='ACPI').slice(0,3).forEach(s=>add(s.nome,s));
+  $('#hwTemps').innerHTML=princ.map(([r,s])=>`<div class="painel tt"><div class="r" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(r)}">${esc(r)}</div><div class="v n ${nivT(s.valor)}">${fT(s.valor)}</div><div class="r n">mín ${fT(s.min)} · máx ${fT(s.max)}</div></div>`).join('')||'<div class="painel tt mut">Sem temperaturas.</div>';
+  $('#hwGpus').innerHTML=(h.gpus||[]).map(cardGpu).join('')||`<div class="painel vazio">${esc(h.gpu_erro||'Nenhuma placa de vídeo encontrada.')}</div>`;
+  $('#hwDiscos').innerHTML=(h.discos||[]).map(d=>`<div class="painel hw"><div class="t"><b>${esc(d.nome)}</b><span class="mut">${esc((d.letras||[]).join(' '))}</span></div><div class="big n">${d.temp!=null?`<span class="${nivT(d.temp)}">${fT(d.temp)}</span>`:fP(d.ativo,0)+' <small class="mut2" style="font-size:12px;font-weight:400">ativo</small>'}</div><div class="lin"><span>Lendo / gravando</span><span class="n">${fR(d.ler)} / ${fR(d.gravar)}</span></div><div class="lin"><span>Tipo</span><span>${esc([d.tipo,d.barramento].filter(Boolean).join(' · ')||'—')}${d.tamanho?' · '+fB(d.tamanho):''}</span></div></div>`).join('')||'<div class="painel vazio">—</div>';
   const kv=[['Computador',h.maquina],['Sistema',h.sistema],['Processador',h.cpu_nome],['Núcleos',`${h.fisicos} físicos · ${h.nucleos} lógicos`],['Frequência',h.freq?`${nf2.format(h.freq.atual/1000)} GHz`+(h.freq.max?` (máx. ${nf2.format(h.freq.max/1000)} GHz)`:''):'—'],['Memória RAM',fB(h.ram_total)],['Ligado desde',quando(h.ligado_desde)]];
   if(h.bateria) kv.push(['Bateria',`${nf0.format(h.bateria.pct)}% ${h.bateria.tomada?'(na tomada)':'(na bateria)'}`]);
   $('#hwInfo').innerHTML=kv.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v||'—')}</dd>`).join('');
-  $('#hwDiscos').innerHTML=`<ul class="lista">${h.discos.map(d=>`<li><span><b>${esc(d.unidade)}</b> <span class="mut">${esc(d.fs)}</span></span><span class="n ${nivel(d.pct,95,85)}">${fB(d.usado)} de ${fB(d.total)} (${fP(d.pct,0)})</span>${barra(d.pct,100)}</li>`).join('')}</ul>`;
-  const grupos={}; for(const s of h.sensores){ const k=s.hw; (grupos[k]=grupos[k]||{tipo:s.tipo_hw,l:[]}).l.push(s); }
+  $('#hwPart').innerHTML=`<ul class="lista">${h.particoes.map(d=>`<li><span><b>${esc(d.unidade)}</b> <span class="mut">${esc(d.fs)}</span></span><span class="n ${nivel(d.pct,95,85)}">${fB(d.usado)} de ${fB(d.total)} (${fP(d.pct,0)})</span>${barra(d.pct,100)}</li>`).join('')}</ul>`;
+  const grupos={}; for(const s of h.sensores){ (grupos[s.hw]=grupos[s.hw]||{tipo:s.tipo_hw,l:[]}).l.push(s); }
   const fmtS=(s,v)=>v==null?'—':s.un==='°C'?fT(v):s.un==='%'?fP(v):s.un==='MHz'?nf0.format(v)+' MHz':s.un==='RPM'?nf0.format(v)+' RPM':s.un==='W'?nf1.format(v)+' W':s.un==='V'?nf2.format(v)+' V':s.un==='GB'?nf1.format(v)+' GB':s.un==='MB'?nf0.format(v)+' MB':s.un==='B/s'?fR(v):nf1.format(v)+' '+s.un;
   $('#hwSensores').innerHTML=Object.entries(grupos).map(([hw,g])=>`<div class="painel secao"><div class="cab"><h2>${esc(hw)}</h2><span class="desc">${esc(g.tipo)}</span></div><div class="tw curta"><table><thead><tr><th class="e">Sensor</th><th class="e">Tipo</th><th>Atual</th><th>Mínimo</th><th>Máximo</th></tr></thead><tbody>${
-    g.l.sort((a,b)=>a.tipo.localeCompare(b.tipo)||a.nome.localeCompare(b.nome)).map(s=>`<tr><td class="e">${esc(s.nome)}${s.sub?` <span class="mut">${esc(s.sub)}</span>`:''}</td><td class="e mut2">${esc(s.tipo)}</td><td class="${s.un==='°C'?nivT(s.valor):''}"><b>${fmtS(s,s.valor)}</b></td><td>${fmtS(s,s.min)}</td><td>${fmtS(s,s.max)}</td></tr>`).join('')}</tbody></table></div></div>`).join('');
-}
+    g.l.sort((a,b)=>a.tipo.localeCompare(b.tipo)||a.nome.localeCompare(b.nome)).map(s=>`<tr><td class="e">${esc(s.nome)}${s.sub?` <span class="mut">${esc(s.sub)}</span>`:''}${s.limite?' <span class="tag des">limite</span>':''}</td><td class="e mut2">${esc(s.tipo)}</td><td class="${s.un==='°C'&&!s.limite?nivT(s.valor):''}"><b>${fmtS(s,s.valor)}</b></td><td>${fmtS(s,s.min)}</td><td>${fmtS(s,s.max)}</td></tr>`).join('')}</tbody></table></div></div>`).join(''); }
 
 /* =================== HISTÓRICO =================== */
-let horasH=1; const gH=[];
-const cliqueH=t=>verMomento(t,$('#momento'),true);
+let horasH=1; const gH=[]; const cliqueH=t=>verMomento(t,$('#momento'),true);
 gH[1]=new Grafico($('#grH1'),{ymax:100,limiar:88,fmt:v=>fP(v),eixo:eixoPct,clique:cliqueH});
 gH[2]=new Grafico($('#grH2'),{fmt:fB,eixo:eixoB,clique:cliqueH});
 gH[3]=new Grafico($('#grH3'),{fmt:v=>fP(v),eixo:eixoPct,ymin:5,clique:cliqueH});
@@ -533,80 +821,64 @@ gH[4]=new Grafico($('#grH4'),{fmt:fR,eixo:eixoR,ymin:KB*100,clique:cliqueH});
 gH[5]=new Grafico($('#grH5'),{fmt:v=>nf0.format(v),eixo:v=>nf0.format(v),ymin:50,clique:cliqueH});
 seg($('#segHist'),d=>{horasH=+d.h; vHistorico();});
 async function vHistorico(){ let d; try{ d=await API('historico?horas='+horasH); }catch(_){ return; }
-  const b={t0:d.desde,t1:d.ate,passo:d.passo}, G=d.geral, col=i=>G.map(r=>[r[0],r[i]]);
+  const b={t0:d.desde,t1:d.ate,passo:d.passo}, G=d.geral, col=i=>G.map(r=>[r[0],r[i]]); gH[1].o.limiar=CFG.limiar_mem;
   let s=[{nome:'Memória',cor:COR(0),grossa:1,pts:col(2)},{nome:'CPU',cor:COR(1),pts:col(1)}]; gH[1].def({...b,series:s}); legenda($('#lgH1'),s,`<span style="--c:${css('--perigo')}">limite de lentidão</span>`);
   s=Object.entries(d.apps).map(([n,r],i)=>({nome:n,cor:COR(i),pts:r.map(x=>[x[0],x[1]])})); gH[2].def({...b,series:s}); legenda($('#lgH2'),s);
   s=Object.entries(d.apps_cpu).map(([n,r],i)=>({nome:n,cor:COR(i+2),pts:r.map(x=>[x[0],x[1]])})); gH[3].def({...b,series:s}); legenda($('#lgH3'),s);
   s=[{nome:'Disco ler',cor:COR(2),pts:col(3)},{nome:'Disco gravar',cor:COR(4),pts:col(4)},{nome:'Rede ↑',cor:COR(3),pts:col(5)},{nome:'Rede ↓',cor:COR(5),pts:col(6)}]; gH[4].def({...b,series:s}); legenda($('#lgH4'),s);
-  s=[{nome:'Temp. CPU (°C)',cor:COR(7),pts:col(8),fmt:fT},{nome:'Temp. GPU (°C)',cor:COR(5),pts:col(9),fmt:fT},{nome:'Temp. SSD (°C)',cor:COR(4),pts:col(10),fmt:fT},{nome:'Uso da GPU (%)',cor:COR(6),pts:col(7),fmt:v=>fP(v)}]; gH[5].def({...b,series:s}); legenda($('#lgH5'),s);
-}
+  s=[{nome:'Temp. CPU (°C)',cor:COR(7),pts:col(8),fmt:fT},{nome:'Temp. GPU (°C)',cor:COR(5),pts:col(9),fmt:fT},{nome:'Temp. SSD (°C)',cor:COR(4),pts:col(10),fmt:fT},{nome:'Uso da GPU (%)',cor:COR(6),pts:col(7),fmt:v=>fP(v)}]; gH[5].def({...b,series:s}); legenda($('#lgH5'),s); }
 async function verMomento(t,el,marcar){ let m; try{ m=await API('momento?ts='+Math.round(t)); }catch(_){ return; }
   if(!m){ el.innerHTML='<div class="cab"><h2>Neste momento</h2></div><div class="vazio">Sem registros nesse horário.</div>'; return; }
   if(marcar) gH.forEach(g=>{ if(g){ g.marca=m.ts; g.desenhar(); } });
   const tot=m.mem_total||1;
-  el.innerHTML=`<div class="cab"><h2>${quando(m.ts)}</h2></div><div class="pad mut2" style="font-size:12.5px">Memória <b class="${nivel(m.mem_pct,88,75)}">${fP(m.mem_pct)}</b> (${fB(m.mem_usada)}) · CPU <b class="${nivel(m.cpu,85,60)}">${fP(m.cpu)}</b>${m.temp_cpu!=null?` · CPU ${fT(m.temp_cpu)}`:''}</div>
+  el.innerHTML=`<div class="cab"><h2>${quando(m.ts)}</h2></div><div class="pad mut2" style="font-size:12.5px">Memória <b class="${nivM(m.mem_pct)}">${fP(m.mem_pct)}</b> (${fB(m.mem_usada)}) · CPU <b class="${nivC(m.cpu)}">${fP(m.cpu)}</b>${m.temp_cpu!=null?` · CPU ${fT(m.temp_cpu)}`:''}</div>
     <ul class="lista">${m.apps.map(a=>`<li class="cl" data-prog="${esc(a.nome)}"><span>${esc(a.nome)}</span><span class="n">${fB(a.mem)}${a.cpu>=1?' · '+fP(a.cpu):''}</span>${barra(a.mem,tot,3)}</li>`).join('')}</ul>
     ${m.procs.length?`<div class="cab"><h2>Processos que mais pesavam</h2></div><ul class="lista">${m.procs.map(p=>`<li><span>${esc(p.nome)} <span class="pid">${esc(p.programa)} · ${p.pid}</span></span><span class="n">${fB(p.mem)}</span></li>`).join('')}</ul>`:''}`; }
 
 /* =================== LENTIDÃO =================== */
-function htmlEps(eps,lm,lc){ if(!eps.length) return `<div class="vazio"><b class="ok" style="display:block;font-size:15px;margin-bottom:4px">Nenhum momento de lentidão</b>Quando a memória passar de ${lm}% ou a CPU de ${lc}%, aparece aqui com os responsáveis.</div>`;
-  return eps.map(e=>{ const q=e.mem_max>=lm&&e.cpu_max>=lc?'Memória e CPU altas':e.mem_max>=lm?'Memória quase cheia':'CPU no limite';
-    return `<div class="ep" data-ts="${e.ts_pico}"><div><b>${quando(e.inicio)}</b><div class="mut" style="font-size:12px">${q} · ${dur(e.fim-e.inicio)}</div></div><div><div class="mut2" style="font-size:12.5px;margin-bottom:5px">Memória até <b class="${nivel(e.mem_max,88,75)}">${fP(e.mem_max)}</b> · CPU até <b class="${nivel(e.cpu_max,85,60)}">${fP(e.cpu_max)}</b>${e.temp_max?` · CPU ${fT(e.temp_max)}`:''}</div>
+function htmlEps(eps,lm,lc,lt){ if(!eps.length) return `<div class="vazio"><b class="ok" style="display:block;font-size:15px;margin-bottom:4px">Nenhum momento de lentidão</b>Quando a memória passar de ${lm}%, a CPU de ${lc}% ou a temperatura de ${lt} °C, aparece aqui com os responsáveis.</div>`;
+  return eps.map(e=>{ const q=[e.mem_max>=lm?'memória':'',e.cpu_max>=lc?'CPU':'',e.temp_max>=lt?'temperatura':''].filter(Boolean).join(', ')||'alto';
+    return `<div class="ep" data-ts="${e.ts_pico}"><div><b>${quando(e.inicio)}</b><div class="mut" style="font-size:12px">${q} · ${dur(e.fim-e.inicio)}</div></div><div><div class="mut2" style="font-size:12.5px;margin-bottom:5px">Memória até <b class="${nivM(e.mem_max)}">${fP(e.mem_max)}</b> · CPU até <b class="${nivC(e.cpu_max)}">${fP(e.cpu_max)}</b>${e.temp_max?` · CPU <b class="${nivT(e.temp_max)}">${fT(e.temp_max)}</b>`:''}</div>
     <div class="chips">${e.top.map(a=>`<span class="chip"><b>${esc(a.nome)}</b> ${fB(a.mem)}</span>`).join('')}${e.top_cpu.filter(a=>!e.top.some(b=>b.nome===a.nome)).map(a=>`<span class="chip"><b>${esc(a.nome)}</b> CPU ${fP(a.cpu)}</span>`).join('')}</div></div></div>`; }).join(''); }
 async function vLentidao(){ let d; try{ d=await API('lentidao?dias=7'); }catch(_){ return; }
-  $('#lentSub').textContent=`Momentos dos últimos 7 dias em que a memória passou de ${d.limiar_mem}% ou a CPU de ${d.limiar_cpu}% — é quando o PC costuma travar.`;
-  $('#eps').innerHTML=htmlEps(d.episodios,d.limiar_mem,d.limiar_cpu); contLent(d.episodios); }
+  $('#lentSub').textContent=`Momentos em que a memória passou de ${d.limiar_mem}%, a CPU de ${d.limiar_cpu}% ou a temperatura da CPU de ${d.limiar_temp} °C — é quando o PC costuma travar. Os limites podem ser mudados em Configurações.`;
+  $('#eps').innerHTML=htmlEps(d.episodios,d.limiar_mem,d.limiar_cpu,d.limiar_temp); contLent(d.episodios); }
 function contLent(eps){ const n=eps.filter(e=>Date.now()/1000-e.fim<86400).length; $('#contLent').hidden=!n; $('#contLent').textContent=n; }
 $('#eps').addEventListener('click',e=>{ const ep=e.target.closest('.ep'); if(ep) verMomento(+ep.dataset.ts,$('#lentDet')); });
 
 /* =================== RELATÓRIO =================== */
 let REL=null, periodo='24h';
-seg($('#segRel'),d=>{ periodo=d.p; $('#relPers').hidden=periodo!=='pers'; if(periodo!=='pers') vRelatorio(); });
-$('#relAplicar').onclick=vRelatorio;
+seg($('#segRel'),d=>{ periodo=d.p; $('#relPers').hidden=periodo!=='pers'; if(periodo!=='pers') vRelatorio(); }); $('#relAplicar').onclick=vRelatorio;
 function faixa(){ const ag=Date.now()/1000, h0=new Date(); h0.setHours(0,0,0,0); const hoje=h0.getTime()/1000;
   if(periodo==='hoje') return [hoje,ag]; if(periodo==='ontem') return [hoje-86400,hoje]; if(periodo==='7d') return [ag-7*86400,ag];
-  if(periodo==='pers'){ const a=$('#relDe').value, b=$('#relAte').value; if(a&&b) return [new Date(a).getTime()/1000,new Date(b).getTime()/1000]; }
-  return [ag-86400,ag]; }
+  if(periodo==='pers'){ const a=$('#relDe').value, b=$('#relAte').value; if(a&&b) return [new Date(a).getTime()/1000,new Date(b).getTime()/1000]; } return [ag-86400,ag]; }
 async function vRelatorio(){ const [a,b]=faixa(); $('#relCorpo').innerHTML='<div class="vazio">Gerando relatório…</div>';
   try{ REL=await API(`relatorio?desde=${Math.floor(a)}&ate=${Math.ceil(b)}`); }catch(_){ $('#relCorpo').innerHTML='<div class="vazio">Não consegui gerar o relatório.</div>'; return; }
-  const r=REL, g=r.geral;
-  if(!g){ $('#relCorpo').innerHTML=`<div class="painel vazio">Sem dados entre ${quando(r.desde)} e ${quando(r.ate)}.</div>`; return; }
+  const r=REL, g=r.geral; if(!g){ $('#relCorpo').innerHTML=`<div class="painel vazio">Sem dados entre ${quando(r.desde)} e ${quando(r.ate)}.</div>`; return; }
   const tile=(t,v,d,c)=>`<div class="painel card"><div class="rot"><span>${t}</span></div><div class="val n ${c||''}" style="font-size:21px">${v}</div><div class="det n">${d||''}</div></div>`;
-  const P=r.programas, tot=g.mem_total||1;
-  const top=(arr,k,n=5)=>arr.slice().sort((x,y)=>(y[k]||0)-(x[k]||0)).slice(0,n).filter(x=>(x[k]||0)>0);
-  let h=`<div class="so-impressao"><h2>Monitor do PC — relatório</h2></div>
+  const P=r.programas, tot=g.mem_total||1, top=(arr,k,n=5)=>arr.slice().sort((x,y)=>(y[k]||0)-(x[k]||0)).slice(0,n).filter(x=>(x[k]||0)>0);
+  $('#relCorpo').innerHTML=`<div class="so-impressao"><h2>Monitor do PC — relatório</h2></div>
   <p class="mut2" style="margin-top:0">Período: <b>${quando(r.desde)}</b> até <b>${quando(r.ate)}</b> · monitorado por ${dur(g.tempo_monitorado)} · gerado ${quando(Date.now()/1000)}</p>
-  <div class="grade g6">${tile('Memória média',fP(g.mem_med),`máxima ${fP(g.mem_max)} (${fB(g.mem_usada_max)})`,nivel(g.mem_max,88,75))}
-  ${tile('CPU média',fP(g.cpu_med),`máxima ${fP(g.cpu_max)}`,nivel(g.cpu_max,85,60))}
-  ${tile('Temp. CPU máx.',fT(g.temp_cpu_max),g.temp_cpu_med!=null?`média ${fT(g.temp_cpu_med)}`:'',nivT(g.temp_cpu_max))}
-  ${tile('Temp. GPU máx.',fT(g.temp_gpu_max),g.temp_gpu_med!=null?`média ${fT(g.temp_gpu_med)}`:'',nivT(g.temp_gpu_max))}
-  ${tile('Disco',fB(g.ler+g.gravar),`lido ${fB(g.ler)} · gravado ${fB(g.gravar)}`)}
-  ${tile('Internet/rede',fB(g.env+g.rec),`↑ ${fB(g.env)} · ↓ ${fB(g.rec)}`)}</div>
+  <div class="grade g6">${tile('Memória média',fP(g.mem_med),`máxima ${fP(g.mem_max)} (${fB(g.mem_usada_max)})`,nivM(g.mem_max))}${tile('CPU média',fP(g.cpu_med),`máxima ${fP(g.cpu_max)}`,nivC(g.cpu_max))}
+  ${tile('Temp. CPU máx.',fT(g.temp_cpu_max),g.temp_cpu_med!=null?`média ${fT(g.temp_cpu_med)}`:'',nivT(g.temp_cpu_max))}${tile('Temp. GPU máx.',fT(g.temp_gpu_max),g.temp_gpu_med!=null?`média ${fT(g.temp_gpu_med)}`:'',nivT(g.temp_gpu_max))}
+  ${tile('Disco',fB(g.ler+g.gravar),`lido ${fB(g.ler)} · gravado ${fB(g.gravar)}`)}${tile('Internet/rede',fB(g.env+g.rec),`↑ ${fB(g.env)} · ↓ ${fB(g.rec)}`)}</div>
   <div class="grade g3 secao">${tile('Tempo com memória acima de '+r.limiar_mem+'%',dur(g.tempo_mem_alta),g.tempo_monitorado?fP(g.tempo_mem_alta/g.tempo_monitorado*100)+' do tempo':'',g.tempo_mem_alta>0?'quente':'ok')}
   ${tile('Tempo com CPU acima de '+r.limiar_cpu+'%',dur(g.tempo_cpu_alta),g.tempo_monitorado?fP(g.tempo_cpu_alta/g.tempo_monitorado*100)+' do tempo':'',g.tempo_cpu_alta>0?'quente':'ok')}
   ${tile('Momentos de lentidão',nf0.format(r.episodios.length),r.episodios.length?'veja a lista abaixo':'nenhum no período',r.episodios.length?'quente':'ok')}</div>
-  <div class="painel secao graf"><h2>Memória e CPU no período</h2><div class="leg"><span style="--c:${COR(0)}">Memória média</span><span style="--c:${COR(7)}">Memória máxima</span><span style="--c:${COR(1)}">CPU média</span></div><div id="relGraf"></div></div>
+  <div class="painel secao graf"><h2>Memória e CPU no período</h2><div class="leg"><span style="--c:${COR(0)}">Memória média</span><span style="--c:${COR(7)}">Memória máxima</span><span style="--c:${COR(1)}">CPU média</span></div><canvas id="relGraf" height="210"></canvas></div>
   <div class="painel secao"><div class="cab"><h2>Resumo: quem mais pesou</h2></div><div class="grade g4 pad">
     ${[['Memória (média)',top(P,'mem_med'),x=>fB(x.mem_med)],['CPU (média)',top(P,'cpu_med'),x=>fP(x.cpu_med)],['Disco (total)',top(P.map(x=>({...x,d:x.ler+x.gravar})),'d'),x=>fB(x.d)],['Rede (total)',top(P.map(x=>({...x,n:x.env+x.rec})),'n'),x=>fB(x.n)]].map(([t,l,f])=>`<div><div class="mut2" style="font-size:12px;margin-bottom:4px">${t}</div>${l.map((x,i)=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:2px 0"><span>${i+1}. ${esc(x.nome)}</span><b class="n">${f(x)}</b></div>`).join('')||'<span class="mut">—</span>'}</div>`).join('')}
   </div></div>
   <div class="painel secao"><div class="cab"><h2>Programas</h2><span class="desc">${P.length} programas no período</span></div><div class="tw" id="rProg"></div></div>
   <div class="painel secao"><div class="cab"><h2>Processos que mais usaram memória</h2></div><div class="tw" id="rProc"></div></div>
-  <div class="grade g2 secao"><div class="painel"><div class="cab"><h2>IPs mais acessados</h2><span class="desc">por volume de dados</span></div><div class="tw" id="rRem"></div></div>
-  <div class="painel"><div class="cab"><h2>Temperaturas</h2></div><div class="tw" id="rTemp"></div></div></div>
-  <div class="painel secao"><div class="cab"><h2>Momentos de lentidão</h2></div>${htmlEps(r.episodios.slice(0,40),r.limiar_mem,r.limiar_cpu)}</div>`;
-  $('#relCorpo').innerHTML=h;
-  const cv=document.createElement('canvas'); cv.height=210; cv.setAttribute('height','210'); $('#relGraf').appendChild(cv);
-  const nova=new Grafico(cv,{ymax:100,limiar:r.limiar_mem,fmt:v=>fP(v),eixo:eixoPct}); const L=r.linha;
-  nova.def({t0:r.desde,t1:r.ate,passo:r.passo_linha,series:[{nome:'Memória média',cor:COR(0),grossa:1,pts:L.map(x=>[x[0],x[1]])},{nome:'Memória máxima',cor:COR(7),pts:L.map(x=>[x[0],x[2]])},{nome:'CPU média',cor:COR(1),pts:L.map(x=>[x[0],x[3]])}]});
-  Tabela($('#rProg'),[{k:'nome',t:'Programa',e:1,texto:1,f:x=>`<span class="nm">${esc(x.nome)}</span>`},{k:'tempo',t:'Tempo aberto',f:x=>dur(x.tempo)},
-    {k:'mem_med',t:'Memória média',f:x=>`<div class="mc"><span>${fB(x.mem_med)}</span>${barra(x.mem_med,tot,3)}</div>`},{k:'mem_max',t:'Memória máx.',f:x=>fB(x.mem_max)},
-    {k:'cpu_med',t:'CPU média',f:x=>fP(x.cpu_med)},{k:'cpu_max',t:'CPU máx.',f:x=>fP(x.cpu_max)},
-    {k:'ler',t:'Disco lido',f:x=>fB(x.ler)},{k:'gravar',t:'Disco gravado',f:x=>fB(x.gravar)},{k:'env',t:'Rede enviada',f:x=>fB(x.env)},{k:'rec',t:'Rede recebida',f:x=>fB(x.rec)},
-    {k:'nproc_max',t:'Proc. máx.'},{k:'nconn_max',t:'Conexões máx.'}],{ordem:'mem_med',clique:x=>abrirPrograma(x.nome)}).def(P);
+  <div class="grade g2 secao lado2"><div class="painel"><div class="cab"><h2>IPs mais acessados</h2><span class="desc">por volume de dados</span></div><div class="tw" id="rRem"></div></div><div class="painel"><div class="cab"><h2>Temperaturas</h2></div><div class="tw" id="rTemp"></div></div></div>
+  <div class="painel secao"><div class="cab"><h2>Momentos de lentidão</h2></div>${htmlEps(r.episodios.slice(0,40),r.limiar_mem,r.limiar_cpu,r.limiar_temp)}</div>`;
+  const L=r.linha; new Grafico($('#relGraf'),{ymax:100,limiar:r.limiar_mem,fmt:v=>fP(v),eixo:eixoPct}).def({t0:r.desde,t1:r.ate,passo:r.passo_linha,series:[{nome:'Memória média',cor:COR(0),grossa:1,pts:L.map(x=>[x[0],x[1]])},{nome:'Memória máxima',cor:COR(7),pts:L.map(x=>[x[0],x[2]])},{nome:'CPU média',cor:COR(1),pts:L.map(x=>[x[0],x[3]])}]});
+  Tabela($('#rProg'),[{k:'nome',t:'Programa',e:1,texto:1,f:x=>`<span class="nm">${esc(x.nome)}</span>`},{k:'tempo',t:'Tempo aberto',f:x=>dur(x.tempo)},{k:'mem_med',t:'Memória média',f:x=>`<div class="mc"><span>${fB(x.mem_med)}</span>${barra(x.mem_med,tot,3)}</div>`},{k:'mem_max',t:'Memória máx.',f:x=>fB(x.mem_max)},
+    {k:'cpu_med',t:'CPU média',f:x=>fP(x.cpu_med)},{k:'cpu_max',t:'CPU máx.',f:x=>fP(x.cpu_max)},{k:'ler',t:'Disco lido',f:x=>fB(x.ler)},{k:'gravar',t:'Disco gravado',f:x=>fB(x.gravar)},{k:'env',t:'Rede enviada',f:x=>fB(x.env)},{k:'rec',t:'Rede recebida',f:x=>fB(x.rec)},{k:'nproc_max',t:'Proc. máx.'},{k:'nconn_max',t:'Conexões máx.'}],{ordem:'mem_med',clique:x=>abrirPrograma(x.nome)}).def(P);
   Tabela($('#rProc'),[{k:'nome',t:'Processo',e:1,texto:1},{k:'programa',t:'Programa',e:1,texto:1},{k:'mem_max',t:'Memória máx.',f:x=>fB(x.mem_max)},{k:'cpu_med',t:'CPU média',f:x=>fP(x.cpu_med)},{k:'cpu_max',t:'CPU máx.',f:x=>fP(x.cpu_max)},{k:'disco',t:'Disco',f:x=>fB(x.disco)},{k:'rede',t:'Rede',f:x=>fB(x.rede)},{k:'instancias',t:'Vezes aberto'}],{ordem:'mem_max',limite:30}).def(r.processos);
   Tabela($('#rRem'),[{k:'ip',t:'IP',e:1,texto:1,f:x=>`<code>${esc(x.ip)}</code>`},{k:'host',t:'Nome',e:1,texto:1,f:x=>esc(x.host||'')},{k:'programas',t:'Programas',e:1,texto:1,f:x=>esc((x.programas||'').split(',').join(', '))},{k:'env',t:'Enviado',f:x=>fB(x.env)},{k:'rec',t:'Recebido',f:x=>fB(x.rec)}],{ordem:'rec',limite:30,vazio:'Sem tráfego registrado.'}).def(r.remotos);
-  Tabela($('#rTemp'),[{k:'nome',t:'Sensor',e:1,texto:1,f:x=>`${esc(x.nome)} <span class="mut">${esc(x.hw)}</span>`},{k:'min',t:'Mín.',f:x=>fT(x.min)},{k:'med',t:'Média',f:x=>fT(x.med)},{k:'max',t:'Máx.',f:x=>fT(x.max),cls:x=>nivT(x.max)}],{ordem:'max',vazio:'Sem temperaturas no período.'}).def(r.temperaturas);
-}
+  Tabela($('#rTemp'),[{k:'nome',t:'Sensor',e:1,texto:1,f:x=>`${esc(x.nome)} <span class="mut">${esc(x.hw)}</span>`},{k:'min',t:'Mín.',f:x=>fT(x.min)},{k:'med',t:'Média',f:x=>fT(x.med)},{k:'max',t:'Máx.',f:x=>fT(x.max),cls:x=>nivT(x.max)}],{ordem:'max',vazio:'Sem temperaturas no período.'}).def(r.temperaturas); }
 $('#relPdf').onclick=()=>print();
 $('#relCsv').onclick=()=>{ if(!REL) return; const cols=['nome','tempo','mem_med','mem_max','cpu_med','cpu_max','ler','gravar','env','rec','nproc_max','nconn_max'];
   const tit=['Programa','Tempo aberto (s)','Memória média (bytes)','Memória máx (bytes)','CPU média (%)','CPU máx (%)','Disco lido (bytes)','Disco gravado (bytes)','Rede enviada (bytes)','Rede recebida (bytes)','Processos máx','Conexões máx'];
@@ -614,67 +886,140 @@ $('#relCsv').onclick=()=>{ if(!REL) return; const cols=['nome','tempo','mem_med'
   const blob=new Blob(['﻿'+linhas.join('\r\n')],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   a.download=`monitor-pc-relatorio-${new Date(REL.desde*1000).toISOString().slice(0,10)}.csv`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),5000); };
 
+/* =================== CONFIGURAÇÕES =================== */
+const CFG_DEF=[
+  ['Geral',[
+    ['intervalo_ms','sel','Velocidade de atualização','Com que frequência os números mudam na tela. 250 ms é o mais rápido; quanto mais rápido, um pouco mais de CPU o monitor usa.',{250:'250 ms (4× por segundo)',500:'500 ms',1000:'1 segundo',2000:'2 segundos',5000:'5 segundos'}],
+    ['iniciar_com_windows','sw','Iniciar com o Windows','Mostra o ícone perto do relógio quando o Windows liga. O monitoramento (serviço) roda sempre, mesmo sem o ícone.'],
+    ['abrir_janela_ao_iniciar','sw','Abrir a janela ao ligar o PC','Além do ícone, abre a janela do Monitor do PC quando o Windows liga.'],
+    ['tema','sel','Tema','Cores da janela.',{auto:'Igual ao Windows',escuro:'Escuro',claro:'Claro'}],
+  ]],
+  ['Rede',[
+    ['rede_por_programa','sw','Medir a rede de cada programa','Mostra quanto cada programa e processo envia e recebe e com quais IPs conversa (TCP e UDP).'],
+    ['dns_reverso','sw','Descobrir o nome dos IPs','Mostra o nome do site/servidor ao lado do IP (ex.: api.anthropic.com).'],
+    ['rede_em_bits','sw','Mostrar velocidade de rede em bits (Mb/s)','Igual às operadoras de internet. Desligado mostra em bytes (MB/s), como no Windows.'],
+  ]],
+  ['Sensores e GPU',[
+    ['sensores','sw','Ler temperatura e sensores','Temperatura, ventoinhas, consumo e frequência (LibreHardwareMonitor).'],
+    ['sensores_intervalo_s','sel','Leitura dos sensores e da GPU','De quanto em quanto tempo os sensores e a GPU são lidos.',{1:'1 segundo',2:'2 segundos',5:'5 segundos',10:'10 segundos'}],
+    ['gpu_por_processo','sw','Medir a GPU de cada processo','Mostra quanto cada programa usa da placa de vídeo (como no Gerenciador de Tarefas).'],
+  ]],
+  ['Lentidão e alertas',[
+    ['limiar_mem','num','Memória considerada alta (%)','Acima disso o momento entra em “Lentidão” e o número fica vermelho.',[50,99]],
+    ['limiar_cpu','num','CPU considerada alta (%)','',[50,100]],
+    ['limiar_temp','num','Temperatura da CPU considerada alta (°C)','',[60,105]],
+  ]],
+  ['Histórico',[
+    ['retencao_dias','sel','Guardar o histórico por','O que for mais antigo é apagado sozinho.',{1:'1 dia',3:'3 dias',7:'7 dias',15:'15 dias',30:'30 dias'}],
+  ]],
+  ['Segurança',[
+    ['permitir_encerrar','sw','Permitir encerrar processos','Liga as opções “Forçar encerramento” e “Encerrar processo”. Processos do Windows ficam sempre protegidos, mesmo ligado.'],
+    ['confirmar_encerrar','sw','Pedir confirmação antes de fechar ou encerrar','Mostra uma pergunta antes de fechar programas ou encerrar processos.'],
+  ]],
+];
+function aplicarTema(){ const t=CFG.tema; if(t==='escuro') document.documentElement.dataset.theme='dark'; else if(t==='claro') document.documentElement.dataset.theme='light'; else delete document.documentElement.dataset.theme; }
+async function carregarCfg(){ try{ const d=await API('config'); CFG=d.valores; aplicarTema(); }catch(_){} }
+function vConfig(){ let h='';
+  for(const [sec,itens] of CFG_DEF){ h+=`<h2 class="secao" style="margin-bottom:8px">${sec}</h2><div class="painel">`;
+    for(const [k,tipo,t,d,op] of itens){ let ctl='';
+      if(tipo==='sw') ctl=`<label class="sw"><input type="checkbox" data-cfg="${k}" ${CFG[k]?'checked':''}><span></span></label>`;
+      if(tipo==='sel') ctl=`<select data-cfg="${k}">${Object.entries(op).map(([v,r])=>`<option value="${v}" ${String(CFG[k])===v?'selected':''}>${r}</option>`).join('')}</select>`;
+      if(tipo==='num') ctl=`<input type="number" data-cfg="${k}" min="${op[0]}" max="${op[1]}" value="${CFG[k]}" style="width:90px">`;
+      h+=`<div class="item"><b>${t}</b><div class="ctl">${ctl}</div>${d?`<small>${d}</small>`:''}</div>`; }
+    h+='</div>'; }
+  h+=`<h2 class="secao" style="margin-bottom:8px">Manutenção</h2><div class="painel"><div class="item"><b>Apagar todo o histórico</b><div class="ctl"><button class="btn perigo" id="apagarHist">Apagar</button></div><small>Apaga gráficos, relatórios e momentos de lentidão guardados. O monitoramento continua.</small></div></div>`;
+  const s=STATUS||{}; h+=`<h2 class="secao" style="margin-bottom:8px">Sobre</h2><div class="painel"><dl class="kv">
+    <dt>Versão</dt><dd>${esc(s.versao||'—')}</dd><dt>Serviço como administrador</dt><dd>${s.admin?'sim':'não'}</dd><dt>Leitura dos processos</dt><dd>${s.modo_coleta==='nt'?'rápida (Windows NT)':'padrão (psutil)'} · ${s.tempo_amostra_ms??'—'} ms por leitura (máx. ${s.tempo_amostra_max_ms??'—'} ms)</dd>
+    <dt>Rede por programa</dt><dd>${s.rede_ok?'funcionando':'desligada'}${s.etw?` · ${nf0.format(s.etw.eventos_perdidos)} eventos perdidos`:''}</dd><dt>GPU</dt><dd>${s.gpu_ok?esc((s.gpus||[]).join(', ')||'funcionando'):esc(s.gpu_erro||'desligada')}</dd>
+    <dt>Sensores</dt><dd>${esc((s.sensores||[]).join(', ')||'—')}${s.pawnio===false?' · driver PawnIO não instalado':''}</dd><dt>Ícone perto do relógio</dt><dd>${s.bandeja_online?'aberto':'fechado'}</dd>
+    <dt>Histórico</dt><dd>${s.banco?fB(s.banco.tamanho)+' · desde '+quando(s.banco.desde):'—'}</dd></dl></div>`;
+  $('#cfgCorpo').innerHTML=h;
+  $('#apagarHist').onclick=async()=>{ if(!await confirmar('Apagar todo o histórico?','Os gráficos, relatórios e momentos de lentidão guardados serão apagados. Não dá para desfazer.','Apagar',1)) return; const r=await POST('historico/apagar').catch(()=>null); toast(r&&r.ok?'Histórico apagado.':'Não consegui apagar.',!(r&&r.ok)); }; }
+$('#cfgCorpo').addEventListener('change',async e=>{ const el=e.target.closest('[data-cfg]'); if(!el) return; const k=el.dataset.cfg;
+  let v = el.type==='checkbox'?el.checked:el.type==='number'?+el.value:el.value; if(el.tagName==='SELECT' && /^\d+$/.test(v)) v=+v;
+  const r=await POST('config',{[k]:v}).catch(()=>null); if(r&&r.valores){ CFG=r.valores; aplicarTema(); toast('Configuração salva.'); } else toast('Não consegui salvar.',1); vConfig(); });
+
 /* =================== GAVETA DE DETALHES =================== */
 let gavAtual=null;
 function abrirGaveta(obj){ gavAtual=obj; $('#gav').classList.add('aberta'); $('#gav').setAttribute('aria-hidden','false'); $('#fundo').classList.add('on'); obj.atualizar(true); }
 function fecharGaveta(){ gavAtual=null; $('#gav').classList.remove('aberta'); $('#gav').setAttribute('aria-hidden','true'); $('#fundo').classList.remove('on'); }
-$('#gFechar').onclick=fecharGaveta; $('#fundo').onclick=fecharGaveta; addEventListener('keydown',e=>{ if(e.key==='Escape') fecharGaveta(); });
+$('#gFechar').onclick=fecharGaveta; $('#fundo').onclick=fecharGaveta;
 function abasGav(lista,atual,cb){ $('#gAbas').innerHTML=lista.map(([k,t])=>`<button data-k="${k}" aria-selected="${k===atual}">${t}</button>`).join(''); $('#gAbas').onclick=e=>{ const b=e.target.closest('button'); if(b) cb(b.dataset.k); }; }
 const miniCards=cs=>`<div class="mini">${cs.map(([t,v,d,c])=>`<div class="painel card"><div class="rot"><span>${t}</span></div><div class="val n ${c||''}">${v}</div><div class="det n">${d||''}</div></div>`).join('')}</div>`;
 const colIps=[{k:'ip',t:'IP',e:1,texto:1,f:r=>`<code>${esc(r.ip)}</code>`},{k:'host',t:'Nome (DNS)',e:1,texto:1,f:r=>esc(r.host||'')||'<span class="mut">—</span>'},{k:'tipo',t:'Tipo',e:1,texto:1,f:r=>tagIP(r.tipo)}];
 const colConn=[{k:'processo',t:'Processo',e:1,texto:1,f:r=>`${esc(r.processo)}<span class="pid">${r.pid}</span>`},{k:'proto',t:'Prot.',e:1,texto:1},{k:'local',t:'Local',e:1,texto:1,v:r=>r.lport,f:r=>`<code>${esc(r.lip)}:${r.lport}</code>`},{k:'remoto',t:'Remoto',e:1,texto:1,v:r=>r.rip,f:r=>r.rip?`<code>${esc(r.rip)}:${r.rport}</code>`:'<span class="mut">—</span>'},{k:'host',t:'Nome',e:1,texto:1,f:r=>esc(r.host||'')},{k:'servico',t:'Serviço',e:1,texto:1},{k:'estado',t:'Estado',e:1,texto:1}];
+const infoKv=(i,extra)=>`<div class="painel"><dl class="kv">${[...(extra||[]),['Descrição',esc(i.descricao||'—')],['Empresa',esc(i.empresa||'—')],['Produto',esc(i.produto||'—')],['Versão',esc(i.versao||'—')]].map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl></div>`;
+function botoesAcoes(lista){ $('#gAcoes').innerHTML=lista.map((b,i)=>`<button class="btn ${b.perigo?'perigo':''}" data-a="${i}" ${b.des?'disabled':''} title="${esc(b.dica||'')}">${IC[b.ic]?IC[b.ic].replace('<svg','<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"'):''}${esc(b.t)}</button>`).join('');
+  $('#gAcoes').onclick=e=>{ const b=e.target.closest('button[data-a]'); if(b&&!b.disabled) lista[+b.dataset.a].f(); }; }
 
-function abrirPrograma(nome){ let aba='proc', g=null, T={};
-  const o={ async atualizar(primeira){ try{ g=await API('programa?nome='+encodeURIComponent(nome)); }catch(_){ return; } if(primeira) montar(); else preencher(false); } };
-  function montar(){ abasGav([['proc','Processos'],['ips','IPs e tráfego'],['conn','Conexões'],['hist','Histórico 24 h']],aba,k=>{aba=k;montar();}); T={};
+function abrirPrograma(nome){ if(!nome) return; let aba='arvore', g=null, T={}, cont=0;
+  const o={ async atualizar(primeira){ try{ g=await API('programa?nome='+encodeURIComponent(nome)); }catch(_){ return; } if(primeira) montar(); else preencher(false); },
+    tick(){ if(++cont % Math.max(1,Math.round(1000/CFG.intervalo_ms))===0) o.atualizar(false); } };
+  function montar(){ abasGav([['arvore','Processos (árvore)'],['jan','Janelas'],['ips','IPs e tráfego'],['conn','Conexões'],['hist','Histórico 24 h'],['info','Informações']],aba,k=>{aba=k;montar();}); T={};
     let h='<div id="gMini"></div>';
-    if(aba==='proc'){ h+='<div class="painel"><div class="tw" id="gt"></div></div>'; $('#gCorpo').innerHTML=h;
-      T.a=Tabela($('#gt'),[{k:'nome',t:'Processo',e:1,texto:1,f:r=>`<span class="nm">${esc(r.nome)}</span>`},{k:'pid',t:'PID'},{k:'mem',t:'Memória',f:r=>fB(r.mem)},{k:'cpu',t:'CPU',f:r=>fP(r.cpu)},{k:'ler',t:'Ler',f:r=>fR(r.ler)},{k:'gravar',t:'Gravar',f:r=>fR(r.gravar)},{k:'env',t:'↑',f:r=>fR(r.env)},{k:'rec',t:'↓',f:r=>fR(r.rec)},{k:'nconn',t:'Con.'},{k:'threads',t:'Threads'}],{ordem:'mem',clique:r=>abrirProcesso(r.pid),vazio:'Nenhum processo aberto agora.'}); }
-    else if(aba==='ips'){ h+=`<div class="painel"><div class="cab"><h2>Agora e desde que o serviço iniciou</h2></div><div class="tw curta" id="gt1"></div></div><div class="painel secao"><div class="cab"><h2>Últimos 7 dias</h2><span class="desc">tudo o que esse programa trocou com cada IP</span></div><div class="tw curta" id="gt2"></div></div>`; $('#gCorpo').innerHTML=h;
-      T.a=Tabela($('#gt1'),[...colIps,{k:'env',t:'↑ agora',f:r=>fR(r.env)},{k:'rec',t:'↓ agora',f:r=>fR(r.rec)},{k:'env_tot',t:'Enviado',f:r=>fB(r.env_tot)},{k:'rec_tot',t:'Recebido',f:r=>fB(r.rec_tot)},{k:'ult',t:'Último',f:r=>quando(r.ult)}],{ordem:'rec_tot',vazio:'Sem tráfego medido.'});
+    if(aba==='arvore') h+='<div class="painel arv"><div class="tw" id="gArv"></div></div>';
+    else if(aba==='jan') h+='<div class="painel"><div class="tw" id="gt"></div></div>';
+    else if(aba==='ips') h+=`<div class="painel"><div class="cab"><h2>Agora e desde que o serviço iniciou</h2></div><div class="tw curta" id="gt1"></div></div><div class="painel secao"><div class="cab"><h2>Últimos dias</h2><span class="desc">tudo o que esse programa trocou com cada IP</span></div><div class="tw curta" id="gt2"></div></div>`;
+    else if(aba==='conn') h+='<div class="painel"><div class="tw" id="gt"></div></div>';
+    else if(aba==='hist') h+=`<div class="painel graf"><h2>Memória</h2><canvas id="gg1" height="170"></canvas></div><div class="painel graf secao"><h2>CPU</h2><canvas id="gg2" height="150"></canvas></div><div class="painel graf secao"><h2>Disco e rede</h2><div class="leg"><span style="--c:${COR(2)}">Disco</span><span style="--c:${COR(3)}">Rede</span></div><canvas id="gg3" height="150"></canvas></div>`;
+    else h+='<div id="gInfo"></div>';
+    $('#gCorpo').innerHTML=h;
+    if(aba==='jan') T.a=Tabela($('#gt'),[{k:'titulo',t:'Janela',e:1,texto:1},{k:'pid',t:'PID'}],{ordem:'titulo',desc:false,clique:r=>acao({tipo:'mostrar',pid:r.pid}),vazio:'Nenhuma janela aberta (o programa pode estar só perto do relógio).'});
+    if(aba==='ips'){ T.a=Tabela($('#gt1'),[...colIps,{k:'env',t:'↑ agora',f:r=>fN(r.env)},{k:'rec',t:'↓ agora',f:r=>fN(r.rec)},{k:'env_tot',t:'Enviado',f:r=>fB(r.env_tot)},{k:'rec_tot',t:'Recebido',f:r=>fB(r.rec_tot)},{k:'ult',t:'Último',f:r=>quando(r.ult)}],{ordem:'rec_tot',vazio:'Sem tráfego medido.'});
       T.b=Tabela($('#gt2'),[...colIps,{k:'env',t:'Enviado',f:r=>fB(r.env)},{k:'rec',t:'Recebido',f:r=>fB(r.rec)},{k:'primeiro',t:'Primeira vez',f:r=>quando(r.primeiro)},{k:'ultimo',t:'Última vez',f:r=>quando(r.ultimo)}],{ordem:'rec',vazio:'Sem histórico.'}); }
-    else if(aba==='conn'){ h+='<div class="painel"><div class="tw" id="gt"></div></div>'; $('#gCorpo').innerHTML=h; T.a=Tabela($('#gt'),colConn,{ordem:'remoto',vazio:'Nenhuma conexão aberta.'}); }
-    else { h+=`<div class="painel graf"><h2>Memória</h2><canvas id="gg1" height="170"></canvas></div><div class="painel graf secao"><h2>CPU</h2><canvas id="gg2" height="150"></canvas></div><div class="painel graf secao"><h2>Disco e rede</h2><div class="leg"><span style="--c:${COR(2)}">Disco</span><span style="--c:${COR(3)}">Rede</span></div><canvas id="gg3" height="150"></canvas></div>`; $('#gCorpo').innerHTML=h; }
+    if(aba==='conn') T.a=Tabela($('#gt'),colConn,{ordem:'remoto',clique:r=>abrirProcesso(r.pid),vazio:'Nenhuma conexão aberta.'});
     preencher(true); }
-  function preencher(primeira){ $('#gTit').textContent=g.nome;
-    $('#gSub').innerHTML=g.ausente?'Não está aberto agora — mostrando o histórico.':`${g.nproc} processos · ${g.nconn} conexões · ${g.nips} IPs${g.exe?` · <code>${esc(g.exe)}</code>`:''}`;
-    $('#gMini').innerHTML=g.ausente?'':miniCards([['Memória',fB(g.mem),E?fP(g.mem/E.mem_total*100)+' da RAM':''],['CPU',fP(g.cpu),'',nivel(g.cpu,50,20)],['Disco',fR(g.ler+g.gravar),`ler ${fR(g.ler)} · gravar ${fR(g.gravar)}`],['Rede',fR(g.env+g.rec),`↑ ${fR(g.env)} · ↓ ${fR(g.rec)}`]]);
-    if(aba==='proc') T.a.def(g.processos); else if(aba==='ips'){ T.a.def(g.ips_vivos); T.b.def(g.ips_7d); } else if(aba==='conn') T.a.def(g.conexoes);
-    else if(primeira){ const s=g.hist, b={t0:s.desde,t1:s.ate,passo:s.passo}, c=i=>s.serie.map(r=>[r[0],r[i]]);
+  function preencher(primeira){ if(gavAtual!==o) return; $('#gTit').textContent=g.nome;
+    $('#gSub').innerHTML=g.ausente?'Não está aberto agora — mostrando o histórico.':`${g.nproc} processos · ${g.janelas||0} janelas · ${g.nconn} conexões · ${g.nips} IPs${g.exe?` · <code>${esc(g.exe)}</code>`:''}${g.protegido?' · '+ESCUDO('Windows')+' faz parte do Windows':''}`;
+    const prot=!!g.protegido;
+    botoesAcoes([{t:'Mostrar janela',ic:'janela',des:g.ausente,f:()=>acao({tipo:'mostrar',programa:g.nome})},{t:'Abrir local',ic:'pasta',des:!g.exe,f:()=>acao({tipo:'pasta',programa:g.nome})},
+      {t:'Fechar (X)',ic:'fechar',des:g.ausente||prot,f:async()=>{ if(CFG.confirmar_encerrar && !await confirmar(`Fechar ${g.nome}?`,'Vou pedir para todas as janelas desse programa fecharem, como se você clicasse no X.','Fechar')) return; acao({tipo:'fechar_janelas',programa:g.nome}); }},{t:'Forçar encerramento',ic:'matar',perigo:1,des:g.ausente||prot||!CFG.permitir_encerrar,f:async()=>{ if(CFG.confirmar_encerrar && !await confirmar(`Forçar o encerramento de ${g.nome}?`,`Os ${g.nproc} processos serão encerrados na hora. O que não estiver salvo será perdido.`,'Forçar encerramento',1)) return; acao({tipo:'forcar_programa',programa:g.nome}); }}]);
+    $('#gMini').innerHTML=g.ausente?'':miniCards([['Memória',fB(g.mem),E?fP(g.mem/E.mem_total*100)+' da RAM':''],['CPU',fP(g.cpu),'',nivel(g.cpu,50,20)],['Disco',fR(g.ler+g.gravar),`ler ${fR(g.ler)} · gravar ${fR(g.gravar)}`],['Rede',fN(g.env+g.rec),`↑ ${fN(g.env)} · ↓ ${fN(g.rec)}`],['GPU',fP(g.gpu),g.gpu_mem?fB(g.gpu_mem)+' de vídeo':'']]);
+    if(aba==='arvore'){ if(MENU_ABERTO) return; $('#gArv').innerHTML='<table><thead><tr><th class="e">Processo</th><th>PID</th><th>Memória</th><th>CPU</th><th>Disco</th><th>Rede</th><th>GPU</th><th>Conexões</th></tr></thead><tbody>'+(linhasArvore(g.processos,false)||'<tr><td colspan="8" class="vazio">Nenhum processo aberto agora.</td></tr>')+'</tbody></table>'; }
+    else if(aba==='jan') T.a.def(g.lista_janelas||[]);
+    else if(aba==='ips'){ T.a.def(g.ips_vivos); T.b.def(g.ips_7d); } else if(aba==='conn') T.a.def(g.conexoes);
+    else if(aba==='hist'){ if(primeira){ const s=g.hist, b={t0:s.desde,t1:s.ate,passo:s.passo}, c=i=>s.serie.map(r=>[r[0],r[i]]);
       new Grafico($('#gg1'),{fmt:fB,eixo:eixoB}).def({...b,series:[{nome:'Memória',cor:COR(0),grossa:1,pts:c(1)}]});
       new Grafico($('#gg2'),{fmt:v=>fP(v),eixo:eixoPct,ymin:5}).def({...b,series:[{nome:'CPU',cor:COR(1),pts:c(2)}]});
       new Grafico($('#gg3'),{fmt:fR,eixo:eixoR,ymin:KB*50}).def({...b,series:[{nome:'Disco',cor:COR(2),pts:c(3)},{nome:'Rede',cor:COR(3),pts:c(4)}]}); } }
+    else { $('#gInfo').innerHTML=infoKv(g.info||{},[['Programa',esc(g.nome)],['Executável principal',g.exe?`<code>${esc(g.exe)}</code>`:'—'],['Processo principal',g.pid_raiz?`<a href="#" data-pid="${g.pid_raiz}">PID ${g.pid_raiz}</a>`:'—'],['Proteção',g.protegido?'faz parte do Windows — não pode ser encerrado por aqui':g.n_protegidos?`${g.n_protegidos} processo(s) do Windows dentro dele são protegidos`:'pode ser fechado/encerrado']]); } }
   abrirGaveta(o); }
+$('#gCorpo').addEventListener('click',e=>{ if(e.target.closest('table')&&e.target.closest('#gArv')){ const tr=e.target.closest('tr[data-tipo=proc]'); if(tr){ const car=e.target.closest('.car'); const pid=+tr.dataset.pid; if(car&&!car.classList.contains('vz')){ recolhidos.has(pid)?recolhidos.delete(pid):recolhidos.add(pid); gavAtual&&gavAtual.atualizar(false); } else abrirProcesso(pid); } } });
+$('#gCorpo').addEventListener('contextmenu',e=>{ const tr=e.target.closest('#gArv tr[data-tipo=proc]'); if(tr){ tr.classList.add('marcado'); menuProcesso(e, PROCS.find(p=>p.pid===+tr.dataset.pid)); } });
 
-function abrirProcesso(pid){ let aba='info', d=null, T={};
-  const o={ async atualizar(primeira){ try{ d=await API('processo?pid='+pid); }catch(_){ return; } if(primeira) montar(); else preencher(); } };
-  function montar(){ if(!d){ $('#gTit').textContent='Processo '+pid; $('#gSub').textContent='Esse processo já foi encerrado.'; $('#gAbas').innerHTML=''; $('#gCorpo').innerHTML=''; return; }
-    abasGav([['info','Detalhes'],['ips','IPs e tráfego'],['conn','Conexões'],['fam','Processos filhos']],aba,k=>{aba=k;montar();}); T={};
-    let h='<div id="gMini"></div>';
-    if(aba==='info') h+='<div class="painel"><dl class="kv" id="gkv"></dl></div>';
-    else h+='<div class="painel"><div class="tw" id="gt"></div></div>';
+function abrirProcesso(pid){ let aba='info', d=null, T={}, cont=0;
+  const o={ async atualizar(primeira){ try{ d=await API('processo?pid='+pid); }catch(_){ return; } if(primeira) montar(); else preencher(); },
+    tick(){ if(++cont % Math.max(1,Math.round(1000/CFG.intervalo_ms))===0) o.atualizar(false); } };
+  function montar(){ if(!d){ $('#gTit').textContent='Processo '+pid; $('#gSub').textContent='Esse processo já foi encerrado.'; $('#gAbas').innerHTML=''; $('#gAcoes').innerHTML=''; $('#gCorpo').innerHTML=''; return; }
+    abasGav([['info','Detalhes'],['ips','IPs e tráfego'],['conn','Conexões'],['fam','Processos filhos'],['jan','Janelas']],aba,k=>{aba=k;montar();}); T={};
+    let h='<div id="gMini"></div>'+(aba==='info'?'<div class="painel"><dl class="kv" id="gkv"></dl></div><div class="secao" id="gInfo"></div>':'<div class="painel"><div class="tw" id="gt"></div></div>');
     $('#gCorpo').innerHTML=h;
-    if(aba==='ips') T.a=Tabela($('#gt'),[...colIps,{k:'env',t:'↑ agora',f:r=>fR(r.env)},{k:'rec',t:'↓ agora',f:r=>fR(r.rec)},{k:'env_tot',t:'Enviado',f:r=>fB(r.env_tot)},{k:'rec_tot',t:'Recebido',f:r=>fB(r.rec_tot)},{k:'ult',t:'Último',f:r=>quando(r.ult)}],{ordem:'rec_tot',vazio:'Sem tráfego medido para esse processo.'});
+    if(aba==='ips') T.a=Tabela($('#gt'),[...colIps,{k:'env',t:'↑ agora',f:r=>fN(r.env)},{k:'rec',t:'↓ agora',f:r=>fN(r.rec)},{k:'env_tot',t:'Enviado',f:r=>fB(r.env_tot)},{k:'rec_tot',t:'Recebido',f:r=>fB(r.rec_tot)},{k:'ult',t:'Último',f:r=>quando(r.ult)}],{ordem:'rec_tot',vazio:'Sem tráfego medido para esse processo.'});
     if(aba==='conn') T.a=Tabela($('#gt'),colConn,{ordem:'remoto',vazio:'Nenhuma conexão aberta.'});
-    if(aba==='fam') T.a=Tabela($('#gt'),[{k:'nome',t:'Processo filho',e:1,texto:1},{k:'pid',t:'PID'},{k:'mem',t:'Memória',f:r=>fB(r.mem)},{k:'cpu',t:'CPU',f:r=>fP(r.cpu)}],{ordem:'mem',clique:r=>abrirProcesso(r.pid),vazio:'Nenhum processo filho.'});
+    if(aba==='fam') T.a=Tabela($('#gt'),[{k:'nome',t:'Processo filho',e:1,texto:1},{k:'pid',t:'PID'},{k:'mem',t:'Memória',f:r=>fB(r.mem)},{k:'cpu',t:'CPU',f:r=>fP(r.cpu)}],{ordem:'mem',clique:r=>abrirProcesso(r.pid),menu:(e,r)=>menuProcesso(e,PROCS.find(p=>p.pid===r.pid)),vazio:'Nenhum processo filho.'});
+    if(aba==='jan') T.a=Tabela($('#gt'),[{k:'t',t:'Janela',e:1,texto:1}],{ordem:'t',desc:false,clique:()=>acao({tipo:'mostrar',pid:d.pid,inicio:d.inicio}),vazio:'Esse processo não tem janela aberta.'});
     preencher(); }
-  function preencher(){ if(!d){ $('#gSub').textContent='Esse processo foi encerrado.'; return; }
-    $('#gTit').innerHTML=`${esc(d.nome)} <span class="pid" style="font-size:13px">PID ${d.pid}</span>`;
-    $('#gSub').innerHTML=`Programa: <a href="#" data-prog="${esc(d.programa)}" style="color:var(--acento)">${esc(d.programa)}</a> · usuário ${esc(d.usuario||'—')} · ${d.conexoes.length} conexões · ${d.filhos.length} filhos`;
-    $('#gMini').innerHTML=miniCards([['Memória',fB(d.mem),`privada ${fB(d.privada)}`],['CPU',fP(d.cpu),d.cpu_tempo?`${dur(d.cpu_tempo)} de CPU no total`:'',nivel(d.cpu,50,20)],['Disco',fR(d.ler+d.gravar),`ler ${fR(d.ler)} · gravar ${fR(d.gravar)}`],['Rede',fR(d.env+d.rec),`↑ ${fR(d.env)} · ↓ ${fR(d.rec)}`]]);
-    if(aba==='info'){ const kv=[['Caminho',d.exe?`<code>${esc(d.exe)}</code>`:'—'],['Linha de comando',d.cmdline?`<code>${esc(d.cmdline)}</code>`:'—'],['Iniciado',quando(d.inicio)+` (há ${dur(Date.now()/1000-d.inicio)})`],['Usuário',esc(d.usuario||'—')],['Estado',esc(d.status||'—')],['Prioridade',esc(d.prioridade||'—')],['Threads',nf0.format(d.threads)],['Handles',nf0.format(d.handles)],['Pai',d.pai?`<a href="#" data-pid="${d.pai.pid}" style="color:var(--acento)">${esc(d.pai.nome)} (${d.pai.pid})</a>`:'—']];
-      $('#gkv').innerHTML=kv.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join(''); }
-    else if(aba==='ips') T.a.def(d.ips); else if(aba==='conn') T.a.def(d.conexoes); else T.a.def(d.filhos); }
+  function preencher(){ if(gavAtual!==o) return; if(!d){ $('#gSub').textContent='Esse processo foi encerrado.'; return; }
+    $('#gTit').innerHTML=`${esc(d.nome)} <span class="pid" style="font-size:13px">PID ${d.pid}</span>${d.protegido?ESCUDO(d.protegido):''}`;
+    $('#gSub').innerHTML=`Programa: <a href="#" data-prog-link="${esc(d.programa)}">${esc(d.programa)}</a> · usuário ${esc(d.usuario||'—')} · ${d.conexoes.length} conexões · ${d.filhos.length} filhos${d.protegido?` · <b>protegido:</b> ${esc(d.protegido)}`:''}`;
+    const prot=!!d.protegido, perm=CFG.permitir_encerrar;
+    botoesAcoes([{t:'Mostrar janela',ic:'janela',f:()=>acao({tipo:'mostrar',pid:d.pid,inicio:d.inicio})},{t:'Abrir local',ic:'pasta',des:!d.exe,f:()=>acao({tipo:'pasta',pid:d.pid,inicio:d.inicio})},
+      {t:'Fechar janela (X)',ic:'fechar',des:prot,f:()=>acao({tipo:'fechar_janelas',pid:d.pid,inicio:d.inicio})},
+      {t:'Encerrar processo',ic:'matar',perigo:1,des:prot||!perm,dica:prot?d.protegido:'',f:async()=>{ if(CFG.confirmar_encerrar && !await confirmar(`Encerrar ${d.nome} (PID ${d.pid})?`,'O processo será encerrado na hora. O que não estiver salvo nele será perdido.','Encerrar',1)) return; acao({tipo:'encerrar',pid:d.pid,inicio:d.inicio}); }},
+      {t:'Encerrar árvore',ic:'arvore',perigo:1,des:prot||!perm,f:async()=>{ if(CFG.confirmar_encerrar && !await confirmar(`Encerrar ${d.nome} e tudo o que ele abriu?`,'Esse processo e todos os subprocessos dele serão encerrados na hora.','Encerrar árvore',1)) return; acao({tipo:'encerrar_arvore',pid:d.pid,inicio:d.inicio}); }}]);
+    $('#gMini').innerHTML=miniCards([['Memória',fB(d.mem),`conjunto ${fB(d.ws)} · comprometida ${fB(d.commit)}`],['CPU',fP(d.cpu),d.cpu_tempo?`${dur(d.cpu_tempo)} de CPU no total`:'',nivel(d.cpu,50,20)],['Disco',fR(d.ler+d.gravar),`ler ${fR(d.ler)} · gravar ${fR(d.gravar)}`],['Rede',fN(d.env+d.rec),`↑ ${fN(d.env)} · ↓ ${fN(d.rec)}`],['GPU',fP(d.gpu),d.gpu_mem?fB(d.gpu_mem)+' de vídeo':'']]);
+    if(aba==='info'){ const kv=[['Caminho',d.exe?`<code>${esc(d.exe)}</code>`:'— (o Windows não informa: processo protegido)'],['Linha de comando',d.cmdline?`<code>${esc(d.cmdline)}</code>`:'—'],['Iniciado',quando(d.inicio)+` (há ${dur(Date.now()/1000-d.inicio)})`],['Usuário',esc(d.usuario||'—')],['Sessão',d.sessao===0?'0 (serviços do Windows)':esc(d.sessao)],['Prioridade',esc(d.prioridade||'—')],['Threads',nf0.format(d.threads)],['Handles',nf0.format(d.handles)],['Processo pai',d.pai?`<a href="#" data-pid="${d.pai.pid}">${esc(d.pai.nome)} (${d.pai.pid})</a>`:'—'],['Proteção',d.protegido?esc(d.protegido)+' — não pode ser encerrado por aqui':'pode ser encerrado']];
+      $('#gkv').innerHTML=kv.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join(''); $('#gInfo').innerHTML=infoKv(d.info||{}); }
+    else if(aba==='ips') T.a.def(d.ips); else if(aba==='conn') T.a.def(d.conexoes); else if(aba==='fam') T.a.def(d.filhos); else T.a.def((d.lista_janelas||[]).map(t=>({t}))); }
   abrirGaveta(o); }
-document.addEventListener('click',e=>{ if(e.target.closest('a[data-prog],a[data-pid]')) e.preventDefault(); });
+document.addEventListener('click',e=>{ const a=e.target.closest('a[data-prog-link]'); if(a){ e.preventDefault(); abrirPrograma(a.dataset.progLink); } const b=e.target.closest('a[data-pid]'); if(b){ e.preventDefault(); } });
 
 /* =================== início =================== */
-addEventListener('resize',()=>{ if(vista==='geral') vGeral(); gH.forEach(g=>g&&g.desenhar()); grTemp.desenhar(); });
-ir(location.hash.slice(1)||'geral');
-ciclo(); setInterval(ciclo,5000);
-cicloStatus(); setInterval(cicloStatus,30000);
-API('lentidao?dias=1').then(d=>contLent(d.episodios)).catch(()=>{});
-setInterval(()=>{ if(vista==='historico') vHistorico(); if(vista==='lentidao') vLentidao(); if(vista==='hardware') carregarTempHist(); },60000);
+addEventListener('resize',()=>{ if(vista==='geral') vGeral(); gH.forEach(g=>g&&g.desenhar()); grTemp.desenhar(); grRec.desenhar(); });
+(async()=>{ await carregarCfg(); try{ SERIE=await API('serie?seg=900'); ultSeg=SERIE.length?SERIE[SERIE.length-1][0]:0; }catch(_){}
+  ir(location.hash||'geral'); loop(); cicloStatus(); setInterval(cicloStatus,15000);
+  API('lentidao?dias=1').then(d=>contLent(d.episodios)).catch(()=>{});
+  setInterval(()=>{ if(vista==='historico') vHistorico(); if(vista==='lentidao') vLentidao(); if(vista==='hardware') carregarTempHist(); if(vista==='recurso'&&faixaRec.h) carregarHistRec(); },60000); })();
 </script>
 </body>
 </html>

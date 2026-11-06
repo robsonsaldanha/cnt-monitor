@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.join(AQUI, "..", "src"))
 os.environ.setdefault("MONITORPC_DADOS", os.path.join(tempfile.gettempdir(), "monitorpc-demo"))
 
 import psutil  # noqa: E402
-from monitorpc import config, banco, motor, servidor, temperatura, rede  # noqa: E402
+from monitorpc import config, banco, motor, servidor, temperatura, rede, gpu, inicializacao  # noqa: E402
 
 PROGS = ["Claude", "Google Chrome", "WSL (Linux)", "Maestri", "Vynex Forge", "Discord", "OneDrive",
          "Antivírus (Defender)", "MobaXterm", "Spotify"]
@@ -108,6 +108,28 @@ class RedeFake(rede.MonitorRede):
         return out
 
 
+class GPUFake(gpu.MonitorGPU):
+    def iniciar(self):
+        self.ok = True
+        self.adaptadores = [{"luid": (0, 1), "nome": "NVIDIA GeForce GTX 1650", "mem_dedicada": 4 * 2**30, "mem_compartilhada": 8 * 2**30, "fabricante": "NVIDIA"},
+                            {"luid": (0, 2), "nome": "Intel(R) UHD Graphics", "mem_dedicada": 128 * 2**20, "mem_compartilhada": 8 * 2**30, "fabricante": "Intel"}]
+
+    def ler(self):
+        pids = [p.pid for p in psutil.process_iter()][:4]
+        self.por_pid = {pid: {"uso": random.random() * 20, "mem": int(random.random() * 3e8), "luid": (0, 1)} for pid in pids}
+        self.por_gpu = {(0, 1): {"uso": 10 + random.random() * 30, "engines": {"3D": 20 + random.random() * 10, "Copy": 2.0, "VideoDecode": 5.0}, "mem_ded": int(1.2e9), "mem_comp": int(1e8)},
+                        (0, 2): {"uso": random.random() * 8, "engines": {"3D": random.random() * 8}, "mem_ded": 0, "mem_comp": int(4e8)}}
+
+
+def ini_fake():
+    return [{"id": "a1", "nome": "Discord", "comando": r'"C:\Users\robson\AppData\Local\Discord\Update.exe" --processStart Discord.exe', "exe": "/usr/bin/python3", "args": "",
+             "existe": True, "origem": "Registro (Run)", "escopo": "robson", "ativo": True, "descricao": "Discord", "empresa": "Discord Inc.", "_alterar": (None, "Run", "Discord")},
+            {"id": "a2", "nome": "OneDrive", "comando": r'"C:\Program Files\Microsoft OneDrive\OneDrive.exe" /background', "exe": "", "args": "",
+             "existe": True, "origem": "Registro (Run)", "escopo": "robson", "ativo": False, "descricao": "Microsoft OneDrive", "empresa": "Microsoft Corporation", "_alterar": (None, "Run", "OneDrive")},
+            {"id": "a3", "nome": "Monitor do PC", "comando": r'"C:\Program Files\Monitor do PC\MonitorPC.exe" --bandeja', "exe": "", "args": "",
+             "existe": True, "origem": "Registro (Run)", "escopo": "Todos os usuários", "ativo": True, "descricao": "Monitor do PC", "empresa": "", "_alterar": (None, "Run", "MonitorDoPC")}]
+
+
 if __name__ == "__main__":
     banco.iniciar()
     if banco.info()["registros"] < 100:
@@ -115,7 +137,11 @@ if __name__ == "__main__":
     m = motor.Motor()
     m.sens = SensoresFake()
     m.rede = RedeFake()
+    m.gpu = GPUFake()
+    inicializacao.listar = ini_fake
+    inicializacao.alterar = lambda item, ativo: True
     m.iniciar()
+    m.bandeja_ts = time.time() + 10 ** 9
     servidor.criar(m)
     print("Demo em", config.URL)
     while True:

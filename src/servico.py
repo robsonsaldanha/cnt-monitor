@@ -94,7 +94,11 @@ def modo_console():
         pass
     if saida:
         rel = {"status": m.status(), "agora": m.agora(), "rede": m.rede_estado(), "hardware": m.hardware(),
-               "n_processos": len(m.processos())}
+               "n_processos": len(m.processos()), "processos": m.processos()[:400]}
+        try:
+            rel["inicializacao"] = m.inicializacao()
+        except Exception as e:  # noqa: BLE001
+            rel["inicializacao_erro"] = str(e)
         with open(saida, "w", encoding="utf-8") as f:
             json.dump(rel, f, ensure_ascii=False, indent=1, default=list)
     m.parar()
