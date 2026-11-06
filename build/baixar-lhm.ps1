@@ -29,5 +29,13 @@ foreach ($p in Get-ChildItem $pkgs -Directory) {
   $nat = Join-Path $p.FullName "runtimes\win-x64\native"
   if (Test-Path $nat) { Copy-Item (Join-Path $nat "*") $destino -Force }
 }
+if (-not (Test-Path (Join-Path $destino "LibreHardwareMonitorLib.dll"))) {
+  $achados = Get-ChildItem $pkgs -Recurse -Filter LibreHardwareMonitorLib.dll
+  $achados | ForEach-Object { Write-Host "  encontrado: $($_.FullName)" }
+  $pref = $achados | Where-Object { $_.FullName -match 'net4' } | Select-Object -First 1
+  if (-not $pref) { $pref = $achados | Where-Object { $_.FullName -match 'netstandard' } | Select-Object -First 1 }
+  if (-not $pref) { $pref = $achados | Select-Object -First 1 }
+  if ($pref) { Copy-Item (Join-Path $pref.DirectoryName "*.dll") $destino -Force; Write-Host "  usando $($pref.DirectoryName)" }
+}
 Get-ChildItem $destino | Format-Table Name, Length | Out-Host
 if (-not (Test-Path (Join-Path $destino "LibreHardwareMonitorLib.dll"))) { throw "LibreHardwareMonitorLib.dll não encontrado" }
