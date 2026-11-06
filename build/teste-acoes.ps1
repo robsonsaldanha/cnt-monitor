@@ -120,7 +120,7 @@ Tenta "limpeza_temp" { $x = Post "acao" @{ tipo = "limpeza"; ids = @("temp_usuar
 Tenta "navegadores" { $x = Invoke-RestMethod "$base/navegadores"; ($x.navegadores | ForEach-Object { "$($_.nome)=$([math]::Round($_.bytes/1MB))MB aberto=$($_.aberto)" }) -join "; " }
 Tenta "navegadores_limpar" { $x = Post "acao" @{ tipo = "navegadores"; ids = @("microsoftedge","googlechrome") }; "ok=$($x.ok) $($x.msg)" }
 # regra: um Python "órfão" (pai já encerrado) vira o programa "Python" — nunca aplicar regra no PowerShell do teste
-function PythonOrfao { Start-Process cmd -ArgumentList '/c','start','""','/min','python','-c','"import time; time.sleep(600)"' -WindowStyle Hidden -Wait; Start-Sleep 4
+function PythonOrfao { Start-Process cmd -ArgumentList '/c','start','""','/min','python','-c','"import time; time.sleep(600)"' -WindowStyle Hidden; Start-Sleep 5
   Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Where-Object { $_.CommandLine -like '*time.sleep(600)*' } | Sort-Object CreationDate -Descending | Select-Object -First 1 }
 $po = PythonOrfao
 $prog = if ($po) { ((Invoke-RestMethod "$base/v1/processos/$($po.ProcessId)").dados.programa) } else { "" }
