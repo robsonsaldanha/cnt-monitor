@@ -18,6 +18,9 @@ def _validar(c):
     out = dict(config.PADRAO)
     out["alertas"] = [dict(x) for x in alertas.PADRAO]
     out["jogo_fechar"] = []
+    out["mini_itens"] = list(config.PADRAO["mini_itens"])
+    out["regras_prog"] = []
+    out["vps"] = []
     for k, padrao in config.PADRAO.items():
         if k not in c:
             continue
@@ -26,9 +29,19 @@ def _validar(c):
             if isinstance(v, list):
                 out[k] = alertas.validar(v)
             continue
-        if k == "jogo_fechar":
+        if k in ("jogo_fechar", "mini_itens"):
             if isinstance(v, list):
                 out[k] = [str(x)[:80] for x in v if isinstance(x, str)][:50]
+            continue
+        if k == "regras_prog":
+            if isinstance(v, list):
+                from . import regras
+                out[k] = regras.validar(v)
+            continue
+        if k == "vps":
+            if isinstance(v, list):
+                from . import vps
+                out[k] = vps.validar(v)
             continue
         if isinstance(padrao, bool):
             out[k] = bool(v)
@@ -41,6 +54,10 @@ def _validar(c):
                 continue
             if k.startswith("limiar_"):
                 v = max(30, min(110, v))
+            if k == "mini_opacidade":
+                v = max(30, min(100, v))
+            if k == "acesso_porta":
+                v = max(1024, min(65535, v))
             out[k] = v
         elif isinstance(padrao, str):
             if k in config.OPCOES and v not in config.OPCOES[k]:
@@ -109,3 +126,38 @@ def aplicar_inicializacao(c=None):
                     pass
     except OSError as e:
         print("Não consegui alterar a inicialização:", e)
+
+
+PROTEGIDAS = {"acesso_senha", "api_chave"}   # só mudam pelas funções próprias, nunca pelo formulário
+
+
+def salvar_publico(novos):
+    return salvar({k: v for k, v in (novos or {}).items() if k not in PROTEGIDAS})
+
+
+def publico():
+    c = obter()
+    c["acesso_tem_senha"] = bool(c.pop("acesso_senha", ""))
+    c["api_tem_chave"] = bool(c.get("api_chave"))
+    c.pop("api_chave", None)
+    return c
+
+
+# ---------------------------------------------------------------- backup das configurações
+def backup():
+    """Tudo menos senhas/chaves (essas ficam só neste PC)."""
+    import time
+    from . import config as _c
+    c = obter()
+    for k in PROTEGIDAS:
+        c.pop(k, None)
+    return {"app": "monitor-pc", "tipo": "backup-configuracoes", "versao": _c.VERSAO, "criado_em": time.time(),
+            "aviso": "Senhas (acesso pelo celular, VPS) e a chave da API não vão no backup.", "config": c}
+
+
+def restaurar(dados):
+    if not isinstance(dados, dict) or dados.get("app") != "monitor-pc" or not isinstance(dados.get("config"), dict):
+        return False, "Esse arquivo não é um backup do Monitor do PC."
+    novos = {k: v for k, v in dados["config"].items() if k in config.PADRAO and k not in PROTEGIDAS}
+    salvar(novos)
+    return True, f"{len(novos)} configurações restauradas. Senhas não fazem parte do backup: cadastre de novo se precisar."

@@ -106,3 +106,64 @@ $x = Post "acao" @{ tipo = "atualizar_verificar" }; $r2.atualizacao = "ok=$($x.o
 "--- v2.2 ---"
 $r2.GetEnumerator() | ForEach-Object { "{0,-22} {1}" -f $_.Key, $_.Value }
 $r2 | ConvertTo-Json | Out-File -Encoding utf8 api\teste-v22.json
+
+# ============================== v2.3 ==============================
+$r3 = [ordered]@{}
+function Tenta($nome, [scriptblock]$b) { try { $r3[$nome] = & $b } catch { $r3[$nome] = "ERRO: $($_.Exception.Message)" } }
+Tenta "api_v1_resumo" { $x = Invoke-RestMethod "$base/v1/resumo"; "ok=$($x.ok) cpu=$($x.dados.cpu) mem=$($x.dados.mem_pct)" }
+foreach ($rec in "programas","processos","rede","conexoes","ips","hardware","temperaturas","discos","gpus","historico","lentidao","alertas","vazamentos","inicializacao","servicos","energia","jogo","vps","status") {
+  Tenta "v1_$rec" { $x = Invoke-WebRequest "$base/v1/$rec" -UseBasicParsing; "$($x.StatusCode) $($x.Content.Length) bytes" }
+}
+Tenta "v1_post_recusado" { try { Invoke-RestMethod -Method Post "$base/v1/resumo" -Body "{}" -ContentType "application/json"; "ACEITOU (ruim)" } catch { "recusado (bom): $($_.Exception.Response.StatusCode.value__)" } }
+Tenta "limpeza_analise" { $x = Invoke-RestMethod "$base/limpeza"; ($x.categorias | ForEach-Object { "$($_.id)=$([math]::Round($_.bytes/1MB))MB" }) -join " " }
+Tenta "limpeza_temp" { $x = Post "acao" @{ tipo = "limpeza"; ids = @("temp_usuario","relatorios_erro") }; "ok=$($x.ok) $($x.msg)" }
+Tenta "navegadores" { $x = Invoke-RestMethod "$base/navegadores"; ($x.navegadores | ForEach-Object { "$($_.nome)=$([math]::Round($_.bytes/1MB))MB aberto=$($_.aberto)" }) -join "; " }
+Tenta "navegadores_limpar" { $x = Post "acao" @{ tipo = "navegadores"; ids = @("microsoftedge","googlechrome") }; "ok=$($x.ok) $($x.msg)" }
+# regra: um Python "órfão" (pai já encerrado) vira o programa "Python" — nunca aplicar regra no PowerShell do teste
+function PythonOrfao { Start-Process cmd -ArgumentList '/c','start','""','/min','python','-c','"import time; time.sleep(600)"' -WindowStyle Hidden -Wait; Start-Sleep 4
+  Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Where-Object { $_.CommandLine -like '*time.sleep(600)*' } | Sort-Object CreationDate -Descending | Select-Object -First 1 }
+$po = PythonOrfao
+$prog = if ($po) { ((Invoke-RestMethod "$base/v1/processos/$($po.ProcessId)").dados.programa) } else { "" }
+$r3.regra_programa = "pid=$($po.ProcessId) programa=$prog"
+if ($prog -and $prog -notmatch 'PowerShell|Terminal|Prompt|Runner|Sistema|Windows') {
+  Tenta "regra_salvar" { $x = Post "acao" @{ tipo = "regra_salvar"; regra = @{ programa = $prog; prioridade = "baixa"; nucleos = @(0); avisar_ao_abrir = $true } }; "ok=$($x.ok) $($x.msg)" }
+  Start-Sleep 6
+  Tenta "regra_aplicada" { $pp = Get-Process -Id $po.ProcessId; "prioridade=$($pp.PriorityClass) (esperado Idle) afinidade=$($pp.ProcessorAffinity) (esperado 1)" }
+  Tenta "regra_log" { ((Invoke-RestMethod "$base/regras").log | Select-Object -First 3 | ForEach-Object msg) -join " | " }
+  $rid = ((Invoke-RestMethod "$base/regras").regras | Select-Object -First 1).id
+  Post "acao" @{ tipo = "regra_remover"; id = $rid } | Out-Null
+  Stop-Process -Id $po.ProcessId -Force -ErrorAction SilentlyContinue
+  $po = PythonOrfao
+  Post "acao" @{ tipo = "regra_salvar"; regra = @{ programa = $prog; bloquear = $true } } | Out-Null
+  Start-Sleep 6
+  Tenta "regra_bloquear" { "processo ainda existe: $([bool](Get-Process -Id $po.ProcessId -ErrorAction SilentlyContinue)) (esperado False)" }
+  $rid = ((Invoke-RestMethod "$base/regras").regras | Select-Object -First 1).id
+  Post "acao" @{ tipo = "regra_remover"; id = $rid } | Out-Null
+} else { $r3.regra_salvar = "PULADO: programa '$prog' não é seguro para testar" }
+# backup ida e volta
+Tenta "backup" { $b = Invoke-RestMethod "$base/backup"; $b.config.limiar_mem = 77; $x = Invoke-RestMethod -Method Post "$base/backup/restaurar" -Headers $h -ContentType "application/json" -Body ($b | ConvertTo-Json -Depth 10 -Compress); $v = (Invoke-RestMethod "$base/config").valores.limiar_mem; Post "config" @{ limiar_mem = 88 } | Out-Null; "ok=$($x.ok) limiar depois=$v (esperado 77) | $($x.msg)" }
+# VPS: validação e teste (porta fechada)
+Tenta "vps_testar" { $x = Post "acao" @{ tipo = "vps_testar"; vps = @{ host = "127.0.0.1"; porta = 1 }; segredo = @{ senha = "x" } }; "ok=$($x.ok) $($x.msg)" }
+Tenta "vps_salvar" { $x = Post "acao" @{ tipo = "vps_salvar"; vps = @{ nome = "teste"; host = "127.0.0.1"; porta = 1; servicos = @("nginx", "rm -rf /") }; segredo = @{ senha = "segredo" } }; $l = Invoke-RestMethod "$base/vps"; "ok=$($x.ok) servicos=$($l[0].servicos -join ',') (esperado só nginx) tem_senha=$($l[0].tem_senha) segredos.bin=$(Test-Path C:\ProgramData\MonitorPC\segredos.bin)" }
+Tenta "vps_senha_no_config" { $c = Get-Content C:\ProgramData\MonitorPC\config.json -Raw; "senha aparece no config.json: $($c.Contains('segredo')) (esperado False)" }
+$l = Invoke-RestMethod "$base/vps"; if ($l) { Post "acao" @{ tipo = "vps_remover"; id = $l[0].id } | Out-Null }
+# acesso pela rede: senha, login, somente ver, chave da API
+Tenta "acesso_senha" { $x = Post "acesso/senha" @{ senha = "teste123" }; "ok=$($x.ok)" }
+Post "config" @{ acesso_remoto = $true; acesso_somente_ver = $true } | Out-Null
+Start-Sleep 2
+$ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike "127.*" -and $_.IPAddress -notlike "169.254*" } | Select-Object -First 1).IPAddress
+$rb = "http://$($ip):48732"
+Tenta "remoto_sem_login" { $x = Invoke-WebRequest "$rb/api/agora" -UseBasicParsing -MaximumRedirection 0 -SkipHttpErrorCheck; "$($x.StatusCode) -> $($x.Headers.Location)" }
+Tenta "remoto_senha_errada" { $x = Invoke-WebRequest "$rb/login" -Method Post -Body "senha=errada" -UseBasicParsing -SkipHttpErrorCheck; "$($x.StatusCode) (esperado 401)" }
+Tenta "remoto_login" { $s = New-Object Microsoft.PowerShell.Commands.WebRequestSession; Invoke-WebRequest "$rb/login" -Method Post -Body "senha=teste123" -WebSession $s -UseBasicParsing | Out-Null; $x = Invoke-RestMethod "$rb/api/agora" -WebSession $s; $y = Invoke-WebRequest "$rb/api/acao" -Method Post -Body "{}" -ContentType "application/json" -WebSession $s -UseBasicParsing -SkipHttpErrorCheck; "agora cpu=$($x.cpu) | alterar pelo celular (somente ver): $($y.StatusCode) (esperado 403)" }
+Tenta "api_chave" { $k = (Post "acesso/chave" @{}).chave; $x = Invoke-RestMethod "$rb/api/v1/resumo" -Headers @{ "X-API-Key" = $k }; $y = Invoke-WebRequest "$rb/api/v1/resumo" -UseBasicParsing -SkipHttpErrorCheck; "com chave ok=$($x.ok) | sem chave $($y.StatusCode) (esperado 401)" }
+Tenta "firewall" { (Get-NetFirewallRule -DisplayName "Monitor do PC (acesso pelo celular)" -ErrorAction SilentlyContinue | ForEach-Object { "$($_.DisplayName) perfil=$($_.Profile)" }) -join "" }
+Post "config" @{ acesso_remoto = $false } | Out-Null
+Start-Sleep 1
+Tenta "firewall_removido" { "regra existe: $([bool](Get-NetFirewallRule -DisplayName 'Monitor do PC (acesso pelo celular)' -ErrorAction SilentlyContinue)) (esperado False)" }
+Tenta "fontes" { $x = Invoke-WebRequest "http://127.0.0.1:48731/fontes/barlow-latin-400-normal.woff2" -UseBasicParsing; "$($x.StatusCode) $($x.Headers['Content-Type'])" }
+Tenta "navegar" { Post "ui/navegar" @{ aba = "otimizar" } | Out-Null; (Invoke-RestMethod "$base/agora").navegar.aba }
+Tenta "icone_driverstore" { $e = Get-ChildItem C:\Windows\System32\DriverStore\FileRepository -Recurse -Filter *.exe -ErrorAction SilentlyContinue | Select-Object -First 3; ($e | ForEach-Object { $x = Invoke-WebRequest "$base/icone?exe=$([uri]::EscapeDataString($_.FullName))" -UseBasicParsing -SkipHttpErrorCheck; "$($_.Name)=$($x.StatusCode)" }) -join " " }
+"--- v2.3 ---"
+$r3.GetEnumerator() | ForEach-Object { "{0,-22} {1}" -f $_.Key, $_.Value }
+$r3 | ConvertTo-Json | Out-File -Encoding utf8 api\teste-v23.json

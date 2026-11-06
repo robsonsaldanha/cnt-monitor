@@ -52,15 +52,36 @@ def _bits(hdc, hbm, w, h):
     return buf.raw
 
 
+if WIN:
+    class SHFILEINFOW(ctypes.Structure):
+        _fields_ = [("hIcon", wt.HICON), ("iIcon", ctypes.c_int), ("dwAttributes", wt.DWORD),
+                    ("szDisplayName", ctypes.c_wchar * 260), ("szTypeName", ctypes.c_wchar * 80)]
+
+
+def _icone_shell(caminho):
+    """Ícone que o Explorer mostra para o arquivo (inclui o ícone padrão de .exe sem ícone próprio)."""
+    try:
+        import pythoncom
+        pythoncom.CoInitialize()
+    except Exception:
+        pass
+    sfi = SHFILEINFOW()
+    r = ctypes.WinDLL("shell32").SHGetFileInfoW(ctypes.c_wchar_p(caminho), 0, ctypes.byref(sfi), ctypes.sizeof(sfi),
+                                                 0x100 | 0x0)  # SHGFI_ICON | SHGFI_LARGEICON
+    return sfi.hIcon if r and sfi.hIcon else None
+
+
 def _extrair(caminho, tam=32):
     from PIL import Image
     grande = wt.HICON()
     pequeno = wt.HICON()
     n = _shell32.ExtractIconExW(caminho, 0, ctypes.byref(grande), ctypes.byref(pequeno), 1)
-    if n == 0 or n == 0xFFFFFFFF:
-        return None
-    hicon = grande.value or pequeno.value
-    outro = pequeno.value if grande.value else None
+    hicon, outro = None, None
+    if n not in (0, 0xFFFFFFFF):
+        hicon = grande.value or pequeno.value
+        outro = pequeno.value if grande.value else None
+    if not hicon:
+        hicon = _icone_shell(caminho)
     if not hicon:
         return None
     ii = ICONINFO()

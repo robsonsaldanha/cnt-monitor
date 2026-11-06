@@ -271,3 +271,71 @@ def info():
         except OSError:
             pass
     return {"registros": r[0], "desde": r[1], "tamanho": tam}
+
+
+# ---------------------------------------------------------------- vazamento de memória
+def vazamentos(horas=3, min_mb_h=200, min_crescimento_mb=400, min_r2=0.75):
+    """Programas cuja memória cresce de forma contínua (típico de vazamento).
+    Usa regressão linear da memória nas últimas horas."""
+    desde = int(time.time() - horas * 3600)
+    con = conectar()
+    nomes = [r[0] for r in con.execute(
+        "SELECT nome FROM apps WHERE ts>=? AND nome!=? GROUP BY nome HAVING COUNT(*)>=40 AND MAX(ts)-MIN(ts)>=5400",
+        (desde, OUTROS)).fetchall()]
+    out = []
+    for nome in nomes:
+        pts = con.execute("SELECT ts, mem FROM apps WHERE nome=? AND ts>=? ORDER BY ts", (nome, desde)).fetchall()
+        n = len(pts)
+        xs = [(t - pts[0][0]) / 3600 for t, _ in pts]
+        ys = [m / 2**20 for _, m in pts]
+        mx, my = sum(xs) / n, sum(ys) / n
+        sxx = sum((x - mx) ** 2 for x in xs)
+        if sxx <= 0:
+            continue
+        sxy = sum((x - mx) * (y - my) for x, y in zip(xs, ys))
+        a = sxy / sxx
+        syy = sum((y - my) ** 2 for y in ys)
+        r2 = (sxy * sxy) / (sxx * syy) if syy > 0 else 0
+        k = max(3, n // 10)
+        ini = sorted(ys[:k])[k // 2]
+        fim = sorted(ys[-k:])[k // 2]
+        if a >= min_mb_h and r2 >= min_r2 and fim - ini >= min_crescimento_mb:
+            passo = max(1, n // 60)
+            out.append({"nome": nome, "taxa_mb_h": round(a), "r2": round(r2, 2), "inicio_mb": round(ini), "atual_mb": round(fim),
+                        "horas": round(xs[-1], 1), "pontos": [[pts[i][0], round(ys[i])] for i in range(0, n, passo)]})
+    con.close()
+    out.sort(key=lambda v: v["taxa_mb_h"], reverse=True)
+    return out
+
+
+# ---------------------------------------------------------------- VPS
+def vps_gravar(linhas):
+    con = conectar()
+    con.execute("CREATE TABLE IF NOT EXISTS vps_hist(ts INTEGER, id TEXT, cpu REAL, mem_pct REAL, disco_pct REAL, "
+                "load1 REAL, rx REAL, tx REAL, online INTEGER)")
+    con.executemany("INSERT INTO vps_hist VALUES (?,?,?,?,?,?,?,?,?)", linhas)
+    con.commit()
+    con.close()
+
+
+def vps_historico(vid, horas=24):
+    desde = int(time.time() - horas * 3600)
+    p = _passo(horas * 3600, 300)
+    con = conectar()
+    try:
+        r = con.execute("SELECT (ts/?)*? b, AVG(cpu), MAX(mem_pct), MAX(disco_pct), AVG(load1), AVG(rx), AVG(tx), MIN(online) "
+                        "FROM vps_hist WHERE id=? AND ts>=? GROUP BY b ORDER BY b", (p, p, vid, desde)).fetchall()
+    except sqlite3.OperationalError:
+        r = []
+    con.close()
+    return {"desde": desde, "ate": int(time.time()), "passo": p, "pontos": r}
+
+
+def vps_limpar(dias):
+    con = conectar()
+    try:
+        con.execute("DELETE FROM vps_hist WHERE ts < ?", (int(time.time() - dias * 86400),))
+        con.commit()
+    except sqlite3.OperationalError:
+        pass
+    con.close()

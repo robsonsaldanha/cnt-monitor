@@ -4,3 +4,5 @@ pythonnet==3.0.5
 pystray==0.19.5
 pillow==11.3.0
 pyinstaller==6.16.0
+paramiko==3.5.1
+qrcode==8.2

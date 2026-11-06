@@ -2,7 +2,7 @@
 import os
 import sys
 
-VERSAO = "2.2.0"
+VERSAO = "2.3.0"
 WIN = os.name == "nt"
 
 if os.environ.get("MONITORPC_DADOS"):
@@ -54,6 +54,22 @@ PADRAO = {
     "jogo_silenciar": True,
     "jogo_fps": True,
     "atualizacao_auto": True,
+    "varias_janelas": False,      # permitir mais de uma janela do Monitor aberta
+    "mini_ativo": False,
+    "mini_itens": ["cpu", "mem", "temp_cpu", "gpu", "fps"],
+    "mini_canto": "sup_dir",
+    "mini_opacidade": 85,
+    "mini_tamanho": "normal",
+    "mini_layout": "horizontal",
+    "regras_prog": [],            # regras por programa (prioridade, núcleos, bloquear, limite)
+    "vazamento_ativo": True,
+    "acesso_remoto": False,       # acesso pelo celular (rede de casa)
+    "acesso_porta": 48732,
+    "acesso_somente_ver": True,
+    "acesso_senha": "",           # hash (nunca a senha)
+    "api_chave": "",              # chave para outros programas lerem a API pela rede
+    "api_cors": False,            # deixa páginas web deste PC lerem a API (só leitura)
+    "vps": [],                    # servidores cadastrados (sem senhas: ficam criptografadas à parte)
 }
 
 OPCOES = {
@@ -61,7 +77,11 @@ OPCOES = {
     "tema": ["auto", "escuro", "claro"],
     "sensores_intervalo_s": [1, 2, 5, 10],
     "retencao_dias": [1, 3, 7, 15, 30],
+    "mini_canto": ["sup_dir", "sup_esq", "inf_dir", "inf_esq"],
+    "mini_tamanho": ["pequeno", "normal", "grande"],
+    "mini_layout": ["horizontal", "vertical"],
 }
+SEGREDOS = os.path.join(BASE, "segredos.bin")
 
 
 def pasta_recursos():

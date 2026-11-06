@@ -17,7 +17,7 @@ from collections import deque, defaultdict
 import psutil
 
 from . import config, configuracao, banco, rede, temperatura, nt, gpu, discos, inicializacao
-from . import alertas, jogo, energia, servicos, atualizacao, sessao
+from . import alertas, jogo, energia, servicos, atualizacao, sessao, regras, limpeza, vps
 
 WIN = os.name == "nt"
 NCPU = psutil.cpu_count() or 1
@@ -147,6 +147,15 @@ class Motor:
         self.atualizador = atualizacao.Atualizador()
         self._ult_atualizacao = 0
         self.jogo = jogo.ModoJogo(self)
+        self.regras = regras.MotorRegras()
+        self.tarefas = limpeza.Tarefas()
+        self.vps = vps.Gerenciador()
+        self.vazamentos = []
+        self._ult_vaz = 0
+        self._vaz_avisados = {}
+        self._ult_vps_limpa = 0
+        self.navegar = None
+        self.servidores = None
 
     # ================================================================ ciclo
     def iniciar(self):
@@ -217,6 +226,7 @@ class Motor:
                     self.rede.parar()
                     self.rede.ok = False
                 self.discos.atualizar_mapa()
+                self._extras_lentos(c)
                 if c["atualizacao_auto"] and time.time() - self._ult_atualizacao > 6 * 3600 and time.time() - self.inicio > 120:
                     self._ult_atualizacao = time.time()
                     if self.atualizador.verificar() and not self.jogo.ativo:
@@ -224,6 +234,84 @@ class Motor:
             except Exception:
                 self.erros.append(traceback.format_exc())
             self.parar_ev.wait(2)
+
+    def _notificar(self, titulo, msg, gravar=True, regra="sistema"):
+        if gravar:
+            banco.gravar_alerta(time.time(), regra, titulo, msg)
+        if time.time() - self.bandeja_ts < 40:
+            self.fila.put({"tipo": "notificar", "titulo": titulo, "msg": msg, "id": uuid.uuid4().hex[:12]})
+
+    def _extras_lentos(self, c):
+        """Regras por programa, vazamento de memória e VPS (a cada 2 s)."""
+        t = time.time()
+        if c["regras_prog"]:
+            with self.lock:
+                e, procs = self.estado, dict(self.procs)
+            try:
+                for titulo, msg in self.regras.aplicar(c["regras_prog"], e, procs):
+                    self._notificar(titulo, msg, regra="regra")
+            except Exception:
+                self.erros.append(traceback.format_exc())
+        if c["vazamento_ativo"] and t - self._ult_vaz > 300 and t - self.inicio > 60:
+            self._ult_vaz = t
+            try:
+                self.vazamentos = banco.vazamentos()
+                for v in self.vazamentos:
+                    if t - self._vaz_avisados.get(v["nome"], 0) > 6 * 3600:
+                        self._vaz_avisados[v["nome"]] = t
+                        self._notificar(f'Possível vazamento de memória: {v["nome"]}',
+                                        f'A memória cresce sem parar (+{v["taxa_mb_h"]} MB por hora; agora {v["atual_mb"]} MB). '
+                                        f'Reiniciar o programa costuma resolver.', regra="vazamento")
+            except Exception:
+                self.erros.append(traceback.format_exc())
+        elif not c["vazamento_ativo"]:
+            self.vazamentos = []
+        try:
+            self.vps.sincronizar(c["vps"])
+            while self.vps.eventos:
+                titulo, msg = self.vps.eventos.pop(0)
+                self._notificar(titulo, msg, regra="vps")
+            if self.vps.para_gravar:
+                linhas, self.vps.para_gravar = self.vps.para_gravar, []
+                banco.vps_gravar(linhas)
+            if self.vps._fp_pendentes:
+                fps, self.vps._fp_pendentes = self.vps._fp_pendentes, {}
+                lista = [dict(v, fingerprint=fps.get(v["id"], v["fingerprint"])) for v in configuracao.obter("vps")]
+                configuracao.salvar({"vps": lista})
+            if t - self._ult_vps_limpa > 3600:
+                self._ult_vps_limpa = t
+                banco.vps_limpar(c["retencao_dias"])
+        except Exception:
+            self.erros.append(traceback.format_exc())
+
+    def config_mudou(self):
+        if self.servidores:
+            try:
+                self.servidores.aplicar()
+            except Exception:
+                self.erros.append(traceback.format_exc())
+        try:
+            self.vps.sincronizar(configuracao.obter("vps"))
+        except Exception:
+            pass
+
+    def remoto_rodando(self):
+        s = self.servidores
+        return {"ligado": bool(s and s.remoto), "erro": s.erro_remoto if s else None}
+
+    def n_nucleos(self):
+        return NCPU
+
+    def info_maquina(self):
+        import platform
+        h = {}
+        try:
+            h = self.hardware()
+        except Exception:
+            pass
+        return {"maquina": platform.node(), "sistema": h.get("sistema") or platform.platform(), "cpu": h.get("cpu_nome"),
+                "nucleos": NCPU, "ram_total": psutil.virtual_memory().total, "gpus": [g.get("nome") for g in h.get("gpus", [])],
+                "discos": [d.get("nome") for d in h.get("discos", [])], "versao": config.VERSAO}
 
     def _loop_sensores(self):
         while not self.parar_ev.is_set():
@@ -981,6 +1069,71 @@ class Motor:
             return {"ok": True, "msg": f'Versão {d["versao"]} disponível!' if d else "Você já está na versão mais nova."}
         if tipo == "atualizar_instalar":
             return res(self.atualizador.instalar())
+        if tipo == "limpeza":
+            ids = [str(x) for x in (a.get("ids") or [])]
+            if not ids:
+                return {"ok": False, "msg": "Marque pelo menos um item."}
+            r = limpeza.limpar(ids)
+            tot = sum(x["bytes"] for x in r)
+            return {"ok": True, "msg": f"Limpeza concluída: {tot / 2**20:,.0f} MB liberados.".replace(",", "."), "dados": r}
+        if tipo == "navegadores":
+            ids = [str(x) for x in (a.get("ids") or [])]
+            r = [x for x in limpeza.navegadores(ids) if x["id"] in ids]
+            abertos = [x["nome"] for x in r if x["aberto"]]
+            tot = sum(x["bytes"] for x in r if x["limpo"])
+            msg = f"Cache limpo: {tot / 2**20:,.0f} MB.".replace(",", ".")
+            if abertos:
+                msg += f' Não limpei {", ".join(abertos)} porque está aberto — feche e tente de novo.'
+            return {"ok": tot > 0 or not abertos, "msg": msg, "dados": r}
+        if tipo == "tarefa":
+            return res(self.tarefas.rodar(a.get("qual", "")))
+        if tipo == "vps_salvar":
+            item = vps.validar([a.get("vps") or {}])
+            if not item:
+                return {"ok": False, "msg": "Preencha pelo menos o endereço do servidor."}
+            item = item[0]
+            lista = configuracao.obter("vps")
+            antigo = next((v for v in lista if v["id"] == item["id"]), None)
+            if antigo and antigo["host"] == item["host"] and antigo["porta"] == item["porta"]:
+                item["fingerprint"] = antigo["fingerprint"]
+            else:
+                item["fingerprint"] = ""
+            vps.guardar_segredo(item["id"], a.get("segredo") or {})
+            lista = [v for v in lista if v["id"] != item["id"]] + [item] if not antigo else [item if v["id"] == item["id"] else v for v in lista]
+            configuracao.salvar({"vps": lista})
+            self.vps.sincronizar(configuracao.obter("vps"))
+            return {"ok": True, "msg": f'Servidor "{item["nome"]}" salvo.', "dados": {"id": item["id"]}}
+        if tipo == "vps_remover":
+            vid = a.get("id")
+            configuracao.salvar({"vps": [v for v in configuracao.obter("vps") if v["id"] != vid]})
+            vps.apagar_segredo(vid)
+            self.vps.sincronizar(configuracao.obter("vps"))
+            return {"ok": True, "msg": "Servidor removido."}
+        if tipo == "vps_testar":
+            item = vps.validar([a.get("vps") or {}])
+            if not item:
+                return {"ok": False, "msg": "Preencha o endereço do servidor."}
+            return res(self.vps.testar(item[0], a.get("segredo") or {}))
+        if tipo == "vps_esquecer":
+            vid = a.get("id")
+            configuracao.salvar({"vps": [dict(v, fingerprint="") if v["id"] == vid else v for v in configuracao.obter("vps")]})
+            self.vps.sincronizar(configuracao.obter("vps"))
+            return {"ok": True, "msg": "Identidade esquecida. A próxima conexão vai gravar a nova."}
+        if tipo == "regra_salvar":
+            item = regras.validar([a.get("regra") or {}])
+            if not item:
+                return {"ok": False, "msg": "Escolha o programa da regra."}
+            item = item[0]
+            lista = configuracao.obter("regras_prog")
+            if any(r["id"] == item["id"] for r in lista):
+                lista = [item if r["id"] == item["id"] else r for r in lista]
+            else:
+                lista = lista + [item]
+            configuracao.salvar({"regras_prog": lista})
+            return {"ok": True, "msg": f'Regra para "{item["programa"]}" salva: {regras.descrever(item)}.'}
+        if tipo == "regra_remover":
+            configuracao.salvar({"regras_prog": [r for r in configuracao.obter("regras_prog") if r["id"] != a.get("id")]})
+            return {"ok": True, "msg": "Regra apagada."}
         if tipo == "alerta_teste":
             if time.time() - self.bandeja_ts > 40:
                 return {"ok": False, "msg": "O ícone perto do relógio precisa estar aberto para mostrar notificações."}

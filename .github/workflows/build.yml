@@ -51,6 +51,7 @@ jobs:
             --paths src --hidden-import win32timezone --hidden-import servicemanager `
             --hidden-import win32com.client --hidden-import pythoncom --hidden-import win32api `
             --hidden-import win32ts --hidden-import win32profile --hidden-import win32process --hidden-import win32security `
+            --hidden-import win32crypt --collect-submodules paramiko --collect-submodules qrcode `
             --collect-all pythonnet --collect-all clr_loader `
             --add-data "src/ui;ui" --add-data "lhm;lhm" --add-data "presentmon;presentmon" src/servico.py
           pyinstaller --noconfirm --clean --windowed --name MonitorPC --icon instalador/icone.ico `
