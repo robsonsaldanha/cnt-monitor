@@ -112,8 +112,20 @@ jobs:
             setup.log
             console*.log
 
+      - name: Versão
+        id: versao
+        shell: pwsh
+        run: |
+          $v = (Select-String -Path src/monitorpc/config.py -Pattern 'VERSAO = "(.+)"').Matches[0].Groups[1].Value
+          "v=$v" >> $env:GITHUB_OUTPUT
+
       - name: Publicar release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.versao.outputs.v }}
+          name: Monitor do PC ${{ steps.versao.outputs.v }}
+          target_commitish: ${{ github.sha }}
+          body: |
+            Baixe o **MonitorDoPC-Setup-${{ steps.versao.outputs.v }}.exe**, dê dois cliques e siga o instalador (pede permissão de administrador).
           files: saida/*.exe
