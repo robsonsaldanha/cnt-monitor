@@ -181,7 +181,7 @@ if WIN:
                     ("LoggerId", c_ushort), ("ExtendedDataCount", c_ushort), ("UserDataLength", c_ushort),
                     ("ExtendedData", c_void_p), ("UserData", c_void_p), ("UserContext", c_void_p)]
 
-    CALLBACK = ctypes.WINFUNCTYPE(None, ctypes.POINTER(EVENT_RECORD))
+    CALLBACK = ctypes.WINFUNCTYPE(None, ctypes.c_void_p)
 
     class EVENT_TRACE_LOGFILEW(ctypes.Structure):
         _fields_ = [("LogFileName", ctypes.c_wchar_p), ("LoggerName", ctypes.c_wchar_p), ("CurrentTime", c_int64),
@@ -205,6 +205,8 @@ if WIN:
     _adv.CloseTrace.argtypes = [c_uint64]
     _adv.CloseTrace.restype = c_ulong
 
+    _U16 = struct.Struct("<H").unpack_from
+    _U64 = struct.Struct("<Q").unpack_from
     KERNEL_NETWORK = "7DD42A49-5329-4832-8DFD-43D979153A88"
     # id do evento -> (é envio?, é IPv6?)
     EVENTOS = {10: (True, False), 11: (False, False), 26: (True, True), 27: (False, True),
@@ -227,17 +229,20 @@ class MonitorRede:
         self._ult_locais = 0
 
     # -- callback: chamado para cada envio/recebimento; precisa ser leve
-    def _evento(self, prec):
+    def _evento(self, addr):
+        # Lê o EVENT_RECORD direto da memória (mais rápido que montar a estrutura):
+        # Id do evento no offset 40, UserDataLength no 86 e o ponteiro UserData no 96.
         try:
-            r = prec.contents
-            k = EVENTOS.get(r.EventHeader.EventDescriptor.Id)
-            if k is None or not r.UserData:
+            cab = ctypes.string_at(addr, 104)
+            k = EVENTOS.get(_U16(cab, 40)[0])
+            if k is None:
                 return
             envio, v6 = k
             n = 40 if v6 else 16
-            if r.UserDataLength < n:
+            ud = _U64(cab, 96)[0]
+            if not ud or _U16(cab, 86)[0] < n:
                 return
-            buf = ctypes.string_at(r.UserData, n)
+            buf = ctypes.string_at(ud, n)
             pid, tam = struct.unpack_from("<II", buf, 0)
             if v6:
                 chave = (pid, buf[8:24], buf[24:40])
@@ -260,9 +265,9 @@ class MonitorRede:
         pr.p.Wnode.Guid = _guid("6c1b6f3a-6b4e-4c62-9d3c-2f6f0b1d7a11")
         pr.p.LogFileMode = 0x00000100  # EVENT_TRACE_REAL_TIME_MODE
         pr.p.FlushTimer = 1
-        pr.p.BufferSize = 64
-        pr.p.MinimumBuffers = 8
-        pr.p.MaximumBuffers = 64
+        pr.p.BufferSize = 64        # KB
+        pr.p.MinimumBuffers = 16
+        pr.p.MaximumBuffers = 256
         pr.p.LoggerNameOffset = ctypes.sizeof(EVENT_TRACE_PROPERTIES)
         pr.p.LogFileNameOffset = 0
         return pr
@@ -328,6 +333,19 @@ class MonitorRede:
                 _adv.CloseTrace(self._trace.value)
         except Exception:
             pass
+
+    def estatisticas(self):
+        """Eventos perdidos pela sessão ETW (para diagnóstico)."""
+        if not WIN or not self.ok:
+            return None
+        try:
+            pr = self._props()
+            if _adv.ControlTraceW(0, self.SESSAO, ctypes.byref(pr), 0) != 0:
+                return None
+            return {"eventos_perdidos": pr.p.EventsLost, "buffers_perdidos": pr.p.RealTimeBuffersLost,
+                    "buffers": pr.p.NumberOfBuffers}
+        except Exception:
+            return None
 
     def _ips_locais(self):
         if time.time() - self._ult_locais > 60:

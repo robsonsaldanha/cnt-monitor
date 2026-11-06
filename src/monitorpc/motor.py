@@ -309,7 +309,7 @@ class Motor:
         for k in [k for k, v in self._pid_prog.items() if t - v[0] > 300]:
             self._pid_prog.pop(k, None)
         for pid, ip, env, rec in trafego:
-            pg = self._pid_prog.get(pid, (0, None))[1] or ("Sistema (kernel)" if pid in (0, 4) else f"PID {pid} (encerrado)")
+            pg = self._pid_prog.get(pid, (0, None))[1] or ("Sistema (kernel)" if pid in (0, 4) else "Processo já encerrado")
             v = self.vivos.get((pg, ip))
             if v is None:
                 v = self.vivos[(pg, ip)] = {"programa": pg, "ip": ip, "env_tot": 0, "rec_tot": 0, "env": 0.0,
@@ -603,6 +603,6 @@ class Motor:
 
     def status(self):
         return {"versao": config.VERSAO, "admin": eh_admin(), "rede_ok": self.rede.ok, "rede_erro": self.rede.erro,
-                "eventos_rede": self.rede.eventos, "sensores": self.sens.fontes, "avisos": self.sens.avisos[-5:],
+                "eventos_rede": self.rede.eventos, "etw": self.rede.estatisticas(), "sensores": self.sens.fontes, "avisos": self.sens.avisos[-5:],
                 "pawnio": self.sens.pawnio, "inicio": self.inicio, "tempo_amostra": self.ultima_amostra_s,
                 "banco": banco.info(), "erros": list(self.erros)[-3:], "pid": os.getpid()}

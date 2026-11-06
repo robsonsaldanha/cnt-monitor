@@ -26,7 +26,7 @@ def main():
     st, ag, rd, hw = d.get("status", {}), d.get("agora") or {}, d.get("rede", {}), d.get("hardware", {})
     falhas = []
     print("== STATUS ==")
-    for k in ("versao", "admin", "rede_ok", "rede_erro", "eventos_rede", "sensores", "avisos", "pawnio", "tempo_amostra", "erros"):
+    for k in ("versao", "admin", "rede_ok", "rede_erro", "eventos_rede", "etw", "sensores", "avisos", "pawnio", "tempo_amostra", "erros"):
         print(f"  {k}: {st.get(k)}")
     print("== AGORA ==")
     print(f"  cpu={ag.get('cpu')} mem={ag.get('mem_pct')} nproc={ag.get('nproc')} nconn={ag.get('nconn')} "

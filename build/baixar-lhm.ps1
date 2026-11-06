@@ -15,7 +15,8 @@ if (-not $nuget) {
 
 $preferidos = @("net472","net471","net47","net462","net461","net46","net452","net451","net45","netstandard2.0","netstandard1.6","netstandard1.3","netstandard1.1","netstandard1.0")
 foreach ($p in Get-ChildItem $pkgs -Directory) {
-  $lib = Join-Path $p.FullName "lib"
+  $lib = Join-Path $p.FullName "runtimes\win-x64\lib"
+  if (-not (Test-Path $lib)) { $lib = Join-Path $p.FullName "lib" }
   if (Test-Path $lib) {
     foreach ($tfm in $preferidos) {
       $d = Join-Path $lib $tfm
