@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS procs(ts INTEGER, pid INTEGER, nome TEXT, programa TE
 CREATE TABLE IF NOT EXISTS temps(ts INTEGER, id TEXT, hw TEXT, nome TEXT, valor REAL);
 CREATE TABLE IF NOT EXISTS remotos(hora INTEGER, programa TEXT, ip TEXT, host TEXT, env INTEGER, rec INTEGER,
     PRIMARY KEY(hora, programa, ip));
+CREATE TABLE IF NOT EXISTS alertas(ts INTEGER, regra TEXT, titulo TEXT, msg TEXT);
 CREATE INDEX IF NOT EXISTS i_geral ON geral(ts);
 CREATE INDEX IF NOT EXISTS i_apps ON apps(ts);
 CREATE INDEX IF NOT EXISTS i_apps_nome ON apps(nome, ts);
@@ -48,7 +49,7 @@ def iniciar():
 def limpar(dias=7):
     lim = int(time.time() - dias * 86400)
     con = conectar()
-    for t in ("geral", "apps", "procs", "temps"):
+    for t in ("geral", "apps", "procs", "temps", "alertas"):
         con.execute(f"DELETE FROM {t} WHERE ts < ?", (lim,))
     con.execute("DELETE FROM remotos WHERE hora < ?", (lim - 3600,))
     con.commit()
@@ -235,9 +236,23 @@ def relatorio(desde, ate):
             "limiar_cpu": configuracao.obter("limiar_cpu"), "limiar_temp": configuracao.obter("limiar_temp")}
 
 
+def gravar_alerta(ts, regra, titulo, msg):
+    con = conectar()
+    con.execute("INSERT INTO alertas VALUES (?,?,?,?)", (int(ts), regra, titulo, msg))
+    con.commit()
+    con.close()
+
+
+def listar_alertas(limite=200):
+    con = conectar()
+    r = con.execute("SELECT ts, regra, titulo, msg FROM alertas ORDER BY ts DESC LIMIT ?", (limite,)).fetchall()
+    con.close()
+    return [{"ts": a[0], "id": a[1], "titulo": a[2], "msg": a[3]} for a in r]
+
+
 def apagar_tudo():
     con = conectar()
-    for t in ("geral", "apps", "procs", "temps", "remotos"):
+    for t in ("geral", "apps", "procs", "temps", "remotos", "alertas"):
         con.execute(f"DELETE FROM {t}")
     con.commit()
     con.execute("PRAGMA incremental_vacuum")

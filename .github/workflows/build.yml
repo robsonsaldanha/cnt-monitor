@@ -33,14 +33,26 @@ jobs:
           Invoke-WebRequest "https://github.com/namazso/PawnIO.Setup/releases/latest/download/PawnIO_setup.exe" -OutFile instalador/PawnIO_setup.exe
           Get-Item instalador/PawnIO_setup.exe | Format-List Name, Length
 
+      - name: PresentMon (FPS dos jogos)
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          New-Item -ItemType Directory -Force pm, presentmon | Out-Null
+          gh release download -R GameTechDev/PresentMon -p "PresentMon-*-x64.exe" -D pm
+          $exe = Get-ChildItem pm\*.exe | Sort-Object { $_.Name.Length } | Select-Object -First 1
+          Copy-Item $exe.FullName presentmon\PresentMon.exe
+          Get-ChildItem pm, presentmon | Format-Table Name, Length
+
       - name: Gerar executáveis (PyInstaller)
         shell: pwsh
         run: |
           pyinstaller --noconfirm --clean --console --name MonitorPCServico --icon instalador/icone.ico `
             --paths src --hidden-import win32timezone --hidden-import servicemanager `
             --hidden-import win32com.client --hidden-import pythoncom --hidden-import win32api `
+            --hidden-import win32ts --hidden-import win32profile --hidden-import win32process --hidden-import win32security `
             --collect-all pythonnet --collect-all clr_loader `
-            --add-data "src/ui;ui" --add-data "lhm;lhm" src/servico.py
+            --add-data "src/ui;ui" --add-data "lhm;lhm" --add-data "presentmon;presentmon" src/servico.py
           pyinstaller --noconfirm --clean --windowed --name MonitorPC --icon instalador/icone.ico `
             --paths src --hidden-import pystray._win32 src/bandeja.py
           Get-ChildItem dist | Format-Table Name
@@ -120,6 +132,8 @@ jobs:
         run: |
           $v = (Select-String -Path src/monitorpc/config.py -Pattern 'VERSAO = "(.+)"').Matches[0].Groups[1].Value
           "v=$v" >> $env:GITHUB_OUTPUT
+          $h = (Get-FileHash (Get-ChildItem saida\MonitorDoPC-Setup-*.exe)[0].FullName -Algorithm SHA256).Hash.ToLower()
+          "sha=$h" >> $env:GITHUB_OUTPUT
 
       - name: Publicar release
         if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
@@ -130,4 +144,6 @@ jobs:
           target_commitish: ${{ github.sha }}
           body: |
             Baixe o **MonitorDoPC-Setup-${{ steps.versao.outputs.v }}.exe**, dê dois cliques e siga o instalador (pede permissão de administrador).
+
+            SHA256: ${{ steps.versao.outputs.sha }}
           files: saida/*.exe

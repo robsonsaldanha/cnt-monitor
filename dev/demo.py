@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.join(AQUI, "..", "src"))
 os.environ.setdefault("MONITORPC_DADOS", os.path.join(tempfile.gettempdir(), "monitorpc-demo"))
 
 import psutil  # noqa: E402
-from monitorpc import config, banco, motor, servidor, temperatura, rede, gpu, inicializacao  # noqa: E402
+from monitorpc import config, banco, motor, servidor, temperatura, rede, gpu, inicializacao, energia, servicos, icones  # noqa: E402
 
 PROGS = ["Claude", "Google Chrome", "WSL (Linux)", "Maestri", "Vynex Forge", "Discord", "OneDrive",
          "Antivírus (Defender)", "MobaXterm", "Spotify"]
@@ -130,6 +130,25 @@ def ini_fake():
              "existe": True, "origem": "Registro (Run)", "escopo": "Todos os usuários", "ativo": True, "descricao": "Monitor do PC", "empresa": "", "_alterar": (None, "Run", "MonitorDoPC")}]
 
 
+def energia_fake():
+    return {"planos": [{"guid": "381b4222-f694-41f0-9685-ff5bb260df2e", "nome": "Equilibrado", "ativo": True, "conhecido": "Equilibrado"},
+                       {"guid": "a1841308-3541-4fab-bc81-f71556f20b4a", "nome": "Economia de energia", "ativo": False, "conhecido": None}],
+            "ativo": {"nome": "Equilibrado"}, "modo": {"guid": "00000000-0000-0000-0000-000000000000", "nome": "Equilibrado"},
+            "modos": [{"guid": k, "nome": v} for k, v in energia.MODOS.items()],
+            "ajustes": [{"chave": "tela", "titulo": "Desligar a tela após", "tipo": "min", "valor": {"tomada": 10, "bateria": 5}, "opcoes": energia.MIN},
+                        {"chave": "cpu_max", "titulo": "Desempenho máximo do processador", "tipo": "pct", "valor": {"tomada": 100, "bateria": 99}, "opcoes": [50, 60, 70, 80, 90, 99, 100]},
+                        {"chave": "tampa", "titulo": "Ao fechar a tampa", "tipo": "enum", "valor": {"tomada": 1, "bateria": 1}, "opcoes": [{"v": 0, "t": "Não fazer nada"}, {"v": 1, "t": "Suspender"}]}],
+            "windows": [{"chave": k, "titulo": t, "descricao": d, "ativo": True} for k, t, d in energia.AJUSTES_WINDOWS], "brilho": 70,
+            "tem_alto": False, "tem_maximo": False}
+
+
+def servicos_fake(forcar=False):
+    return [{"nome": "Docker", "exibicao": "Docker Desktop Service", "status": "running", "status_txt": "Em execução", "inicio": "automatic",
+             "inicio_txt": "Automático", "pid": 1, "usuario": "LocalSystem", "descricao": "Serviço do Docker Desktop", "binpath": "", "exe": "", "protegido": None},
+            {"nome": "Spooler", "exibicao": "Spooler de Impressão", "status": "running", "status_txt": "Em execução", "inicio": "automatic",
+             "inicio_txt": "Automático", "pid": 0, "usuario": "LocalSystem", "descricao": "Gerencia impressão", "binpath": "", "exe": "", "protegido": "Serviço do Windows"}]
+
+
 if __name__ == "__main__":
     banco.iniciar()
     if banco.info()["registros"] < 100:
@@ -139,6 +158,9 @@ if __name__ == "__main__":
     m.rede = RedeFake()
     m.gpu = GPUFake()
     inicializacao.listar = ini_fake
+    energia.estado = energia_fake
+    energia.planos = lambda: energia_fake()["planos"]
+    servicos.listar = servicos_fake
     inicializacao.alterar = lambda item, ativo: True
     m.iniciar()
     m.bandeja_ts = time.time() + 10 ** 9

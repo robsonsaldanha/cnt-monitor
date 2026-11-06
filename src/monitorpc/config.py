@@ -2,7 +2,7 @@
 import os
 import sys
 
-VERSAO = "2.1.0"
+VERSAO = "2.2.0"
 WIN = os.name == "nt"
 
 if os.environ.get("MONITORPC_DADOS"):
@@ -44,6 +44,16 @@ PADRAO = {
     "retencao_dias": 7,
     "permitir_encerrar": True,
     "confirmar_encerrar": True,
+    "alertas_ativos": True,
+    "alertas": None,            # preenchido com alertas.PADRAO
+    "jogo_fechar": [],          # programas que o Modo Jogo fecha
+    "jogo_reabrir": True,
+    "jogo_plano": True,
+    "jogo_prioridade": True,
+    "jogo_modo_windows": True,
+    "jogo_silenciar": True,
+    "jogo_fps": True,
+    "atualizacao_auto": True,
 }
 
 OPCOES = {

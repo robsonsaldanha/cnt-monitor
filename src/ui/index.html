@@ -100,6 +100,22 @@ tr.outros td{color:var(--txt2);font-style:italic}
 .tag.int{color:var(--acento);border-color:color-mix(in srgb,var(--acento) 40%,var(--borda))}
 .tag.loc{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 40%,var(--borda))}
 .tag.des{color:var(--txt3)} .tag.on{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 40%,var(--borda))}
+.ico{width:18px;height:18px;flex:none;vertical-align:-4px;margin-right:6px;object-fit:contain}
+.ico.vz{display:inline-block;border-radius:4px;background:var(--barra)}
+.ico-g{width:28px;height:28px;margin-right:8px;vertical-align:-8px}
+.big-jogo{display:flex;align-items:center;gap:18px;padding:18px 20px}
+.big-jogo .st{font:600 22px/1.2 "Segoe UI Variable Display","Segoe UI",system-ui}
+.btn.gg{font-size:15px;padding:10px 22px;border-radius:10px}
+.fps{font:700 64px/1 "Segoe UI Variable Display","Segoe UI",system-ui;font-variant-numeric:tabular-nums}
+.chk{display:flex;align-items:center;gap:8px;padding:6px 14px;border-bottom:1px solid var(--grade);cursor:pointer}
+.chk:hover{background:var(--painel2)}
+.planos{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.plano{border:1px solid var(--borda);border-radius:12px;padding:12px 14px;cursor:pointer;background:var(--painel);text-align:left;font:inherit;color:inherit}
+.plano:hover{border-color:var(--acento)} .plano.on{border-color:var(--acento);box-shadow:0 0 0 2px color-mix(in srgb,var(--acento) 35%,transparent)}
+.plano b{display:block;font-size:14px} .plano span{color:var(--txt3);font-size:12px}
+input[type=range]{width:220px;accent-color:var(--acento)}
+.regra{display:grid;grid-template-columns:auto 1fr auto auto auto auto;gap:10px;align-items:center;padding:9px 14px;border-bottom:1px solid var(--grade)}
+.regra input[type=number]{width:80px}
 .esc{display:inline-flex;vertical-align:-2px;margin-left:6px;color:var(--txt3)} .esc svg{width:13px;height:13px}
 .vazio{color:var(--txt3);padding:22px 14px;text-align:center}
 .lista{list-style:none;margin:0;padding:0}
@@ -220,12 +236,16 @@ code{font-family:"Cascadia Mono",Consolas,monospace;font-size:12px;background:va
   <button data-v="geral"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Visão geral</button>
   <button data-v="programas"><svg viewBox="0 0 24 24"><path d="M4 4h6v5H4zM14 15h6v5h-6zM7 9v8.5h7M14 7h6v5h-6zM7 9.5h7"/></svg>Programas</button>
   <button data-v="processos"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Processos</button>
+  <button data-v="jogo"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 10.5v4M5 12.5h4M15.5 11.5h.01M18 13.5h.01"/></svg>Modo Jogo<span class="cont" id="jogoTag" hidden style="background:var(--ok)">ON</span></button>
   <button data-v="inicializacao"><svg viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M6.3 7.5a8 8 0 1 0 11.4 0"/></svg>Inicialização</button>
   <button data-v="rede"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>Rede e IPs</button>
+  <button data-v="energia"><svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>Energia e Windows</button>
+  <button data-v="servicos"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01"/></svg>Serviços</button>
   <button data-v="hardware"><svg viewBox="0 0 24 24"><path d="M10 14V5a2 2 0 1 1 4 0v9a4 4 0 1 1-4 0z"/></svg>Temperatura e hardware</button>
   <div class="sep"></div>
   <button data-v="historico"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 4 8-9"/><path d="M3 21h18"/></svg>Histórico</button>
   <button data-v="lentidao"><svg viewBox="0 0 24 24"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg>Lentidão<span class="cont" id="contLent" hidden></span></button>
+  <button data-v="alertas"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>Alertas</button>
   <button data-v="relatorio"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>Relatório</button>
   <div class="sep"></div>
   <button data-v="config"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Configurações</button>
@@ -357,6 +377,39 @@ code{font-family:"Cascadia Mono",Consolas,monospace;font-size:12px;background:va
   <div id="relCorpo"><div class="vazio">Carregando…</div></div>
 </section>
 
+<section id="v-jogo" hidden>
+  <h1>Modo Jogo</h1><p class="sub">Um clique para deixar o PC pronto para jogar. Tudo o que ele muda é desfeito quando você desliga.</p>
+  <div class="painel big-jogo" id="jogoTopo"></div>
+  <div class="grade g2 secao lado2">
+    <div class="painel"><div class="cab"><h2>FPS (quadros por segundo)</h2><span class="desc" id="fpsDesc"></span></div><div class="pad" id="fpsCorpo"></div><div class="graf" style="padding-top:0"><canvas id="grFps" height="150"></canvas></div></div>
+    <div class="painel"><div class="cab"><h2>O que o Modo Jogo faz</h2></div><div id="jogoOpcoes"></div></div>
+  </div>
+  <div class="grade g2 secao lado2">
+    <div class="painel"><div class="cab"><h2>Programas para fechar ao ligar</h2><span class="desc">serão reabertos quando você desligar (se marcado ao lado)</span></div><div class="tw curta" id="jogoFechar"></div></div>
+    <div class="painel"><div class="cab"><h2>Limpar o cache de memória</h2></div><div class="pad" id="cacheCorpo">
+      <p class="mut2" style="margin-top:0;line-height:1.55">Esvazia a memória que o Windows guarda “de reserva” (lista de espera). <b>Normalmente não ajuda</b> — o Windows já libera esse cache sozinho quando precisa, e limpar faz os programas demorarem um pouco mais para abrir de novo. Use só se um jogo estiver dando travadinhas mesmo com memória sobrando.</p>
+      <button class="btn" id="btnCache">Limpar cache agora</button> <span id="cacheRes" class="mut2"></span></div></div>
+  </div>
+</section>
+
+<section id="v-energia" hidden>
+  <h1>Energia e Windows</h1><p class="sub">Plano de energia e ajustes do Windows sem precisar abrir as Configurações. As mudanças valem na hora.</p>
+  <div id="enCorpo"><div class="vazio">Carregando…</div></div>
+</section>
+
+<section id="v-servicos" hidden>
+  <h1>Serviços</h1><p class="sub">Programas que rodam em segundo plano, mesmo sem ninguém logado. Serviços do Windows ficam protegidos (só dá para ver). Botão direito para iniciar, parar ou mudar como ele inicia.</p>
+  <div class="painel"><div class="cab"><input type="search" id="bSvc" placeholder="Procurar serviço…"><div class="seg" id="segSvc"><button data-f="terceiros" aria-pressed="true">Não são do Windows</button><button data-f="rodando" aria-pressed="false">Em execução</button><button data-f="todos" aria-pressed="false">Todos</button></div><span class="desc" id="svcInfo"></span><div class="dir"><button class="btn" id="svcAtualizar">Atualizar</button></div></div>
+  <div class="tw" id="tSvc"></div></div>
+</section>
+
+<section id="v-alertas" hidden>
+  <h1>Alertas</h1><p class="sub">Avisos que aparecem no canto da tela (pelo ícone perto do relógio) quando algo passa do limite. Cada um liga e desliga separado.</p>
+  <div class="painel"><div class="cab"><h2>Alertas ligados</h2><div class="dir"><button class="btn" id="alTeste">Testar notificação</button><label class="sw"><input type="checkbox" id="alGeral"><span></span></label></div></div><div id="alRegras"></div>
+    <div class="cab" style="border-top:1px solid var(--borda);border-bottom:0"><h2>Novo alerta</h2><select id="alTipo"></select><select id="alProg" hidden></select><span id="alLimWrap">acima de <input type="number" id="alLim" style="width:80px"> <span id="alUn"></span></span><span id="alDurWrap">por <input type="number" id="alDur" value="30" style="width:70px"> s</span><button class="btn pri" id="alAdd">Adicionar</button></div></div>
+  <div class="painel secao"><div class="cab"><h2>Últimos alertas</h2></div><div class="tw curta" id="alHist"></div></div>
+</section>
+
 <section id="v-config" hidden>
   <h1>Configurações</h1><p class="sub">As mudanças são salvas na hora.</p>
   <div class="cfg" id="cfgCorpo"></div>
@@ -406,6 +459,9 @@ function barra(v,tot,mult){ return `<span class="mb"><i style="width:${Math.min(
 function seg(el, cb){ el.addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b) return; el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed', x===b)); cb(b.dataset); }); }
 const ESCUDO = m => `<span class="esc" title="Protegido: ${esc(m)} — não pode ser encerrado por aqui"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg></span>`;
 const exeNome = p => (p||'').split(/[\\/]/).pop();
+const ICO_FALHA = new Set();
+function ico(exe, cls){ if(!exe || ICO_FALHA.has(exe)) return `<span class="ico vz ${cls||''}"></span>`; return `<img class="ico ${cls||''}" src="/api/icone?exe=${encodeURIComponent(exe)}" alt="" data-exe="${esc(exe)}" onerror="icoFalhou(this)">`; }
+function icoFalhou(img){ ICO_FALHA.add(img.dataset.exe); img.outerHTML='<span class="ico vz"></span>'; }
 
 /* =================== avisos, confirmação e menu =================== */
 function toast(msg, erro){ const t=document.createElement('div'); t.className='toast'+(erro?' erro':''); t.textContent=msg; $('#toasts').appendChild(t); setTimeout(()=>t.remove(), erro?7000:4500); }
@@ -531,7 +587,7 @@ const eixoPct=v=>nf0.format(v)+'%', eixoB=v=>v>=GB?nf1.format(v/GB)+' GB':nf0.fo
 const eixoN=v=>CFG.rede_em_bits?(v*8>=1e6?nf1.format(v*8/1e6)+' Mb/s':nf0.format(v*8/1e3)+' Kb/s'):eixoR(v);
 
 /* =================== navegação =================== */
-const VISTAS=['geral','recurso','programas','processos','inicializacao','rede','hardware','historico','lentidao','relatorio','config'];
+const VISTAS=['geral','recurso','programas','processos','jogo','inicializacao','energia','servicos','rede','hardware','historico','lentidao','alertas','relatorio','config'];
 let vista='geral', recurso='cpu';
 function ir(h){ h=(h||'geral').replace(/^#/,''); let v=h, r=null; if(h.startsWith('recurso/')){ v='recurso'; r=h.split('/')[1]; } if(!VISTAS.includes(v)) v='geral';
   if(v==='recurso' && r==='temp'){ v='hardware'; }
@@ -558,19 +614,21 @@ async function ciclo(){
   if(vista==='geral') vGeral(); else if(vista==='recurso') vRecurso(false); else if(vista==='programas') vArvore(); else if(vista==='processos') renderProc();
   else if(vista==='rede' && (contRede++ % Math.max(1,Math.round(1000/CFG.intervalo_ms)))===0) vRede();
   else if(vista==='hardware' && (contHw++ % Math.max(1,Math.round(2000/CFG.intervalo_ms)))===0) vHardware(false);
+  else if(vista==='jogo' && (contHw++ % Math.max(1,Math.round(500/CFG.intervalo_ms)))===0) vJogo(false);
   if(gavAtual) gavAtual.tick();
 }
 async function loop(){ const t0=performance.now(); await ciclo(); setTimeout(loop, Math.max(60, CFG.intervalo_ms-(performance.now()-t0))); }
 function entrar(){ fecharMenu();
   if(vista==='geral'&&E) vGeral(); if(vista==='recurso') vRecurso(true); if(vista==='programas') vArvore(); if(vista==='processos') renderProc();
   if(vista==='inicializacao') vIni(); if(vista==='rede') vRede(); if(vista==='hardware') vHardware(true);
-  if(vista==='historico') vHistorico(); if(vista==='lentidao') vLentidao(); if(vista==='relatorio') vRelatorio(); if(vista==='config') vConfig(); }
+  if(vista==='historico') vHistorico(); if(vista==='lentidao') vLentidao(); if(vista==='relatorio') vRelatorio(); if(vista==='config') vConfig();
+  if(vista==='jogo') vJogo(true); if(vista==='energia') vEnergia(); if(vista==='servicos') vServicos(); if(vista==='alertas') vAlertas(); }
 async function cicloStatus(){ try{ STATUS=await API('status'); avisos(); $('#rodInfo').innerHTML=`v${esc(STATUS.versao)} · histórico de ${STATUS.banco.desde?dur(Date.now()/1000-STATUS.banco.desde):'0 min'}<br>${fB(STATUS.banco.tamanho)} em disco`; }catch(_){} }
 function avisos(){ const a=[]; if(!STATUS) return;
   if(!STATUS.admin) a.push(['erro','O serviço não está rodando como administrador — rede por programa e temperatura ficam limitadas.']);
   if(STATUS.admin && CFG.rede_por_programa && !STATUS.rede_ok) a.push(['','A medição de rede por programa não iniciou: '+esc(STATUS.rede_erro||'')]);
   if(!STATUS.bandeja_online) a.push(['','O ícone do Monitor do PC perto do relógio está fechado — “Mostrar janela”, “Abrir pasta” e “Fechar janela” precisam dele. Abra o Monitor do PC pelo menu Iniciar.']);
-  $('#avisos').innerHTML=a.map(([c,t])=>`<div class="aviso ${c}">${t}</div>`).join(''); }
+  $('#avisos').innerHTML=a.map(([c,t])=>`<div class="aviso ${c}">${t}</div>`).join(''); $('#jogoTag').hidden=!STATUS.jogo_ativo; }
 
 /* =================== VISÃO GERAL =================== */
 function cardsDados(e){ const s=SERIE.slice(-60), col=i=>s.map(x=>x[i]);
@@ -593,7 +651,7 @@ function vGeral(){ const e=E; if(!e) return;
   $('#memDet').innerHTML=memComposicao(e);
   const progs=e.programas.filter(g=>!g.outros);
   const rk=(t,rec,k,f)=>{ const l=progs.slice().sort((a,b)=>(k(b)||0)-(k(a)||0)).filter(g=>(k(g)||0)>0).slice(0,6); const mx=Math.max(1,...l.map(k));
-    return `<div class="painel"><div class="cab"><h2>${t}</h2><a href="#recurso/${rec}" class="desc" style="margin-left:auto">ver tudo ›</a></div><ul class="lista">${l.map(g=>`<li class="cl" data-prog="${esc(g.nome)}"><span>${esc(g.nome)}</span><b class="n">${f(g)}</b>${barra(k(g),mx)}</li>`).join('')||'<li class="mut">nada agora</li>'}</ul></div>`; };
+    return `<div class="painel"><div class="cab"><h2>${t}</h2><a href="#recurso/${rec}" class="desc" style="margin-left:auto">ver tudo ›</a></div><ul class="lista">${l.map(g=>`<li class="cl" data-prog="${esc(g.nome)}"><span>${ico(g.exe)}${esc(g.nome)}</span><b class="n">${f(g)}</b>${barra(k(g),mx)}</li>`).join('')||'<li class="mut">nada agora</li>'}</ul></div>`; };
   $('#tops').innerHTML=rk('Mais memória','memoria',g=>g.mem,g=>fB(g.mem))+rk('Mais CPU','cpu',g=>g.cpu,g=>fP(g.cpu))+rk('Mais disco','disco',g=>g.ler+g.gravar,g=>fR(g.ler+g.gravar))+rk('Mais rede','rede',g=>(g.env||0)+(g.rec||0),g=>fN(g.env+g.rec))+rk('Mais GPU','gpu',g=>g.gpu,g=>fP(g.gpu));
 }
 function memComposicao(e){ const progs=e.programas.filter(g=>!g.outros); const top=progs.slice().sort((a,b)=>b.mem-a.mem).slice(0,6); const soma=top.reduce((s,g)=>s+g.mem,0);
@@ -618,12 +676,12 @@ function vRecurso(entrando){ const R=REC[recurso]; if(!R){ ir('geral'); return; 
   if(entrando||recAtual!==recurso){ recAtual=recurso; $('#rTit').textContent=R.t; $('#rTopProgT').textContent=`Programas que mais usam ${R.col.toLowerCase()}`; $('#rTopProcT').textContent=`Processos que mais usam ${R.col.toLowerCase()}`;
     $('#rCards').innerHTML=''; $('#rExtra').innerHTML='';
     const cMem=()=>({k:'mem',t:'Memória',f:r=>fB(r.mem)});
-    const colsP=[{k:'nome',t:'Programa',e:1,texto:1,f:r=>`<span class="nm">${esc(r.nome)}</span>${r.protegido?ESCUDO('Windows'):''}`},{k:'met',t:R.col,v:R.met,f:R.fmt},cMem(),{k:'cpu',t:'CPU',f:r=>fP(r.cpu)},{k:'nproc',t:'Proc.'}];
+    const colsP=[{k:'nome',t:'Programa',e:1,texto:1,f:r=>`${ico(r.exe)}<span class="nm">${esc(r.nome)}</span>${r.protegido?ESCUDO('Windows'):''}`},{k:'met',t:R.col,v:R.met,f:R.fmt},cMem(),{k:'cpu',t:'CPU',f:r=>fP(r.cpu)},{k:'nproc',t:'Proc.'}];
     if(recurso==='disco') colsP.splice(2,0,{k:'ler',t:'Ler',f:r=>fR(r.ler)},{k:'gravar',t:'Gravar',f:r=>fR(r.gravar)});
     if(recurso==='rede') colsP.splice(2,0,{k:'env',t:'↑',f:r=>fN(r.env)},{k:'rec',t:'↓',f:r=>fN(r.rec)},{k:'nconn',t:'Con.'});
     if(recurso==='gpu') colsP.splice(2,0,{k:'gpu_mem',t:'Mem. de vídeo',f:r=>fB(r.gpu_mem)});
     tRecProg=Tabela($('#rTopProg'),colsP,{ordem:'met',clique:r=>abrirPrograma(r.nome),menu:menuPrograma,limite:25});
-    const colsQ=[{k:'nome',t:'Processo',e:1,texto:1,f:r=>`<span class="nm">${esc(r.nome)}</span><span class="pid">${r.pid}</span>${r.protegido?ESCUDO(r.protegido):''}`},{k:'programa',t:'Programa',e:1,texto:1},{k:'met',t:R.col,v:R.met,f:R.fmt}];
+    const colsQ=[{k:'nome',t:'Processo',e:1,texto:1,f:r=>`${ico(r.exe)}<span class="nm">${esc(r.nome)}</span><span class="pid">${r.pid}</span>${r.protegido?ESCUDO(r.protegido):''}`},{k:'programa',t:'Programa',e:1,texto:1},{k:'met',t:R.col,v:R.met,f:R.fmt}];
     if(recurso==='disco') colsQ.push({k:'ler',t:'Ler',f:r=>fR(r.ler)},{k:'gravar',t:'Gravar',f:r=>fR(r.gravar)});
     if(recurso==='rede') colsQ.push({k:'env',t:'↑',f:r=>fN(r.env)},{k:'rec',t:'↓',f:r=>fN(r.rec)});
     if(recurso==='gpu') colsQ.push({k:'gpu_mem',t:'Mem. vídeo',f:r=>fB(r.gpu_mem)});
@@ -690,7 +748,7 @@ function linhasArvore(procs, prefixo){ // devolve HTML das linhas de processos d
   let h=''; const tot=E?.mem_total||1;
   const rec=(p,niv,ult,trilha)=>{ const fs=ordenar(filhos.get(p.pid)||[]), tem=fs.length>0, fech=recolhidos.has(p.pid);
     const lig=niv===0?'':trilha+(ult?'└─ ':'├─ ');
-    h+=`<tr class="proc cl" data-tipo="proc" data-pid="${p.pid}"><td class="e"><div class="no" style="padding-left:${(prefixo?22:0)}px"><span class="lig">${lig}</span><span class="car ${tem?(fech?'':'ab'):'vz'}" data-car="p${p.pid}">›</span><span>${esc(p.nome)}</span>${p.janelas?`<span class="tag" title="janelas abertas">${p.janelas} jan.</span>`:''}${p.protegido?ESCUDO(p.protegido):''}</div></td>
+    h+=`<tr class="proc cl" data-tipo="proc" data-pid="${p.pid}"><td class="e"><div class="no" style="padding-left:${(prefixo?22:0)}px"><span class="lig">${lig}</span><span class="car ${tem?(fech?'':'ab'):'vz'}" data-car="p${p.pid}">›</span>${ico(p.exe)}<span>${esc(p.nome)}</span>${p.fps?`<span class="tag on">${nf0.format(p.fps)} FPS</span>`:''}${p.janelas?`<span class="tag" title="janelas abertas">${p.janelas} jan.</span>`:''}${p.protegido?ESCUDO(p.protegido):''}</div></td>
       <td><span class="mut">${p.pid}</span></td><td><div class="mc"><span>${fB(p.mem)}</span>${barra(p.mem,tot,3)}</div></td><td class="${nivel(p.cpu,50,20)}">${fP(p.cpu)}</td><td title="ler ${fR(p.ler)} · gravar ${fR(p.gravar)}">${fR(p.ler+p.gravar)}</td><td title="↑ ${fN(p.env)} · ↓ ${fN(p.rec)}">${fN(p.env+p.rec)}</td><td>${p.gpu?fP(p.gpu):'<span class="mut">—</span>'}</td><td>${p.nconn||'<span class="mut">0</span>'}</td></tr>`;
     if(tem && !fech) fs.forEach((f,i)=>rec(f,niv+1,i===fs.length-1,niv===0?'':trilha+(ult?'   ':'│  '))); };
   ordenar(raizes).forEach((r,i)=>rec(r,0,i===raizes.length-1,''));
@@ -702,7 +760,7 @@ function vArvore(){ if(!E||MENU_ABERTO) return; const f=$('#bProg').value.trim()
   progs=ordenar(progs.slice());
   let h='<table><thead><tr>'+COLS_ARV.map(([k,t,e])=>`<th data-k="${k}" class="${e?'e ':''}${ordemArv.k===k?'ativo '+(ordemArv.desc?'desc':'asc'):''}">${t}</th>`).join('')+'</tr></thead><tbody>';
   for(const g of progs){ const ab=abertos.has(g.nome)||(f&&f.length>1);
-    h+=`<tr class="prog cl" data-tipo="prog" data-nome="${esc(g.nome)}"><td class="e"><div class="no"><span class="car ${ab?'ab':''}" data-car="g">›</span><span class="nm">${esc(g.nome)}</span>${g.janelas?`<span class="tag" title="janelas abertas">${g.janelas} jan.</span>`:''}${g.protegido?ESCUDO('faz parte do Windows'):''}</div></td>
+    h+=`<tr class="prog cl" data-tipo="prog" data-nome="${esc(g.nome)}"><td class="e"><div class="no"><span class="car ${ab?'ab':''}" data-car="g">›</span>${ico(g.exe)}<span class="nm">${esc(g.nome)}</span>${g.janelas?`<span class="tag" title="janelas abertas">${g.janelas} jan.</span>`:''}${g.protegido?ESCUDO('faz parte do Windows'):''}</div></td>
       <td>${g.nproc}</td><td><div class="mc"><span>${fB(g.mem)}</span>${barra(g.mem,tot,3)}</div></td><td class="${nivel(g.cpu,50,20)}">${fP(g.cpu)}</td><td title="ler ${fR(g.ler)} · gravar ${fR(g.gravar)}">${fR(g.ler+g.gravar)}</td><td title="↑ ${fN(g.env)} · ↓ ${fN(g.rec)}">${fN(g.env+g.rec)}</td><td>${g.gpu?fP(g.gpu):'<span class="mut">—</span>'}</td><td>${g.nconn}</td></tr>`;
     if(ab) h+=linhasArvore(porProg.get(g.nome)||[], true); }
   if(outros && !f) h+=`<tr class="outros" title="Memória do próprio Windows (kernel, drivers, cache) que não pertence a nenhum programa"><td class="e"><div class="no"><span class="car vz">›</span>${esc(outros.nome)}</div></td><td></td><td><div class="mc"><span>${fB(outros.mem)}</span>${barra(outros.mem,tot,3)}</div></td><td colspan="5"></td></tr>`;
@@ -718,7 +776,7 @@ $('#tArv').addEventListener('contextmenu',e=>{ const tr=e.target.closest('tr[dat
 
 /* =================== PROCESSOS =================== */
 const tProc=Tabela($('#tProc'),[
-  {k:'nome',t:'Processo',e:1,texto:1,f:r=>`<span class="nm">${esc(r.nome)}</span>${r.protegido?ESCUDO(r.protegido):''}`},
+  {k:'nome',t:'Processo',e:1,texto:1,f:r=>`${ico(r.exe)}<span class="nm">${esc(r.nome)}</span>${r.protegido?ESCUDO(r.protegido):''}`},
   {k:'pid',t:'PID'},{k:'programa',t:'Programa',e:1,texto:1},{k:'usuario',t:'Usuário',e:1,texto:1},
   {k:'mem',t:'Memória',f:r=>`<div class="mc"><span>${fB(r.mem)}</span>${barra(r.mem,E?.mem_total,3)}</div>`},
   {k:'cpu',t:'CPU',f:r=>fP(r.cpu),cls:r=>nivel(r.cpu,50,20)},
@@ -734,7 +792,7 @@ function renderProc(){ const f=$('#bProc').value.trim().toLowerCase();
 /* =================== INICIALIZAÇÃO =================== */
 let INI=[];
 const tIni=Tabela($('#tIni'),[
-  {k:'nome',t:'Programa',e:1,texto:1,f:r=>`<span class="nm">${esc(r.nome)}</span>${r.descricao&&r.descricao!==r.nome?`<div class="mut" style="font-size:12px">${esc(r.descricao)}</div>`:''}${!r.existe?' <span class="tag des">arquivo não encontrado</span>':''}`},
+  {k:'nome',t:'Programa',e:1,texto:1,f:r=>`${ico(r.exe)}<span class="nm">${esc(r.nome)}</span>${r.descricao&&r.descricao!==r.nome?`<div class="mut" style="font-size:12px">${esc(r.descricao)}</div>`:''}${!r.existe?' <span class="tag des">arquivo não encontrado</span>':''}`},
   {k:'empresa',t:'Empresa',e:1,texto:1,f:r=>esc(r.empresa||'—')},
   {k:'ativo',t:'Inicia com o Windows',v:r=>r.ativo?1:0,f:r=>`<label class="sw" title="${r.ativo?'Desativar':'Ativar'}"><input type="checkbox" data-ini="${r.id}" ${r.ativo?'checked':''}><span></span></label>`},
   {k:'rodando',t:'Aberto agora',v:r=>r.mem||0,f:r=>r.rodando?`<span class="tag on">aberto</span> ${fB(r.mem)}`:'<span class="mut">não</span>'},
@@ -919,7 +977,8 @@ const CFG_DEF=[
 ];
 function aplicarTema(){ const t=CFG.tema; if(t==='escuro') document.documentElement.dataset.theme='dark'; else if(t==='claro') document.documentElement.dataset.theme='light'; else delete document.documentElement.dataset.theme; }
 async function carregarCfg(){ try{ const d=await API('config'); CFG=d.valores; aplicarTema(); }catch(_){} }
-function vConfig(){ let h='';
+let CFG_ATU={};
+async function vConfig(){ try{ CFG_ATU=await API('atualizacao'); }catch(_){} let h='';
   for(const [sec,itens] of CFG_DEF){ h+=`<h2 class="secao" style="margin-bottom:8px">${sec}</h2><div class="painel">`;
     for(const [k,tipo,t,d,op] of itens){ let ctl='';
       if(tipo==='sw') ctl=`<label class="sw"><input type="checkbox" data-cfg="${k}" ${CFG[k]?'checked':''}><span></span></label>`;
@@ -927,6 +986,8 @@ function vConfig(){ let h='';
       if(tipo==='num') ctl=`<input type="number" data-cfg="${k}" min="${op[0]}" max="${op[1]}" value="${CFG[k]}" style="width:90px">`;
       h+=`<div class="item"><b>${t}</b><div class="ctl">${ctl}</div>${d?`<small>${d}</small>`:''}</div>`; }
     h+='</div>'; }
+  h+=`<h2 class="secao" style="margin-bottom:8px">Atualizações</h2><div class="painel"><div class="item"><b>Atualizar automaticamente</b><div class="ctl"><label class="sw"><input type="checkbox" data-cfg="atualizacao_auto" ${CFG.atualizacao_auto?'checked':''}><span></span></label></div><small>Procura versão nova no GitHub a cada 6 horas e instala sozinho (nunca durante o Modo Jogo).</small></div>
+    <div class="item"><b>Versão instalada: ${esc(CFG_ATU.versao_atual||s.versao||'—')}</b><div class="ctl" style="display:flex;gap:8px"><button class="btn" id="atuVer">Procurar agora</button><button class="btn pri" id="atuInst" ${CFG_ATU.disponivel?'':'disabled'}>${CFG_ATU.disponivel?'Atualizar para '+esc(CFG_ATU.disponivel.versao):'Atualizar'}</button></div><small>${CFG_ATU.erro?esc(CFG_ATU.erro):CFG_ATU.disponivel?'Versão nova disponível.':CFG_ATU.ultima_verificacao?'Última verificação: '+quando(CFG_ATU.ultima_verificacao)+' — você está na versão mais nova.':'Ainda não verificado.'}</small></div></div>`;
   h+=`<h2 class="secao" style="margin-bottom:8px">Manutenção</h2><div class="painel"><div class="item"><b>Apagar todo o histórico</b><div class="ctl"><button class="btn perigo" id="apagarHist">Apagar</button></div><small>Apaga gráficos, relatórios e momentos de lentidão guardados. O monitoramento continua.</small></div></div>`;
   const s=STATUS||{}; h+=`<h2 class="secao" style="margin-bottom:8px">Sobre</h2><div class="painel"><dl class="kv">
     <dt>Versão</dt><dd>${esc(s.versao||'—')}</dd><dt>Serviço como administrador</dt><dd>${s.admin?'sim':'não'}</dd><dt>Leitura dos processos</dt><dd>${s.modo_coleta==='nt'?'rápida (Windows NT)':'padrão (psutil)'} · ${s.tempo_amostra_ms??'—'} ms por leitura (máx. ${s.tempo_amostra_max_ms??'—'} ms)</dd>
@@ -934,10 +995,94 @@ function vConfig(){ let h='';
     <dt>Sensores</dt><dd>${esc((s.sensores||[]).join(', ')||'—')}${s.pawnio===false?' · driver PawnIO não instalado':''}</dd><dt>Ícone perto do relógio</dt><dd>${s.bandeja_online?'aberto':'fechado'}</dd>
     <dt>Histórico</dt><dd>${s.banco?fB(s.banco.tamanho)+' · desde '+quando(s.banco.desde):'—'}</dd></dl></div>`;
   $('#cfgCorpo').innerHTML=h;
+  $('#atuVer').onclick=async()=>{ $('#atuVer').disabled=true; const r=await POST('acao',{tipo:'atualizar_verificar'}).catch(()=>null); if(r) toast(r.msg,!r.ok); CFG_ATU=await API('atualizacao').catch(()=>CFG_ATU); vConfig(); };
+  $('#atuInst').onclick=async()=>{ if(!await confirmar('Atualizar agora?','O Monitor do PC vai baixar a versão nova, conferir a assinatura e instalar. A janela fecha e volta em alguns segundos.','Atualizar')) return; const r=await POST('acao',{tipo:'atualizar_instalar'}).catch(()=>null); if(r) toast(r.msg,!r.ok); };
   $('#apagarHist').onclick=async()=>{ if(!await confirmar('Apagar todo o histórico?','Os gráficos, relatórios e momentos de lentidão guardados serão apagados. Não dá para desfazer.','Apagar',1)) return; const r=await POST('historico/apagar').catch(()=>null); toast(r&&r.ok?'Histórico apagado.':'Não consegui apagar.',!(r&&r.ok)); }; }
 $('#cfgCorpo').addEventListener('change',async e=>{ const el=e.target.closest('[data-cfg]'); if(!el) return; const k=el.dataset.cfg;
   let v = el.type==='checkbox'?el.checked:el.type==='number'?+el.value:el.value; if(el.tagName==='SELECT' && /^\d+$/.test(v)) v=+v;
   const r=await POST('config',{[k]:v}).catch(()=>null); if(r&&r.valores){ CFG=r.valores; aplicarTema(); toast('Configuração salva.'); } else toast('Não consegui salvar.',1); vConfig(); });
+
+
+/* =================== MODO JOGO =================== */
+let JOGO=null, FPS_SERIE=[]; const grFps=new Grafico($('#grFps'),{fmt:v=>nf0.format(v)+' FPS',eixo:v=>nf0.format(v),ymin:30,gap:5});
+const OPC_JOGO=[['jogo_plano','Mudar para o plano de energia de alto desempenho'],['jogo_prioridade','Dar prioridade alta ao jogo (programa em primeiro plano)'],['jogo_modo_windows','Ligar o Modo de Jogo do Windows'],['jogo_silenciar','Silenciar as notificações do Windows'],['jogo_fps','Medir o FPS dos jogos'],['jogo_reabrir','Reabrir os programas fechados ao desligar']];
+async function vJogo(entrando){ try{ JOGO=await API('jogo'); }catch(_){ return; } const j=JOGO;
+  $('#jogoTopo').innerHTML=`<div style="font-size:40px">${j.ativo?'🎮':'🕹️'}</div><div><div class="st ${j.ativo?'ok':''}">${j.ativo?'Modo Jogo ligado':'Modo Jogo desligado'}</div><div class="mut2">${j.ativo?`desde ${quando(j.inicio)}${j.liberado?` · memória ${fP(j.liberado.mem_pct_antes)} → ${fP(j.liberado.mem_pct_agora)} (${j.liberado.memoria>0?fB(j.liberado.memoria)+' liberados':'sem mudança'})`:''}`:'Feche o que pesa, priorize o jogo e meça o FPS com um clique.'}</div>${j.log&&j.log.length?`<div class="mut" style="font-size:12px;margin-top:4px">${j.log.map(esc).join(' · ')}</div>`:''}</div>
+    <div style="margin-left:auto"><button class="btn gg ${j.ativo?'':'pri'}" id="btnJogo">${j.ativo?'Desligar Modo Jogo':'Ligar Modo Jogo'}</button></div>`;
+  $('#btnJogo').onclick=async()=>{ $('#btnJogo').disabled=true; const r=await POST('acao',{tipo:j.ativo?'jogo_desligar':'jogo_ligar'}).catch(()=>null); if(r) toast(r.msg,!r.ok); FPS_SERIE=[]; await vJogo(true); cicloStatus(); };
+  const p=j.fps_principal;
+  if(p){ FPS_SERIE.push([Date.now()/1000,p.fps]); if(FPS_SERIE.length>240) FPS_SERIE.shift(); }
+  $('#fpsDesc').textContent=j.fps_rodando?'medindo agora':j.presentmon?(j.ativo?'ligue “Medir o FPS” ao lado':'liga junto com o Modo Jogo'):'medidor de FPS indisponível';
+  $('#fpsCorpo').innerHTML=p?`<div style="display:flex;align-items:flex-end;gap:16px"><div class="fps ${p.fps<30?'muito':p.fps<55?'quente':'ok'}">${nf0.format(p.fps)}</div><div class="mut2" style="padding-bottom:8px">FPS em <b>${esc(p.nome)}</b><br>${nf1.format(p.ms_quadro)} ms por quadro</div></div>
+    ${Object.keys(j.fps).length>1?`<div class="mut" style="font-size:12px;margin-top:6px">Outros: ${Object.entries(j.fps).filter(([k])=>+k!==p.pid).map(([k,v])=>`${esc(v.nome)} ${nf0.format(v.fps)} FPS`).join(' · ')}</div>`:''}`
+    :`<div class="mut">${j.fps_rodando?'Nenhum jogo desenhando na tela agora. Abra o jogo — o FPS aparece aqui e no ícone perto do relógio.':j.fps_erro?esc(j.fps_erro):'O FPS aparece aqui quando o Modo Jogo estiver ligado.'}</div>`;
+  const ag=Date.now()/1000; grFps.def({t0:ag-60,t1:ag,passo:.5,series:[{nome:'FPS',cor:COR(2),grossa:1,area:1,pts:FPS_SERIE}]});
+  if(!entrando) return;
+  $('#jogoOpcoes').innerHTML=OPC_JOGO.map(([k,t])=>`<label class="chk"><label class="sw"><input type="checkbox" data-jcfg="${k}" ${CFG[k]?'checked':''}><span></span></label>${t}</label>`).join('');
+  const sel=new Set(CFG.jogo_fechar||[]); const progs=(E?.programas||[]).filter(g=>!g.outros&&!g.protegido&&g.nome!=='Monitor do PC').sort((a,b)=>b.mem-a.mem);
+  const nomes=[...new Set([...progs.map(g=>g.nome),...sel])];
+  $('#jogoFechar').innerHTML=nomes.map(n=>{ const g=progs.find(x=>x.nome===n); return `<label class="chk"><input type="checkbox" data-jfechar="${esc(n)}" ${sel.has(n)?'checked':''}>${ico(g?.exe)}<span style="flex:1">${esc(n)}</span><span class="mut n">${g?fB(g.mem):'fechado agora'}</span></label>`; }).join('')||'<div class="vazio">Nenhum programa aberto.</div>';
+}
+$('#jogoOpcoes').addEventListener('change',async e=>{ const c=e.target.closest('[data-jcfg]'); if(!c) return; const r=await POST('config',{[c.dataset.jcfg]:c.checked}).catch(()=>null); if(r&&r.valores){ CFG=r.valores; toast('Salvo.'); } });
+$('#jogoFechar').addEventListener('change',async e=>{ const lista=[...document.querySelectorAll('[data-jfechar]')].filter(x=>x.checked).map(x=>x.dataset.jfechar); const r=await POST('config',{jogo_fechar:lista}).catch(()=>null); if(r&&r.valores){ CFG=r.valores; toast('Lista do Modo Jogo salva.'); } });
+$('#btnCache').onclick=async()=>{ if(!await confirmar('Limpar o cache de memória?','Os programas podem demorar um pouco mais para abrir logo depois. Use só se estiver com travadinhas.','Limpar')) return; $('#cacheRes').textContent='limpando…'; const r=await POST('acao',{tipo:'limpar_cache'}).catch(()=>null); $('#cacheRes').textContent=r?r.msg:'falhou'; if(r) toast(r.msg,!r.ok); };
+
+/* =================== ENERGIA E WINDOWS =================== */
+let EN=null;
+const fmtMin=v=>v===0?'Nunca':v<60?v+' min':(v/60)+' h';
+async function vEnergia(){ try{ EN=await API('energia'); }catch(_){ $('#enCorpo').innerHTML='<div class="vazio">Não consegui ler as configurações de energia.</div>'; return; } const e=EN;
+  let h=`<h2 style="margin-bottom:8px">Plano de energia</h2><div class="planos">${e.planos.map(p=>`<button class="plano ${p.ativo?'on':''}" data-plano="${p.guid}"><b>${esc(p.nome)}${p.ativo?' ✓':''}</b><span>${p.ativo?'em uso agora':'clique para usar'}</span></button>`).join('')}</div>
+    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">${!e.tem_alto?'<button class="btn" data-criar="alto">+ Criar plano “Alto desempenho”</button>':''}${!e.tem_maximo?'<button class="btn" data-criar="maximo">+ Criar plano “Desempenho máximo”</button>':''}</div>`;
+  if(e.modo) h+=`<h2 class="secao" style="margin-bottom:8px">Modo de energia do Windows</h2><div class="seg" id="segModo">${e.modos.map(m=>`<button data-modo="${m.guid}" aria-pressed="${m.guid===e.modo.guid}">${esc(m.nome)}</button>`).join('')}</div>`;
+  if(e.ajustes.length) h+=`<h2 class="secao" style="margin-bottom:8px">Ajustes do plano “${esc(e.ativo?.nome||'')}”</h2><div class="painel"><table><thead><tr><th class="e">Ajuste</th><th>Na tomada</th><th>Na bateria</th></tr></thead><tbody>${e.ajustes.map(a=>`<tr><td class="e">${esc(a.titulo)}</td>${['tomada','bateria'].map(onde=>`<td><select data-aj="${a.chave}" data-onde="${onde}">${(a.tipo==='enum'?a.opcoes:a.opcoes.map(v=>({v,t:a.tipo==='min'?fmtMin(v):v+'%'}))).concat((a.tipo!=='enum'&&!a.opcoes.includes(a.valor[onde]))?[{v:a.valor[onde],t:a.tipo==='min'?fmtMin(a.valor[onde]):a.valor[onde]+'%'}]:[]).map(o=>`<option value="${o.v}" ${+o.v===a.valor[onde]?'selected':''}>${esc(o.t)}</option>`).join('')}</select></td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  if(e.brilho!=null) h+=`<h2 class="secao" style="margin-bottom:8px">Brilho da tela</h2><div class="painel pad" style="display:flex;align-items:center;gap:14px"><input type="range" min="0" max="100" value="${e.brilho}" id="brilho"><b id="brilhoV">${e.brilho}%</b></div>`;
+  h+=`<h2 class="secao" style="margin-bottom:8px">Ajustes do Windows</h2><div class="painel cfg" style="max-width:none">${e.windows.map(w=>`<div class="item"><b>${esc(w.titulo)}</b><div class="ctl"><label class="sw"><input type="checkbox" data-win="${w.chave}" ${w.ativo?'checked':''}><span></span></label></div><small>${esc(w.descricao)}</small></div>`).join('')}</div>`;
+  $('#enCorpo').innerHTML=h; }
+$('#enCorpo').addEventListener('click',async e=>{ const p=e.target.closest('[data-plano]'); if(p){ const r=await POST('acao',{tipo:'energia_plano',guid:p.dataset.plano}).catch(()=>null); if(r) toast(r.ok?'Plano de energia trocado.':r.msg,!r.ok); vEnergia(); return; }
+  const c=e.target.closest('[data-criar]'); if(c){ const r=await POST('acao',{tipo:'energia_criar',base:c.dataset.criar}).catch(()=>null); if(r) toast(r.msg,!r.ok); vEnergia(); return; }
+  const m=e.target.closest('[data-modo]'); if(m){ const r=await POST('acao',{tipo:'energia_modo',guid:m.dataset.modo}).catch(()=>null); if(r) toast(r.ok?'Modo de energia alterado.':r.msg,!r.ok); vEnergia(); } });
+$('#enCorpo').addEventListener('change',async e=>{ const s=e.target.closest('[data-aj]'); if(s){ const r=await POST('acao',{tipo:'energia_ajuste',chave:s.dataset.aj,onde:s.dataset.onde,valor:+s.value}).catch(()=>null); if(r) toast(r.msg,!r.ok); return; }
+  const w=e.target.closest('[data-win]'); if(w){ const r=await POST('acao',{tipo:'windows_ajuste',chave:w.dataset.win,ativo:w.checked}).catch(()=>null); if(r) toast(r.ok?'Salvo.':r.msg,!r.ok); vEnergia(); return; }
+  if(e.target.id==='brilho'){ const r=await POST('acao',{tipo:'brilho',nivel:+e.target.value}).catch(()=>null); if(r&&!r.ok) toast(r.msg,1); } });
+$('#enCorpo').addEventListener('input',e=>{ if(e.target.id==='brilho') $('#brilhoV').textContent=e.target.value+'%'; });
+
+/* =================== SERVIÇOS =================== */
+let SVC=[], filtroSvc='terceiros';
+const tSvc=Tabela($('#tSvc'),[
+  {k:'exibicao',t:'Serviço',e:1,texto:1,f:r=>`${ico(r.exe)}<span class="nm">${esc(r.exibicao)}</span>${r.protegido?ESCUDO(r.protegido):''}<div class="mut" style="font-size:11.5px">${esc(r.nome)}</div>`},
+  {k:'status_txt',t:'Situação',e:1,texto:1,f:r=>r.status==='running'?'<span class="tag on">Em execução</span>':`<span class="tag des">${esc(r.status_txt)}</span>`},
+  {k:'inicio_txt',t:'Inicialização',e:1,texto:1},{k:'mem',t:'Memória',f:r=>r.pid?fB(r.mem):'—'},{k:'cpu',t:'CPU',f:r=>r.pid?fP(r.cpu):'—'},{k:'pid',t:'PID',f:r=>r.pid||'—'},
+  {k:'usuario',t:'Conta',e:1,texto:1},{k:'descricao',t:'Descrição',e:1,texto:1,f:r=>`<span class="mut2" style="font-size:12px">${esc((r.descricao||'').slice(0,160))}</span>`},
+],{ordem:'exibicao',desc:false,clique:r=>{ if(r.pid) abrirProcesso(r.pid); },menu:(e,r)=>{ const prot=!!r.protegido, run=r.status==='running';
+  const ac=(oque,ini)=>async()=>{ if(oque==='parar' && !await confirmar(`Parar o serviço “${r.exibicao}”?`,'O programa que usa esse serviço pode parar de funcionar até ele ser iniciado de novo.','Parar',1)) return; const x=await POST('acao',{tipo:'servico',nome:r.nome,oque,inicio:ini}).catch(()=>null); if(x) toast(x.msg,!x.ok); vServicos(true); };
+  abrirMenu(e,r.exibicao,[{t:'Iniciar',ic:'liga',des:prot||run,mot:prot?'do Windows':'',f:ac('iniciar')},{t:'Parar',ic:'matar',perigo:1,des:prot||!run,mot:prot?'do Windows':'',f:ac('parar')},{t:'Reiniciar',ic:'liga',des:prot||!run,f:ac('reiniciar')},'-',
+    {t:'Inicialização: Automática',ic:'liga',des:prot,f:ac('inicio','automatico')},{t:'Inicialização: Automática (atrasada)',ic:'liga',des:prot,f:ac('inicio','atrasado')},{t:'Inicialização: Manual',ic:'liga',des:prot,f:ac('inicio','manual')},{t:'Inicialização: Desativada',ic:'matar',perigo:1,des:prot,f:ac('inicio','desativado')},'-',
+    {t:'Ver processo',ic:'det',des:!r.pid,f:()=>abrirProcesso(r.pid)},{t:'Abrir local do arquivo',ic:'pasta',des:!r.exe,f:()=>acao({tipo:'pasta',caminho:r.exe})},{t:'Pesquisar na internet',ic:'web',f:()=>pesquisar(`serviço ${r.nome} ${r.exibicao} o que é`)}]); }});
+seg($('#segSvc'),d=>{filtroSvc=d.f; renderSvc();}); $('#bSvc').oninput=renderSvc; $('#svcAtualizar').onclick=()=>vServicos(true);
+async function vServicos(){ $('#svcInfo').textContent='carregando…'; try{ SVC=await API('servicos'); }catch(_){ return; } renderSvc(); }
+function renderSvc(){ const f=$('#bSvc').value.trim().toLowerCase(); let l=SVC; if(filtroSvc==='terceiros') l=l.filter(x=>!x.protegido); if(filtroSvc==='rodando') l=l.filter(x=>x.status==='running');
+  if(f) l=l.filter(x=>[x.nome,x.exibicao,x.descricao].some(y=>(y||'').toLowerCase().includes(f))); tSvc.def(l); $('#svcInfo').textContent=`${l.length} de ${SVC.length} serviços`; }
+
+/* =================== ALERTAS =================== */
+let AL=null;
+async function vAlertas(){ try{ AL=await API('alertas'); }catch(_){ return; } const a=AL;
+  $('#alGeral').checked=a.ativos;
+  $('#alRegras').innerHTML=a.regras.map((r,i)=>{ const t=a.tipos[r.tipo]; return `<div class="regra" data-i="${i}"><label class="sw"><input type="checkbox" data-al="ativo" ${r.ativo?'checked':''}><span></span></label><div><b style="font-weight:500">${esc(r.descricao)}</b></div>
+    ${r.tipo==='prog_aberto'?'<span></span>':`<span>limite <input type="number" data-al="limite" value="${r.limite}" step="any"> ${esc(t.unidade)}</span>`}${r.tipo==='prog_aberto'||r.tipo==='disco_cheio'?'<span></span>':`<span>por <input type="number" data-al="duracao_s" value="${r.duracao_s}" style="width:70px"> s</span>`}<span></span><button class="btn perigo" data-al-del="${i}" title="Remover">✕</button></div>`; }).join('')||'<div class="vazio">Nenhum alerta.</div>';
+  $('#alTipo').innerHTML=Object.entries(a.tipos).map(([k,t])=>`<option value="${k}">${esc(t.titulo)}</option>`).join('');
+  $('#alProg').innerHTML=(E?.programas||[]).filter(g=>!g.outros).map(g=>`<option>${esc(g.nome)}</option>`).join('');
+  atualizarFormAlerta();
+  Tabela($('#alHist'),[{k:'ts',t:'Quando',f:r=>quando(r.ts)},{k:'titulo',t:'Alerta',e:1,texto:1},{k:'msg',t:'Detalhe',e:1,texto:1}],{ordem:'ts',vazio:'Nenhum alerta disparou ainda.'}).def(a.historico); }
+function atualizarFormAlerta(){ const tp=$('#alTipo').value, t=AL?.tipos[tp]; if(!t) return; $('#alProg').hidden=!tp.startsWith('prog_'); $('#alUn').textContent=t.unidade; $('#alLimWrap').hidden=tp==='prog_aberto'; $('#alDurWrap').hidden=tp==='prog_aberto'||tp==='disco_cheio';
+  $('#alLim').value={mem:90,cpu:90,temp_cpu:90,temp_gpu:85,disco_cheio:95,prog_mem:2,prog_cpu:50}[tp]??80; }
+$('#alTipo').onchange=atualizarFormAlerta;
+async function salvarRegras(regras){ const r=await POST('config',{alertas:regras}).catch(()=>null); if(r&&r.valores){ CFG=r.valores; toast('Alertas salvos.'); } else toast('Não consegui salvar.',1); vAlertas(); }
+$('#alAdd').onclick=()=>{ const tp=$('#alTipo').value; const nova={tipo:tp,limite:+$('#alLim').value||0,duracao_s:+$('#alDur').value||0,ativo:true}; if(tp.startsWith('prog_')){ nova.programa=$('#alProg').value; if(!nova.programa){ toast('Escolha o programa.',1); return; } } salvarRegras([...AL.regras.map(({descricao,...x})=>x),nova]); };
+$('#alRegras').addEventListener('change',e=>{ const el=e.target.closest('[data-al]'); if(!el) return; const i=+el.closest('.regra').dataset.i; const rs=AL.regras.map(({descricao,...x})=>x);
+  rs[i][el.dataset.al]=el.type==='checkbox'?el.checked:+el.value; salvarRegras(rs); });
+$('#alRegras').addEventListener('click',e=>{ const b=e.target.closest('[data-al-del]'); if(!b) return; const rs=AL.regras.map(({descricao,...x})=>x); rs.splice(+b.dataset.alDel,1); salvarRegras(rs); });
+$('#alGeral').onchange=async e=>{ const r=await POST('config',{alertas_ativos:e.target.checked}).catch(()=>null); if(r&&r.valores){ CFG=r.valores; toast(e.target.checked?'Alertas ligados.':'Alertas desligados.'); } };
+$('#alTeste').onclick=async()=>{ const r=await POST('acao',{tipo:'alerta_teste'}).catch(()=>null); if(r) toast(r.msg,!r.ok); };
 
 /* =================== GAVETA DE DETALHES =================== */
 let gavAtual=null;
@@ -969,7 +1114,7 @@ function abrirPrograma(nome){ if(!nome) return; let aba='arvore', g=null, T={}, 
       T.b=Tabela($('#gt2'),[...colIps,{k:'env',t:'Enviado',f:r=>fB(r.env)},{k:'rec',t:'Recebido',f:r=>fB(r.rec)},{k:'primeiro',t:'Primeira vez',f:r=>quando(r.primeiro)},{k:'ultimo',t:'Última vez',f:r=>quando(r.ultimo)}],{ordem:'rec',vazio:'Sem histórico.'}); }
     if(aba==='conn') T.a=Tabela($('#gt'),colConn,{ordem:'remoto',clique:r=>abrirProcesso(r.pid),vazio:'Nenhuma conexão aberta.'});
     preencher(true); }
-  function preencher(primeira){ if(gavAtual!==o) return; $('#gTit').textContent=g.nome;
+  function preencher(primeira){ if(gavAtual!==o) return; $('#gTit').innerHTML=ico(g.exe,'ico-g')+esc(g.nome);
     $('#gSub').innerHTML=g.ausente?'Não está aberto agora — mostrando o histórico.':`${g.nproc} processos · ${g.janelas||0} janelas · ${g.nconn} conexões · ${g.nips} IPs${g.exe?` · <code>${esc(g.exe)}</code>`:''}${g.protegido?' · '+ESCUDO('Windows')+' faz parte do Windows':''}`;
     const prot=!!g.protegido;
     botoesAcoes([{t:'Mostrar janela',ic:'janela',des:g.ausente,f:()=>acao({tipo:'mostrar',programa:g.nome})},{t:'Abrir local',ic:'pasta',des:!g.exe,f:()=>acao({tipo:'pasta',programa:g.nome})},
@@ -1000,7 +1145,7 @@ function abrirProcesso(pid){ let aba='info', d=null, T={}, cont=0;
     if(aba==='jan') T.a=Tabela($('#gt'),[{k:'t',t:'Janela',e:1,texto:1}],{ordem:'t',desc:false,clique:()=>acao({tipo:'mostrar',pid:d.pid,inicio:d.inicio}),vazio:'Esse processo não tem janela aberta.'});
     preencher(); }
   function preencher(){ if(gavAtual!==o) return; if(!d){ $('#gSub').textContent='Esse processo foi encerrado.'; return; }
-    $('#gTit').innerHTML=`${esc(d.nome)} <span class="pid" style="font-size:13px">PID ${d.pid}</span>${d.protegido?ESCUDO(d.protegido):''}`;
+    $('#gTit').innerHTML=`${ico(d.exe,'ico-g')}${esc(d.nome)} <span class="pid" style="font-size:13px">PID ${d.pid}</span>${d.protegido?ESCUDO(d.protegido):''}`;
     $('#gSub').innerHTML=`Programa: <a href="#" data-prog-link="${esc(d.programa)}">${esc(d.programa)}</a> · usuário ${esc(d.usuario||'—')} · ${d.conexoes.length} conexões · ${d.filhos.length} filhos${d.protegido?` · <b>protegido:</b> ${esc(d.protegido)}`:''}`;
     const prot=!!d.protegido, perm=CFG.permitir_encerrar;
     botoesAcoes([{t:'Mostrar janela',ic:'janela',f:()=>acao({tipo:'mostrar',pid:d.pid,inicio:d.inicio})},{t:'Abrir local',ic:'pasta',des:!d.exe,f:()=>acao({tipo:'pasta',pid:d.pid,inicio:d.inicio})},

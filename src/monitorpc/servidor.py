@@ -12,7 +12,7 @@ import threading
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
-from . import config, configuracao, banco
+from . import config, configuracao, banco, icones, energia, servicos, alertas
 
 HOSTS_OK = {f"127.0.0.1:{config.PORTA}", f"localhost:{config.PORTA}"}
 ORIGENS_OK = {f"http://127.0.0.1:{config.PORTA}", f"http://localhost:{config.PORTA}"}
@@ -107,6 +107,38 @@ def criar(motor):
                     return self._json(motor.status())
                 if r == "/api/config":
                     return self._json({"valores": configuracao.obter(), "padrao": config.PADRAO, "opcoes": config.OPCOES})
+                if r == "/api/icone":
+                    dados = icones.png(q.get("exe", ""))
+                    if not dados:
+                        return self._json({"erro": "sem ícone"}, 404)
+                    self.send_response(200)
+                    self.send_header("Content-Type", "image/png")
+                    self.send_header("Cache-Control", "max-age=86400")
+                    self.send_header("Content-Length", str(len(dados)))
+                    self.end_headers()
+                    self.wfile.write(dados)
+                    return
+                if r == "/api/jogo":
+                    return self._json(motor.jogo.estado())
+                if r == "/api/energia/planos":
+                    return self._json(energia.planos())
+                if r == "/api/energia":
+                    return self._json(energia.estado())
+                if r == "/api/servicos":
+                    with motor.lock:
+                        procs = {p: (d["mem"], d["cpu"]) for p, d in motor.procs.items()}
+                    lst = []
+                    for sv in servicos.listar():
+                        mc = procs.get(sv["pid"])
+                        lst.append({**sv, "mem": mc[0] if mc else 0, "cpu": mc[1] if mc else 0})
+                    return self._json(lst)
+                if r == "/api/alertas":
+                    c = configuracao.obter()
+                    return self._json({"ativos": c["alertas_ativos"], "regras": [{**x, "descricao": alertas.descrever(x)} for x in c["alertas"]],
+                                       "tipos": {k: {"titulo": v[0], "unidade": v[1]} for k, v in alertas.TIPOS.items()},
+                                       "historico": banco.listar_alertas()})
+                if r == "/api/atualizacao":
+                    return self._json(motor.atualizador.estado())
                 if r == "/api/acao/resultado":
                     return self._json({"resultado": motor.resultado(q.get("id", ""))})
                 if r == "/api/fila":
@@ -145,7 +177,7 @@ def criar(motor):
                     motor.resultado(corpo.get("id", ""), {"ok": bool(corpo.get("ok")), "msg": corpo.get("msg", "")})
                     return self._json({"ok": True})
                 if r == "/api/janelas":
-                    motor.receber_janelas(corpo.get("janelas"))
+                    motor.receber_janelas(corpo.get("janelas"), corpo.get("frente"))
                     return self._json({"ok": True})
                 return self._json({"erro": "não encontrado"}, 404)
             except Exception as e:  # noqa: BLE001

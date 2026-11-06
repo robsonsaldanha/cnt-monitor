@@ -14,11 +14,22 @@ NOME_RUN = "MonitorDoPC"
 
 
 def _validar(c):
+    from . import alertas
     out = dict(config.PADRAO)
+    out["alertas"] = [dict(x) for x in alertas.PADRAO]
+    out["jogo_fechar"] = []
     for k, padrao in config.PADRAO.items():
         if k not in c:
             continue
         v = c[k]
+        if k == "alertas":
+            if isinstance(v, list):
+                out[k] = alertas.validar(v)
+            continue
+        if k == "jogo_fechar":
+            if isinstance(v, list):
+                out[k] = [str(x)[:80] for x in v if isinstance(x, str)][:50]
+            continue
         if isinstance(padrao, bool):
             out[k] = bool(v)
         elif isinstance(padrao, int):
@@ -45,7 +56,7 @@ def carregar():
             with open(config.CONFIG, encoding="utf-8") as f:
                 _atual = _validar(json.load(f))
         except (OSError, ValueError):
-            _atual = dict(config.PADRAO)
+            _atual = _validar({})
         return dict(_atual)
 
 

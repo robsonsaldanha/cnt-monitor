@@ -17,6 +17,7 @@ from collections import deque, defaultdict
 import psutil
 
 from . import config, configuracao, banco, rede, temperatura, nt, gpu, discos, inicializacao
+from . import alertas, jogo, energia, servicos, atualizacao, sessao
 
 WIN = os.name == "nt"
 NCPU = psutil.cpu_count() or 1
@@ -138,6 +139,14 @@ class Motor:
         self.resultados = {}
         self.bandeja_ts = 0
         self._ini_cache = {}
+        self.frente_pid = None
+        self.alertas = alertas.Alertas()
+        self._ult_alerta = 0
+        self._particoes = []
+        self._ult_part = 0
+        self.atualizador = atualizacao.Atualizador()
+        self._ult_atualizacao = 0
+        self.jogo = jogo.ModoJogo(self)
 
     # ================================================================ ciclo
     def iniciar(self):
@@ -155,6 +164,18 @@ class Motor:
             pass
         for alvo, nome in ((self._loop_rapido, "coleta"), (self._loop_lento, "lento"), (self._loop_sensores, "sensores")):
             threading.Thread(target=alvo, name=nome, daemon=True).start()
+        if os.path.exists(atualizacao.FLAG_REABRIR):
+            threading.Timer(12, self._reabrir_icone).start()
+
+    def _reabrir_icone(self):
+        """Depois de uma atualização automática, reabre o ícone na tela do usuário."""
+        try:
+            os.remove(atualizacao.FLAG_REABRIR)
+        except OSError:
+            pass
+        exe = os.path.join(config.pasta_programa(), "MonitorPC.exe")
+        if os.path.exists(exe) and time.time() - self.bandeja_ts > 30:
+            sessao.abrir_na_tela_do_usuario(f'"{exe}" --bandeja')
 
     def parar(self):
         self.parar_ev.set()
@@ -196,6 +217,10 @@ class Motor:
                     self.rede.parar()
                     self.rede.ok = False
                 self.discos.atualizar_mapa()
+                if c["atualizacao_auto"] and time.time() - self._ult_atualizacao > 6 * 3600 and time.time() - self.inicio > 120:
+                    self._ult_atualizacao = time.time()
+                    if self.atualizador.verificar() and not self.jogo.ativo:
+                        self.atualizador.instalar()
             except Exception:
                 self.erros.append(traceback.format_exc())
             self.parar_ev.wait(2)
@@ -288,6 +313,7 @@ class Motor:
                 continue
             net_pid[pid] = (sum(x[1] for x in dq) / J, sum(x[2] for x in dq) / J)
 
+        fps = self.jogo.fps.por_pid() if self.jogo.fps.rodando else {}
         procs = {}
         vivos = set()
         for p in lista:
@@ -314,6 +340,7 @@ class Motor:
                 "gpu": round(g["uso"], 1) if g else 0.0, "gpu_mem": g["mem"] if g else 0,
                 "nconn": self._conn_pid.get(pid, 0), "janelas": len(self.janelas.get(pid, ())),
                 "protegido": e["protecao"], "sessao": p.sessao,
+                "fps": fps[pid]["fps"] if pid in fps else None,
             }
         for d in (self._info, self._tx):
             for pid in [k for k in d if k not in vivos]:
@@ -458,7 +485,35 @@ class Motor:
                                    {g["id"]: [g["uso"], g["mem_ded_usada"]] for g in gpus}, estado["disco_ativo"]])
         self._acumular(estado, progs)
         self._historico(t, procs)
+        try:
+            self.jogo.tick(c)
+            if t - self._ult_alerta >= 1:
+                self._ult_alerta = t
+                self._avaliar_alertas(c, estado)
+        except Exception:
+            self.erros.append(traceback.format_exc())
         return estado
+
+    def _avaliar_alertas(self, c, e):
+        if not c["alertas_ativos"]:
+            return
+        if time.time() - self._ult_part > 60:
+            self._ult_part = time.time()
+            parts = []
+            for p in psutil.disk_partitions(all=False):
+                try:
+                    parts.append({"unidade": p.device, "pct": psutil.disk_usage(p.mountpoint).percent})
+                except Exception:
+                    continue
+            self._particoes = parts
+        for titulo, msg in self.alertas.avaliar(c["alertas"], e, self._particoes):
+            banco.gravar_alerta(time.time(), titulo, titulo.replace("Monitor do PC — ", ""), msg)
+            if time.time() - self.bandeja_ts < 40:
+                self.fila.put({"tipo": "notificar", "titulo": titulo, "msg": msg, "id": uuid.uuid4().hex[:12]})
+
+    def _grupo_pids(self, nome):
+        g = next((x for x in (self.estado or {}).get("programas", []) if x["nome"] == nome), None)
+        return list(g["pids"]) if g else []
 
     def _trafego_ip(self, t, pid, ip, env, rec):
         pg = self._pid_prog.get(pid, (0, None))[1] or ("Sistema (kernel)" if pid in (0, 4) else "Processo já encerrado")
@@ -735,7 +790,7 @@ class Motor:
                 "etw": self.rede.estatisticas(), "sensores": self.sens.fontes, "avisos": self.sens.avisos[-5:],
                 "pawnio": self.sens.pawnio, "gpu_ok": self.gpu.ok, "gpu_erro": self.gpu.erro,
                 "gpus": [a["nome"] for a in self.gpu.adaptadores], "bandeja_online": time.time() - self.bandeja_ts < 40,
-                "inicio": self.inicio, "banco": banco.info(), "erros": list(self.erros)[-3:], "pid": os.getpid()}
+                "inicio": self.inicio, "banco": banco.info(), "jogo_ativo": self.jogo.ativo, "erros": list(self.erros)[-3:], "pid": os.getpid()}
 
     # ================================================================ inicialização do Windows
     def inicializacao(self):
@@ -884,6 +939,54 @@ class Motor:
                 return {"ok": False, "msg": f"Não consegui alterar: {e}"}
             return {"ok": True, "msg": f'"{item["nome"]}" {"vai" if a.get("ativo") else "não vai mais"} iniciar com o Windows.'}
 
+        return self._acao_extra(tipo, a, c)
+
+    def _acao_extra(self, tipo, a, c):
+        def res(ok_msg):
+            ok, msg = ok_msg
+            return {"ok": ok, "msg": msg if isinstance(msg, str) else "Feito.", "dados": None if isinstance(msg, str) else msg}
+        if tipo == "jogo_ligar":
+            return self.jogo.ativar(c)
+        if tipo == "jogo_desligar":
+            return self.jogo.desativar(reabrir=c["jogo_reabrir"])
+        if tipo == "limpar_cache":
+            ok, d = jogo.limpar_cache_memoria()
+            if not ok:
+                return {"ok": False, "msg": d}
+            lib = d["liberado"]
+            return {"ok": True, "msg": f"Cache limpo: {lib / 2**20:.0f} MB voltaram a ficar livres.", "dados": d}
+        if tipo == "energia_plano":
+            return res(energia.ativar_plano(a.get("guid", "")))
+        if tipo == "energia_criar":
+            base = energia.DESEMPENHO_MAXIMO if a.get("base") == "maximo" else energia.ALTO_DESEMPENHO
+            g, txt = energia.criar_plano(base)
+            if g:
+                energia.ativar_plano(g)
+                return {"ok": True, "msg": "Plano criado e ativado."}
+            return {"ok": False, "msg": txt or "O Windows não deixou criar esse plano."}
+        if tipo == "energia_ajuste":
+            return res(energia.mudar_ajuste(a.get("chave"), a.get("onde"), a.get("valor", 0)))
+        if tipo == "energia_modo":
+            return res(energia.mudar_modo_energia(a.get("guid", "")))
+        if tipo == "windows_ajuste":
+            return res(energia.mudar_windows(a.get("chave"), bool(a.get("ativo"))))
+        if tipo == "brilho":
+            return res(energia.mudar_brilho(a.get("nivel", 50)))
+        if tipo == "servico":
+            return res(servicos.acao(a.get("nome"), a.get("oque"), a.get("inicio")))
+        if tipo == "atualizar_verificar":
+            d = self.atualizador.verificar()
+            if self.atualizador.erro:
+                return {"ok": False, "msg": self.atualizador.erro}
+            return {"ok": True, "msg": f'Versão {d["versao"]} disponível!' if d else "Você já está na versão mais nova."}
+        if tipo == "atualizar_instalar":
+            return res(self.atualizador.instalar())
+        if tipo == "alerta_teste":
+            if time.time() - self.bandeja_ts > 40:
+                return {"ok": False, "msg": "O ícone perto do relógio precisa estar aberto para mostrar notificações."}
+            self.fila.put({"tipo": "notificar", "titulo": "Monitor do PC — teste", "msg": "Os alertas estão funcionando.",
+                           "id": uuid.uuid4().hex[:12]})
+            return {"ok": True, "msg": "Notificação de teste enviada."}
         return {"ok": False, "msg": "Ação desconhecida."}
 
     # --- comunicação com o ícone da bandeja (que roda na sessão do usuário)
@@ -907,8 +1010,9 @@ class Motor:
                     self.resultados.pop(k, None)
         return self.resultados.get(rid)
 
-    def receber_janelas(self, mapa):
+    def receber_janelas(self, mapa, frente=None):
         self.bandeja_ts = time.time()
         with self.lock:
             self.janelas = {int(k): v for k, v in (mapa or {}).items()}
             self.janelas_ts = time.time()
+            self.frente_pid = int(frente) if frente else None

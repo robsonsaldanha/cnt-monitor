@@ -181,9 +181,25 @@ def executar(a):
     if tipo == "abrir_exe":
         c = a.get("caminho", "")
         if os.path.exists(c):
-            os.startfile(c)
+            if a.get("minimizado"):
+                si = subprocess.STARTUPINFO()
+                si.dwFlags |= 1          # STARTF_USESHOWWINDOW
+                si.wShowWindow = 7       # SW_SHOWMINNOACTIVE
+                subprocess.Popen([c], startupinfo=si, cwd=os.path.dirname(c), close_fds=True)
+            else:
+                os.startfile(c)
             return True, "Programa aberto."
         return False, "Arquivo não encontrado."
+    if tipo == "notificar":
+        if ICONE is not None:
+            try:
+                ICONE.notify(a.get("msg", ""), a.get("titulo", "Monitor do PC"))
+            except Exception as e:  # noqa: BLE001
+                return False, str(e)
+        return True, "Notificação mostrada."
+    if tipo == "wsl_desligar":
+        r = subprocess.run(["wsl.exe", "--shutdown"], capture_output=True, timeout=60, creationflags=0x08000000)
+        return r.returncode == 0, "WSL desligado." if r.returncode == 0 else "Não consegui desligar o WSL."
     return False, "Ação desconhecida."
 
 
@@ -212,7 +228,15 @@ def loop_janelas():
     while True:
         try:
             js = listar_janelas()
-            api_post("api/janelas", {"janelas": {str(p): [t[:120] for _h, t, _m, _a in v] for p, v in js.items()}})
+            frente = None
+            if WIN:
+                h = user32.GetForegroundWindow()
+                if h:
+                    pid = wt.DWORD(0)
+                    user32.GetWindowThreadProcessId(h, ctypes.byref(pid))
+                    frente = pid.value
+            api_post("api/janelas", {"janelas": {str(p): [t[:120] for _h, t, _m, _a in v] for p, v in js.items()},
+                                     "frente": frente})
         except urllib.error.HTTPError as e:
             if e.code == 403:
                 _token["v"] = None
@@ -295,9 +319,47 @@ def main():
     for alvo in (loop_fila, loop_janelas, atualizar_icone):
         threading.Thread(target=alvo, daemon=True).start()
     import pystray
+    estado_jogo = {"ativo": False}
+    planos_cache = {"lista": [], "t": 0}
+
+    def atualizar_extras():
+        while True:
+            try:
+                estado_jogo["ativo"] = bool(api_get("api/jogo").get("ativo"))
+            except Exception:
+                pass
+            try:
+                planos_cache["lista"] = api_get("api/energia/planos", timeout=15)
+            except Exception:
+                pass
+            time.sleep(10)
+
+    threading.Thread(target=atualizar_extras, daemon=True).start()
+
+    def alternar_jogo(*_):
+        try:
+            r = api_post("api/acao", {"tipo": "jogo_desligar" if estado_jogo["ativo"] else "jogo_ligar"}, timeout=30)
+            estado_jogo["ativo"] = not estado_jogo["ativo"]
+            ICONE.notify(r.get("msg", "")[:250], "Modo Jogo")
+        except Exception as e:  # noqa: BLE001
+            ICONE.notify(str(e), "Modo Jogo")
+
+    def item_plano(p):
+        def ativar(*_):
+            try:
+                api_post("api/acao", {"tipo": "energia_plano", "guid": p["guid"]}, timeout=20)
+                for x in planos_cache["lista"]:
+                    x["ativo"] = x["guid"] == p["guid"]
+            except Exception:
+                pass
+        return pystray.MenuItem(p["nome"], ativar, checked=lambda *_: any(x["guid"] == p["guid"] and x["ativo"] for x in planos_cache["lista"]), radio=True)
+
     menu = pystray.Menu(
         pystray.MenuItem("Abrir Monitor do PC", lambda *_: abrir_janela(), default=True),
         pystray.MenuItem("Programas", lambda *_: abrir_janela("programas")),
+        pystray.MenuItem(lambda *_: "Desligar Modo Jogo" if estado_jogo["ativo"] else "Ligar Modo Jogo", alternar_jogo),
+        pystray.MenuItem("Plano de energia", pystray.Menu(lambda: [item_plano(p) for p in planos_cache["lista"]] or
+                                                          [pystray.MenuItem("carregando…", None, enabled=False)])),
         pystray.MenuItem("Relatório", lambda *_: abrir_janela("relatorio")),
         pystray.MenuItem("Configurações", lambda *_: abrir_janela("config")),
         pystray.Menu.SEPARATOR,
