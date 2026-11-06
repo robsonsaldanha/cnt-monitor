@@ -275,10 +275,9 @@ class Motor:
         lista = self.leitor.ler()
 
         # rede por processo: média do último segundo
-        if self.rede.ok:
-            for pid, ip, env, rec in self.rede.coletar():
-                self._net_ev[pid].append((t, env, rec))
-                self._trafego_ip(t, pid, ip, env, rec)
+        trafego = self.rede.coletar() if self.rede.ok else []
+        for pid, ip, env, rec in trafego:
+            self._net_ev[pid].append((t, env, rec))
         net_pid = {}
         for pid in list(self._net_ev):
             dq = self._net_ev[pid]
@@ -366,6 +365,9 @@ class Motor:
             gp["pids"].append(pid)
             if d["protegido"]:
                 gp["n_protegidos"] += 1
+        # tráfego por IP: atribuído depois de montar a árvore, assim processos novos já têm programa
+        for pid, ip, env, rec in trafego:
+            self._trafego_ip(t, pid, ip, env, rec)
         for pid in [k for k, v in self._pid_prog.items() if t - v[0] > 300]:
             self._pid_prog.pop(pid, None)
 
