@@ -446,7 +446,7 @@ class Motor:
         if t - self._ult["t"] >= config.GRAVAR_TEMPS_CADA:
             with self.sens.lock:
                 temps = [(ts, s["id"], s["hw"], s["nome"], s["valor"]) for s in self.sens.lista
-                         if s["tipo_en"] == "Temperature"]
+                         if s["tipo_en"] == "Temperature" and not s.get("limite")]
             if temps:
                 banco.gravar(temps=temps)
             self._ult["t"] = t

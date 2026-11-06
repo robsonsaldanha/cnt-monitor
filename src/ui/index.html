@@ -501,16 +501,16 @@ let HW=null, horasTemp=1; const grTemp=new Grafico($('#grTemp'),{fmt:fT,eixo:eix
 seg($('#segTemp'),d=>{horasTemp=+d.h; carregarTempHist();});
 async function carregarTempHist(){ try{ const d=await API('temps_hist?horas='+horasTemp); const s=d.series.map((x,i)=>({nome:x.nome,cor:COR(i),pts:x.pts})); grTemp.def({t0:d.desde,t1:d.ate,passo:d.passo,series:s}); legenda($('#legTemp'),s); }catch(_){} }
 async function vHardware(forcar){ try{ HW=await API('hardware'); }catch(_){ return; } if(forcar) carregarTempHist();
-  const h=HW, temps=h.sensores.filter(s=>s.tipo_en==='Temperature');
+  const h=HW, temps=h.sensores.filter(s=>s.tipo_en==='Temperature'&&!s.limite);
   let av=''; const temCpu=temps.some(s=>s.tipo_hw==='Processador');
   if(!temCpu) av+=`<div class="aviso">A temperatura do processador não está disponível${h.pawnio===false?': o driver <b>PawnIO</b> não está instalado. Rode o instalador do Monitor do PC de novo e marque “Driver PawnIO”.':'.'}${temps.some(s=>s.fonte==='ACPI')?' Mostrando as zonas térmicas da placa-mãe no lugar.':''}</div>`;
   if(!h.sensores.length) av+=`<div class="aviso">Nenhum sensor encontrado. ${esc((h.avisos||[]).join(' '))}</div>`;
   $('#hwAviso').innerHTML=av;
   $('#hwSub').textContent=`Fontes: ${(h.fontes||[]).join(', ')||'—'} · ${h.sensores.length} sensores`;
   const princ=[]; const add=(rot,s)=>{ if(s) princ.push([rot,s]); };
-  const pick=(hw,nomes)=>{ const c=temps.filter(s=>s.tipo_hw===hw); for(const n of nomes){ const s=c.find(x=>x.nome.toLowerCase()===n); if(s) return s; } return c.sort((a,b)=>b.valor-a.valor)[0]; };
+  const pick=(hw,nomes)=>{ const c=temps.filter(s=>s.tipo_hw===hw); for(const n of nomes){ const s=c.find(x=>x.nome.toLowerCase().includes(n)); if(s) return s; } return c.sort((a,b)=>b.valor-a.valor)[0]; };
   add('Processador',pick('Processador',['cpu package','core max','core average','tctl/tdie'])); add('Placa de vídeo',pick('Placa de vídeo',['gpu core','gpu hot spot']));
-  temps.filter(s=>s.tipo_hw==='Armazenamento').forEach(s=>add(s.hw,s)); temps.filter(s=>s.fonte==='ACPI').slice(0,3).forEach(s=>add(s.nome,s));
+  const vistos=new Set(); temps.filter(s=>s.tipo_hw==='Armazenamento').forEach(s=>{ if(!vistos.has(s.hw)){ vistos.add(s.hw); add(s.hw,s); } }); temps.filter(s=>s.fonte==='ACPI').slice(0,3).forEach(s=>add(s.nome,s));
   temps.filter(s=>s.tipo_hw==='Placa-mãe'&&s.fonte!=='ACPI').slice(0,2).forEach(s=>add(s.nome,s));
   $('#hwTemps').innerHTML=princ.map(([r,s])=>`<div class="painel tt"><div class="r">${esc(r)}</div><div class="v n ${nivT(s.valor)}">${fT(s.valor)}</div><div class="r n">mín ${fT(s.min)} · máx ${fT(s.max)}</div></div>`).join('')||'<div class="painel tt mut">Sem temperaturas.</div>';
   const kv=[['Computador',h.maquina],['Sistema',h.sistema],['Processador',h.cpu_nome],['Núcleos',`${h.fisicos} físicos · ${h.nucleos} lógicos`],['Frequência',h.freq?`${nf2.format(h.freq.atual/1000)} GHz`+(h.freq.max?` (máx. ${nf2.format(h.freq.max/1000)} GHz)`:''):'—'],['Memória RAM',fB(h.ram_total)],['Ligado desde',quando(h.ligado_desde)]];

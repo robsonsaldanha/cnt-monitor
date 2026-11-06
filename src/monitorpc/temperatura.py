@@ -211,6 +211,15 @@ class Sensores:
             if not tem_cpu_temp:
                 lista += self._ler_acpi()
         agora = time.time()
+        limpa = []
+        for s in lista:
+            if s["tipo_en"] == "Temperature":
+                if s["valor"] <= 0 or s["valor"] > 150:
+                    continue  # sensor sem leitura real (comum em máquinas virtuais)
+                n = s["nome"].lower()
+                s["limite"] = any(w in n for w in ("warning", "critical", "limit", "threshold", "tjmax", "high temp"))
+            limpa.append(s)
+        lista = limpa
         for s in lista:
             mm = self._minmax.get(s["id"])
             v = s["valor"]
@@ -228,13 +237,13 @@ class Sensores:
         """Temperatura principal da CPU e da GPU, uso da GPU."""
         with self.lock:
             lst = list(self.lista)
-        temps = [s for s in lst if s["tipo_en"] == "Temperature"]
+        temps = [s for s in lst if s["tipo_en"] == "Temperature" and not s.get("limite")]
 
         def escolher(tipo_hw, preferidos):
             cand = [s for s in temps if s["tipo_hw"] == tipo_hw]
             for p in preferidos:
                 for s in cand:
-                    if s["nome"].lower() == p:
+                    if p in s["nome"].lower():
                         return s["valor"]
             return max((s["valor"] for s in cand), default=None)
 
