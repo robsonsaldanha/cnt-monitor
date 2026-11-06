@@ -259,6 +259,21 @@ code{font-family:"Cascadia Mono",Consolas,monospace;font-size:12px;background:va
 .medidores div{font-size:12px;color:var(--txt3)}
 .medidores b{display:block;font:600 20px/1.15 var(--tit);color:var(--txt)}
 .cmp td.d{font-weight:600} .cmp .sobe{color:var(--perigo)} .cmp .desce{color:var(--ok)}
+.vps-bloco .cab .ponto{width:10px;height:10px;border-radius:50%;background:var(--perigo);flex:none}
+.vps-bloco .cab .ponto.on{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 22%,transparent)}
+.vps-corpo{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr) minmax(0,1fr);gap:0}
+.vps-corpo>div{padding:14px 16px;border-right:1px solid var(--grade);min-width:0}
+.vps-corpo>div:last-child{border-right:0}
+.vps-corpo h3{font:600 14px/1.3 var(--tit);margin:14px 0 6px;display:flex;align-items:center;gap:6px}
+.vps-corpo h3:first-child{margin-top:0}
+.vps-corpo canvas{width:100%;display:block}
+.vps-corpo .medidores{margin-top:0}
+.vps-corpo .medidores span{display:block;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vl{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:3px 0;font-size:13px;min-width:0}
+.vl>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vd .mb{display:block;width:100%;margin:2px 0}
+@media (max-width:1100px){.vps-corpo{grid-template-columns:1fr 1fr}.vps-corpo>div:first-child{grid-column:1/-1;border-right:0;border-bottom:1px solid var(--grade)}}
+@media (max-width:700px){.vps-corpo{grid-template-columns:1fr}.vps-corpo>div{border-right:0;border-bottom:1px solid var(--grade)}}
 .qr{background:#fff;border-radius:10px;padding:8px;width:170px;height:170px;flex:none}
 .qr svg{width:100%;height:100%}
 @media (max-width:1300px){.g6{grid-template-columns:repeat(3,minmax(0,1fr))}.mini{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -523,7 +538,7 @@ code{font-family:"Cascadia Mono",Consolas,monospace;font-size:12px;background:va
 <section id="v-vps" hidden>
   <h1>Servidores (VPS)</h1><p class="sub">Acompanhe seus servidores Linux por SSH: CPU, memória, disco, rede, serviços, containers e sites. As senhas e chaves ficam criptografadas neste PC (só a conta do Windows consegue abrir).</p>
   <div class="rel-cab"><button class="btn pri" id="vpsNovo">Adicionar servidor</button></div>
-  <div class="grade auto" id="vpsLista"></div>
+  <div class="grade" id="vpsLista"></div>
   <div class="painel secao" id="vpsForm" hidden></div>
 </section>
 
@@ -1040,8 +1055,12 @@ function htmlEps(eps,lm,lc,lt){ if(!eps.length) return `<div class="vazio"><b cl
     <div class="chips">${e.top.map(a=>`<span class="chip"><b>${esc(a.nome)}</b> ${fB(a.mem)}</span>`).join('')}${e.top_cpu.filter(a=>!e.top.some(b=>b.nome===a.nome)).map(a=>`<span class="chip"><b>${esc(a.nome)}</b> CPU ${fP(a.cpu)}</span>`).join('')}</div></div></div>`; }).join(''); }
 async function vLentidao(){ let d; try{ d=await API('lentidao?dias=7'); }catch(_){ return; }
   $('#lentSub').textContent=`Momentos em que a memória passou de ${d.limiar_mem}%, a CPU de ${d.limiar_cpu}% ou a temperatura da CPU de ${d.limiar_temp} °C — é quando o PC costuma travar. Os limites podem ser mudados em Configurações.`;
-  $('#eps').innerHTML=htmlEps(d.episodios,d.limiar_mem,d.limiar_cpu,d.limiar_temp); contLent(d.episodios); }
-function contLent(eps){ const n=eps.filter(e=>Date.now()/1000-e.fim<86400).length; $('#contLent').hidden=!n; $('#contLent').textContent=n; }
+  $('#eps').innerHTML=htmlEps(d.episodios,d.limiar_mem,d.limiar_cpu,d.limiar_temp);
+  if(vista==='lentidao') lentVisto(Math.max(Date.now()/1000, ...d.episodios.map(e=>e.fim))); contLent(d.episodios); }
+/* O balão da barra lateral mostra só os momentos que você ainda não viu (some ao abrir a tela Lentidão). */
+function lentVisto(v){ try{ if(v!=null) localStorage.setItem('mpc_lent_visto',String(v)); return +(localStorage.getItem('mpc_lent_visto')||0); }catch(_){ if(v!=null) LENT_VISTO=v; return LENT_VISTO; } }
+let LENT_VISTO=0;
+function contLent(eps){ const visto=lentVisto(), n=eps.filter(e=>Date.now()/1000-e.fim<86400 && e.fim>visto).length; $('#contLent').hidden=!n; $('#contLent').textContent=n; }
 $('#eps').addEventListener('click',e=>{ const ep=e.target.closest('.ep'); if(ep) verMomento(+ep.dataset.ts,$('#lentDet')); });
 
 /* =================== RELATÓRIO =================== */
@@ -1078,7 +1097,7 @@ async function vRelatorio(){ const [a,b]=faixa(); $('#relCorpo').innerHTML='<div
   Tabela($('#rProc'),[{k:'nome',t:'Processo',e:1,texto:1},{k:'programa',t:'Programa',e:1,texto:1},{k:'mem_max',t:'Memória máx.',f:x=>fB(x.mem_max)},{k:'cpu_med',t:'CPU média',f:x=>fP(x.cpu_med)},{k:'cpu_max',t:'CPU máx.',f:x=>fP(x.cpu_max)},{k:'disco',t:'Disco',f:x=>fB(x.disco)},{k:'rede',t:'Rede',f:x=>fB(x.rede)},{k:'instancias',t:'Vezes aberto'}],{ordem:'mem_max',limite:30}).def(r.processos);
   Tabela($('#rRem'),[{k:'ip',t:'IP',e:1,texto:1,f:x=>`<code>${esc(x.ip)}</code>`},{k:'host',t:'Nome',e:1,texto:1,f:x=>esc(x.host||'')},{k:'programas',t:'Programas',e:1,texto:1,f:x=>esc((x.programas||'').split(',').join(', '))},{k:'env',t:'Enviado',f:x=>fB(x.env)},{k:'rec',t:'Recebido',f:x=>fB(x.rec)}],{ordem:'rec',limite:30,vazio:'Sem tráfego registrado.'}).def(r.remotos);
   Tabela($('#rTemp'),[{k:'nome',t:'Sensor',e:1,texto:1,f:x=>`${esc(x.nome)} <span class="mut">${esc(x.hw)}</span>`},{k:'min',t:'Mín.',f:x=>fT(x.min)},{k:'med',t:'Média',f:x=>fT(x.med)},{k:'max',t:'Máx.',f:x=>fT(x.max),cls:x=>nivT(x.max)}],{ordem:'max',vazio:'Sem temperaturas no período.'}).def(r.temperaturas); }
-$('#relPdf').onclick=()=>print();
+$('#relPdf').onclick=()=>{ if(REL) imprimirDoc('Relatório do computador', subRel(REL), htmlRelatorioCompleto(REL)); };
 $('#relCsv').onclick=()=>{ if(!REL) return; const cols=['nome','tempo','mem_med','mem_max','cpu_med','cpu_max','ler','gravar','env','rec','nproc_max','nconn_max'];
   const tit=['Programa','Tempo aberto (s)','Memória média (bytes)','Memória máx (bytes)','CPU média (%)','CPU máx (%)','Disco lido (bytes)','Disco gravado (bytes)','Rede enviada (bytes)','Rede recebida (bytes)','Processos máx','Conexões máx'];
   const linhas=[tit.join(';')].concat(REL.programas.map(p=>cols.map(c=>{ const v=p[c]; return typeof v==='number'?String(Math.round(v*100)/100).replace('.',','):'"'+String(v??'').replace(/"/g,'""')+'"'; }).join(';')));
@@ -1392,13 +1411,36 @@ const fUp=s=>s==null?'—':dur(s);
 async function vVps(entrando){ if(VPS_FORM && !entrando) return; try{ VPS=await API('vps'); }catch(_){ return; }
   const off=VPS.filter(v=>v.ativo&&!v.online&&v.erro!=='iniciando').length; $('#contVps').hidden=!off; $('#contVps').textContent=off;
   if(ocupado()) return;
-  $('#vpsLista').innerHTML=VPS.length?VPS.map(v=>{ const d=v.dados||{};
-    return `<button class="painel vps-card" data-vps="${esc(v.id)}"><div class="t"><i class="${v.online?'on':''}"></i>${esc(v.nome)}</div>
-      <div class="mut" style="font-size:12.5px;margin-top:2px">${esc(v.usuario)}@${esc(v.host)}${v.porta!==22?':'+v.porta:''} — ${v.online?esc(d.sistema||'online')+', ligado há '+fUp(d.uptime):'<span class="muito">'+esc(v.erro||'sem conexão')+'</span>'}</div>
-      ${v.online?`<div class="medidores"><div>CPU<b class="${nivC(d.cpu)}">${fP(d.cpu)}</b></div><div>Memória<b class="${nivM(d.mem_pct)}">${fP(d.mem_pct)}</b></div><div>Disco<b class="${nivel(d.disco_pct,90,80)}">${fP(d.disco_pct,0)}</b></div><div>Carga<b>${d.load?nf2.format(d.load[0]):'—'}</b></div></div>
-      <div class="mut" style="font-size:12.5px;margin-top:8px">${(d.servicos||[]).filter(s=>s.estado!=='active').length?`<span class="muito">${(d.servicos||[]).filter(s=>s.estado!=='active').length} serviço(s) parado(s)</span>`:(d.servicos||[]).length?`${d.servicos.length} serviço(s) rodando`:''}${(v.urls_status||[]).some(u=>!u.ok)?' <span class="muito">site fora do ar</span>':''}</div>`:''}</button>`; }).join('')
-    :'<div class="painel vazio" style="grid-column:1/-1">Nenhum servidor cadastrado. Clique em “Adicionar servidor”.</div>'; }
-$('#vpsLista').addEventListener('click',e=>{ const b=e.target.closest('[data-vps]'); if(b) abrirVps(b.dataset.vps); });
+  if(!VPS.length){ $('#vpsLista').innerHTML='<div class="painel vazio" style="grid-column:1/-1">Nenhum servidor cadastrado. Clique em “Adicionar servidor”.</div>'; return; }
+  $('#vpsLista').innerHTML=VPS.map(blocoVps).join('');
+  for(const v of VPS){ const cv=document.getElementById('vg-'+v.id); if(!cv||!v.serie||v.serie.length<2) continue; const S=v.serie;
+    new Grafico(cv,{ymax:100,fmt:x=>fP(x),eixo:eixoPct,gap:v.intervalo_s*3}).def({t0:S[0][0],t1:S[S.length-1][0],passo:v.intervalo_s,series:[{nome:'CPU',cor:COR(1),grossa:1,pts:S.map(p=>[p[0],p[1]])},{nome:'Memória',cor:COR(0),pts:S.map(p=>[p[0],p[2]])},{nome:'Disco',cor:COR(2),pts:S.map(p=>[p[0],p[3]])}]}); } }
+function blocoVps(v){ const d=v.dados||{}, on=v.online, sv=d.servicos||[], ct=d.containers||[], us=v.urls_status||[];
+  const svParado=sv.filter(s=>s.estado!=='active').length, ctParado=ct.filter(c=>!c.rodando).length, urlFora=us.filter(u=>!u.ok).length;
+  const linha=(nome,tag,ok,extra)=>`<div class="vl"><span>${nome}${extra?` <span class="mut">${extra}</span>`:''}</span><span class="tag ${ok?'on':'ruim'}">${tag}</span></div>`;
+  return `<section class="painel vps-bloco">
+  <div class="cab"><span class="ponto ${on?'on':''}" title="${on?'online':'sem conexão'}"></span><h2>${esc(v.nome)}</h2>
+    <span class="desc">${esc(v.usuario)}@${esc(v.host)}${v.porta!==22?':'+v.porta:''}${on&&d.sistema?' — '+esc(d.sistema):''}${on?', ligado há '+fUp(d.uptime):''}</span>
+    <div class="dir"><span class="desc">${v.ultimo?'lido '+quando(v.ultimo):''}</span><button class="btn" data-vped="${esc(v.id)}">Editar</button></div></div>
+  ${!on?`<div class="pad" style="padding-bottom:0"><div class="aviso erro">${v.ativo?esc(v.erro||'Sem conexão.'):'Monitoramento desligado para este servidor.'}</div></div>`:''}
+  ${on||d.mem_total?`<div class="vps-corpo">
+    <div><div class="medidores">
+      <div>CPU<b class="${nivC(d.cpu)}">${fP(d.cpu)}</b><span class="mut">${d.nucleos||'?'} núcleos</span></div>
+      <div>Memória<b class="${nivM(d.mem_pct)}">${fP(d.mem_pct)}</b><span class="mut">${fB(d.mem_usada)} de ${fB(d.mem_total)}</span></div>
+      <div>Disco /<b class="${nivel(d.disco_pct,90,80)}">${fP(d.disco_pct,0)}</b><span class="mut">${(d.discos||[]).length} partição(ões)</span></div>
+      <div>Carga<b>${d.load?nf2.format(d.load[0]):'—'}</b><span class="mut">${d.load?nf2.format(d.load[1])+' · '+nf2.format(d.load[2]):''}</span></div></div>
+      <div class="leg" style="margin-top:12px"><span style="--c:${COR(1)}">CPU</span><span style="--c:${COR(0)}">Memória</span><span style="--c:${COR(2)}">Disco</span><span class="mut">desde que o Monitor abriu</span></div>
+      <canvas id="vg-${esc(v.id)}" height="150"></canvas>
+      <div class="vl" style="margin-top:8px"><span>Rede agora</span><span class="n">↑ ${fN(d.tx)} &nbsp; ↓ ${fN(d.rx)}</span></div>
+      <div class="vl"><span>Swap</span><span class="n">${fB(d.swap_usada)} de ${fB(d.swap_total)}</span></div>
+      <div class="vl"><span>Kernel</span><span class="mut">${esc(d.kernel||'—')}</span></div></div>
+    <div><h3>Discos</h3>${(d.discos||[]).map(k=>`<div class="vd"><div class="vl"><span>${esc(k.ponto)}</span><b class="${nivel(k.pct,90,80)}">${fP(k.pct,0)}</b></div>${barra(k.usado,k.total)}<div class="vl mut" style="font-size:12px"><span>${fB(k.usado)} usados</span><span>${fB(k.total-k.usado)} livres</span></div></div>`).join('')||'<div class="mut">—</div>'}
+      <h3>Processos que mais usam CPU</h3>${(d.processos||[]).slice(0,7).map(p=>`<div class="vl"><span>${esc(p.nome)} <span class="mut">${p.pid}</span></span><span class="n">${fP(p.cpu)} · ${fB(p.mem)}</span></div>`).join('')||'<div class="mut">—</div>'}</div>
+    <div><h3>Serviços${svParado?` <span class="tag ruim">${svParado} parado(s)</span>`:''}</h3>${sv.map(s=>linha(esc(s.nome),({active:'rodando',failed:'falhou',inactive:'parado',activating:'iniciando',deactivating:'parando',unknown:'não existe'})[s.estado]||esc(s.estado),s.estado==='active')).join('')||'<div class="mut">Nenhum serviço cadastrado — clique em Editar para escolher quais acompanhar.</div>'}
+      ${v.docker?`<h3>Containers${ctParado?` <span class="tag ruim">${ctParado} parado(s)</span>`:''}</h3>${ct.map(c=>linha(esc(c.nome),c.rodando?'rodando':'parado',c.rodando,esc(c.imagem))).join('')||'<div class="mut">Nenhum container (ou o usuário não tem acesso ao Docker).</div>'}`:''}
+      <h3>Sites${urlFora?` <span class="tag ruim">${urlFora} fora do ar</span>`:''}</h3>${us.map(u=>linha(esc(u.url.replace(/^https?:\/\//,'')),u.ok?u.codigo+' · '+u.ms+' ms':esc(String(u.codigo||'erro')),u.ok)).join('')||'<div class="mut">Nenhum site cadastrado.</div>'}</div>
+  </div>`:''}</section>`; }
+$('#vpsLista').addEventListener('click',e=>{ const b=e.target.closest('[data-vped]'); if(b) formVps(VPS.find(x=>x.id===b.dataset.vped)); });
 $('#vpsNovo').onclick=()=>formVps(null);
 function formVps(v){ VPS_FORM=v||{}; const f=$('#vpsForm'); f.hidden=false; const x=v||{porta:22,usuario:'root',auth:'senha',intervalo_s:30,servicos:[],urls:[],docker:false,ativo:true,alerta_offline:true,alerta_disco:90,alerta_cpu:0,alerta_mem:0,alerta_servicos:true,alerta_urls:true};
   const sw=(id,on,t)=>`<label class="chk" style="border:0;padding:0"><label class="sw"><input type="checkbox" id="${id}" ${on?'checked':''}><span></span></label>${t}</label>`;
@@ -1489,8 +1531,8 @@ function conclusaoCmp(ga,gb,A,B,novos,progs){ const r=[]; const dm=ga.mem_med-gb
   if(novos.length) r.push(`Programas que só apareceram em “${A[2]}”: ${novos.join(', ')}.`);
   if(ga.temp_cpu_max!=null&&gb.temp_cpu_max!=null&&Math.abs(ga.temp_cpu_max-gb.temp_cpu_max)>=5) r.push(`A temperatura máxima da CPU ${ga.temp_cpu_max>gb.temp_cpu_max?'subiu':'caiu'} de ${fT(gb.temp_cpu_max)} para ${fT(ga.temp_cpu_max)}.`);
   return r; }
-$('#cmpPdf').onclick=()=>print();
-$('#cmpHtml').onclick=()=>{ if(!CMP) return; baixarHtml(`Comparação de períodos — ${CMP.A[2]} × ${CMP.B[2]}`, htmlComparar(CMP,true), `monitor-pc-comparacao-${new Date().toISOString().slice(0,10)}.html`); };
+$('#cmpPdf').onclick=()=>{ if(CMP) imprimirDoc('Comparação de períodos', `${esc(CMP.A[2])} × ${esc(CMP.B[2])}`, htmlComparar(CMP,true)); };
+$('#cmpHtml').onclick=()=>{ if(!CMP) return; baixarHtml('Comparação de períodos', `${esc(CMP.A[2])} × ${esc(CMP.B[2])}`, htmlComparar(CMP,true), `monitor-pc-comparacao-${new Date().toISOString().slice(0,10)}.html`); };
 
 /* =================== RELATÓRIO COMPLETO (HTML independente) =================== */
 function recomendacoes(r){ const g=r.geral, out=[]; if(!g) return ['Sem dados no período.'];
@@ -1510,25 +1552,58 @@ function svgLinhas(t0,t1,series,ymax,fmtY,alt){ const W=900,H=alt||220,l=46,rt=1
   for(const se of series){ const p=se.pts.filter(q=>q[1]!=null); if(p.length<2) continue; s+=`<polyline fill="none" stroke="${se.cor}" stroke-width="${se.grossa?2.2:1.5}" stroke-linejoin="round" points="${p.map(q=>X(q[0]).toFixed(1)+','+Y(q[1]).toFixed(1)).join(' ')}"/>`; }
   return s+'</svg>'+`<div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:#4d5967;margin-top:4px">${series.map(x=>`<span><i style="display:inline-block;width:12px;height:3px;background:${x.cor};vertical-align:middle;margin-right:6px"></i>${esc(x.nome)}</span>`).join('')}</div>`; }
 function barrasH(l,fmt,cor){ const mx=Math.max(1,...l.map(x=>x[1])); return l.map(([n,v])=>`<div style="display:grid;grid-template-columns:minmax(0,1fr) 90px;gap:8px;align-items:center;margin:5px 0"><div><div style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(n)}</div><div style="height:6px;background:#e7ebf0;border-radius:3px;margin-top:3px"><div style="height:6px;border-radius:3px;background:${cor};width:${v/mx*100}%"></div></div></div><b style="text-align:right;font-size:13px">${fmt(v)}</b></div>`).join('')||'<div style="color:#7b8794">—</div>'; }
-function baixarHtml(titulo, corpo, arquivo){ const doc=`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(titulo)}</title><style>
-body{margin:0;background:#eef1f4;color:#141a21;font:14px/1.5 Barlow,"Segoe UI",system-ui,sans-serif}main{max-width:1100px;margin:0 auto;padding:32px 24px 60px}
-h1{font:600 30px/1.15 "Barlow Semi Condensed",Barlow,"Segoe UI",sans-serif;margin:0 0 4px}h2{font:600 17px/1.3 "Barlow Semi Condensed",Barlow,"Segoe UI",sans-serif;margin:0}
-.painel{background:#fff;border:1px solid #d9dee5;border-radius:10px;margin-top:14px;break-inside:avoid;overflow:hidden}.cab{padding:12px 16px;border-bottom:1px solid #e3e7ec;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.desc{color:#7b8794;font-size:12.5px}
-.pad{padding:12px 16px}.grade{display:grid;gap:12px}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
-.tile{background:#fff;border:1px solid #d9dee5;border-radius:10px;padding:12px 14px;border-top:3px solid #1f6fb2}.tile .r{color:#4d5967;font-size:12.5px}.tile .v{font:600 28px/1.1 "Barlow Semi Condensed",Barlow,sans-serif}.tile .d{color:#7b8794;font-size:12px}
-table{width:100%;border-collapse:collapse}th{text-align:right;color:#4d5967;font-weight:500;font-size:12px;padding:7px 10px;border-bottom:1px solid #d9dee5}td{text-align:right;padding:5px 10px;border-bottom:1px solid #edf0f3;font-variant-numeric:tabular-nums}th.e,td.e{text-align:left}
-.sobe{color:#c93b3b;font-weight:600}.desce{color:#1d8a5b;font-weight:600}.mut{color:#7b8794}.quente{color:#b8740c;font-weight:600}.muito{color:#c93b3b;font-weight:600}.ok{color:#1d8a5b}
-ul.lista{margin:0;padding:6px 16px 10px 34px}ul.lista li{margin:5px 0}.tag{font-size:11px;border:1px solid #d9dee5;border-radius:5px;padding:0 5px;color:#4d5967}.so-impressao{display:none}.vazio{color:#7b8794;padding:18px;text-align:center}
-.rod{margin-top:28px;color:#7b8794;font-size:12px}@media(max-width:760px){.g4,.g3{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}@media print{body{background:#fff}main{padding:0}}
-</style></head><body><main><h1>${esc(titulo)}</h1>${corpo}<div class="rod">Gerado pelo Monitor do PC ${esc(STATUS?.versao||'')} em ${new Date().toLocaleString('pt-BR')}.</div></main></body></html>`;
+let FONTES_B64=null;
+async function fontesEmbutidas(){ if(FONTES_B64!=null) return FONTES_B64;
+  const L=[['Barlow',400,'barlow-latin-400-normal'],['Barlow',500,'barlow-latin-500-normal'],['Barlow',600,'barlow-latin-600-normal'],['Barlow SC',600,'barlow-semi-condensed-latin-600-normal'],['Barlow SC',700,'barlow-semi-condensed-latin-700-normal']];
+  try{ const out=await Promise.all(L.map(async([f,w,a])=>{ const b=new Uint8Array(await (await fetch('/fontes/'+a+'.woff2')).arrayBuffer()); let s=''; for(let i=0;i<b.length;i+=8192) s+=String.fromCharCode.apply(null,b.subarray(i,i+8192));
+      return `@font-face{font-family:"${f}";font-weight:${w};src:url(data:font/woff2;base64,${btoa(s)}) format("woff2")}`; })); FONTES_B64=out.join('\n'); }catch(_){ FONTES_B64=''; }
+  return FONTES_B64; }
+async function montarDoc(titulo, sub, corpo){ const fontes=await fontesEmbutidas();
+  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(titulo)} — ${new Date().toLocaleDateString('pt-BR')}</title><style>${fontes}
+:root{--t:#141a21;--t2:#4d5967;--t3:#7b8794;--b:#dfe4ea;--g:#eef1f4;--a:#1f6fb2}
+*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;background:#e9edf1;color:var(--t);font:13.5px/1.5 Barlow,"Segoe UI",system-ui,sans-serif}
+.folha{max-width:1060px;margin:0 auto;background:#fff;min-height:100vh;box-shadow:0 0 0 1px var(--b)}
+.capa{background:#101418;color:#e6ebf0;padding:30px 40px 26px;border-bottom:4px solid var(--a);display:grid;grid-template-columns:1fr auto;gap:6px 24px;align-items:end}
+.capa .marca{grid-column:1/-1;display:flex;align-items:center;gap:10px;font:600 14px/1 "Barlow SC",Barlow,sans-serif;color:#9aa6b2}
+.capa h1{margin:6px 0 0;font:700 34px/1.05 "Barlow SC",Barlow,sans-serif;letter-spacing:.2px}
+.capa p{margin:0;color:#9aa6b2;font-size:13.5px}.capa .gerado{text-align:right;font-size:12px;color:#6d7884}
+.conteudo{padding:26px 40px 34px}
+h2{font:600 17px/1.25 "Barlow SC",Barlow,sans-serif;margin:0}
+.painel{border:1px solid var(--b);border-radius:9px;margin-top:16px;break-inside:avoid;overflow:hidden;background:#fff}
+.painel.longo{break-inside:auto}
+.cab{padding:10px 16px;border-bottom:1px solid var(--b);display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;background:#f7f9fb}
+.desc{color:var(--t3);font-size:12px}.pad{padding:12px 16px}.cab,h2{break-after:avoid}.painel.longo{break-before:auto}
+.grade{display:grid;gap:12px}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.tile{border:1px solid var(--b);border-radius:9px;padding:11px 14px 10px;border-top:4px solid var(--a);break-inside:avoid}
+.tile .r{color:var(--t2);font-size:12px}.tile .v{font:600 28px/1.1 "Barlow SC",Barlow,sans-serif;margin-top:2px}.tile .d{color:var(--t3);font-size:11.5px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}thead{display:table-header-group}tr{break-inside:avoid}
+th{text-align:right;color:var(--t2);font-weight:600;font-size:11.5px;padding:7px 10px;border-bottom:1px solid var(--b);background:#fbfcfd}
+td{text-align:right;padding:5px 10px;border-bottom:1px solid #eef1f4;font-variant-numeric:tabular-nums}th.e,td.e{text-align:left}
+tbody tr:nth-child(even) td{background:#fafbfc}
+.sobe{color:#c93b3b;font-weight:600}.desce{color:#1d8a5b;font-weight:600}.mut{color:var(--t3)}.quente{color:#b8740c;font-weight:600}.muito{color:#c93b3b;font-weight:600}.ok{color:#1d8a5b}
+ul.lista{margin:0;padding:8px 16px 10px 34px}ul.lista li{margin:5px 0}
+.tag{font-size:10.5px;border:1px solid var(--b);border-radius:4px;padding:0 5px;color:var(--t2);margin-left:4px}.so-impressao{display:none}.vazio{color:var(--t3);padding:16px;text-align:center}
+.rod{padding:14px 40px 24px;color:var(--t3);font-size:11.5px;border-top:1px solid var(--g)}
+@media(max-width:760px){.capa,.conteudo,.rod{padding-left:18px;padding-right:18px}.g4,.g3{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
+@page{size:A4;margin:12mm 11mm 14mm}
+@media print{body{background:#fff;font-size:12px}.folha{box-shadow:none;max-width:none}.capa{padding:22px 26px 18px}.conteudo{padding:16px 2px 10px}.rod{padding:10px 2px}
+  .capa h1{font-size:28px}.tile .v{font-size:23px}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}svg{max-height:62mm}}
+</style></head><body><div class="folha"><header class="capa"><div class="marca"><svg width="20" height="20" viewBox="0 0 64 64"><rect x="2" y="2" width="60" height="60" rx="14" fill="#29313b"/><rect x="10" y="26" width="28" height="28" rx="4" fill="#4cc38a"/><rect x="44" y="38" width="10" height="16" rx="4" fill="#e8a33d"/></svg>Monitor do PC</div>
+<div><h1>${esc(titulo)}</h1><p>${sub}</p></div><div class="gerado">Gerado em ${new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}<br>versão ${esc(STATUS?.versao||'')}</div></header>
+<main class="conteudo">${corpo}</main><div class="rod">Relatório gerado automaticamente pelo Monitor do PC. Valores de memória e CPU são médias de amostras gravadas a cada poucos segundos.</div></div></body></html>`; }
+async function baixarHtml(titulo, sub, corpo, arquivo){ const doc=await montarDoc(titulo,sub,corpo);
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([doc],{type:'text/html;charset=utf-8'})); a.download=arquivo; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),5000); toast('Relatório baixado. Abra o arquivo para ver ou imprimir.'); }
+async function imprimirDoc(titulo, sub, corpo){ toast('Preparando o PDF… na janela de impressão escolha “Salvar como PDF”.');
+  const doc=await montarDoc(titulo,sub,corpo); const f=document.createElement('iframe'); f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+  f.srcdoc=doc; document.body.appendChild(f);
+  f.onload=async()=>{ try{ await f.contentDocument.fonts.ready; }catch(_){} setTimeout(()=>{ f.contentWindow.focus(); f.contentWindow.print(); setTimeout(()=>f.remove(),60000); },150); }; }
 function htmlRelatorioCompleto(r){ const g=r.geral; if(!g) return '<div class="vazio">Sem dados no período.</div>'; const m=r.maquina||{};
   const tile=(t,v,d,c)=>`<div class="tile" style="border-top-color:${c||'#1f6fb2'}"><div class="r">${t}</div><div class="v">${v}</div><div class="d">${d||''}</div></div>`;
   const P=r.programas, topN=(k,n)=>P.slice().sort((a,b)=>(b[k]||0)-(a[k]||0)).filter(x=>(x[k]||0)>0).slice(0,n||8);
   const L=r.linha;
-  return `<p class="mut">Período: <b>${quando(r.desde)}</b> até <b>${quando(r.ate)}</b> · monitorado por ${dur(g.tempo_monitorado)}${m.maquina?` · computador <b>${esc(m.maquina)}</b>`:''}</p>
-  ${m.cpu||m.sistema?`<div class="painel"><div class="cab"><h2>Este computador</h2></div><div class="pad" style="font-size:13px;color:#4d5967">${esc(m.cpu||'')}${m.nucleos?` (${m.nucleos} núcleos)`:''} · ${fB(m.ram_total)} de memória${m.gpus&&m.gpus.length?' · '+esc(m.gpus.join(', ')):''}<br>${esc(m.sistema||'')}</div></div>`:''}
-  <div class="grade g4" style="margin-top:14px">${tile('Memória média',fP(g.mem_med),`máxima ${fP(g.mem_max)}`,'#1f6fb2')}${tile('CPU média',fP(g.cpu_med),`máxima ${fP(g.cpu_max)}`,'#d07a1f')}${tile('Temp. máx. CPU',fT(g.temp_cpu_max),g.temp_gpu_max!=null?'GPU '+fT(g.temp_gpu_max):'','#c93b3b')}${tile('Lentidões',nf0.format(r.episodios.length),r.episodios.length?'veja abaixo':'nenhuma','#b8740c')}</div>
+  return `${m.cpu||m.sistema?`<div class="painel"><div class="cab"><h2>Este computador</h2></div><div class="pad" style="font-size:13px;color:#4d5967">${esc(m.cpu||'')}${m.nucleos?` (${m.nucleos} núcleos)`:''} · ${fB(m.ram_total)} de memória${m.gpus&&m.gpus.length?' · '+esc(m.gpus.join(', ')):''}<br>${esc(m.sistema||'')}</div></div>`:''}
+  <div class="grade g4" style="margin-top:16px">${tile('Memória média',fP(g.mem_med),`máxima ${fP(g.mem_max)}`,'#1f6fb2')}${tile('CPU média',fP(g.cpu_med),`máxima ${fP(g.cpu_max)}`,'#d07a1f')}${tile('Temp. máx. CPU',fT(g.temp_cpu_max),g.temp_gpu_max!=null?'GPU '+fT(g.temp_gpu_max):'','#c93b3b')}${tile('Lentidões',nf0.format(r.episodios.length),r.episodios.length?'veja abaixo':'nenhuma','#b8740c')}</div>
   <div class="grade g4" style="margin-top:12px">${tile('Disco lido',fB(g.ler),'','#1d8a5b')}${tile('Disco gravado',fB(g.gravar),'','#1d8a5b')}${tile('Rede enviada',fB(g.env),'','#6b52d6')}${tile('Rede recebida',fB(g.rec),'','#6b52d6')}</div>
   <div class="painel"><div class="cab"><h2>Recomendações</h2></div><ul class="lista">${recomendacoes(r).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
   <div class="painel"><div class="cab"><h2>Memória e CPU ao longo do período</h2></div><div class="pad">${svgLinhas(r.desde,r.ate,[{nome:'Memória média',cor:'#1f6fb2',grossa:1,pts:L.map(x=>[x[0],x[1]])},{nome:'Memória máxima',cor:'#9fc3e6',pts:L.map(x=>[x[0],x[2]])},{nome:'CPU média',cor:'#d07a1f',pts:L.map(x=>[x[0],x[3]])}],100,v=>nf0.format(v)+'%')}</div></div>
@@ -1537,21 +1612,27 @@ function htmlRelatorioCompleto(r){ const g=r.geral; if(!g) return '<div class="v
   <div class="painel"><div class="cab"><h2>Mais CPU (média)</h2></div><div class="pad">${barrasH(topN('cpu_med').map(x=>[x.nome,x.cpu_med]),v=>fP(v),'#d07a1f')}</div></div>
   <div class="painel"><div class="cab"><h2>Mais disco (total)</h2></div><div class="pad">${barrasH(P.map(x=>[x.nome,x.ler+x.gravar]).sort((a,b)=>b[1]-a[1]).filter(x=>x[1]>0).slice(0,8),fB,'#1d8a5b')}</div></div>
   <div class="painel"><div class="cab"><h2>Mais rede (total)</h2></div><div class="pad">${barrasH(P.map(x=>[x.nome,x.env+x.rec]).sort((a,b)=>b[1]-a[1]).filter(x=>x[1]>0).slice(0,8),fB,'#6b52d6')}</div></div></div>
-  <div class="painel"><div class="cab"><h2>Todos os programas</h2><span class="desc">${P.length} no período</span></div><table><thead><tr><th class="e">Programa</th><th>Tempo aberto</th><th>Memória média</th><th>Memória máx.</th><th>CPU média</th><th>CPU máx.</th><th>Disco</th><th>Rede</th></tr></thead><tbody>${P.map(x=>`<tr><td class="e">${esc(x.nome)}</td><td>${dur(x.tempo)}</td><td>${fB(x.mem_med)}</td><td>${fB(x.mem_max)}</td><td>${fP(x.cpu_med)}</td><td>${fP(x.cpu_max)}</td><td>${fB(x.ler+x.gravar)}</td><td>${fB(x.env+x.rec)}</td></tr>`).join('')}</tbody></table></div>
+  <div class="painel longo"><div class="cab"><h2>Todos os programas</h2><span class="desc">${P.length} no período</span></div><table><thead><tr><th class="e">Programa</th><th>Tempo aberto</th><th>Memória média</th><th>Memória máx.</th><th>CPU média</th><th>CPU máx.</th><th>Disco</th><th>Rede</th></tr></thead><tbody>${P.map(x=>`<tr><td class="e">${esc(x.nome)}</td><td>${dur(x.tempo)}</td><td>${fB(x.mem_med)}</td><td>${fB(x.mem_max)}</td><td>${fP(x.cpu_med)}</td><td>${fP(x.cpu_max)}</td><td>${fB(x.ler+x.gravar)}</td><td>${fB(x.env+x.rec)}</td></tr>`).join('')}</tbody></table></div>
   <div class="painel"><div class="cab"><h2>IPs mais acessados</h2></div><table><thead><tr><th class="e">IP</th><th class="e">Nome</th><th class="e">Programas</th><th>Enviado</th><th>Recebido</th></tr></thead><tbody>${r.remotos.slice(0,25).map(x=>`<tr><td class="e">${esc(x.ip)}</td><td class="e">${esc(x.host||'')}</td><td class="e">${esc((x.programas||'').split(',').join(', '))}</td><td>${fB(x.env)}</td><td>${fB(x.rec)}</td></tr>`).join('')||'<tr><td colspan="5" class="vazio">Sem tráfego registrado.</td></tr>'}</tbody></table></div>
   <div class="painel"><div class="cab"><h2>Momentos de lentidão</h2></div>${r.episodios.length?`<table><thead><tr><th class="e">Quando</th><th>Duração</th><th>Memória máx.</th><th>CPU máx.</th><th class="e">Quem pesava</th></tr></thead><tbody>${r.episodios.slice(0,40).map(e=>`<tr><td class="e">${quando(e.inicio)}</td><td>${dur(e.fim-e.inicio)}</td><td>${fP(e.mem_max)}</td><td>${fP(e.cpu_max)}</td><td class="e">${esc((e.top||[]).map(t=>t.nome||t[0]).slice(0,4).join(', '))}</td></tr>`).join('')}</tbody></table>`:'<div class="vazio">Nenhum momento de lentidão no período.</div>'}</div>
   ${r.alertas&&r.alertas.length?`<div class="painel"><div class="cab"><h2>Alertas disparados</h2></div><table><tbody>${r.alertas.slice(0,50).map(a=>`<tr><td class="e" style="width:170px">${quando(a.ts)}</td><td class="e"><b>${esc(a.titulo)}</b> <span class="mut">${esc(a.msg)}</span></td></tr>`).join('')}</tbody></table></div>`:''}`; }
-$('#relHtml').onclick=()=>{ if(!REL) return; baixarHtml('Relatório do computador', htmlRelatorioCompleto(REL), `monitor-pc-relatorio-${new Date(REL.desde*1000).toISOString().slice(0,10)}.html`); };
+const subRel=r=>`${quando(r.desde)} até ${quando(r.ate)}${r.geral?' — monitorado por '+dur(r.geral.tempo_monitorado):''}${r.maquina&&r.maquina.maquina?' — computador '+esc(r.maquina.maquina):''}`;
+$('#relHtml').onclick=()=>{ if(!REL) return; baixarHtml('Relatório do computador', subRel(REL), htmlRelatorioCompleto(REL), `monitor-pc-relatorio-${new Date(REL.desde*1000).toISOString().slice(0,10)}.html`); };
 
 /* =================== CONFIGURAÇÕES EXTRAS =================== */
 let ACESSO=null;
 const MINI_ITENS={cpu:'CPU',mem:'Memória',temp_cpu:'Temperatura da CPU',gpu:'Uso da GPU',temp_gpu:'Temperatura da GPU',fps:'FPS',rede:'Rede',disco:'Disco',hora:'Relógio'};
 function cfgExtras(){ const c=CFG, sel=(k,op)=>`<select data-cfg="${k}">${Object.entries(op).map(([v,r])=>`<option value="${v}" ${String(c[k])===v?'selected':''}>${r}</option>`).join('')}</select>`, sw=k=>`<label class="sw"><input type="checkbox" data-cfg="${k}" ${c[k]?'checked':''}><span></span></label>`;
+  const num=(k,mn,mx,st)=>`<input type="number" data-cfg="${k}" min="${mn}" max="${mx}" step="${st||1}" value="${c[k]}" style="width:90px">`;
   let h=`<h2 class="secao">Mini painel</h2><div class="painel">
-    <div class="item"><b>Mostrar o mini painel</b><div class="ctl">${sw('mini_ativo')}</div><small>Uma janelinha sempre por cima com os números escolhidos abaixo — útil em jogos (modo janela/sem borda). Arraste para mudar de lugar; botão direito para fechar.</small></div>
+    <div class="item"><b>Mostrar o mini painel</b><div class="ctl">${sw('mini_ativo')}</div><small>Números sempre por cima de tudo, inclusive de jogos em janela ou sem borda. Ele não recebe cliques: o mouse passa através dele. Para esconder, use esta opção ou o menu do ícone perto do relógio.</small></div>
     <div class="item"><b>O que mostrar</b><div class="ctl" style="max-width:420px">${Object.entries(MINI_ITENS).map(([k,t])=>`<label class="chip"><input type="checkbox" data-mini="${k}" ${(c.mini_itens||[]).includes(k)?'checked':''}> ${t}</label>`).join('')}</div><small>Escolha um ou mais.</small></div>
-    <div class="item"><b>Posição inicial</b><div class="ctl">${sel('mini_canto',{sup_dir:'Canto superior direito',sup_esq:'Canto superior esquerdo',inf_dir:'Canto inferior direito',inf_esq:'Canto inferior esquerdo'})}</div><small>Depois de arrastar, ele lembra o lugar.</small></div>
-    <div class="item"><b>Formato</b><div class="ctl">${sel('mini_layout',{horizontal:'Em linha',vertical:'Em coluna'})}${sel('mini_tamanho',{pequeno:'Pequeno',normal:'Normal',grande:'Grande'})}</div><small></small></div>
+    <div class="item"><b>Tamanho</b><div class="ctl">${sel('mini_escala',{50:'50%',75:'75%',100:'100%',125:'125%',150:'150%',175:'175%',200:'200%',250:'250%',300:'300%'})}</div><small>Aumente em telas grandes ou de alta resolução (2K, 4K); diminua em telas pequenas.</small></div>
+    <div class="item"><b>Formato</b><div class="ctl">${sel('mini_layout',{horizontal:'Em linha',vertical:'Em coluna'})}</div><small></small></div>
+    <div class="item"><b>Monitor</b><div class="ctl">${sel('mini_monitor',{1:'Principal',2:'Segundo monitor',3:'Terceiro monitor',4:'Quarto monitor'})}</div><small>Se o monitor escolhido não estiver ligado, ele aparece no principal.</small></div>
+    <div class="item"><b>Posição</b><div class="ctl">${sel('mini_canto',{sup_esq:'Em cima, à esquerda',sup_centro:'Em cima, no centro',sup_dir:'Em cima, à direita',inf_esq:'Embaixo, à esquerda',inf_centro:'Embaixo, no centro',inf_dir:'Embaixo, à direita'})}</div><small>Embaixo fica acima da barra de tarefas.</small></div>
+    <div class="item"><b>Distância da borda (pixels)</b><div class="ctl"><span class="mut2">lado</span>${num('mini_margem_x',0,4000)}<span class="mut2">cima/baixo</span>${num('mini_margem_y',0,4000)}</div><small>Ajuste fino da posição. No centro, o valor de “lado” desloca para a direita.</small></div>
+    <div class="item"><b>Fundo escuro</b><div class="ctl">${sw('mini_fundo')}</div><small>Desligado: só os números aparecem, sem a caixa atrás.</small></div>
     <div class="item"><b>Opacidade</b><div class="ctl"><input type="range" min="30" max="100" step="5" value="${c.mini_opacidade}" data-cfg="mini_opacidade"> <span class="n">${c.mini_opacidade}%</span></div><small></small></div></div>`;
   if(REMOTO) return h;
   h+=`<h2 class="secao">Acesso pelo celular</h2><div class="painel" id="cfgAcesso"><div class="vazio">Carregando…</div></div>
@@ -1587,7 +1668,7 @@ addEventListener('resize',()=>{ if(vista==='geral') vGeral(); gH.forEach(g=>g&&g
 (async()=>{ await carregarCfg(); try{ SERIE=await API('serie?seg=900'); ultSeg=SERIE.length?SERIE[SERIE.length-1][0]:0; }catch(_){}
   ir(location.hash||'geral'); loop(); cicloStatus(); setInterval(cicloStatus,15000);
   API('lentidao?dias=1').then(d=>contLent(d.episodios)).catch(()=>{}); API('vps').then(l=>{ VPS=l; const off=l.filter(v=>v.ativo&&!v.online&&v.erro!=='iniciando').length; $('#contVps').hidden=!off; $('#contVps').textContent=off; }).catch(()=>{});
-  setInterval(()=>{ if(vista==='historico') vHistorico(); if(vista==='lentidao') vLentidao(); if(vista==='hardware') carregarTempHist(); if(vista==='recurso'&&faixaRec.h) carregarHistRec(); },60000); })();
+  setInterval(()=>{ if(vista!=='lentidao') API('lentidao?dias=1').then(d=>contLent(d.episodios)).catch(()=>{}); if(vista==='historico') vHistorico(); if(vista==='lentidao') vLentidao(); if(vista==='hardware') carregarTempHist(); if(vista==='recurso'&&faixaRec.h) carregarHistRec(); },60000); })();
 
 </script>
 </body>

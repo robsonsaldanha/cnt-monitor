@@ -56,6 +56,12 @@ def _validar(c):
                 v = max(30, min(110, v))
             if k == "mini_opacidade":
                 v = max(30, min(100, v))
+            if k == "mini_escala":
+                v = max(50, min(300, v))
+            if k == "mini_monitor":
+                v = max(1, min(8, v))
+            if k in ("mini_margem_x", "mini_margem_y"):
+                v = max(0, min(4000, v))
             if k == "acesso_porta":
                 v = max(1024, min(65535, v))
             out[k] = v

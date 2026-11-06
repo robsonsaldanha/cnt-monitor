@@ -2,7 +2,7 @@
 import os
 import sys
 
-VERSAO = "2.3.0"
+VERSAO = "2.3.1"
 WIN = os.name == "nt"
 
 if os.environ.get("MONITORPC_DADOS"):
@@ -59,8 +59,13 @@ PADRAO = {
     "mini_itens": ["cpu", "mem", "temp_cpu", "gpu", "fps"],
     "mini_canto": "sup_dir",
     "mini_opacidade": 85,
-    "mini_tamanho": "normal",
+    "mini_tamanho": "normal",     # (antigo — substituído por mini_escala)
     "mini_layout": "horizontal",
+    "mini_escala": 100,           # % do tamanho do texto (50 a 300)
+    "mini_monitor": 1,            # 1 = monitor principal, 2 = segundo…
+    "mini_margem_x": 16,          # distância da borda (pixels)
+    "mini_margem_y": 16,
+    "mini_fundo": True,           # fundo escuro atrás dos números
     "regras_prog": [],            # regras por programa (prioridade, núcleos, bloquear, limite)
     "vazamento_ativo": True,
     "acesso_remoto": False,       # acesso pelo celular (rede de casa)
@@ -77,7 +82,7 @@ OPCOES = {
     "tema": ["auto", "escuro", "claro"],
     "sensores_intervalo_s": [1, 2, 5, 10],
     "retencao_dias": [1, 3, 7, 15, 30],
-    "mini_canto": ["sup_dir", "sup_esq", "inf_dir", "inf_esq"],
+    "mini_canto": ["sup_dir", "sup_esq", "inf_dir", "inf_esq", "sup_centro", "inf_centro"],
     "mini_tamanho": ["pequeno", "normal", "grande"],
     "mini_layout": ["horizontal", "vertical"],
 }

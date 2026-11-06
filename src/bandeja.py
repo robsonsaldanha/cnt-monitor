@@ -303,13 +303,45 @@ def _fmt_taxa(b):
     return f"{b / 1024:.0f} KB/s"
 
 
+def monitores():
+    """Retângulos de trabalho (sem a barra de tarefas) de cada monitor: principal primeiro, depois da esquerda para a direita."""
+    if not WIN:
+        return [(0, 0, 1920, 1040, 0, 0, 1920, 1080)]
+    out = []
+
+    class RECT(ctypes.Structure):
+        _fields_ = [("l", ctypes.c_long), ("t", ctypes.c_long), ("r", ctypes.c_long), ("b", ctypes.c_long)]
+
+    class MONITORINFO(ctypes.Structure):
+        _fields_ = [("cbSize", ctypes.c_ulong), ("rcMonitor", RECT), ("rcWork", RECT), ("dwFlags", ctypes.c_ulong)]
+
+    PROC = ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p, ctypes.POINTER(RECT), ctypes.c_void_p)
+
+    def cb(hmon, _hdc, _rc, _d):
+        mi = MONITORINFO()
+        mi.cbSize = ctypes.sizeof(MONITORINFO)
+        if ctypes.windll.user32.GetMonitorInfoW(ctypes.c_void_p(hmon), ctypes.byref(mi)):
+            w, m = mi.rcWork, mi.rcMonitor
+            out.append((bool(mi.dwFlags & 1), w.l, w.t, w.r, w.b))
+        return 1
+
+    try:
+        ctypes.windll.user32.EnumDisplayMonitors(None, None, PROC(cb), 0)
+    except Exception:
+        pass
+    out.sort(key=lambda m: (not m[0], m[1], m[2]))
+    return [m[1:] for m in out] or [(0, 0, 1920, 1040)]
+
+
 class MiniPainel:
+    """Janelinha sempre por cima. Não recebe cliques (o mouse passa através dela) — tudo se ajusta nas Configurações."""
+
     def __init__(self):
         self.dados = {"r": {}, "j": {}}
         self.root = None
         self.visivel = False
         self.chave_layout = None
-        self.pos_arq = os.path.join(PASTA_USUARIO, "mini_painel.json")
+        self.chave_pos = None
 
     def iniciar(self):
         threading.Thread(target=self._buscar, daemon=True).start()
@@ -334,20 +366,6 @@ class MiniPainel:
             else:
                 time.sleep(1.5)
 
-    def _pos(self):
-        try:
-            with open(self.pos_arq, encoding="utf-8") as f:
-                return json.load(f)
-        except (OSError, ValueError):
-            return None
-
-    def _salvar_pos(self, x, y):
-        try:
-            with open(self.pos_arq, "w", encoding="utf-8") as f:
-                json.dump({"x": x, "y": y}, f)
-        except OSError:
-            pass
-
     def _tk(self):
         import tkinter as tk
         try:
@@ -360,103 +378,95 @@ class MiniPainel:
         root.withdraw()
         root.overrideredirect(True)
         root.attributes("-topmost", True)
-        root.configure(bg="#101418")
-        self.frame = tk.Frame(root, bg="#101418", padx=10, pady=6)
+        self.fundo = "#101418"
+        root.configure(bg=self.fundo)
+        self.frame = tk.Frame(root, bg=self.fundo)
         self.frame.pack()
         self.celulas = {}
-        arr = {}
-
-        def ini_arraste(e):
-            arr["x"], arr["y"] = e.x_root - root.winfo_x(), e.y_root - root.winfo_y()
-
-        def arrastar(e):
-            root.geometry(f"+{e.x_root - arr['x']}+{e.y_root - arr['y']}")
-
-        def soltar(_e):
-            self._salvar_pos(root.winfo_x(), root.winfo_y())
-
-        menu = tk.Menu(root, tearoff=0)
-        menu.add_command(label="Abrir Monitor do PC", command=lambda: abrir_janela())
-        menu.add_command(label="Configurar mini painel", command=lambda: abrir_janela("config"))
-        menu.add_command(label="Voltar para o canto", command=lambda: (self._apagar_pos(), self._posicionar(cfg())))
-        menu.add_separator()
-        menu.add_command(label="Esconder mini painel", command=lambda: threading.Thread(
-            target=lambda: api_post("api/config", {"mini_ativo": False}), daemon=True).start())
-        self._binds = (ini_arraste, arrastar, soltar, lambda e: menu.tk_popup(e.x_root, e.y_root))
-        for w in (root, self.frame):
-            self._ligar(w)
         root.after(300, self._tick)
         root.mainloop()
 
-    def _apagar_pos(self):
+    def _atravessar(self):
+        """Deixa o mouse passar através da janela (não é clicável nem rouba o foco do jogo)."""
+        if not WIN:
+            return
         try:
-            os.remove(self.pos_arq)
-        except OSError:
-            pass
-
-    def _ligar(self, w):
-        a, b, c, d = self._binds
-        w.bind("<ButtonPress-1>", a)
-        w.bind("<B1-Motion>", b)
-        w.bind("<ButtonRelease-1>", c)
-        w.bind("<Button-3>", d)
+            u = ctypes.windll.user32
+            hwnd = u.GetParent(self.root.winfo_id()) or self.root.winfo_id()
+            GWL_EXSTYLE = -20
+            ex = u.GetWindowLongW(hwnd, GWL_EXSTYLE)
+            ex |= 0x00080000 | 0x00000020 | 0x00000080 | 0x08000000   # LAYERED | TRANSPARENT | TOOLWINDOW | NOACTIVATE
+            u.SetWindowLongW(hwnd, GWL_EXSTYLE, ex)
+        except Exception as e:  # noqa: BLE001
+            print("mini painel (atravessar):", e)
 
     def _montar(self, c):
         import tkinter as tk
         for w in self.frame.winfo_children():
             w.destroy()
         self.celulas = {}
-        tam = {"pequeno": (8, 12), "normal": (9, 15), "grande": (10, 20)}.get(c.get("mini_tamanho"), (9, 15))
+        esc = max(50, min(300, int(c.get("mini_escala") or 100))) / 100
+        f1, f2 = max(6, round(9 * esc)), max(8, round(15 * esc))
+        pad = round(8 * esc)
+        self.fundo = "#101418" if c.get("mini_fundo", True) else "#010101"
+        self.root.configure(bg=self.fundo)
+        self.frame.configure(bg=self.fundo, padx=round(10 * esc), pady=round(6 * esc))
+        if WIN:
+            try:
+                self.root.attributes("-transparentcolor", "" if c.get("mini_fundo", True) else "#010101")
+            except Exception:
+                pass
         horizontal = c.get("mini_layout", "horizontal") == "horizontal"
         for i, k in enumerate([x for x in (c.get("mini_itens") or []) if x in ITENS_MINI]):
-            rot = ITENS_MINI[k][0]
-            cel = tk.Frame(self.frame, bg="#101418", padx=8 if horizontal else 0, pady=0 if horizontal else 2)
+            cel = tk.Frame(self.frame, bg=self.fundo, padx=pad if horizontal else 0, pady=0 if horizontal else round(2 * esc))
             if horizontal:
                 cel.grid(row=0, column=i)
             else:
                 cel.grid(row=i, column=0, sticky="we")
-            l1 = tk.Label(cel, text=rot, fg="#8b97a4", bg="#101418", font=("Segoe UI", tam[0]))
-            l2 = tk.Label(cel, text="—", fg="#e6ebf0", bg="#101418", font=("Segoe UI Semibold", tam[1]))
+            l1 = tk.Label(cel, text=ITENS_MINI[k][0], fg="#9aa6b2", bg=self.fundo, font=("Segoe UI", f1))
+            l2 = tk.Label(cel, text="—", fg="#e6ebf0", bg=self.fundo, font=("Segoe UI Semibold", f2))
             if horizontal:
                 l1.pack()
                 l2.pack()
             else:
                 l1.pack(side="left")
-                l2.pack(side="right", padx=(16, 0))
-            for w in (cel, l1, l2):
-                self._ligar(w)
+                l2.pack(side="right", padx=(round(16 * esc), 0))
             self.celulas[k] = l2
 
     def _posicionar(self, c):
         r = self.root
         r.update_idletasks()
-        p = self._pos()
-        if p:
-            r.geometry(f"+{p['x']}+{p['y']}")
-            return
+        mons = monitores()
+        n = max(1, int(c.get("mini_monitor") or 1))
+        l, t, rt, b = mons[min(n, len(mons)) - 1]
         w, h = r.winfo_reqwidth(), r.winfo_reqheight()
-        sw, sh = r.winfo_screenwidth(), r.winfo_screenheight()
-        m = 16
+        mx, my = int(c.get("mini_margem_x") or 0), int(c.get("mini_margem_y") or 0)
         canto = c.get("mini_canto", "sup_dir")
-        x = m if canto.endswith("esq") else sw - w - m
-        y = m if canto.startswith("sup") else sh - h - 60
+        if canto.endswith("centro"):
+            x = l + (rt - l - w) // 2 + mx
+        elif canto.endswith("esq"):
+            x = l + mx
+        else:
+            x = rt - w - mx
+        y = t + my if canto.startswith("sup") else b - h - my
+        x, y = max(l, min(x, rt - w)), max(t, min(y, b - h))
         r.geometry(f"+{x}+{y}")
 
     def _tick(self):
         try:
             c = cfg()
             ativo = bool(c.get("mini_ativo"))
-            chave = (tuple(c.get("mini_itens") or []), c.get("mini_tamanho"), c.get("mini_layout"), c.get("mini_canto"))
+            chave = (tuple(c.get("mini_itens") or []), c.get("mini_escala"), c.get("mini_layout"), c.get("mini_fundo"))
+            pos = (c.get("mini_canto"), c.get("mini_monitor"), c.get("mini_margem_x"), c.get("mini_margem_y"), chave)
             if ativo and chave != self.chave_layout:
                 self._montar(c)
                 self.chave_layout = chave
-                self.root.attributes("-alpha", max(0.3, min(1.0, (c.get("mini_opacidade") or 85) / 100)))
-                self._posicionar(c)
+                self.chave_pos = None
             if ativo and not self.visivel:
                 self.root.deiconify()
-                self.root.attributes("-topmost", True)
                 self.visivel = True
-                self._posicionar(c)
+                self.chave_pos = None
+                self._atravessar()
             elif not ativo and self.visivel:
                 self.root.withdraw()
                 self.visivel = False
@@ -480,7 +490,13 @@ class MiniPainel:
                     if k == "fps" and v:
                         cor = "#ef5f5f" if v < 30 else "#e8a33d" if v < 55 else "#4cc38a"
                     lbl.configure(text=txt, fg=cor)
+                # a largura muda com os números: reposiciona a cada 2 s e sempre que a configuração mudar
+                self._n = getattr(self, "_n", 0) + 1
+                if pos != self.chave_pos or self._n % 4 == 0:
+                    self.chave_pos = pos
+                    self._posicionar(c)
                 self.root.attributes("-topmost", True)
+                self._atravessar()
         except Exception as e:  # noqa: BLE001
             print("mini painel:", e)
         self.root.after(500, self._tick)
