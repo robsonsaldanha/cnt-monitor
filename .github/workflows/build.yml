@@ -1,0 +1,119 @@
+name: Build e teste no Windows
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Dependências Python
+        run: python -m pip install --disable-pip-version-check -r build/requirements.txt
+
+      - name: LibreHardwareMonitor (sensores)
+        shell: pwsh
+        run: ./build/baixar-lhm.ps1
+
+      - name: Driver PawnIO (temperatura da CPU)
+        shell: pwsh
+        run: |
+          Invoke-WebRequest "https://github.com/namazso/PawnIO.Setup/releases/latest/download/PawnIO_setup.exe" -OutFile instalador/PawnIO_setup.exe
+          Get-Item instalador/PawnIO_setup.exe | Format-List Name, Length
+
+      - name: Gerar executáveis (PyInstaller)
+        shell: pwsh
+        run: |
+          pyinstaller --noconfirm --clean --console --name MonitorPCServico --icon instalador/icone.ico `
+            --paths src --hidden-import win32timezone --hidden-import servicemanager `
+            --collect-all pythonnet --collect-all clr_loader `
+            --add-data "src/ui;ui" --add-data "lhm;lhm" src/servico.py
+          pyinstaller --noconfirm --clean --windowed --name MonitorPC --icon instalador/icone.ico `
+            --paths src --hidden-import pystray._win32 src/bandeja.py
+          Get-ChildItem dist | Format-Table Name
+
+      - name: Teste 1 - serviço em modo console (admin)
+        shell: pwsh
+        run: |
+          $p = Start-Process dist\MonitorPCServico\MonitorPCServico.exe -ArgumentList '--console','--segundos','55','--saida','teste-console.json' -PassThru -NoNewWindow -RedirectStandardOutput console.log -RedirectStandardError console-err.log
+          Start-Sleep 15
+          foreach ($i in 1..3) {
+            try { Invoke-WebRequest "https://speed.cloudflare.com/__down?bytes=15000000" -OutFile "$env:TEMP\x.bin" -UseBasicParsing } catch { Write-Host $_ }
+            try { Invoke-WebRequest "https://www.google.com" -UseBasicParsing | Out-Null } catch {}
+          }
+          $p.WaitForExit(150000) | Out-Null
+          Get-Content console.log, console-err.log -ErrorAction SilentlyContinue | Select-Object -Last 40
+          python build/resumo_teste.py teste-console.json
+
+      - name: Gerar instalador (Inno Setup)
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress | Out-Host }
+          $versao = (Select-String -Path src/monitorpc/config.py -Pattern 'VERSAO = "(.+)"').Matches[0].Groups[1].Value
+          & $iscc "/DVersao=$versao" instalador\monitorpc.iss
+          Get-ChildItem saida | Format-Table Name, Length
+
+      - name: Teste 2 - instalar, rodar como serviço e consultar a API
+        shell: pwsh
+        run: |
+          $setup = (Get-ChildItem saida\MonitorDoPC-Setup-*.exe)[0].FullName
+          Start-Process $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/TASKS=pawnio,iniciar,desktop','/LOG=setup.log' -Wait
+          sc.exe query MonitorPC
+          sc.exe query PawnIO
+          Start-Sleep 20
+          foreach ($i in 1..2) { try { Invoke-WebRequest "https://speed.cloudflare.com/__down?bytes=10000000" -OutFile "$env:TEMP\y.bin" -UseBasicParsing } catch {} }
+          Start-Sleep 20
+          New-Item -ItemType Directory -Force api | Out-Null
+          foreach ($e in 'status','agora','rede','hardware','processos','lentidao','relatorio') {
+            try { (Invoke-WebRequest "http://127.0.0.1:48731/api/$e" -UseBasicParsing).Content | Out-File -Encoding utf8 "api\api-$e.json" } catch { Write-Host "falhou $e : $_" }
+          }
+          (Invoke-WebRequest "http://127.0.0.1:48731/" -UseBasicParsing).StatusCode
+          $prog = (Get-ChildItem api\api-agora.json).Length; Write-Host "agora.json: $prog bytes"
+          Start-Process "C:\Program Files\Monitor do PC\MonitorPC.exe" -ArgumentList '--bandeja'
+          Start-Sleep 6
+          Get-Process MonitorPC, MonitorPCServico -ErrorAction SilentlyContinue | Format-Table Name, Id, WorkingSet64
+          Copy-Item C:\ProgramData\MonitorPC\servico.log api\ -ErrorAction SilentlyContinue
+          Get-Content C:\ProgramData\MonitorPC\servico.log -ErrorAction SilentlyContinue | Select-Object -Last 30
+          python build/resumo_teste.py --api api
+
+      - name: Teste 3 - desinstalar
+        shell: pwsh
+        run: |
+          $un = "C:\Program Files\Monitor do PC\unins000.exe"
+          Start-Process $un -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait
+          Start-Sleep 5
+          sc.exe query MonitorPC
+          if (Test-Path "C:\Program Files\Monitor do PC\servico") { throw "não removeu os arquivos" }
+          Write-Host "desinstalação OK"
+          $global:LASTEXITCODE = 0
+
+      - name: Guardar instalador e resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: monitor-do-pc
+          path: |
+            saida/*.exe
+            teste-console.json
+            api/
+            setup.log
+            console*.log
+
+      - name: Publicar release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: saida/*.exe

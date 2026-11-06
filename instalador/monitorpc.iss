@@ -1,0 +1,76 @@
+﻿; Instalador do Monitor do PC (Inno Setup 6)
+#ifndef Versao
+  #define Versao "2.0.0"
+#endif
+
+[Setup]
+AppId={{8E4C5B1A-2F7D-4E3A-9C61-5B0D7A3F2E91}
+AppName=Monitor do PC
+AppVersion={#Versao}
+AppVerName=Monitor do PC {#Versao}
+AppPublisher=Róbson Saldanha
+DefaultDirName={autopf}\Monitor do PC
+DefaultGroupName=Monitor do PC
+DisableProgramGroupPage=yes
+PrivilegesRequired=admin
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
+OutputDir=..\saida
+OutputBaseFilename=MonitorDoPC-Setup-{#Versao}
+SetupIconFile=icone.ico
+UninstallDisplayIcon={app}\MonitorPC.exe
+UninstallDisplayName=Monitor do PC
+Compression=lzma2/max
+SolidCompression=yes
+WizardStyle=modern
+CloseApplications=force
+RestartApplications=no
+
+[Languages]
+Name: "pt"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
+
+[Tasks]
+Name: "desktop"; Description: "Criar atalho na Área de Trabalho"
+Name: "iniciar"; Description: "Mostrar o ícone perto do relógio sempre que o Windows ligar"
+Name: "pawnio"; Description: "Instalar o driver PawnIO (necessário para ler a temperatura do processador)"
+
+[Files]
+Source: "..\dist\MonitorPC\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion createallsubdirs
+Source: "..\dist\MonitorPCServico\*"; DestDir: "{app}\servico"; Flags: recursesubdirs ignoreversion createallsubdirs
+Source: "PawnIO_setup.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall skipifsourcedoesntexist; Tasks: pawnio
+
+[Icons]
+Name: "{autoprograms}\Monitor do PC"; Filename: "{app}\MonitorPC.exe"
+Name: "{autodesktop}\Monitor do PC"; Filename: "{app}\MonitorPC.exe"; Tasks: desktop
+Name: "{commonstartup}\Monitor do PC"; Filename: "{app}\MonitorPC.exe"; Parameters: "--bandeja"; Tasks: iniciar
+
+[Run]
+Filename: "{tmp}\PawnIO_setup.exe"; Parameters: "-install -silent"; StatusMsg: "Instalando o driver PawnIO..."; Flags: waituntilterminated skipifdoesntexist; Tasks: pawnio
+Filename: "{sys}\sc.exe"; Parameters: "create MonitorPC binPath= ""{app}\servico\MonitorPCServico.exe"" start= auto DisplayName= ""Monitor do PC"""; StatusMsg: "Registrando o serviço..."; Flags: runhidden waituntilterminated
+Filename: "{sys}\sc.exe"; Parameters: "config MonitorPC binPath= ""{app}\servico\MonitorPCServico.exe"" start= auto"; Flags: runhidden waituntilterminated
+Filename: "{sys}\sc.exe"; Parameters: "description MonitorPC ""Coleta CPU, memória, disco, rede, IPs e temperatura por programa para o Monitor do PC."""; Flags: runhidden waituntilterminated
+Filename: "{sys}\sc.exe"; Parameters: "failure MonitorPC reset= 86400 actions= restart/5000/restart/10000/restart/60000"; Flags: runhidden waituntilterminated
+Filename: "{sys}\sc.exe"; Parameters: "start MonitorPC"; StatusMsg: "Iniciando o monitoramento..."; Flags: runhidden waituntilterminated
+Filename: "{app}\MonitorPC.exe"; Description: "Abrir o Monitor do PC agora"; Flags: postinstall nowait skipifsilent runasoriginaluser
+
+[UninstallRun]
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM MonitorPC.exe"; Flags: runhidden; RunOnceId: "fechaicone"
+Filename: "{sys}\sc.exe"; Parameters: "stop MonitorPC"; Flags: runhidden waituntilterminated; RunOnceId: "paraservico"
+Filename: "{sys}\timeout.exe"; Parameters: "/t 3 /nobreak"; Flags: runhidden waituntilterminated; RunOnceId: "espera"
+Filename: "{sys}\sc.exe"; Parameters: "delete MonitorPC"; Flags: runhidden waituntilterminated; RunOnceId: "removeservico"
+
+[UninstallDelete]
+Type: filesandordirs; Name: "{commonappdata}\MonitorPC"
+Type: filesandordirs; Name: "{app}"
+
+[Code]
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  R: Integer;
+begin
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM MonitorPC.exe', '', SW_HIDE, ewWaitUntilTerminated, R);
+  Exec(ExpandConstant('{sys}\sc.exe'), 'stop MonitorPC', '', SW_HIDE, ewWaitUntilTerminated, R);
+  Sleep(3000);
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM MonitorPCServico.exe', '', SW_HIDE, ewWaitUntilTerminated, R);
+  Result := '';
+end;

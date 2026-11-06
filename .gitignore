@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+build/pkgs/
+build/MonitorPC*/
+dist/
+saida/
+lhm/
+instalador/PawnIO_setup.exe
+*.spec
+api/
+*.log
+teste-console.json
