@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS temps(ts INTEGER, id TEXT, hw TEXT, nome TEXT, valor 
 CREATE TABLE IF NOT EXISTS remotos(hora INTEGER, programa TEXT, ip TEXT, host TEXT, env INTEGER, rec INTEGER,
     PRIMARY KEY(hora, programa, ip));
 CREATE TABLE IF NOT EXISTS alertas(ts INTEGER, regra TEXT, titulo TEXT, msg TEXT);
+CREATE TABLE IF NOT EXISTS capturas(id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER, tipo TEXT, modo TEXT,
+    caminho TEXT, largura INTEGER, altura INTEGER, bytes INTEGER, duracao REAL, url TEXT, mini BLOB);
 CREATE INDEX IF NOT EXISTS i_geral ON geral(ts);
 CREATE INDEX IF NOT EXISTS i_apps ON apps(ts);
 CREATE INDEX IF NOT EXISTS i_apps_nome ON apps(nome, ts);
@@ -271,6 +273,69 @@ def info():
         except OSError:
             pass
     return {"registros": r[0], "desde": r[1], "tamanho": tam}
+
+
+# ---------------------------------------------------------------- capturas de tela (histórico)
+def _sem_mini(r):
+    return {"id": r[0], "ts": r[1], "tipo": r[2], "modo": r[3], "caminho": r[4], "largura": r[5], "altura": r[6],
+            "bytes": r[7], "duracao": r[8], "url": r[9], "tem_mini": bool(r[10])}
+
+
+_CAMPOS_CAP = "id, ts, tipo, modo, caminho, largura, altura, bytes, duracao, url, mini IS NOT NULL"
+MAX_CAPTURAS = 2000
+
+
+def captura_registrar(d, mini=None):
+    con = conectar()
+    cur = con.execute("INSERT INTO capturas(ts, tipo, modo, caminho, largura, altura, bytes, duracao, url, mini) "
+                      "VALUES (?,?,?,?,?,?,?,?,?,?)",
+                      (int(time.time()), d["tipo"], d["modo"], d["caminho"], d["largura"], d["altura"], d["bytes"],
+                       d.get("duracao"), d.get("url") or "", mini))
+    cid = cur.lastrowid
+    con.execute("DELETE FROM capturas WHERE id <= ?", (cid - MAX_CAPTURAS,))  # só o histórico; os arquivos ficam
+    con.commit()
+    con.close()
+    return cid
+
+
+def captura_atualizar(cid, campos, mini=None):
+    sets = {k: v for k, v in campos.items() if k in ("url", "largura", "altura", "bytes")}
+    if mini is not None:
+        sets["mini"] = mini
+    if not sets:
+        return
+    con = conectar()
+    con.execute(f"UPDATE capturas SET {', '.join(k + '=?' for k in sets)} WHERE id=?", (*sets.values(), int(cid)))
+    con.commit()
+    con.close()
+
+
+def capturas_listar(limite=300):
+    con = conectar()
+    r = con.execute(f"SELECT {_CAMPOS_CAP} FROM capturas ORDER BY id DESC LIMIT ?", (int(limite),)).fetchall()
+    con.close()
+    return [_sem_mini(x) for x in r]
+
+
+def captura(cid):
+    con = conectar()
+    r = con.execute(f"SELECT {_CAMPOS_CAP} FROM capturas WHERE id=?", (int(cid),)).fetchone()
+    con.close()
+    return _sem_mini(r) if r else None
+
+
+def captura_mini(cid):
+    con = conectar()
+    r = con.execute("SELECT mini FROM capturas WHERE id=?", (int(cid),)).fetchone()
+    con.close()
+    return r[0] if r else None
+
+
+def captura_apagar(cid):
+    con = conectar()
+    con.execute("DELETE FROM capturas WHERE id=?", (int(cid),))
+    con.commit()
+    con.close()
 
 
 # ---------------------------------------------------------------- vazamento de memória

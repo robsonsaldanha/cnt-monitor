@@ -10,6 +10,7 @@ import os
 import sys
 import json
 import time
+import base64
 import shutil
 import threading
 import subprocess
@@ -70,7 +71,7 @@ def api_post(caminho, dados, timeout=5):
 def cfg(forcar=False):
     if forcar or time.time() - _cfg["t"] > 5:
         try:
-            _cfg["v"] = api_get("api/config").get("valores", {})
+            _cfg["v"] = api_get("api/config", com_token=True).get("valores", {})
             _cfg["t"] = time.time()
         except Exception:
             pass
@@ -233,6 +234,8 @@ def executar(a):
             except Exception as e:  # noqa: BLE001
                 return False, str(e)
         return True, "Notificação mostrada."
+    if tipo.startswith("captura"):
+        return executar_captura(tipo, a)
     if tipo == "wsl_desligar":
         r = subprocess.run(["wsl.exe", "--shutdown"], capture_output=True, timeout=60, creationflags=0x08000000)
         return r.returncode == 0, "WSL desligado." if r.returncode == 0 else "Não consegui desligar o WSL."
@@ -244,12 +247,14 @@ def loop_fila():
         try:
             acoes = api_get("api/fila?espera=20", timeout=30, com_token=True).get("acoes", [])
             for a in acoes:
+                dados = None
                 try:
-                    ok, msg = executar(a)
+                    ok, msg, *resto = executar(a)
+                    dados = resto[0] if resto else None
                 except Exception as e:  # noqa: BLE001
                     ok, msg = False, str(e)
                 try:
-                    api_post("api/fila/resultado", {"id": a.get("id"), "ok": ok, "msg": msg})
+                    api_post("api/fila/resultado", {"id": a.get("id"), "ok": ok, "msg": msg, "dados": dados})
                 except Exception:
                     pass
         except urllib.error.HTTPError as e:
@@ -279,6 +284,106 @@ def loop_janelas():
         except Exception:
             pass
         time.sleep(2)
+
+
+# ------------------------------------------------------------------ captura de tela
+CAP = None
+EXT_IMAGEM = (".png", ".jpg", ".jpeg", ".gif")
+
+
+def notificar(msg, titulo="Monitor do PC"):
+    if ICONE is not None:
+        try:
+            ICONE.notify(str(msg)[:250], str(titulo)[:60])
+        except Exception:
+            pass
+
+
+def esconder_janela():
+    """Minimiza a janela do Monitor antes de capturar a pedido dela; devolve a função que a mostra de novo."""
+    h = janela_existente() if WIN else None
+    if not h or user32.IsIconic(h):
+        return None
+    user32.ShowWindow(h, 6)  # SW_MINIMIZE
+    return lambda: user32.ShowWindow(h, 9)  # SW_RESTORE
+
+
+def capturar_em_segundo_plano(modo, origem):
+    if CAP is None:
+        return False, "A captura de tela ainda está iniciando."
+    if origem == "menu":
+        def tarefa():
+            time.sleep(0.3)  # espera o menu do ícone sumir
+            CAP.executar(modo)
+        threading.Thread(target=tarefa, daemon=True).start()
+    else:
+        threading.Thread(target=CAP.executar, args=(modo, origem), daemon=True).start()
+    return True, "Capturando…"
+
+
+def executar_captura(tipo, a):
+    from monitorpc import captura
+    if CAP is None:
+        return False, "A captura de tela ainda está iniciando."
+    caminho = a.get("caminho", "")
+    if tipo == "captura":
+        if a.get("modo") == "ffmpeg":
+            threading.Thread(target=CAP.baixar_ffmpeg, daemon=True).start()
+            return True, "Baixando o ffmpeg… (aviso perto do relógio quando terminar)"
+        return capturar_em_segundo_plano(a.get("modo"), "ui")
+    if tipo == "captura_editada":
+        ok, d = CAP.editada(a.get("cid"), caminho, a.get("png", ""), a.get("nova"), a.get("copiar"))
+        return ok, d["msg"], {"id": d["id"]}
+    if not os.path.isfile(caminho):
+        return False, "O arquivo não existe mais (foi movido ou apagado)."
+    if tipo == "captura_copiar":
+        return CAP.copiar(caminho)
+    if tipo == "captura_enviar":
+        return CAP.enviar(a.get("cid"), caminho)
+    if tipo == "captura_ler":
+        ext = os.path.splitext(caminho)[1].lower()
+        if ext not in EXT_IMAGEM:
+            return False, "Só imagens abrem no editor."
+        if os.path.getsize(caminho) > 45 * 2**20:
+            return False, "Imagem grande demais para o editor (mais de 45 MB)."
+        with open(caminho, "rb") as f:
+            dados = base64.b64encode(f.read()).decode()
+        api_post("api/capturas/conteudo", {"id": a.get("cid"), "ext": ext, "dados": dados}, timeout=60)
+        return True, "ok"
+    if tipo == "captura_apagar":
+        if captura.para_lixeira(caminho):
+            return True, "Arquivo enviado para a Lixeira e tirado do histórico."
+        return False, "Tirei do histórico, mas não consegui mandar o arquivo para a Lixeira."
+    return False, "Ação desconhecida."
+
+
+def loop_captura():
+    n, gravando = 0, None
+    while True:
+        try:
+            CAP.sincronizar(cfg())
+            if n % 5 == 0:
+                CAP.reportar()  # o serviço pode ter reiniciado e esquecido o estado
+            g = CAP.gravador.tipo if CAP.gravador.gravando else None
+            if g != gravando and ICONE is not None:
+                gravando = g
+                ICONE.update_menu()  # "Gravar" vira "Parar gravação"
+        except Exception as e:  # noqa: BLE001
+            print("captura:", e)
+        n += 1
+        time.sleep(1 if CAP.gravador.gravando else 3)
+
+
+def fechar_icone():
+    """Fecha o ícone: termina uma gravação em andamento e devolve a tecla Print Screen ao Windows."""
+    if CAP is not None:
+        try:
+            CAP.executar("parar")
+            from monitorpc import captura
+            captura.restaurar_printscreen(PASTA_USUARIO)
+        except Exception as e:  # noqa: BLE001
+            print("fechar:", e)
+    ICONE.stop()
 
 
 # ------------------------------------------------------------------ mini painel flutuante
@@ -601,15 +706,20 @@ def instancia_unica():
 
 
 def main():
-    global ICONE
+    global ICONE, CAP
     _log()
     so_icone = "--bandeja" in sys.argv
     if not instancia_unica():
         if not so_icone:
             abrir_janela()
         return
+    from monitorpc import captura, capturador
+    captura.dpi_por_monitor()  # antes de criar qualquer janela
     if not so_icone:
         threading.Timer(0.5, abrir_janela).start()
+    if WIN:
+        CAP = capturador.Capturador(api_post, cfg, notificar, abrir_janela, esconder_janela, PASTA_USUARIO)
+        threading.Thread(target=loop_captura, daemon=True).start()
     for alvo in (loop_fila, loop_janelas, atualizar_icone, loop_extras):
         threading.Thread(target=alvo, daemon=True).start()
     MiniPainel().iniciar()
@@ -641,9 +751,30 @@ def main():
         threading.Thread(target=lambda: (api_post("api/config", {"mini_ativo": not cfg(True).get("mini_ativo")}),
                                          cfg(True)), daemon=True).start()
 
+    def item_cap(rotulo, modo):
+        return pystray.MenuItem(rotulo, lambda *_: capturar_em_segundo_plano(modo, "menu"))
+
+    def gravando(tipo):
+        return bool(CAP and CAP.gravador.gravando and CAP.gravador.tipo == tipo)
+
+    menu_captura = pystray.Menu(
+        item_cap("Região", "regiao"), item_cap("Janela ativa", "janela"), item_cap("Monitor do mouse", "monitor"),
+        item_cap("Tela inteira", "tela"), item_cap("Região com atraso", "atraso"), item_cap("Com rolagem", "rolagem"),
+        pystray.Menu.SEPARATOR,
+        pystray.MenuItem(lambda *_: "Parar gravação de vídeo" if gravando("video") else "Gravar vídeo (MP4)",
+                         lambda *_: capturar_em_segundo_plano("video", "menu")),
+        pystray.MenuItem(lambda *_: "Parar gravação do GIF" if gravando("gif") else "Gravar GIF",
+                         lambda *_: capturar_em_segundo_plano("gif", "menu")),
+        pystray.Menu.SEPARATOR,
+        item_cap("Copiar texto da tela (OCR)", "ocr"), item_cap("Seletor de cor", "cor"), item_cap("Régua", "regua"),
+        pystray.Menu.SEPARATOR,
+        pystray.MenuItem("Histórico de capturas", lambda *_: abrir_janela("capturas")),
+    )
+
     menu = pystray.Menu(
         pystray.MenuItem("Abrir Monitor do PC", lambda *_: abrir_janela(), default=True),
         pystray.MenuItem("Programas", lambda *_: abrir_janela("programas")),
+        pystray.MenuItem("Capturar tela", menu_captura, visible=WIN),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem(lambda *_: "Desligar Modo Jogo" if ESTADO["jogo"] else "Ligar Modo Jogo", alternar_jogo),
         pystray.MenuItem("Plano de energia", pystray.Menu(lambda: [item_plano(p) for p in ESTADO["planos"]] or
@@ -654,7 +785,7 @@ def main():
         pystray.MenuItem("Relatório", lambda *_: abrir_janela("relatorio")),
         pystray.MenuItem("Configurações", lambda *_: abrir_janela("config")),
         pystray.Menu.SEPARATOR,
-        pystray.MenuItem("Fechar ícone (o monitoramento continua)", lambda *_: ICONE.stop()),
+        pystray.MenuItem("Fechar ícone (o monitoramento continua)", lambda *_: fechar_icone()),
     )
     ICONE = pystray.Icon("monitor-pc", desenhar(0, 0), "Monitor do PC", menu)
     ICONE.run()

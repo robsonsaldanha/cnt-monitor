@@ -9,6 +9,7 @@
 import os
 import json
 import math
+import base64
 import time
 import hashlib
 import secrets
@@ -17,7 +18,7 @@ import subprocess
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs, unquote
 
-from . import config, configuracao, banco, icones, energia, servicos, alertas, regras, limpeza
+from . import config, configuracao, banco, icones, energia, servicos, alertas, regras, limpeza, captura, envio
 
 HOSTS_OK = {f"127.0.0.1:{config.PORTA}", f"localhost:{config.PORTA}"}
 ORIGENS_OK = {f"http://127.0.0.1:{config.PORTA}", f"http://localhost:{config.PORTA}"}
@@ -25,6 +26,7 @@ WIN = os.name == "nt"
 SEM_JANELA = 0x08000000 if WIN else 0
 TIPOS_ARQ = {".woff2": "font/woff2", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8",
              ".png": "image/png", ".svg": "image/svg+xml"}
+POST_GRANDE = {"/api/capturas/conteudo", "/api/capturas/editada"}   # imagens inteiras (até 64 MB)
 
 
 # ---------------------------------------------------------------- senha e sessões (acesso pelo celular)
@@ -66,11 +68,36 @@ def _num(q, nome, padrao, tipo=float):
         return padrao
     try:
         v = float(bruto)
-    except ValueError:
+    except (TypeError, ValueError):
         raise ParamInvalido(f"parâmetro '{nome}' inválido: use um número") from None
     if not math.isfinite(v):
         raise ParamInvalido(f"parâmetro '{nome}' inválido: use um número")
     return int(v) if tipo is int else v
+
+
+def banco_captura(c):
+    """Valida o registro de uma captura vindo do ícone da bandeja."""
+    if not isinstance(c, dict):
+        raise ParamInvalido("registro inválido")
+    tipo = c.get("tipo")
+    caminho = str(c.get("caminho") or "")[:1000]
+    if tipo not in ("imagem", "video", "gif") or not caminho:
+        raise ParamInvalido("registro inválido")
+    dur = c.get("duracao")
+    return {"tipo": tipo, "modo": str(c.get("modo") or "")[:20], "caminho": caminho,
+            "largura": _num(c, "largura", 0, int), "altura": _num(c, "altura", 0, int), "bytes": _num(c, "bytes", 0, int),
+            "duracao": _num(c, "duracao", 0) if dur is not None else None}
+
+
+def mini_jpeg(b64):
+    """Miniatura JPEG (base64) -> bytes; ignora o que não for um JPEG pequeno."""
+    if not b64 or not isinstance(b64, str):
+        return None
+    try:
+        dados = base64.b64decode(b64, validate=True)
+    except ValueError:
+        return None
+    return dados if dados[:3] == b"\xff\xd8\xff" and len(dados) <= 300_000 else None
 LOGIN_HTML = """<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Monitor do PC — entrar</title><style>
 :root{--bg:#101418;--p:#171c22;--b:#29313b;--t:#e6ebf0;--t2:#9aa6b2;--a:#5aa9e6;--r:#ef5f5f}
@@ -348,7 +375,8 @@ def fabrica(motor, TOKEN, remoto=False):
             if r == "/api/status":
                 return self._json(m.status())
             if r == "/api/config":
-                return self._json({"valores": configuracao.publico(), "padrao": config.PADRAO, "opcoes": config.OPCOES,
+                revelar = not remoto and self._pode_alterar()   # só o ícone pede com o token
+                return self._json({"valores": configuracao.publico(revelar), "padrao": config.PADRAO, "opcoes": config.OPCOES,
                                    "remoto": remoto, "somente_ver": remoto and configuracao.obter("acesso_somente_ver")})
             if r == "/api/icone":
                 dados = icones.png(q.get("exe", ""))
@@ -413,10 +441,80 @@ def fabrica(motor, TOKEN, remoto=False):
                 return self._json(m.atualizador.estado())
             if r == "/api/acao/resultado":
                 return self._json({"resultado": m.resultado(q.get("id", ""))})
+            if r.startswith("/api/capturas"):
+                if remoto:
+                    return self._json({"erro": "as capturas de tela só aparecem no próprio computador"}, 403)
+                return self._get_capturas(r, q)
             if r == "/api/fila":
                 if remoto or not self._pode_alterar():
                     return self._json({"erro": "não autorizado"}, 403)
                 return self._json({"acoes": m.pegar_fila(min(25.0, _num(q, "espera", 20)))})
+            return self._json({"erro": "não encontrado"}, 404)
+
+        def _bin(self, dados, tipo, cache):
+            self.send_response(200)
+            self.send_header("Content-Type", tipo)
+            self.send_header("Cache-Control", cache)
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Content-Length", str(len(dados)))
+            self.end_headers()
+            self.wfile.write(dados)
+
+        def _get_capturas(self, r, q):
+            if r == "/api/capturas":
+                return self._json({"itens": banco.capturas_listar(_num(q, "limite", 300, int)), "estado": motor.captura_estado,
+                                   "acoes": {k: v[0] for k, v in captura.ACOES.items()}, "destinos": envio.DESTINOS})
+            cid = _num(q, "id", 0, int)
+            if r == "/api/capturas/mini":
+                dados = banco.captura_mini(cid)
+                if not dados:
+                    return self._json({"erro": "sem miniatura"}, 404)
+                return self._bin(dados, "image/jpeg", "max-age=86400")   # a página muda o endereço quando a imagem muda
+            if r == "/api/capturas/arquivo":
+                # o conteúdo vem do ícone da bandeja (que lê o arquivo com as permissões do usuário), nunca do disco aqui
+                item = motor.captura_cache.get(cid)
+                if not item:
+                    return self._json({"erro": "peça o arquivo antes (ação captura_ler)"}, 404)
+                return self._bin(item[0], item[1], "no-store")
+            return self._json({"erro": "não encontrado"}, 404)
+
+        def _post_capturas(self, r, corpo):
+            m = motor
+            if r == "/api/capturas/estado":
+                m.captura_estado = {**(corpo if isinstance(corpo, dict) else {}), "ts": time.time()}
+                return self._json({"ok": True})
+            if r == "/api/capturas/registrar":
+                d = banco_captura(corpo)
+                return self._json({"ok": True, "id": banco.captura_registrar(d, mini_jpeg(corpo.get("mini")))})
+            if r == "/api/capturas/atualizar":
+                campos = {k: corpo[k] for k in ("largura", "altura", "bytes") if isinstance(corpo.get(k), int)}
+                if isinstance(corpo.get("url"), str):
+                    campos["url"] = corpo["url"][:2000]
+                banco.captura_atualizar(_num(corpo, "id", 0, int), campos, mini_jpeg(corpo.get("mini")))
+                return self._json({"ok": True})
+            if r == "/api/capturas/conteudo":
+                cid = _num(corpo, "id", 0, int)
+                tipo = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif"}.get(
+                    str(corpo.get("ext", "")).lower())
+                try:
+                    dados = base64.b64decode(str(corpo.get("dados", "")), validate=True)
+                except ValueError:
+                    raise ParamInvalido("conteúdo inválido") from None
+                if not tipo or not dados:
+                    raise ParamInvalido("conteúdo inválido")
+                m.captura_cache[cid] = (dados, tipo)
+                while len(m.captura_cache) > 3:
+                    m.captura_cache.pop(next(iter(m.captura_cache)))
+                return self._json({"ok": True})
+            if r == "/api/capturas/editada":
+                d = banco.captura(_num(corpo, "id", 0, int))
+                if not d:
+                    return self._json({"ok": False, "msg": "Essa captura não está mais no histórico."})
+                png = str(corpo.get("png", ""))
+                if not png:
+                    raise ParamInvalido("imagem vazia")
+                return self._json(m._enfileirar({"tipo": "captura_editada", "cid": d["id"], "caminho": d["caminho"], "png": png,
+                                                 "nova": bool(corpo.get("nova")), "copiar": bool(corpo.get("copiar"))}))
             return self._json({"erro": "não encontrado"}, 404)
 
         # ---- POST
@@ -428,7 +526,7 @@ def fabrica(motor, TOKEN, remoto=False):
                 return self._json({"erro": "pedido inválido"}, 400)
             if n < 0:
                 return self._json({"erro": "pedido inválido"}, 400)
-            if n > 2_000_000:
+            if n > (64_000_000 if r in POST_GRANDE else 2_000_000):
                 return self._json({"erro": "pedido grande demais"}, 413)
             bruto = self.rfile.read(n) if n else b""
             if remoto and r == "/login":
@@ -456,8 +554,11 @@ def fabrica(motor, TOKEN, remoto=False):
                 if remoto:
                     return self._json({"erro": "só no próprio computador"}, 403)
                 if r == "/api/fila/resultado":
-                    m.resultado(corpo.get("id", ""), {"ok": bool(corpo.get("ok")), "msg": corpo.get("msg", "")})
+                    m.resultado(corpo.get("id", ""), {"ok": bool(corpo.get("ok")), "msg": corpo.get("msg", ""),
+                                                     "dados": corpo.get("dados")})
                     return self._json({"ok": True})
+                if r.startswith("/api/capturas/"):
+                    return self._post_capturas(r, corpo)
                 if r == "/api/janelas":
                     m.receber_janelas(corpo.get("janelas"), corpo.get("frente"))
                     return self._json({"ok": True})
@@ -478,6 +579,8 @@ def fabrica(motor, TOKEN, remoto=False):
                     m.config_mudou()
                     return self._json({"ok": ok, "msg": msg})
                 return self._json({"erro": "não encontrado"}, 404)
+            except ParamInvalido as e:
+                return self._json({"erro": str(e)}, 400)
             except Exception as e:  # noqa: BLE001
                 import traceback
                 traceback.print_exc()

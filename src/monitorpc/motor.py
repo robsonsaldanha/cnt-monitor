@@ -17,7 +17,7 @@ from collections import deque, defaultdict
 import psutil
 
 from . import config, configuracao, banco, rede, temperatura, nt, gpu, discos, inicializacao
-from . import alertas, jogo, energia, servicos, atualizacao, sessao, regras, limpeza, vps
+from . import alertas, jogo, energia, servicos, atualizacao, sessao, regras, limpeza, vps, captura
 
 WIN = os.name == "nt"
 NCPU = psutil.cpu_count() or 1
@@ -138,6 +138,8 @@ class Motor:
         self.fila = queue.Queue()
         self.resultados = {}
         self.bandeja_ts = 0
+        self.captura_estado = {}      # atalhos registrados, gravação em andamento (informado pela bandeja)
+        self.captura_cache = {}       # id -> (bytes, tipo): imagens que a bandeja leu para o editor (últimas 3)
         self._ini_cache = {}
         self.frente_pid = None
         self.alertas = alertas.Alertas()
@@ -1137,6 +1139,28 @@ class Motor:
         if tipo == "regra_remover":
             configuracao.salvar({"regras_prog": [r for r in configuracao.obter("regras_prog") if r["id"] != a.get("id")]})
             return {"ok": True, "msg": "Regra apagada."}
+        if tipo == "captura":
+            modo = a.get("modo")
+            if modo not in captura.ACOES and modo not in ("parar", "ffmpeg"):
+                return {"ok": False, "msg": "Tipo de captura desconhecido."}
+            return self._enfileirar({"tipo": "captura", "modo": modo})
+        if tipo in ("captura_copiar", "captura_enviar", "captura_ler", "captura_apagar", "captura_pasta", "captura_abrir"):
+            try:
+                d = banco.captura(int(a.get("id") or 0))
+            except (TypeError, ValueError):
+                d = None
+            if not d:
+                return {"ok": False, "msg": "Essa captura não está mais no histórico."}
+            if tipo == "captura_apagar":
+                banco.captura_apagar(d["id"])
+                self.captura_cache.pop(d["id"], None)
+                if not a.get("arquivo"):
+                    return {"ok": True, "msg": "Tirada do histórico (o arquivo continua na pasta)."}
+            if tipo == "captura_pasta":
+                return self._enfileirar({"tipo": "pasta", "caminho": d["caminho"]})
+            if tipo == "captura_abrir":
+                return self._enfileirar({"tipo": "abrir_exe", "caminho": d["caminho"]})
+            return self._enfileirar({"tipo": tipo, "cid": d["id"], "caminho": d["caminho"]})  # "id" é o da fila
         if tipo == "alerta_teste":
             if time.time() - self.bandeja_ts > 40:
                 return {"ok": False, "msg": "O ícone perto do relógio precisa estar aberto para mostrar notificações."}

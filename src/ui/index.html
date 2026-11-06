@@ -301,6 +301,22 @@ code{font-family:"Cascadia Mono",Consolas,monospace;font-size:12px;background:va
 }
 @media (max-width:420px){.g2,.g3,.g4,.g5,.g6{grid-template-columns:1fr}#cards.grade{grid-template-columns:1fr 1fr}#cards .card .val{font-size:24px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.cap-bts{display:flex;flex-wrap:wrap;gap:8px;padding:12px 14px}
+.cap-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.cap{background:var(--painel);border:1px solid var(--borda);border-radius:var(--raio);overflow:hidden;cursor:pointer;min-width:0;text-align:left;padding:0;color:inherit;font:inherit}
+.cap:hover,.cap:focus-visible{border-color:var(--acento)}
+.cap .tb{aspect-ratio:16/10;background:var(--painel2) center/contain no-repeat;position:relative;display:grid;place-items:center;color:var(--txt3);font-size:12px}
+.cap .tb span{position:absolute;right:6px;bottom:6px;background:#000b;color:#fff;border-radius:4px;padding:0 6px;font-size:11.5px}
+.cap .inf{padding:7px 10px 0;font-size:12.5px;display:flex;gap:6px;align-items:center;min-width:0}
+.cap .inf b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.cap .inf2{padding:2px 10px 8px;font-size:11.5px;color:var(--txt3)}
+input.atalho{width:170px;text-align:center;cursor:pointer}
+.ed-barra{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px}
+.ed-barra .sep{width:1px;align-self:stretch;background:var(--borda)}
+.ed-area{margin-top:10px;background:repeating-conic-gradient(var(--painel2) 0 25%,var(--painel) 0 50%) 0 0/20px 20px;border:1px solid var(--borda);border-radius:var(--raio);overflow:auto;max-height:calc(100vh - 200px);min-height:200px;display:grid;place-items:center;padding:12px}
+#edCanvas{max-width:100%;max-height:calc(100vh - 230px);touch-action:none;cursor:crosshair;box-shadow:var(--sombra);background:#fff}
+#edCanvas.real{max-width:none;max-height:none}
+.ed-texto{position:fixed;z-index:60;min-width:160px;font:600 16px "Segoe UI",sans-serif;padding:3px 6px;border:2px solid var(--acento);border-radius:4px;resize:both}
 @media print{
   :root{--bg:#fff;--painel:#fff;--painel2:#f3f4f7;--borda:#ddd;--txt:#000;--txt2:#444;--txt3:#666;--grade:#eee;--sombra:none}
   nav.lateral,.nao-imprimir,.gav,.fundo,.toasts,.menu,#avisos{display:none!important}
@@ -321,6 +337,7 @@ code{font-family:"Cascadia Mono",Consolas,monospace;font-size:12px;background:va
   <button data-v="rede"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>Rede e IPs</button>
   <button data-v="hardware"><svg viewBox="0 0 24 24"><path d="M10 14V5a2 2 0 1 1 4 0v9a4 4 0 1 1-4 0z"/></svg>Temperatura e hardware</button>
   <div class="grp">Ferramentas</div>
+  <button data-v="capturas"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Captura de tela<span class="cont" id="capTag" hidden style="background:var(--perigo)">REC</span></button>
   <button data-v="jogo"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 10.5v4M5 12.5h4M15.5 11.5h.01M18 13.5h.01"/></svg>Modo Jogo<span class="cont" id="jogoTag" hidden style="background:var(--ok)">ON</span></button>
   <button data-v="otimizar"><svg viewBox="0 0 24 24"><path d="M4 20l7-7M14 4l6 6-8 8-6-6z"/><path d="M15 3l1-1M21 9l1-1"/></svg>Otimizar</button>
   <button data-v="regras"><svg viewBox="0 0 24 24"><path d="M4 6h10M4 12h7M4 18h10"/><circle cx="18" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Regras por programa</button>
@@ -552,6 +569,20 @@ code{font-family:"Cascadia Mono",Consolas,monospace;font-size:12px;background:va
   <div id="cmpCorpo" class="secao"><div class="vazio">Carregando…</div></div>
 </section>
 
+<section id="v-capturas" hidden>
+  <h1>Captura de tela</h1><p class="sub">Prints, gravação de tela, texto da tela (OCR) e envio com link — pelos atalhos de teclado, pelo menu do ícone perto do relógio ou pelos botões abaixo. Clique numa captura para ver as opções; clique duas vezes para editar.</p>
+  <div id="capAvisos"></div>
+  <div class="painel"><div class="cab"><h2>Capturar</h2><span class="desc">Pelos botões, a janela do Monitor some antes da captura.</span><div class="dir"><button class="btn" id="capCfg">Atalhos e opções</button></div></div><div class="cap-bts" id="capBts"></div></div>
+  <div class="rel-cab secao"><h2 style="margin:0">Histórico</h2><span class="mut" id="capTot"></span><input type="search" id="bCap" placeholder="Buscar pelo nome" style="margin-left:auto;width:220px"></div>
+  <div class="cap-grade" id="capLista"><div class="vazio">Carregando…</div></div>
+</section>
+
+<section id="v-editor" hidden>
+  <h1><a href="#capturas" style="text-decoration:none;font-weight:400;color:var(--txt3)">Captura de tela ›</a> Editor</h1><p class="sub" id="edSub"></p>
+  <div class="painel ed-barra" id="edBarra"></div>
+  <div class="ed-area" id="edArea"><canvas id="edCanvas" width="1" height="1"></canvas></div>
+</section>
+
 <section id="v-config" hidden>
   <h1>Configurações</h1><p class="sub">As mudanças são salvas na hora.</p>
   <div class="cfg" id="cfgCorpo"></div>
@@ -738,13 +769,14 @@ const eixoPct=v=>nf0.format(v)+'%', eixoB=v=>v>=GB?nf1.format(v/GB)+' GB':nf0.fo
 const eixoN=v=>CFG.rede_em_bits?(v*8>=1e6?nf1.format(v*8/1e6)+' Mb/s':nf0.format(v*8/1e3)+' Kb/s'):eixoR(v);
 
 /* =================== navegação =================== */
-const VISTAS=['geral','recurso','programas','processos','jogo','otimizar','regras','inicializacao','energia','servicos','rede','hardware','historico','lentidao','alertas','relatorio','comparar','vps','config'];
-let vista='geral', recurso='cpu';
-function ir(h){ h=(h||'geral').replace(/^#/,''); let v=h, r=null; if(h.startsWith('recurso/')){ v='recurso'; r=h.split('/')[1]; } if(!VISTAS.includes(v)) v='geral';
+const VISTAS=['geral','recurso','programas','processos','capturas','editor','jogo','otimizar','regras','inicializacao','energia','servicos','rede','hardware','historico','lentidao','alertas','relatorio','comparar','vps','config'];
+let vista='geral', recurso='cpu', ED_ID=0;
+function ir(h){ h=(h||'geral').replace(/^#/,''); let v=h, r=null; if(h.startsWith('recurso/')){ v='recurso'; r=h.split('/')[1]; }
+  if(h.startsWith('editor/')){ v='editor'; ED_ID=parseInt(h.split('/')[1])||0; } if(v==='editor'&&!ED_ID) v='capturas'; if(!VISTAS.includes(v)) v='geral';
   if(v==='recurso' && r==='temp'){ v='hardware'; }
   vista=v; if(r) recurso=r; for(const x of VISTAS) $('#v-'+x).hidden = x!==v;
-  document.querySelectorAll('#nav button[data-v]').forEach(b=>{ if(b.dataset.v===v||(v==='recurso'&&b.dataset.v==='geral')) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
-  const alvo = v==='recurso'?'recurso/'+recurso:v; if(location.hash!=='#'+alvo) history.replaceState(null,'','#'+alvo);
+  document.querySelectorAll('#nav button[data-v]').forEach(b=>{ if(b.dataset.v===v||(v==='recurso'&&b.dataset.v==='geral')||(v==='editor'&&b.dataset.v==='capturas')) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
+  const alvo = v==='recurso'?'recurso/'+recurso:v==='editor'?'editor/'+ED_ID:v; if(location.hash!=='#'+alvo) history.replaceState(null,'','#'+alvo);
   scrollTo(0,0); entrar(); }
 $('#nav').addEventListener('click',e=>{ const b=e.target.closest('button[data-v]'); if(b) ir(b.dataset.v); });
 addEventListener('hashchange',()=>ir(location.hash));
@@ -769,6 +801,7 @@ async function ciclo(){
   else if(vista==='hardware' && (contHw++ % Math.max(1,Math.round(2000/CFG.intervalo_ms)))===0) vHardware(false);
   else if(vista==='jogo' && (contHw++ % Math.max(1,Math.round(500/CFG.intervalo_ms)))===0) vJogo(false);
   else if(vista==='vps' && (contHw++ % Math.max(1,Math.round(5000/CFG.intervalo_ms)))===0) vVps(false);
+  else if(vista==='capturas' && (contHw++ % Math.max(1,Math.round(2000/CFG.intervalo_ms)))===0) vCapturas(false);
   if(gavAtual) gavAtual.tick();
 }
 async function loop(){ const t0=performance.now(); await ciclo(); setTimeout(loop, Math.max(60, CFG.intervalo_ms-(performance.now()-t0))); }
@@ -777,13 +810,15 @@ function entrar(){ fecharMenu();
   if(vista==='inicializacao') vIni(); if(vista==='rede') vRede(); if(vista==='hardware') vHardware(true);
   if(vista==='historico') vHistorico(); if(vista==='lentidao') vLentidao(); if(vista==='relatorio') vRelatorio(); if(vista==='config') vConfig();
   if(vista==='jogo') vJogo(true); if(vista==='energia') vEnergia(); if(vista==='servicos') vServicos(); if(vista==='alertas') vAlertas();
-  if(vista==='otimizar') vOtimizar(); if(vista==='regras') vRegras(); if(vista==='vps') vVps(true); if(vista==='comparar') vComparar(); }
+  if(vista==='otimizar') vOtimizar(); if(vista==='regras') vRegras(); if(vista==='vps') vVps(true); if(vista==='comparar') vComparar();
+  if(vista==='capturas') vCapturas(true); if(vista==='editor') vEditor(); }
 async function cicloStatus(){ try{ STATUS=await API('status'); avisos(); $('#rodInfo').innerHTML=`v${esc(STATUS.versao)} · histórico de ${STATUS.banco.desde?dur(Date.now()/1000-STATUS.banco.desde):'0 min'}<br>${fB(STATUS.banco.tamanho)} em disco`; }catch(_){} }
 function avisos(){ const a=[]; if(!STATUS) return;
   if(!STATUS.admin) a.push(['erro','O serviço não está rodando como administrador — rede por programa e temperatura ficam limitadas.']);
   if(STATUS.admin && CFG.rede_por_programa && !STATUS.rede_ok) a.push(['','A medição de rede por programa não iniciou: '+esc(STATUS.rede_erro||'')]);
   if(!STATUS.bandeja_online) a.push(['','O ícone do Monitor do PC perto do relógio está fechado — “Mostrar janela”, “Abrir pasta” e “Fechar janela” precisam dele. Abra o Monitor do PC pelo menu Iniciar.']);
-  $('#avisos').innerHTML=a.map(([c,t])=>`<div class="aviso ${c}">${t}</div>`).join(''); $('#jogoTag').hidden=!STATUS.jogo_ativo; }
+  $('#avisos').innerHTML=a.map(([c,t])=>`<div class="aviso ${c}">${t}</div>`).join(''); $('#jogoTag').hidden=!STATUS.jogo_ativo;
+  API('capturas?limite=1').then(d=>{ $('#capTag').hidden=!(d.estado&&d.estado.gravando); }).catch(()=>{}); }
 
 /* =================== VISÃO GERAL =================== */
 function cardsDados(e){ const s=SERIE.slice(-60), col=i=>s.map(x=>x[i]);
@@ -1619,6 +1654,141 @@ function htmlRelatorioCompleto(r){ const g=r.geral; if(!g) return '<div class="v
 const subRel=r=>`${quando(r.desde)} até ${quando(r.ate)}${r.geral?' — monitorado por '+dur(r.geral.tempo_monitorado):''}${r.maquina&&r.maquina.maquina?' — computador '+esc(r.maquina.maquina):''}`;
 $('#relHtml').onclick=()=>{ if(!REL) return; baixarHtml('Relatório do computador', subRel(REL), htmlRelatorioCompleto(REL), `monitor-pc-relatorio-${new Date(REL.desde*1000).toISOString().slice(0,10)}.html`); };
 
+/* =================== CAPTURA DE TELA =================== */
+let CAPS=null, CAP_ASSIN='';
+const CAP_BTS=[['regiao','Região'],['janela','Janela (a de trás)'],['monitor','Monitor'],['tela','Tela inteira'],['atraso','Com atraso'],['rolagem','Com rolagem'],['video','Gravar vídeo'],['gif','Gravar GIF'],['ocr','Texto (OCR)'],['cor','Cor'],['regua','Régua']];
+const espera = ms => new Promise(s=>setTimeout(s,ms));
+async function esperarResultado(id, tentativas){ for(let i=0;i<tentativas;i++){ await espera(250); const x=await API('acao/resultado?id='+id).catch(()=>null); if(x&&x.resultado) return x.resultado; } return null; }
+async function vCapturas(primeira){ let d; try{ d=await API('capturas'); }catch(_){ if(primeira) $('#capLista').innerHTML='<div class="vazio">'+(REMOTO?'As capturas de tela só aparecem no próprio computador.':'O serviço não respondeu.')+'</div>'; return; }
+  const assin=JSON.stringify([d.itens.map(x=>[x.id,x.url,x.bytes]),d.estado,CFG.captura_atalhos,CFG.captura_ativa]);
+  if(!primeira && assin===CAP_ASSIN) return; CAP_ASSIN=assin; CAPS=d; renderCapturas(); }
+function renderCapturas(){ if(!CAPS) return; const d=CAPS, e=d.estado||{}, est=e.atalhos||{}, ata=CFG.captura_atalhos||{}, grav=e.gravando;
+  const av=[];
+  if(!CFG.captura_ativa) av.push(['','Os atalhos de captura estão desligados (Configurações › Captura de tela). Os botões abaixo e o menu do ícone continuam funcionando.']);
+  const ruins=Object.entries(est).filter(([_,v])=>v!=='ok'); if(CFG.captura_ativa && ruins.length) av.push(['erro','Atalho não registrado: '+ruins.map(([k,v])=>`<b>${esc(ata[k]||k)}</b> (${esc(d.acoes[k]||k)}) — ${esc(v)}`).join('; ')+'. Feche o programa que usa a mesma tecla (ShareX, Lightshot, Ferramenta de Captura) ou troque o atalho.']);
+  if(e.baixando!=null) av.push(['',`Baixando o ffmpeg para gravar a tela… ${e.baixando}%`]);
+  if(grav) av.push(['forte',`Gravando ${grav==='gif'?'GIF':'vídeo'} há ${dur(Date.now()/1000-(e.gravando_desde||Date.now()/1000))}. Aperte o mesmo atalho ou o botão “Parar” para terminar.`]);
+  $('#capAvisos').innerHTML=av.map(([c,t])=>`<div class="aviso ${c}">${t}</div>`).join('');
+  $('#capBts').innerHTML=CAP_BTS.map(([k,t])=>{ const g=grav&&k===grav; return `<button class="btn ${g?'perigo':k==='regiao'?'pri':''}" data-cap="${k}" title="${esc(d.acoes[k]||'')}">${g?'■ Parar':esc(t)}${ata[k]&&CFG.captura_ativa?` <span class="tag">${esc(ata[k])}</span>`:''}</button>`; }).join('');
+  const f=$('#bCap').value.trim().toLowerCase(), l=d.itens.filter(x=>!f||x.caminho.toLowerCase().includes(f));
+  $('#capTot').textContent=d.itens.length?`${d.itens.length} captura${d.itens.length>1?'s':''}`:'';
+  $('#capLista').innerHTML=l.map(x=>`<button class="cap" data-id="${x.id}"><div class="tb" ${x.tem_mini?`style="background-image:url('/api/capturas/mini?id=${x.id}&v=${x.bytes}')"`:''}>${x.tem_mini?'':'sem prévia'}${x.tipo!=='imagem'?`<span>${x.tipo==='gif'?'GIF':'MP4'}${x.duracao?' · '+dur(x.duracao):''}</span>`:''}</div>
+    <div class="inf"><b title="${esc(x.caminho)}">${esc(exeNome(x.caminho))}</b>${x.url?'<span class="tag on">link</span>':''}</div><div class="inf2">${quando(x.ts)}${x.largura?` · ${x.largura}×${x.altura}`:''} · ${fB(x.bytes)}</div></button>`).join('')
+    ||`<div class="vazio">${f?'Nada encontrado.':'Nenhuma captura ainda. Use os botões acima ou o atalho '+esc(ata.regiao||'de região')+'.'}</div>`; }
+$('#capBts').addEventListener('click',e=>{ const b=e.target.closest('[data-cap]'); if(b) acao({tipo:'captura',modo:b.dataset.cap}); });
+$('#capCfg').onclick=()=>{ ir('config'); setTimeout(()=>{ const s=$('#cfgCap'); if(s) s.scrollIntoView({block:'start'}); },400); };
+$('#bCap').addEventListener('input',renderCapturas);
+const capItem = el => CAPS && CAPS.itens.find(x=>x.id===+el.dataset.id);
+$('#capLista').addEventListener('click',e=>{ const b=e.target.closest('.cap'); if(b) menuCaptura(e, capItem(b)); });
+$('#capLista').addEventListener('dblclick',e=>{ const b=e.target.closest('.cap'), x=b&&capItem(b); if(!x) return; fecharMenu(); if(x.tipo==='imagem') ir('editor/'+x.id); else acao({tipo:'captura_abrir',id:x.id}); });
+function menuCaptura(e, x){ if(!x) return; const img=x.tipo==='imagem';
+  abrirMenu(e, exeNome(x.caminho), [
+    {t:'Abrir no editor', ic:'janela', des:!img, mot:!img?'só imagens':'', f:()=>ir('editor/'+x.id)},
+    {t:'Abrir', ic:'prog', f:()=>acao({tipo:'captura_abrir',id:x.id})},
+    {t:img?'Copiar imagem':'Copiar caminho do arquivo', ic:'copiar', f:()=>acao({tipo:'captura_copiar',id:x.id})},
+    {t:'Enviar e copiar o link', ic:'web', f:()=>acao({tipo:'captura_enviar',id:x.id})},
+    {t:'Copiar o link', ic:'copiar', des:!x.url, f:()=>copiar(x.url)},
+    {t:'Abrir local do arquivo', ic:'pasta', f:()=>acao({tipo:'captura_pasta',id:x.id})},
+    '-',
+    {t:'Tirar do histórico', ic:'fechar', f:async()=>{ await acao({tipo:'captura_apagar',id:x.id}); vCapturas(true); }},
+    {t:'Apagar o arquivo (vai para a Lixeira)', ic:'matar', perigo:1, f:async()=>{ if(!await confirmar('Apagar este arquivo?',`${exeNome(x.caminho)} vai para a Lixeira e sai do histórico.`,'Apagar',1)) return; await acao({tipo:'captura_apagar',id:x.id,arquivo:true}); vCapturas(true); }},
+  ]); }
+
+/* =================== EDITOR DE CAPTURAS =================== */
+const ED={base:null, formas:[], desfazer:[], refazer:[], ferr:'seta', cor:'#e53935', esp:4, num:1, arr:null, carregado:0, nome:''};
+const ED_FERR=[['seta','Seta'],['ret','Retângulo'],['elipse','Elipse'],['linha','Linha'],['caneta','Caneta'],['texto','Texto'],['numero','Número'],['marca','Marca-texto'],['pixelar','Pixelar'],['desfocar','Desfocar'],['recortar','Recortar']];
+const edCv=$('#edCanvas');
+function edBarra(){ if($('#edBarra').childElementCount) return;
+  $('#edBarra').innerHTML=`<div class="seg" id="edFerr">${ED_FERR.map(([k,t])=>`<button data-f="${k}" aria-pressed="${k===ED.ferr}">${t}</button>`).join('')}</div>
+    <input type="color" id="edCor" value="${ED.cor}" title="Cor" style="width:38px;height:30px;padding:0 2px">
+    <select id="edEsp" title="Espessura">${[2,3,4,6,8,12].map(n=>`<option value="${n}" ${n===ED.esp?'selected':''}>${n} px</option>`).join('')}</select>
+    <span class="sep"></span><button class="btn" id="edDesf" title="Desfazer (Ctrl+Z)">Desfazer</button><button class="btn" id="edRef" title="Refazer (Ctrl+Y)">Refazer</button>
+    <select id="edZoom" title="Zoom"><option value="ajustar">Ajustar à tela</option><option value="real">Tamanho real</option></select>
+    <span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="edCopiar" title="Ctrl+C">Copiar</button><button class="btn" id="edBaixar">Baixar</button><button class="btn" id="edEnviar">Salvar e enviar</button><button class="btn" id="edNova">Salvar como nova</button><button class="btn pri" id="edSalvar" title="Ctrl+S">Salvar</button></span>`;
+  seg($('#edFerr'), d=>{ ED.ferr=d.f; });
+  $('#edCor').oninput=e=>{ ED.cor=e.target.value; }; $('#edEsp').onchange=e=>{ ED.esp=+e.target.value; };
+  $('#edZoom').onchange=e=>edCv.classList.toggle('real', e.target.value==='real');
+  $('#edDesf').onclick=edDesfazer; $('#edRef').onclick=edRefazer;
+  $('#edCopiar').onclick=edCopiar; $('#edBaixar').onclick=edBaixar;
+  $('#edSalvar').onclick=()=>edSalvar(false); $('#edNova').onclick=()=>edSalvar(true); $('#edEnviar').onclick=async()=>{ if(await edSalvar(false)) acao({tipo:'captura_enviar',id:ED_ID}); }; }
+async function vEditor(){ edBarra(); if(ED.carregado===ED_ID && ED.base){ edDesenhar(); return; }
+  ED.base=null; edCv.width=1; edCv.height=1; $('#edSub').textContent='Carregando a imagem…';
+  let r=await POST('acao',{tipo:'captura_ler',id:ED_ID}).catch(()=>null);
+  if(r&&r.pendente) r=await esperarResultado(r.id,120);
+  if(!r||r.erro||!r.ok){ $('#edSub').textContent=(r&&(r.msg||r.erro))||'Não consegui abrir a imagem (o ícone perto do relógio precisa estar aberto).'; return; }
+  const img=new Image(); img.src='/api/capturas/arquivo?id='+ED_ID+'&t='+Date.now();
+  try{ await img.decode(); }catch(_){ $('#edSub').textContent='Não consegui abrir a imagem.'; return; }
+  const c=document.createElement('canvas'); c.width=img.naturalWidth; c.height=img.naturalHeight; c.getContext('2d').drawImage(img,0,0);
+  Object.assign(ED,{base:c, formas:[], desfazer:[], refazer:[], num:1, arr:null, carregado:ED_ID});
+  if(!(CAPS&&CAPS.itens.some(x=>x.id===ED_ID))) CAPS=await API('capturas').catch(()=>CAPS);
+  const it=CAPS&&CAPS.itens.find(x=>x.id===ED_ID); ED.nome=it?exeNome(it.caminho):'captura-'+ED_ID+'.png';
+  $('#edSub').textContent=`${ED.nome} · ${c.width}×${c.height}. Segure Shift para linhas retas e quadrados. Ctrl+Z desfaz, Ctrl+S salva.`; edDesenhar(); }
+function edRetan(f){ return [Math.min(f.x0,f.x1), Math.min(f.y0,f.y1), Math.abs(f.x1-f.x0), Math.abs(f.y1-f.y0)]; }
+function edForma(ctx, f){ ctx.save(); ctx.strokeStyle=ctx.fillStyle=f.cor; ctx.lineWidth=f.esp; ctx.lineCap='round'; ctx.lineJoin='round';
+  const [x,y,w,h]=edRetan(f);
+  if(f.t==='ret') ctx.strokeRect(x,y,w,h);
+  else if(f.t==='elipse'){ ctx.beginPath(); ctx.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,Math.PI*2); ctx.stroke(); }
+  else if(f.t==='linha'||f.t==='seta'){ const a=Math.atan2(f.y1-f.y0,f.x1-f.x0), cab=Math.max(12,f.esp*4), enc=f.t==='seta'?cab*0.8:0;
+    ctx.beginPath(); ctx.moveTo(f.x0,f.y0); ctx.lineTo(f.x1-Math.cos(a)*enc,f.y1-Math.sin(a)*enc); ctx.stroke();
+    if(f.t==='seta'){ ctx.beginPath(); ctx.moveTo(f.x1,f.y1); ctx.lineTo(f.x1-cab*Math.cos(a-0.45),f.y1-cab*Math.sin(a-0.45)); ctx.lineTo(f.x1-cab*Math.cos(a+0.45),f.y1-cab*Math.sin(a+0.45)); ctx.closePath(); ctx.fill(); } }
+  else if(f.t==='caneta'){ ctx.beginPath(); f.pts.forEach(([px,py],i)=>i?ctx.lineTo(px,py):ctx.moveTo(px,py)); ctx.stroke(); }
+  else if(f.t==='marca'){ ctx.globalCompositeOperation='multiply'; ctx.globalAlpha=.45; ctx.fillRect(x,y,w,h); }
+  else if(f.t==='texto'){ const tam=Math.max(14,f.esp*5); ctx.font=`600 ${tam}px "Segoe UI",sans-serif`; ctx.textBaseline='top';
+    const [r,g,b]=[1,3,5].map(i=>parseInt(f.cor.slice(i,i+2),16)); ctx.strokeStyle=(r*299+g*587+b*114)/1000>140?'#000':'#fff'; ctx.lineWidth=Math.max(2,tam/7);
+    f.txt.split('\n').forEach((l,i)=>{ ctx.strokeText(l,f.x0,f.y0+i*tam*1.25); ctx.fillText(l,f.x0,f.y0+i*tam*1.25); }); }
+  else if(f.t==='numero'){ const r=Math.max(13,f.esp*3.5); ctx.beginPath(); ctx.arc(f.x0,f.y0,r,0,Math.PI*2); ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle='#fff'; ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.font=`700 ${Math.round(r*1.1)}px "Segoe UI",sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(f.n),f.x0,f.y0+1); }
+  else if((f.t==='pixelar'||f.t==='desfocar') && w>1 && h>1){
+    if(f.t==='pixelar'){ const bl=Math.max(5,f.esp*3), sw=Math.max(1,Math.round(w/bl)), sh=Math.max(1,Math.round(h/bl)), t=document.createElement('canvas'); t.width=sw; t.height=sh;
+      t.getContext('2d').drawImage(ctx.canvas,x,y,w,h,0,0,sw,sh); ctx.imageSmoothingEnabled=false; ctx.drawImage(t,0,0,sw,sh,x,y,w,h); }
+    else { const raio=Math.max(4,f.esp*2), m=raio*2, t=document.createElement('canvas'); t.width=w+2*m; t.height=h+2*m; const tc=t.getContext('2d'); tc.filter=`blur(${raio}px)`;
+      tc.drawImage(ctx.canvas,x-m,y-m,w+2*m,h+2*m,0,0,w+2*m,h+2*m); ctx.drawImage(t,m,m,w,h,x,y,w,h); } }
+  ctx.restore(); }
+function edCompor(ctx, comTemp){ ctx.drawImage(ED.base,0,0); for(const f of ED.formas) edForma(ctx,f);
+  const a=comTemp&&ED.arr; if(!a) return;
+  if(a.t==='recortar'){ const [x,y,w,h]=edRetan(a); ctx.save(); ctx.fillStyle='rgba(0,0,0,.5)'; ctx.beginPath(); ctx.rect(0,0,ctx.canvas.width,ctx.canvas.height); ctx.rect(x,y,w,h); ctx.fill('evenodd');
+    ctx.setLineDash([6,4]); ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.strokeRect(x+.5,y+.5,w,h); ctx.restore(); }
+  else edForma(ctx,a); }
+let edQuadro=0;
+function edDesenhar(){ if(!ED.base) return; if(edCv.width!==ED.base.width||edCv.height!==ED.base.height){ edCv.width=ED.base.width; edCv.height=ED.base.height; } edCompor(edCv.getContext('2d'),true);
+  $('#edDesf').disabled=!ED.desfazer.length; $('#edRef').disabled=!ED.refazer.length; }
+const edPedir=()=>{ if(!edQuadro) edQuadro=requestAnimationFrame(()=>{ edQuadro=0; edDesenhar(); }); };
+const edFoto=()=>({base:ED.base, formas:ED.formas.slice(), num:ED.num});
+function edMudar(fn){ ED.desfazer.push(edFoto()); if(ED.desfazer.length>100) ED.desfazer.shift(); ED.refazer=[]; fn(); edDesenhar(); }
+function edDesfazer(){ if(!ED.desfazer.length) return; ED.refazer.push(edFoto()); Object.assign(ED,ED.desfazer.pop()); edDesenhar(); }
+function edRefazer(){ if(!ED.refazer.length) return; ED.desfazer.push(edFoto()); Object.assign(ED,ED.refazer.pop()); edDesenhar(); }
+function edFinal(){ const c=document.createElement('canvas'); c.width=ED.base.width; c.height=ED.base.height; edCompor(c.getContext('2d'),false); return c; }
+function edPonto(e){ const r=edCv.getBoundingClientRect(); return [Math.round((e.clientX-r.left)*edCv.width/r.width), Math.round((e.clientY-r.top)*edCv.height/r.height)]; }
+function edTexto(e,x,y){ const t=document.createElement('textarea'); t.className='ed-texto'; t.rows=1; t.placeholder='Digite e aperte Enter'; t.style.left=e.clientX+'px'; t.style.top=e.clientY+'px'; t.style.color=ED.cor;
+  document.body.appendChild(t); setTimeout(()=>t.focus(),0); let feito=false;
+  const fim=ok=>{ if(feito) return; feito=true; const v=t.value.replace(/\s+$/,''); t.remove(); if(ok&&v) edMudar(()=>ED.formas.push({t:'texto',x0:x,y0:y,x1:x,y1:y,cor:ED.cor,esp:ED.esp,txt:v})); };
+  t.onkeydown=ev=>{ ev.stopPropagation(); if(ev.key==='Enter'&&!ev.shiftKey){ ev.preventDefault(); fim(true); } if(ev.key==='Escape') fim(false); }; t.onblur=()=>fim(true); }
+edCv.addEventListener('pointerdown',e=>{ if(!ED.base||e.button!==0) return; e.preventDefault(); const [x,y]=edPonto(e);
+  if(ED.ferr==='texto'){ edTexto(e,x,y); return; }
+  if(ED.ferr==='numero'){ edMudar(()=>ED.formas.push({t:'numero',x0:x,y0:y,x1:x,y1:y,cor:ED.cor,esp:ED.esp,n:ED.num++})); return; }
+  edCv.setPointerCapture(e.pointerId); ED.arr={t:ED.ferr,x0:x,y0:y,x1:x,y1:y,cor:ED.cor,esp:ED.esp,pts:ED.ferr==='caneta'?[[x,y]]:null}; });
+edCv.addEventListener('pointermove',e=>{ const a=ED.arr; if(!a) return; let [x,y]=edPonto(e);
+  if(a.t==='caneta'){ a.pts.push([x,y]); }
+  else if(e.shiftKey && (a.t==='linha'||a.t==='seta')){ const dx=x-a.x0, dy=y-a.y0, ang=Math.round(Math.atan2(dy,dx)/(Math.PI/4))*(Math.PI/4), d=Math.hypot(dx,dy); x=Math.round(a.x0+d*Math.cos(ang)); y=Math.round(a.y0+d*Math.sin(ang)); }
+  else if(e.shiftKey && a.t!=='caneta'){ const s=Math.max(Math.abs(x-a.x0),Math.abs(y-a.y0)); x=a.x0+Math.sign(x-a.x0||1)*s; y=a.y0+Math.sign(y-a.y0||1)*s; }
+  a.x1=x; a.y1=y; edPedir(); });
+edCv.addEventListener('pointerup',()=>{ const a=ED.arr; if(!a) return; ED.arr=null;
+  if(a.t!=='caneta' && Math.abs(a.x1-a.x0)<3 && Math.abs(a.y1-a.y0)<3){ edDesenhar(); return; }
+  if(a.t==='recortar'){ edMudar(()=>{ const W=ED.base.width, H=ED.base.height; let [x,y,w,h]=edRetan(a); x=Math.max(0,x); y=Math.max(0,y); w=Math.min(w,W-x); h=Math.min(h,H-y); if(w<2||h<2) return;
+    const tudo=edFinal(), c=document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(tudo,x,y,w,h,0,0,w,h); ED.base=c; ED.formas=[]; }); return; }
+  edMudar(()=>ED.formas.push(a)); });
+async function edSalvar(nova){ if(!ED.base) return false; const png=edFinal().toDataURL('image/png').split(',')[1];
+  toast('Salvando…'); let r=await POST('capturas/editada',{id:ED_ID,png,nova}).catch(()=>null);
+  if(r&&r.pendente) r=await esperarResultado(r.id,120);
+  if(!r||r.erro||!r.ok){ toast((r&&(r.msg||r.erro))||'Não consegui salvar.',1); return false; }
+  toast(r.msg); const novo=r.dados&&r.dados.id; CAP_ASSIN='';
+  if(nova && novo && novo!==ED_ID){ ir('editor/'+novo); return true; }
+  edMudar(()=>{ ED.base=edFinal(); ED.formas=[]; }); return true; }
+async function edCopiar(){ if(!ED.base) return; try{ const blob=await new Promise(ok=>edFinal().toBlob(ok,'image/png')); await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]); toast('Imagem copiada.'); }catch(_){ toast('Não consegui copiar a imagem.',1); } }
+function edBaixar(){ if(!ED.base) return; const a=document.createElement('a'); a.href=edFinal().toDataURL('image/png'); a.download=ED.nome.replace(/\.[^.]+$/,'')+'_editada.png'; document.body.appendChild(a); a.click(); a.remove(); }
+addEventListener('keydown',e=>{ if(vista!=='editor'||!ED.base||!(e.ctrlKey||e.metaKey)||e.target.closest('input,textarea,select')) return; const k=e.key.toLowerCase();
+  if(k==='z'&&!e.shiftKey){ e.preventDefault(); edDesfazer(); } else if(k==='y'||(k==='z'&&e.shiftKey)){ e.preventDefault(); edRefazer(); } else if(k==='s'){ e.preventDefault(); edSalvar(false); } else if(k==='c'){ e.preventDefault(); edCopiar(); } });
+
 /* =================== CONFIGURAÇÕES EXTRAS =================== */
 let ACESSO=null;
 const MINI_ITENS={cpu:'CPU',mem:'Memória',temp_cpu:'Temperatura da CPU',gpu:'Uso da GPU',temp_gpu:'Temperatura da GPU',fps:'FPS',rede:'Rede',disco:'Disco',hora:'Relógio'};
@@ -1635,6 +1805,25 @@ function cfgExtras(){ const c=CFG, sel=(k,op)=>`<select data-cfg="${k}">${Object
     <div class="item"><b>Fundo escuro</b><div class="ctl">${sw('mini_fundo')}</div><small>Desligado: só os números aparecem, sem a caixa atrás.</small></div>
     <div class="item"><b>Opacidade</b><div class="ctl"><input type="range" min="30" max="100" step="5" value="${c.mini_opacidade}" data-cfg="mini_opacidade"> <span class="n">${c.mini_opacidade}%</span></div><small></small></div></div>`;
   if(REMOTO) return h;
+  const txt=(k,ph,w)=>`<input type="text" data-cfg="${k}" value="${esc(c[k]||'')}" placeholder="${esc(ph||'')}" style="width:${w||260}px">`;
+  h+=`<h2 class="secao" id="cfgCap">Captura de tela</h2><div class="painel">
+    <div class="item"><b>Atalhos de teclado ligados</b><div class="ctl">${sw('captura_ativa')}</div><small>Quem captura é o ícone perto do relógio: ele precisa estar aberto. Se algum atalho usar a tecla Print Screen, o Monitor desliga a opção do Windows que abre a Ferramenta de Captura com essa tecla (só no seu usuário) e devolve quando você tirar o Print Screen dos atalhos ou fechar o ícone.</small></div>
+    <div id="cfgCapAtalhos"><div class="vazio">Carregando os atalhos…</div></div></div>
+  <h2 class="secao">Depois de capturar</h2><div class="painel">
+    <div class="item"><b>Copiar a imagem</b><div class="ctl">${sw('captura_copiar')}</div><small>Fica pronta para colar (Ctrl+V) em qualquer programa.</small></div>
+    <div class="item"><b>Salvar em arquivo</b><div class="ctl">${sw('captura_salvar')}</div><small>Desligado: a captura fica só no histórico (numa pasta interna).</small></div>
+    <div class="item"><b>Pasta</b><div class="ctl">${txt('captura_pasta','Imagens\\Monitor do PC',300)}</div><small>Deixe vazio para usar a pasta Imagens\\Monitor do PC. Use um caminho completo (ex.: D:\\Prints).</small></div>
+    <div class="item"><b>Nome do arquivo</b><div class="ctl">${txt('captura_nome','%Y-%m-%d_%H-%M-%S',220)}</div><small>Data e hora: %Y ano, %m mês, %d dia, %H hora, %M minuto, %S segundo. Se o nome já existir, ganha _2, _3…</small></div>
+    <div class="item"><b>Formato</b><div class="ctl">${sel('captura_formato',{png:'PNG (sem perda)',jpg:'JPG (menor)'})} ${num('captura_qualidade',50,100)}<span class="mut2">qualidade JPG</span></div><small></small></div>
+    <div class="item"><b>Mostrar aviso perto do relógio</b><div class="ctl">${sw('captura_notificar')}</div><small></small></div>
+    <div class="item"><b>Abrir no editor</b><div class="ctl">${sw('captura_editor')}</div><small>Abre a janela do Monitor com a captura pronta para marcar setas, textos, números, desfocar e recortar.</small></div>
+    <div class="item"><b>Enviar e copiar o link</b><div class="ctl">${sw('captura_enviar')}</div><small>Manda a captura para o site escolhido abaixo e copia o link (no lugar da imagem). Vale também para vídeos e GIFs.</small></div>
+    <div class="item"><b>Atraso da “região com atraso”</b><div class="ctl">${sel('captura_atraso_s',{1:'1 s',2:'2 s',3:'3 s',5:'5 s',10:'10 s'})}</div><small>Tempo para abrir um menu ou passar o mouse antes de congelar a tela.</small></div></div>
+  <h2 class="secao">Gravação de tela</h2><div class="painel" id="cfgGrav">
+    <div class="item"><b>Quadros por segundo</b><div class="ctl">${sel('captura_gravar_fps',{10:'10',15:'15',24:'24',30:'30',60:'60'})}</div><small>O GIF sai sempre com 15 quadros por segundo e no máximo 960 px de largura, para ficar leve.</small></div>
+    <div class="item"><b>Mostrar o mouse no vídeo</b><div class="ctl">${sw('captura_gravar_cursor')}</div><small></small></div>
+    <div class="item"><b>ffmpeg (gravador)</b><div class="ctl" id="cfgFfmpeg"><span class="mut">—</span></div><small>A gravação usa o ffmpeg, baixado do GitHub na primeira gravação (cerca de 90 MB) com a soma de verificação conferida. Se já houver um ffmpeg no PATH, ele é usado.</small></div></div>
+  <h2 class="secao">Envio (upload)</h2><div class="painel" id="cfgEnvio"><div class="vazio">Carregando…</div></div>`;
   h+=`<h2 class="secao">Acesso pelo celular</h2><div class="painel" id="cfgAcesso"><div class="vazio">Carregando…</div></div>
   <h2 class="secao">API para outros programas</h2><div class="painel" id="cfgApi"></div>
   <h2 class="secao">Backup das configurações</h2><div class="painel">
@@ -1643,12 +1832,48 @@ function cfgExtras(){ const c=CFG, sel=(k,op)=>`<select data-cfg="${k}">${Object
   return h; }
 function ligarCfgExtras(){ const r=document.querySelector('[data-cfg="mini_opacidade"]'); if(r) r.oninput=()=>{ r.nextElementSibling.textContent=r.value+'%'; };
   if(REMOTO) return;
-  carregarAcesso();
+  carregarAcesso(); carregarCfgCaptura();
   $('#bkSalvar').onclick=async()=>{ const d=await API('backup').catch(()=>null); if(!d){ toast('Não consegui gerar o backup.',1); return; }
     const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,1)],{type:'application/json'})); a.download=`monitor-pc-backup-${new Date().toISOString().slice(0,10)}.json`; document.body.appendChild(a); a.click(); a.remove(); toast('Backup salvo na pasta Downloads.'); };
   $('#bkArq').onchange=async e=>{ const f=e.target.files[0]; if(!f) return; let d; try{ d=JSON.parse(await f.text()); }catch(_){ toast('Esse arquivo não é um backup válido.',1); return; }
     if(!await confirmar('Restaurar este backup?',`Criado em ${d.criado_em?quando(d.criado_em):'data desconhecida'} (versão ${d.versao||'?'}). As configurações atuais serão substituídas.`,'Restaurar')) return;
     const r=await POST('backup/restaurar',d).catch(()=>null); toast(r?r.msg:'Falhou.',!(r&&r.ok)); await carregarCfg(); vConfig(); }; }
+/* atalhos: o campo grava a combinação apertada (Print Screen só chega no "soltar" da tecla) */
+const TECLA_NOME={PrintScreen:'Print',Pause:'Pause',ScrollLock:'ScrollLock',Insert:'Insert',Delete:'Delete',Home:'Home',End:'End',PageUp:'PageUp',PageDown:'PageDown',Space:'Space'};
+function teclaAtalho(e){ let t=TECLA_NOME[e.code]; if(!t&&/^Key[A-Z]$/.test(e.code)) t=e.code.slice(3); if(!t&&/^Digit\d$/.test(e.code)) t=e.code.slice(5); if(!t&&/^F\d{1,2}$/.test(e.code)) t=e.code; if(!t) return null;
+  return [e.ctrlKey&&'Ctrl',e.altKey&&'Alt',e.shiftKey&&'Shift',e.metaKey&&'Win',t].filter(Boolean).join('+'); }
+async function salvarAtalho(k, v){ const novo={...(CFG.captura_atalhos||{}),[k]:v}; const r=await POST('config',{captura_atalhos:novo}).catch(()=>null);
+  if(!r||!r.valores){ toast('Não consegui salvar.',1); return; } CFG=r.valores; const fic=CFG.captura_atalhos[k];
+  if(v&&fic!==v) toast(`“${v}” não pode ser usado (letras e números precisam de Ctrl, Alt ou Win; e cada atalho só vale para uma ação).`,1);
+  else toast(v?`Atalho ${fic} salvo.`:'Atalho removido.'); carregarCfgCaptura(); }
+async function carregarCfgCaptura(){ let d; try{ d=await API('capturas?limite=1'); }catch(_){ return; } const el=$('#cfgCapAtalhos'); if(!el) return;
+  const at=CFG.captura_atalhos||{}, est=(d.estado||{}).atalhos||{};
+  el.innerHTML=Object.entries(d.acoes).map(([k,t])=>{ const s=est[k]; return `<div class="item"><b>${esc(t)}</b><div class="ctl"><input type="text" class="atalho" readonly data-atalho="${k}" value="${esc(at[k]||'')}" placeholder="sem atalho" title="Clique e aperte a combinação"><button class="btn" data-limpar="${k}" ${at[k]?'':'disabled'}>Limpar</button></div><small>${!at[k]?'':!CFG.captura_ativa?'atalhos desligados':s==='ok'?'<span style="color:var(--ok)">funcionando</span>':s?`<span style="color:var(--perigo)">${esc(s)}</span>`:'aguardando o ícone perto do relógio'}</small></div>`; }).join('')
+    +`<div class="item"><small style="grid-column:1/-1">Clique num campo e aperte a combinação (ex.: Ctrl+Shift+S). Esc cancela. Uma combinação que já está em uso por um atalho ativo não chega até aqui: limpe o atalho antigo primeiro.</small></div>`;
+  el.querySelectorAll('input.atalho').forEach(inp=>{ const antes=inp.value;
+    inp.onfocus=()=>{ inp.value=''; inp.placeholder='aperte as teclas…'; };
+    inp.onblur=()=>{ if(!inp.dataset.ok){ inp.value=antes; inp.placeholder='sem atalho'; } };
+    const pegar=e=>{ if(e.key==='Escape'){ inp.blur(); return; } const v=teclaAtalho(e); e.preventDefault(); e.stopPropagation(); if(!v) return; inp.dataset.ok=1; inp.value=v; inp.blur(); salvarAtalho(inp.dataset.atalho,v); };
+    inp.onkeydown=e=>{ if(e.code!=='PrintScreen') pegar(e); }; inp.onkeyup=e=>{ if(e.code==='PrintScreen') pegar(e); }; });
+  el.querySelectorAll('[data-limpar]').forEach(b=>b.onclick=()=>salvarAtalho(b.dataset.limpar,''));
+  const e=d.estado||{}, ff=$('#cfgFfmpeg');
+  if(ff) ff.innerHTML=e.baixando!=null?`<span class="mut">baixando… ${e.baixando}%</span>`:e.ffmpeg?'<span style="color:var(--ok)">instalado</span>':'<button class="btn" id="ffBaixar">Baixar agora</button>';
+  const fb=$('#ffBaixar'); if(fb) fb.onclick=()=>acao({tipo:'captura',modo:'ffmpeg'});
+  const c=CFG, up=c.captura_uploader||{}, en=$('#cfgEnvio'); if(!en) return;
+  const linhas=o=>Object.entries(o||{}).map(([k,v])=>`${k}: ${v}`).join('\n');
+  en.innerHTML=`<div class="item"><b>Para onde enviar</b><div class="ctl"><select data-cfg="captura_destino">${Object.entries(d.destinos).map(([k,t])=>`<option value="${k}" ${c.captura_destino===k?'selected':''}>${esc(t)}</option>`).join('')}</select></div><small>Catbox, Litterbox, Uguu e tmpfiles não pedem conta. Tudo o que vai para esses sites fica público para quem tiver o link: não envie nada sigiloso.</small></div>
+    ${c.captura_destino==='litterbox'?`<div class="item"><b>Apagar do Litterbox depois de</b><div class="ctl">${['1h','12h','24h','72h'].map(v=>`<label class="chip"><input type="radio" name="lt" data-cfg="captura_litter_tempo" value="${v}" ${c.captura_litter_tempo===v?'checked':''}> ${v}</label>`).join(' ')}</div><small></small></div>`:''}
+    ${c.captura_destino==='imgur'?`<div class="item"><b>Client-ID do Imgur</b><div class="ctl"><input type="text" data-cfg="captura_imgur_id" value="${esc(c.captura_imgur_id||'')}" style="width:220px"></div><small>Crie de graça em api.imgur.com/oauth2/addclient (tipo “Anonymous usage without user authorization”) e cole o Client-ID aqui.</small></div>`:''}
+    ${c.captura_destino==='personalizado'?`<div class="form" id="cfgUp"><label class="campo largo">Endereço (POST)<input type="text" data-up="url" value="${esc(up.url||'')}" placeholder="https://meusite.com/upload"></label>
+      <label class="campo">Campo do arquivo<input type="text" data-up="campo" value="${esc(up.campo||'file')}"></label>
+      <label class="campo">Onde está o link na resposta (JSON)<input type="text" data-up="resposta" value="${esc(up.resposta||'')}" placeholder="ex.: data.url (vazio = resposta inteira)"></label>
+      <label class="campo">Cabeçalhos (um por linha: Nome: valor)<textarea data-up="cabecalhos" rows="3">${esc(linhas(up.cabecalhos))}</textarea></label>
+      <label class="campo">Campos extras (um por linha: nome: valor)<textarea data-up="campos" rows="3">${esc(linhas(up.campos))}</textarea></label>
+      <small class="largo mut">Igual ao “uploader personalizado” do ShareX. Os cabeçalhos (ex.: um token) ficam só neste PC: aparecem ocultos aqui e no celular e não vão no backup. Para trocar um valor, escreva o novo no lugar dos pontos.</small></div>`:''}`;
+  en.querySelectorAll('[data-up]').forEach(i=>i.onchange=async ev=>{ ev.stopPropagation(); const pares=t=>Object.fromEntries(t.split('\n').map(l=>l.split(/:(.*)/s)).filter(p=>p[0]&&p[0].trim()).map(p=>[p[0].trim(),(p[1]||'').trim()]));
+    const v={url:en.querySelector('[data-up=url]').value.trim(), campo:en.querySelector('[data-up=campo]').value.trim(), resposta:en.querySelector('[data-up=resposta]').value.trim(),
+      cabecalhos:pares(en.querySelector('[data-up=cabecalhos]').value), campos:pares(en.querySelector('[data-up=campos]').value)};
+    const r=await POST('config',{captura_uploader:v}).catch(()=>null); if(r&&r.valores){ CFG=r.valores; toast(v.url&&!CFG.captura_uploader.url?'O endereço precisa começar com https:// ou http://.':'Configuração salva.', !!(v.url&&!CFG.captura_uploader.url)); } else toast('Não consegui salvar.',1); }); }
 async function carregarAcesso(){ try{ ACESSO=await API('acesso'); }catch(_){ return; } const a=ACESSO, el=$('#cfgAcesso'); if(!el) return;
   el.innerHTML=`<div class="item"><b>Permitir acesso pela rede de casa</b><div class="ctl"><label class="sw"><input type="checkbox" data-cfg="acesso_remoto" ${a.ativo?'checked':''} ${a.tem_senha?'':'disabled'}><span></span></label></div><small>Abra o Monitor do PC no navegador do celular (conectado no mesmo Wi-Fi). Pede senha. Só funciona em redes marcadas como “Privada” no Windows — nunca fica aberto na internet.${a.tem_senha?'':' <b>Crie uma senha primeiro.</b>'}</small></div>
     <div class="item"><b>${a.tem_senha?'Trocar a senha de acesso':'Criar senha de acesso'}</b><div class="ctl"><input type="password" id="acSenha" placeholder="mínimo 6 caracteres" autocomplete="new-password" style="width:190px"><button class="btn" id="acSalvar">Salvar senha</button></div><small>Guardada de forma irreversível (hash); nem o Monitor do PC sabe a senha.</small></div>

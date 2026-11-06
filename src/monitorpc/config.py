@@ -75,6 +75,24 @@ PADRAO = {
     "api_chave": "",              # chave para outros programas lerem a API pela rede
     "api_cors": False,            # deixa páginas web deste PC lerem a API (só leitura)
     "vps": [],                    # servidores cadastrados (sem senhas: ficam criptografadas à parte)
+    "captura_ativa": True,        # atalhos de captura de tela ligados (quem captura é o ícone da bandeja)
+    "captura_atalhos": None,      # preenchido com captura.ATALHOS_PADRAO
+    "captura_pasta": "",          # vazio = Imagens\Monitor do PC
+    "captura_nome": "%Y-%m-%d_%H-%M-%S",
+    "captura_formato": "png",
+    "captura_qualidade": 90,      # JPG
+    "captura_copiar": True,       # copiar a imagem para a área de transferência
+    "captura_salvar": True,
+    "captura_notificar": True,
+    "captura_editor": False,      # abrir no editor depois de capturar
+    "captura_enviar": False,      # enviar (upload) e copiar o link
+    "captura_destino": "catbox",
+    "captura_litter_tempo": "24h",
+    "captura_imgur_id": "",       # Client-ID do Imgur (registrado pelo usuário)
+    "captura_uploader": None,     # preenchido com envio.UPLOADER_PADRAO
+    "captura_atraso_s": 3,
+    "captura_gravar_fps": 30,
+    "captura_gravar_cursor": True,
 }
 
 OPCOES = {
@@ -85,6 +103,11 @@ OPCOES = {
     "mini_canto": ["sup_dir", "sup_esq", "inf_dir", "inf_esq", "sup_centro", "inf_centro"],
     "mini_tamanho": ["pequeno", "normal", "grande"],
     "mini_layout": ["horizontal", "vertical"],
+    "captura_formato": ["png", "jpg"],
+    "captura_destino": ["catbox", "litterbox", "uguu", "tmpfiles", "imgur", "personalizado"],
+    "captura_litter_tempo": ["1h", "12h", "24h", "72h"],
+    "captura_atraso_s": [1, 2, 3, 5, 10],
+    "captura_gravar_fps": [10, 15, 24, 30, 60],
 }
 SEGREDOS = os.path.join(BASE, "segredos.bin")
 

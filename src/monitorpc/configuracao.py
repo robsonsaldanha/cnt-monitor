@@ -14,8 +14,10 @@ NOME_RUN = "MonitorDoPC"
 
 
 def _validar(c):
-    from . import alertas
+    from . import alertas, captura, envio
     out = dict(config.PADRAO)
+    out["captura_atalhos"] = dict(captura.ATALHOS_PADRAO)
+    out["captura_uploader"] = envio.validar_uploader({})
     out["alertas"] = [dict(x) for x in alertas.PADRAO]
     out["jogo_fechar"] = []
     out["mini_itens"] = list(config.PADRAO["mini_itens"])
@@ -43,6 +45,14 @@ def _validar(c):
                 from . import vps
                 out[k] = vps.validar(v)
             continue
+        if k == "captura_atalhos":
+            if isinstance(v, dict):
+                out[k] = captura.validar_atalhos(v)
+            continue
+        if k == "captura_uploader":
+            if isinstance(v, dict):
+                out[k] = envio.validar_uploader(v)
+            continue
         if isinstance(padrao, bool):
             out[k] = bool(v)
         elif isinstance(padrao, int):
@@ -64,11 +74,21 @@ def _validar(c):
                 v = max(0, min(4000, v))
             if k == "acesso_porta":
                 v = max(1024, min(65535, v))
+            if k == "captura_qualidade":
+                v = max(50, min(100, v))
             out[k] = v
         elif isinstance(padrao, str):
             if k in config.OPCOES and v not in config.OPCOES[k]:
                 continue
-            out[k] = str(v)
+            v = str(v)
+            if k == "captura_nome":
+                v = "".join(ch for ch in v if ch not in '<>:"/\\|?*' and ord(ch) >= 32).strip(" .")[:120]
+                v = v or padrao
+            elif k == "captura_pasta":
+                v = v.strip()[:260]
+            elif k == "captura_imgur_id":
+                v = "".join(ch for ch in v if ch.isalnum())[:64]
+            out[k] = v
     return out
 
 
@@ -135,17 +155,33 @@ def aplicar_inicializacao(c=None):
 
 
 PROTEGIDAS = {"acesso_senha", "api_chave"}   # só mudam pelas funções próprias, nunca pelo formulário
+OCULTO = "••••••"   # no lugar do valor dos cabeçalhos do uploader (podem ter token)
 
 
 def salvar_publico(novos):
-    return salvar({k: v for k, v in (novos or {}).items() if k not in PROTEGIDAS})
+    novos = {k: v for k, v in (novos or {}).items() if k not in PROTEGIDAS}
+    up = novos.get("captura_uploader")
+    if isinstance(up, dict) and isinstance(up.get("cabecalhos"), dict):
+        atuais = obter("captura_uploader")["cabecalhos"]
+        cab = {}
+        for k, v in up["cabecalhos"].items():
+            if v != OCULTO:
+                cab[k] = v
+            elif k in atuais:
+                cab[k] = atuais[k]
+        novos["captura_uploader"] = {**up, "cabecalhos": cab}
+    return salvar(novos)
 
 
-def publico():
+def publico(revelar_uploader=False):
+    """Configuração sem segredos. revelar_uploader: só para o ícone (local, com token), que faz o envio."""
     c = obter()
     c["acesso_tem_senha"] = bool(c.pop("acesso_senha", ""))
     c["api_tem_chave"] = bool(c.get("api_chave"))
     c.pop("api_chave", None)
+    if not revelar_uploader:
+        up = c["captura_uploader"]
+        c["captura_uploader"] = {**up, "cabecalhos": {k: OCULTO for k in up["cabecalhos"]}}
     return c
 
 
@@ -157,13 +193,17 @@ def backup():
     c = obter()
     for k in PROTEGIDAS:
         c.pop(k, None)
+    c["captura_uploader"] = {**c["captura_uploader"], "cabecalhos": {}}
     return {"app": "monitor-pc", "tipo": "backup-configuracoes", "versao": _c.VERSAO, "criado_em": time.time(),
-            "aviso": "Senhas (acesso pelo celular, VPS) e a chave da API não vão no backup.", "config": c}
+            "aviso": "Senhas (acesso pelo celular, VPS), a chave da API e os cabeçalhos do uploader não vão no backup.",
+            "config": c}
 
 
 def restaurar(dados):
     if not isinstance(dados, dict) or dados.get("app") != "monitor-pc" or not isinstance(dados.get("config"), dict):
         return False, "Esse arquivo não é um backup do Monitor do PC."
     novos = {k: v for k, v in dados["config"].items() if k in config.PADRAO and k not in PROTEGIDAS}
+    if isinstance(novos.get("captura_uploader"), dict):   # o backup não leva os cabeçalhos: mantém os deste PC
+        novos["captura_uploader"] = {**novos["captura_uploader"], "cabecalhos": obter("captura_uploader")["cabecalhos"]}
     salvar(novos)
     return True, f"{len(novos)} configurações restauradas. Senhas não fazem parte do backup: cadastre de novo se precisar."
