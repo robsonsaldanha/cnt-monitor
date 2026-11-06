@@ -594,8 +594,8 @@ class Motor:
                 except Exception:
                     continue
             self._particoes = parts
-        for titulo, msg in self.alertas.avaliar(c["alertas"], e, self._particoes):
-            banco.gravar_alerta(time.time(), titulo, titulo.replace("Monitor do PC — ", ""), msg)
+        for regra, titulo, msg in self.alertas.avaliar(c["alertas"], e, self._particoes):
+            banco.gravar_alerta(time.time(), regra, titulo.replace("Monitor do PC — ", ""), msg)
             if time.time() - self.bandeja_ts < 40:
                 self.fila.put({"tipo": "notificar", "titulo": titulo, "msg": msg, "id": uuid.uuid4().hex[:12]})
 
@@ -1113,7 +1113,10 @@ class Motor:
             item = vps.validar([a.get("vps") or {}])
             if not item:
                 return {"ok": False, "msg": "Preencha o endereço do servidor."}
-            return res(self.vps.testar(item[0], a.get("segredo") or {}))
+            item = item[0]
+            antigo = next((v for v in configuracao.obter("vps") if v["id"] == item["id"]), None)
+            esperado = antigo["fingerprint"] if antigo and (antigo["host"], antigo["porta"]) == (item["host"], item["porta"]) else ""
+            return res(self.vps.testar(item, a.get("segredo") or {}, esperado))
         if tipo == "vps_esquecer":
             vid = a.get("id")
             configuracao.salvar({"vps": [dict(v, fingerprint="") if v["id"] == vid else v for v in configuracao.obter("vps")]})

@@ -1421,7 +1421,7 @@ function blocoVps(v){ const d=v.dados||{}, on=v.online, sv=d.servicos||[], ct=d.
   return `<section class="painel vps-bloco">
   <div class="cab"><span class="ponto ${on?'on':''}" title="${on?'online':'sem conexão'}"></span><h2>${esc(v.nome)}</h2>
     <span class="desc">${esc(v.usuario)}@${esc(v.host)}${v.porta!==22?':'+v.porta:''}${on&&d.sistema?' — '+esc(d.sistema):''}${on?', ligado há '+fUp(d.uptime):''}</span>
-    <div class="dir"><span class="desc">${v.ultimo?'lido '+quando(v.ultimo):''}</span><button class="btn" data-vped="${esc(v.id)}">Editar</button></div></div>
+    <div class="dir"><span class="desc">${v.ultimo?'lido '+quando(v.ultimo):''}</span><button class="btn" data-vpab="${esc(v.id)}">Detalhes</button><button class="btn" data-vped="${esc(v.id)}">Editar</button></div></div>
   ${!on?`<div class="pad" style="padding-bottom:0"><div class="aviso erro">${v.ativo?esc(v.erro||'Sem conexão.'):'Monitoramento desligado para este servidor.'}</div></div>`:''}
   ${on||d.mem_total?`<div class="vps-corpo">
     <div><div class="medidores">
@@ -1440,7 +1440,7 @@ function blocoVps(v){ const d=v.dados||{}, on=v.online, sv=d.servicos||[], ct=d.
       ${v.docker?`<h3>Containers${ctParado?` <span class="tag ruim">${ctParado} parado(s)</span>`:''}</h3>${ct.map(c=>linha(esc(c.nome),c.rodando?'rodando':'parado',c.rodando,esc(c.imagem))).join('')||'<div class="mut">Nenhum container (ou o usuário não tem acesso ao Docker).</div>'}`:''}
       <h3>Sites${urlFora?` <span class="tag ruim">${urlFora} fora do ar</span>`:''}</h3>${us.map(u=>linha(esc(u.url.replace(/^https?:\/\//,'')),u.ok?u.codigo+' · '+u.ms+' ms':esc(String(u.codigo||'erro')),u.ok)).join('')||'<div class="mut">Nenhum site cadastrado.</div>'}</div>
   </div>`:''}</section>`; }
-$('#vpsLista').addEventListener('click',e=>{ const b=e.target.closest('[data-vped]'); if(b) formVps(VPS.find(x=>x.id===b.dataset.vped)); });
+$('#vpsLista').addEventListener('click',e=>{ const ab=e.target.closest('[data-vpab]'); if(ab){ abrirVps(ab.dataset.vpab); return; } const b=e.target.closest('[data-vped]'); if(b) formVps(VPS.find(x=>x.id===b.dataset.vped)); });
 $('#vpsNovo').onclick=()=>formVps(null);
 function formVps(v){ VPS_FORM=v||{}; const f=$('#vpsForm'); f.hidden=false; const x=v||{porta:22,usuario:'root',auth:'senha',intervalo_s:30,servicos:[],urls:[],docker:false,ativo:true,alerta_offline:true,alerta_disco:90,alerta_cpu:0,alerta_mem:0,alerta_servicos:true,alerta_urls:true};
   const sw=(id,on,t)=>`<label class="chk" style="border:0;padding:0"><label class="sw"><input type="checkbox" id="${id}" ${on?'checked':''}><span></span></label>${t}</label>`;

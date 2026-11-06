@@ -64,7 +64,7 @@ class Alertas:
         self._abertos = set()
 
     def avaliar(self, regras, e, particoes):
-        """Devolve [(titulo, msg)] dos alertas que dispararam agora."""
+        """Devolve [(id_da_regra, titulo, msg)] dos alertas que dispararam agora."""
         t = time.time()
         disparos = []
         progs = {g["nome"]: g for g in e.get("programas", []) if not g.get("outros")}
@@ -127,4 +127,4 @@ class Alertas:
         titulo = "Monitor do PC — " + descrever(r)
         self.historico.append({"ts": t, "id": r["id"], "titulo": descrever(r), "msg": msg})
         self.historico = self.historico[-200:]
-        return titulo, msg
+        return r["id"], titulo, msg

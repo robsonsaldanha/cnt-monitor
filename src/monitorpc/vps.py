@@ -105,7 +105,7 @@ def validar(lista):
                 "ativo": bool(v.get("ativo", True)),
                 "fingerprint": str(v.get("fingerprint") or "")[:120],
                 "alerta_offline": bool(v.get("alerta_offline", True)),
-                "alerta_disco": max(0, min(100, int(v.get("alerta_disco") or 90))),
+                "alerta_disco": max(0, min(100, int(90 if v.get("alerta_disco") is None else v["alerta_disco"]))),
                 "alerta_cpu": max(0, min(100, int(v.get("alerta_cpu") or 0))),
                 "alerta_mem": max(0, min(100, int(v.get("alerta_mem") or 0))),
                 "alerta_servicos": bool(v.get("alerta_servicos", True)),
@@ -248,14 +248,12 @@ class Servidor:
 
         class Politica(paramiko.MissingHostKeyPolicy):
             def missing_host_key(self, client, hostname, key):
-                fp = "SHA256:" + base64.b64encode(hashlib.sha256(key.asbytes()).digest()).decode().rstrip("=")
+                fp = _impressao(key)
                 if not srv.cfg.get("fingerprint"):
                     srv.ger.salvar_fingerprint(srv.cfg["id"], fp)
                     srv.cfg["fingerprint"] = fp
                 elif srv.cfg["fingerprint"] != fp:
-                    raise paramiko.SSHException(
-                        f"A identidade do servidor mudou ({fp}). Pode ser reinstalação da VPS ou um ataque. "
-                        "Se foi você que reinstalou, use “Esquecer identidade” e conecte de novo.")
+                    raise paramiko.SSHException(_msg_identidade(fp))
 
         c = paramiko.SSHClient()
         c.set_missing_host_key_policy(Politica())
@@ -372,6 +370,15 @@ class Servidor:
                 "urls_status": self.urls, "serie": list(self.serie)[-240:], "tem_senha": bool(segredo(v["id"]))}
 
 
+def _impressao(key):
+    return "SHA256:" + base64.b64encode(hashlib.sha256(key.asbytes()).digest()).decode().rstrip("=")
+
+
+def _msg_identidade(fp):
+    return (f"A identidade do servidor mudou ({fp}). Pode ser reinstalação da VPS ou um ataque. "
+            "Se foi você que reinstalou, use “Esquecer identidade” e conecte de novo.")
+
+
 def carregar_chave(texto, frase=None):
     import paramiko
     erros = []
@@ -433,11 +440,18 @@ class Gerenciador:
                                 "dados": {}, "serie": [], "urls_status": [], "tem_senha": bool(segredo(v["id"]))})
             return out
 
-    def testar(self, v, seg):
-        """Testa a conexão sem salvar (usa os dados digitados)."""
+    def testar(self, v, seg, esperado=""):
+        """Testa a conexão sem salvar (usa os dados digitados). Com `esperado` (identidade já gravada),
+        recusa um servidor diferente antes de enviar a senha/chave."""
         import paramiko
+
+        class Politica(paramiko.MissingHostKeyPolicy):
+            def missing_host_key(self, client, hostname, key):
+                if esperado and _impressao(key) != esperado:
+                    raise paramiko.SSHException(_msg_identidade(_impressao(key)))
+
         c = paramiko.SSHClient()
-        c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        c.set_missing_host_key_policy(Politica())
         kw = {"hostname": v["host"], "port": v["porta"], "username": v["usuario"], "timeout": 12, "banner_timeout": 12,
               "auth_timeout": 12, "look_for_keys": False, "allow_agent": False}
         try:
@@ -446,8 +460,7 @@ class Gerenciador:
             else:
                 kw["password"] = seg.get("senha") or segredo(v["id"]).get("senha", "")
             c.connect(**kw)
-            key = c.get_transport().get_remote_server_key()
-            fp = "SHA256:" + base64.b64encode(hashlib.sha256(key.asbytes()).digest()).decode().rstrip("=")
+            fp = _impressao(c.get_transport().get_remote_server_key())
             _i, o, _e = c.exec_command("hostname; (. /etc/os-release 2>/dev/null; echo \"$PRETTY_NAME\"); nproc", timeout=15)
             info = o.read().decode("utf-8", "replace").split("\n")
             return True, f"Conectou em {info[0]} ({info[1] if len(info) > 1 else ''}, {info[2] if len(info) > 2 else '?'} núcleos). Identidade: {fp}"

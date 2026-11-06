@@ -8,6 +8,7 @@
 """
 import os
 import json
+import math
 import time
 import hashlib
 import secrets
@@ -43,6 +44,33 @@ def confere_senha(senha, guardado):
 
 SESSOES = {}          # token -> expira
 TENTATIVAS = {}       # ip -> [ts...]
+
+
+def _limpar_sessoes(t):
+    """Descarta sessões vencidas e IPs sem tentativa recente (senão os dicionários só crescem)."""
+    for tok, expira in list(SESSOES.items()):
+        if expira <= t:
+            SESSOES.pop(tok, None)
+    for ip, ts in list(TENTATIVAS.items()):
+        if not any(t - x < 300 for x in ts):
+            TENTATIVAS.pop(ip, None)
+
+
+class ParamInvalido(ValueError):
+    """Parâmetro da URL inválido: vira resposta 400, não 500."""
+
+
+def _num(q, nome, padrao, tipo=float):
+    bruto = q.get(nome)
+    if bruto is None or bruto == "":
+        return padrao
+    try:
+        v = float(bruto)
+    except ValueError:
+        raise ParamInvalido(f"parâmetro '{nome}' inválido: use um número") from None
+    if not math.isfinite(v):
+        raise ParamInvalido(f"parâmetro '{nome}' inválido: use um número")
+    return int(v) if tipo is int else v
 LOGIN_HTML = """<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Monitor do PC — entrar</title><style>
 :root{--bg:#101418;--p:#171c22;--b:#29313b;--t:#e6ebf0;--t2:#9aa6b2;--a:#5aa9e6;--r:#ef5f5f}
@@ -148,9 +176,9 @@ def api_v1(motor, caminho, q):
             return h["gpus"], 200
         return h, 200
     if rec == "historico":
-        return banco.historico(min(720.0, float(q.get("horas", 1))), q.get("programa") or None), 200
+        return banco.historico(min(720.0, _num(q, "horas", 1)), q.get("programa") or None), 200
     if rec == "lentidao":
-        return banco.lentidao(int(time.time() - float(q.get("dias", 7)) * 86400)), 200
+        return banco.lentidao(int(time.time() - _num(q, "dias", 7) * 86400)), 200
     if rec == "alertas":
         return banco.listar_alertas(), 200
     if rec == "vazamentos":
@@ -264,6 +292,8 @@ def fabrica(motor, TOKEN, remoto=False):
                 return self._get_api(r, q)
             except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
                 pass
+            except ParamInvalido as e:
+                return self._json({"erro": str(e)}, 400)
             except Exception as e:  # noqa: BLE001
                 import traceback
                 traceback.print_exc()
@@ -284,9 +314,9 @@ def fabrica(motor, TOKEN, remoto=False):
             if r == "/api/processos":
                 return self._json(m.processos())
             if r == "/api/serie":
-                return self._json(m.serie_curta(float(q.get("seg", 300))))
+                return self._json(m.serie_curta(_num(q, "seg", 300)))
             if r == "/api/processo":
-                return self._json(m.processo(int(q.get("pid", 0))))
+                return self._json(m.processo(_num(q, "pid", 0, int)))
             if r == "/api/programa":
                 return self._json(m.programa(q.get("nome", "")))
             if r == "/api/rede":
@@ -296,20 +326,20 @@ def fabrica(motor, TOKEN, remoto=False):
             if r == "/api/inicializacao":
                 return self._json(m.inicializacao())
             if r == "/api/historico":
-                return self._json(banco.historico(float(q.get("horas", 1)), q.get("programa") or None))
+                return self._json(banco.historico(_num(q, "horas", 1), q.get("programa") or None))
             if r == "/api/temps_hist":
-                return self._json(banco.historico_temps(float(q.get("horas", 1))))
+                return self._json(banco.historico_temps(_num(q, "horas", 1)))
             if r == "/api/momento":
-                return self._json(banco.momento(int(float(q.get("ts", 0)))))
+                return self._json(banco.momento(_num(q, "ts", 0, int)))
             if r == "/api/lentidao":
-                dias = float(q.get("dias", 7))
+                dias = _num(q, "dias", 7)
                 c = configuracao.obter()
                 return self._json({"episodios": banco.lentidao(int(time.time() - dias * 86400)),
                                    "limiar_mem": c["limiar_mem"], "limiar_cpu": c["limiar_cpu"],
                                    "limiar_temp": c["limiar_temp"], "banco": banco.info()})
             if r == "/api/relatorio":
-                ate = int(float(q.get("ate", time.time())))
-                desde = int(float(q.get("desde", ate - 86400)))
+                ate = _num(q, "ate", int(time.time()), int)
+                desde = _num(q, "desde", ate - 86400, int)
                 rel = banco.relatorio(desde, ate)
                 rel["alertas"] = [a for a in banco.listar_alertas(500) if desde <= a["ts"] <= ate]
                 rel["vazamentos"] = m.vazamentos
@@ -365,7 +395,7 @@ def fabrica(motor, TOKEN, remoto=False):
             if r == "/api/vps":
                 return self._json(m.vps.estado(configuracao.obter("vps")))
             if r == "/api/vps/hist":
-                return self._json(banco.vps_historico(q.get("id", ""), float(q.get("horas", 24))))
+                return self._json(banco.vps_historico(q.get("id", ""), _num(q, "horas", 24)))
             if r == "/api/acesso":
                 c = configuracao.obter()
                 ips = ips_rede()
@@ -386,13 +416,18 @@ def fabrica(motor, TOKEN, remoto=False):
             if r == "/api/fila":
                 if remoto or not self._pode_alterar():
                     return self._json({"erro": "não autorizado"}, 403)
-                return self._json({"acoes": m.pegar_fila(min(25.0, float(q.get("espera", 20))))})
+                return self._json({"acoes": m.pegar_fila(min(25.0, _num(q, "espera", 20)))})
             return self._json({"erro": "não encontrado"}, 404)
 
         # ---- POST
         def do_POST(self):
             r = urlparse(self.path).path
-            n = int(self.headers.get("Content-Length", 0) or 0)
+            try:
+                n = int(self.headers.get("Content-Length", 0) or 0)
+            except ValueError:
+                return self._json({"erro": "pedido inválido"}, 400)
+            if n < 0:
+                return self._json({"erro": "pedido inválido"}, 400)
             if n > 2_000_000:
                 return self._json({"erro": "pedido grande demais"}, 413)
             bruto = self.rfile.read(n) if n else b""
@@ -451,6 +486,7 @@ def fabrica(motor, TOKEN, remoto=False):
         def _login(self, bruto):
             ip = self.client_address[0]
             t = time.time()
+            _limpar_sessoes(t)
             ts = [x for x in TENTATIVAS.get(ip, []) if t - x < 300]
             TENTATIVAS[ip] = ts
             if len(ts) >= 5:
