@@ -2,7 +2,7 @@
 import os
 import sys
 
-VERSAO = "2.3.2"
+VERSAO = "2.3.3"
 WIN = os.name == "nt"
 
 if os.environ.get("MONITORPC_DADOS"):
@@ -81,11 +81,24 @@ PADRAO = {
     "captura_nome": "%Y-%m-%d_%H-%M-%S",
     "captura_formato": "png",
     "captura_qualidade": 90,      # JPG
+    # tarefas pós-captura (na ordem em que rodam; na área de transferência fica a última)
     "captura_copiar": True,       # copiar a imagem para a área de transferência
     "captura_salvar": True,
+    "captura_perguntar": False,   # "Salvar como…": perguntar pasta e nome a cada captura
+    "captura_copiar_caminho": False,
+    "captura_mostrar_pasta": False,  # abrir o Explorer com o arquivo selecionado
+    "captura_ocr_auto": False,    # copiar o texto da imagem (OCR)
     "captura_notificar": True,
     "captura_editor": False,      # abrir no editor depois de capturar
     "captura_enviar": False,      # enviar (upload) e copiar o link
+    # tarefas pós-envio
+    "captura_envio_copiar": True,
+    "captura_envio_formato": "url",
+    "captura_envio_abrir": False,  # abrir o link no navegador
+    "captura_envio_notificar": True,
+    # seleção de área
+    "captura_anotar": True,       # barra de anotação (setas, texto, desfocar…) antes de confirmar a região
+    "captura_lupa": True,
     "captura_destino": "catbox",
     "captura_litter_tempo": "24h",
     "captura_imgur_id": "",       # Client-ID do Imgur (registrado pelo usuário)
@@ -106,6 +119,7 @@ OPCOES = {
     "captura_formato": ["png", "jpg"],
     "captura_destino": ["catbox", "litterbox", "uguu", "tmpfiles", "imgur", "personalizado"],
     "captura_litter_tempo": ["1h", "12h", "24h", "72h"],
+    "captura_envio_formato": ["url", "markdown", "html", "bbcode"],
     "captura_atraso_s": [1, 2, 3, 5, 10],
     "captura_gravar_fps": [10, 15, 24, 30, 60],
 }

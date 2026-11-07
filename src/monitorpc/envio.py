@@ -107,6 +107,25 @@ def _json(bruto):
         raise RuntimeError("resposta inesperada do site: " + bruto[:120].decode("utf-8", "replace")) from None
 
 
+FORMATOS = {"url": "Só o link", "markdown": "Markdown", "html": "HTML", "bbcode": "BBCode (fóruns)"}
+
+
+def formatar_link(url, formato, caminho=""):
+    """Texto copiado depois do envio. Imagens viram imagem embutida; vídeos e outros, um link com o nome do arquivo."""
+    import html
+    nome = os.path.basename(caminho or "") or "captura"
+    img = nome.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"))
+    if formato == "markdown":
+        rot = nome.replace("[", "(").replace("]", ")")
+        return f"![{rot}]({url})" if img else f"[{rot}]({url})"
+    if formato == "html":
+        u, n = html.escape(url, quote=True), html.escape(nome, quote=True)
+        return f'<img src="{u}" alt="{n}">' if img else f'<a href="{u}">{n}</a>'
+    if formato == "bbcode":
+        return f"[img]{url}[/img]" if img else f"[url={url}]{nome}[/url]"
+    return url
+
+
 def enviar(caminho, c):
     """Envia o arquivo para o destino escolhido nas Configurações e devolve o link. Erro: RuntimeError."""
     destino = c.get("captura_destino", "catbox")

@@ -571,10 +571,14 @@ input.atalho{width:170px;text-align:center;cursor:pointer}
 
 <section id="v-capturas" hidden>
   <h1>Captura de tela</h1><p class="sub">Prints, gravação de tela, texto da tela (OCR) e envio com link — pelos atalhos de teclado, pelo menu do ícone perto do relógio ou pelos botões abaixo. Clique numa captura para ver as opções; clique duas vezes para editar.</p>
+  <div class="seg" id="capAbas" style="margin-bottom:14px"><button data-a="capturar" aria-pressed="true">Capturar e histórico</button><button data-a="opcoes" aria-pressed="false">Opções</button></div>
+  <div id="capPainel">
   <div id="capAvisos"></div>
   <div class="painel"><div class="cab"><h2>Capturar</h2><span class="desc">Pelos botões, a janela do Monitor some antes da captura.</span><div class="dir"><button class="btn" id="capCfg">Atalhos e opções</button></div></div><div class="cap-bts" id="capBts"></div></div>
   <div class="rel-cab secao"><h2 style="margin:0">Histórico</h2><span class="mut" id="capTot"></span><input type="search" id="bCap" placeholder="Buscar pelo nome" style="margin-left:auto;width:220px"></div>
   <div class="cap-grade" id="capLista"><div class="vazio">Carregando…</div></div>
+  </div>
+  <div class="cfg" id="capOpcoes" hidden></div>
 </section>
 
 <section id="v-editor" hidden>
@@ -770,13 +774,14 @@ const eixoN=v=>CFG.rede_em_bits?(v*8>=1e6?nf1.format(v*8/1e6)+' Mb/s':nf0.format
 
 /* =================== navegação =================== */
 const VISTAS=['geral','recurso','programas','processos','capturas','editor','jogo','otimizar','regras','inicializacao','energia','servicos','rede','hardware','historico','lentidao','alertas','relatorio','comparar','vps','config'];
-let vista='geral', recurso='cpu', ED_ID=0;
+let vista='geral', recurso='cpu', ED_ID=0, CAP_ABA='capturar';
 function ir(h){ h=(h||'geral').replace(/^#/,''); let v=h, r=null; if(h.startsWith('recurso/')){ v='recurso'; r=h.split('/')[1]; }
+  if(h==='capturas'||h.startsWith('capturas/')){ v='capturas'; CAP_ABA=h==='capturas/opcoes'?'opcoes':'capturar'; }
   if(h.startsWith('editor/')){ v='editor'; ED_ID=parseInt(h.split('/')[1])||0; } if(v==='editor'&&!ED_ID) v='capturas'; if(!VISTAS.includes(v)) v='geral';
   if(v==='recurso' && r==='temp'){ v='hardware'; }
   vista=v; if(r) recurso=r; for(const x of VISTAS) $('#v-'+x).hidden = x!==v;
   document.querySelectorAll('#nav button[data-v]').forEach(b=>{ if(b.dataset.v===v||(v==='recurso'&&b.dataset.v==='geral')||(v==='editor'&&b.dataset.v==='capturas')) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
-  const alvo = v==='recurso'?'recurso/'+recurso:v==='editor'?'editor/'+ED_ID:v; if(location.hash!=='#'+alvo) history.replaceState(null,'','#'+alvo);
+  const alvo = v==='recurso'?'recurso/'+recurso:v==='editor'?'editor/'+ED_ID:v==='capturas'&&CAP_ABA==='opcoes'?'capturas/opcoes':v; if(location.hash!=='#'+alvo) history.replaceState(null,'','#'+alvo);
   scrollTo(0,0); entrar(); }
 $('#nav').addEventListener('click',e=>{ const b=e.target.closest('button[data-v]'); if(b) ir(b.dataset.v); });
 addEventListener('hashchange',()=>ir(location.hash));
@@ -811,7 +816,7 @@ function entrar(){ fecharMenu();
   if(vista==='historico') vHistorico(); if(vista==='lentidao') vLentidao(); if(vista==='relatorio') vRelatorio(); if(vista==='config') vConfig();
   if(vista==='jogo') vJogo(true); if(vista==='energia') vEnergia(); if(vista==='servicos') vServicos(); if(vista==='alertas') vAlertas();
   if(vista==='otimizar') vOtimizar(); if(vista==='regras') vRegras(); if(vista==='vps') vVps(true); if(vista==='comparar') vComparar();
-  if(vista==='capturas') vCapturas(true); if(vista==='editor') vEditor(); }
+  if(vista==='capturas'){ abaCaptura(CAP_ABA); vCapturas(true); } if(vista==='editor') vEditor(); }
 async function cicloStatus(){ try{ STATUS=await API('status'); avisos(); $('#rodInfo').innerHTML=`v${esc(STATUS.versao)} · histórico de ${STATUS.banco.desde?dur(Date.now()/1000-STATUS.banco.desde):'0 min'}<br>${fB(STATUS.banco.tamanho)} em disco`; }catch(_){} }
 function avisos(){ const a=[]; if(!STATUS) return;
   if(!STATUS.admin) a.push(['erro','O serviço não está rodando como administrador — rede por programa e temperatura ficam limitadas.']);
@@ -1196,10 +1201,14 @@ async function vConfig(){ try{ CFG_ATU=await API('atualizacao'); }catch(_){} let
   $('#atuInst').onclick=async()=>{ if(!await confirmar('Atualizar agora?','O Monitor do PC vai baixar a versão nova, conferir a assinatura e instalar. A janela fecha e volta em alguns segundos.','Atualizar')) return; const r=await POST('acao',{tipo:'atualizar_instalar'}).catch(()=>null); if(r) toast(r.msg,!r.ok); };
   ligarCfgExtras();
   $('#apagarHist').onclick=async()=>{ if(!await confirmar('Apagar todo o histórico?','Os gráficos, relatórios e momentos de lentidão guardados serão apagados. Não dá para desfazer.','Apagar',1)) return; const r=await POST('historico/apagar').catch(()=>null); toast(r&&r.ok?'Histórico apagado.':'Não consegui apagar.',!(r&&r.ok)); }; }
-$('#cfgCorpo').addEventListener('change',async e=>{ const el=e.target.closest('[data-cfg],[data-mini]'); if(!el) return; let k=el.dataset.cfg;
+async function salvarCampoCfg(e, depois){ const el=e.target.closest('[data-cfg],[data-mini]'); if(!el) return; let k=el.dataset.cfg;
   let v = el.type==='checkbox'?el.checked:el.type==='number'?+el.value:el.value; if(el.tagName==='SELECT' && /^\d+$/.test(v)) v=+v;
   if(el.dataset.mini){ const l=[...document.querySelectorAll('[data-mini]')].filter(x=>x.checked).map(x=>x.dataset.mini); k='mini_itens'; v=l; }
-  const r=await POST('config',{[k]:v}).catch(()=>null); if(r&&r.valores){ CFG=r.valores; aplicarTema(); toast('Configuração salva.'); } else toast(r&&r.erro?r.erro:'Não consegui salvar.',1); vConfig(); });
+  const r=await POST('config',{[k]:v}).catch(()=>null);
+  if(r&&r.valores){ CFG=r.valores; aplicarTema(); if(k==='captura_pasta'&&String(v).trim()&&!CFG.captura_pasta) toast('Use um caminho completo, como D:\\Prints (ou o botão “Escolher pasta…”).',1); else toast('Configuração salva.'); }
+  else toast(r&&r.erro?r.erro:'Não consegui salvar.',1); depois(); }
+$('#cfgCorpo').addEventListener('change',e=>salvarCampoCfg(e,vConfig));
+$('#capOpcoes').addEventListener('change',e=>salvarCampoCfg(e,renderCapOpcoes));
 
 
 /* =================== MODO JOGO =================== */
@@ -1664,7 +1673,7 @@ async function vCapturas(primeira){ let d; try{ d=await API('capturas'); }catch(
   if(!primeira && assin===CAP_ASSIN) return; CAP_ASSIN=assin; CAPS=d; renderCapturas(); }
 function renderCapturas(){ if(!CAPS) return; const d=CAPS, e=d.estado||{}, est=e.atalhos||{}, ata=CFG.captura_atalhos||{}, grav=e.gravando;
   const av=[];
-  if(!CFG.captura_ativa) av.push(['','Os atalhos de captura estão desligados (Configurações › Captura de tela). Os botões abaixo e o menu do ícone continuam funcionando.']);
+  if(!CFG.captura_ativa) av.push(['','Os atalhos de captura estão desligados (aba Opções). Os botões abaixo e o menu do ícone continuam funcionando.']);
   const ruins=Object.entries(est).filter(([_,v])=>v!=='ok'); if(CFG.captura_ativa && ruins.length) av.push(['erro','Atalho não registrado: '+ruins.map(([k,v])=>`<b>${esc(ata[k]||k)}</b> (${esc(d.acoes[k]||k)}) — ${esc(v)}`).join('; ')+'. Feche o programa que usa a mesma tecla (ShareX, Lightshot, Ferramenta de Captura) ou troque o atalho.']);
   if(e.baixando!=null) av.push(['',`Baixando o ffmpeg para gravar a tela… ${e.baixando}%`]);
   if(grav) av.push(['forte',`Gravando ${grav==='gif'?'GIF':'vídeo'} há ${dur(Date.now()/1000-(e.gravando_desde||Date.now()/1000))}. Aperte o mesmo atalho ou o botão “Parar” para terminar.`]);
@@ -1676,7 +1685,11 @@ function renderCapturas(){ if(!CAPS) return; const d=CAPS, e=d.estado||{}, est=e
     <div class="inf"><b title="${esc(x.caminho)}">${esc(exeNome(x.caminho))}</b>${x.url?'<span class="tag on">link</span>':''}</div><div class="inf2">${quando(x.ts)}${x.largura?` · ${x.largura}×${x.altura}`:''} · ${fB(x.bytes)}</div></button>`).join('')
     ||`<div class="vazio">${f?'Nada encontrado.':'Nenhuma captura ainda. Use os botões acima ou o atalho '+esc(ata.regiao||'de região')+'.'}</div>`; }
 $('#capBts').addEventListener('click',e=>{ const b=e.target.closest('[data-cap]'); if(b) acao({tipo:'captura',modo:b.dataset.cap}); });
-$('#capCfg').onclick=()=>{ ir('config'); setTimeout(()=>{ const s=$('#cfgCap'); if(s) s.scrollIntoView({block:'start'}); },400); };
+$('#capCfg').onclick=()=>abaCaptura('opcoes');
+seg($('#capAbas'), d=>abaCaptura(d.a));
+function abaCaptura(a){ CAP_ABA=a; $('#capAbas').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.a===a));
+  $('#capPainel').hidden=a!=='capturar'; $('#capOpcoes').hidden=a!=='opcoes'; if(a==='opcoes') renderCapOpcoes();
+  const alvo=a==='opcoes'?'#capturas/opcoes':'#capturas'; if(vista==='capturas'&&location.hash!==alvo) history.replaceState(null,'',alvo); }
 $('#bCap').addEventListener('input',renderCapturas);
 const capItem = el => CAPS && CAPS.itens.find(x=>x.id===+el.dataset.id);
 $('#capLista').addEventListener('click',e=>{ const b=e.target.closest('.cap'); if(b) menuCaptura(e, capItem(b)); });
@@ -1805,25 +1818,7 @@ function cfgExtras(){ const c=CFG, sel=(k,op)=>`<select data-cfg="${k}">${Object
     <div class="item"><b>Fundo escuro</b><div class="ctl">${sw('mini_fundo')}</div><small>Desligado: só os números aparecem, sem a caixa atrás.</small></div>
     <div class="item"><b>Opacidade</b><div class="ctl"><input type="range" min="30" max="100" step="5" value="${c.mini_opacidade}" data-cfg="mini_opacidade"> <span class="n">${c.mini_opacidade}%</span></div><small></small></div></div>`;
   if(REMOTO) return h;
-  const txt=(k,ph,w)=>`<input type="text" data-cfg="${k}" value="${esc(c[k]||'')}" placeholder="${esc(ph||'')}" style="width:${w||260}px">`;
-  h+=`<h2 class="secao" id="cfgCap">Captura de tela</h2><div class="painel">
-    <div class="item"><b>Atalhos de teclado ligados</b><div class="ctl">${sw('captura_ativa')}</div><small>Quem captura é o ícone perto do relógio: ele precisa estar aberto. Se algum atalho usar a tecla Print Screen, o Monitor desliga a opção do Windows que abre a Ferramenta de Captura com essa tecla (só no seu usuário) e devolve quando você tirar o Print Screen dos atalhos ou fechar o ícone.</small></div>
-    <div id="cfgCapAtalhos"><div class="vazio">Carregando os atalhos…</div></div></div>
-  <h2 class="secao">Depois de capturar</h2><div class="painel">
-    <div class="item"><b>Copiar a imagem</b><div class="ctl">${sw('captura_copiar')}</div><small>Fica pronta para colar (Ctrl+V) em qualquer programa.</small></div>
-    <div class="item"><b>Salvar em arquivo</b><div class="ctl">${sw('captura_salvar')}</div><small>Desligado: a captura fica só no histórico (numa pasta interna).</small></div>
-    <div class="item"><b>Pasta</b><div class="ctl">${txt('captura_pasta','Imagens\\Monitor do PC',300)}</div><small>Deixe vazio para usar a pasta Imagens\\Monitor do PC. Use um caminho completo (ex.: D:\\Prints).</small></div>
-    <div class="item"><b>Nome do arquivo</b><div class="ctl">${txt('captura_nome','%Y-%m-%d_%H-%M-%S',220)}</div><small>Data e hora: %Y ano, %m mês, %d dia, %H hora, %M minuto, %S segundo. Se o nome já existir, ganha _2, _3…</small></div>
-    <div class="item"><b>Formato</b><div class="ctl">${sel('captura_formato',{png:'PNG (sem perda)',jpg:'JPG (menor)'})} ${num('captura_qualidade',50,100)}<span class="mut2">qualidade JPG</span></div><small></small></div>
-    <div class="item"><b>Mostrar aviso perto do relógio</b><div class="ctl">${sw('captura_notificar')}</div><small></small></div>
-    <div class="item"><b>Abrir no editor</b><div class="ctl">${sw('captura_editor')}</div><small>Abre a janela do Monitor com a captura pronta para marcar setas, textos, números, desfocar e recortar.</small></div>
-    <div class="item"><b>Enviar e copiar o link</b><div class="ctl">${sw('captura_enviar')}</div><small>Manda a captura para o site escolhido abaixo e copia o link (no lugar da imagem). Vale também para vídeos e GIFs.</small></div>
-    <div class="item"><b>Atraso da “região com atraso”</b><div class="ctl">${sel('captura_atraso_s',{1:'1 s',2:'2 s',3:'3 s',5:'5 s',10:'10 s'})}</div><small>Tempo para abrir um menu ou passar o mouse antes de congelar a tela.</small></div></div>
-  <h2 class="secao">Gravação de tela</h2><div class="painel" id="cfgGrav">
-    <div class="item"><b>Quadros por segundo</b><div class="ctl">${sel('captura_gravar_fps',{10:'10',15:'15',24:'24',30:'30',60:'60'})}</div><small>O GIF sai sempre com 15 quadros por segundo e no máximo 960 px de largura, para ficar leve.</small></div>
-    <div class="item"><b>Mostrar o mouse no vídeo</b><div class="ctl">${sw('captura_gravar_cursor')}</div><small></small></div>
-    <div class="item"><b>ffmpeg (gravador)</b><div class="ctl" id="cfgFfmpeg"><span class="mut">—</span></div><small>A gravação usa o ffmpeg, baixado do GitHub na primeira gravação (cerca de 90 MB) com a soma de verificação conferida. Se já houver um ffmpeg no PATH, ele é usado.</small></div></div>
-  <h2 class="secao">Envio (upload)</h2><div class="painel" id="cfgEnvio"><div class="vazio">Carregando…</div></div>`;
+  h+=`<h2 class="secao">Captura de tela</h2><div class="painel"><div class="item"><b>Atalhos, pasta, tarefas pós-captura e pós-envio</b><div class="ctl"><button class="btn" id="cfgIrCap">Abrir as opções de captura</button></div><small>As opções de captura ficam na página Captura de tela › Opções (e as principais também no menu do ícone perto do relógio).</small></div></div>`;
   h+=`<h2 class="secao">Acesso pelo celular</h2><div class="painel" id="cfgAcesso"><div class="vazio">Carregando…</div></div>
   <h2 class="secao">API para outros programas</h2><div class="painel" id="cfgApi"></div>
   <h2 class="secao">Backup das configurações</h2><div class="painel">
@@ -1832,12 +1827,60 @@ function cfgExtras(){ const c=CFG, sel=(k,op)=>`<select data-cfg="${k}">${Object
   return h; }
 function ligarCfgExtras(){ const r=document.querySelector('[data-cfg="mini_opacidade"]'); if(r) r.oninput=()=>{ r.nextElementSibling.textContent=r.value+'%'; };
   if(REMOTO) return;
-  carregarAcesso(); carregarCfgCaptura();
+  carregarAcesso(); $('#cfgIrCap').onclick=()=>ir('capturas/opcoes');
   $('#bkSalvar').onclick=async()=>{ const d=await API('backup').catch(()=>null); if(!d){ toast('Não consegui gerar o backup.',1); return; }
     const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,1)],{type:'application/json'})); a.download=`monitor-pc-backup-${new Date().toISOString().slice(0,10)}.json`; document.body.appendChild(a); a.click(); a.remove(); toast('Backup salvo na pasta Downloads.'); };
   $('#bkArq').onchange=async e=>{ const f=e.target.files[0]; if(!f) return; let d; try{ d=JSON.parse(await f.text()); }catch(_){ toast('Esse arquivo não é um backup válido.',1); return; }
     if(!await confirmar('Restaurar este backup?',`Criado em ${d.criado_em?quando(d.criado_em):'data desconhecida'} (versão ${d.versao||'?'}). As configurações atuais serão substituídas.`,'Restaurar')) return;
     const r=await POST('backup/restaurar',d).catch(()=>null); toast(r?r.msg:'Falhou.',!(r&&r.ok)); await carregarCfg(); vConfig(); }; }
+/* =================== OPÇÕES DA CAPTURA (aba Opções da página Captura de tela) =================== */
+function capOpcoesHtml(){ const c=CFG, sel=(k,op)=>`<select data-cfg="${k}">${Object.entries(op).map(([v,r])=>`<option value="${v}" ${String(c[k])===v?'selected':''}>${r}</option>`).join('')}</select>`,
+    sw=k=>`<label class="sw"><input type="checkbox" data-cfg="${k}" ${c[k]?'checked':''}><span></span></label>`,
+    num=(k,mn,mx)=>`<input type="number" data-cfg="${k}" min="${mn}" max="${mx}" value="${c[k]}" style="width:90px">`,
+    txt=(k,ph,w)=>`<input type="text" data-cfg="${k}" value="${esc(c[k]||'')}" placeholder="${esc(ph||'')}" style="width:${w||260}px">`,
+    it=(t,ctl,d)=>`<div class="item"><b>${t}</b><div class="ctl">${ctl}</div><small>${d||''}</small></div>`;
+  return `<h2 class="secao" style="margin-top:0">Atalhos de teclado</h2><div class="painel">
+    ${it('Atalhos de teclado ligados',sw('captura_ativa'),'Quem captura é o ícone perto do relógio: ele precisa estar aberto. Se algum atalho usar a tecla Print Screen, o Monitor desliga a opção do Windows que abre a Ferramenta de Captura com essa tecla (só no seu usuário) e devolve quando você tirar o Print Screen dos atalhos ou fechar o ícone.')}
+    <div id="cfgCapAtalhos"><div class="vazio">Carregando os atalhos…</div></div></div>
+  <h2 class="secao">Onde salvar</h2><div class="painel">
+    ${it('Pasta das capturas',`${txt('captura_pasta','Imagens\\Monitor do PC',280)}<button class="btn" id="capPastaEsc">Escolher pasta…</button><button class="btn" id="capPastaAbrir">Abrir</button>${c.captura_pasta?'<button class="btn" id="capPastaPadrao">Usar a padrão</button>':''}`,'“Escolher pasta…” abre a janela de pastas do Windows. Também dá para colar um caminho completo (ex.: D:\\Prints). Vazio = Imagens\\Monitor do PC.')}
+    ${it('Nome do arquivo',txt('captura_nome','%Y-%m-%d_%H-%M-%S',220),'Data e hora: %Y ano, %m mês, %d dia, %H hora, %M minuto, %S segundo. Se o nome já existir, ganha _2, _3…')}
+    ${it('Formato',`${sel('captura_formato',{png:'PNG (sem perda)',jpg:'JPG (menor)'})} ${num('captura_qualidade',50,100)}<span class="mut2">qualidade JPG</span>`)}</div>
+  <h2 class="secao">Tarefas pós-captura</h2><div class="painel">
+    ${it('Copiar a imagem',sw('captura_copiar'),'Fica pronta para colar (Ctrl+V) em qualquer programa.')}
+    ${it('Salvar em arquivo',sw('captura_salvar'),'Desligado: a captura fica só no histórico (numa pasta interna).')}
+    ${it('Perguntar onde salvar (Salvar como…)',sw('captura_perguntar'),'Abre a janela do Windows para escolher a pasta e o nome a cada captura. Se cancelar, vale a pasta acima.')}
+    ${it('Copiar o caminho do arquivo',sw('captura_copiar_caminho'),'')}
+    ${it('Mostrar o arquivo na pasta',sw('captura_mostrar_pasta'),'Abre o Explorador de Arquivos com a captura selecionada.')}
+    ${it('Copiar o texto da imagem (OCR)',sw('captura_ocr_auto'),'Usa o OCR do próprio Windows.')}
+    ${it('Mostrar aviso perto do relógio',sw('captura_notificar'))}
+    ${it('Abrir no editor',sw('captura_editor'),'Abre a janela do Monitor com a captura pronta para marcar setas, textos, números, desfocar e recortar.')}
+    ${it('Enviar (upload)',sw('captura_enviar'),'Manda a captura para o site escolhido em “Envio” e roda as tarefas pós-envio. Vale também para vídeos e GIFs.')}
+    <div class="item"><small style="grid-column:1/-1">Ordem: salvar → copiar a imagem → copiar o caminho → texto (OCR) → aviso → mostrar na pasta → enviar → editor. Na área de transferência fica o último item que copia algo (o link, se o envio estiver ligado).</small></div></div>
+  <h2 class="secao">Tarefas pós-envio</h2><div class="painel">
+    ${it('Copiar o link',`${sw('captura_envio_copiar')} ${sel('captura_envio_formato',{url:'Só o link',markdown:'Markdown',html:'HTML',bbcode:'BBCode (fóruns)'})}`,'Markdown, HTML e BBCode viram imagem embutida (vídeos viram um link com o nome do arquivo).')}
+    ${it('Abrir o link no navegador',sw('captura_envio_abrir'))}
+    ${it('Mostrar aviso perto do relógio',sw('captura_envio_notificar'))}</div>
+  <h2 class="secao">Seleção de região</h2><div class="painel">
+    ${it('Ferramentas de anotação antes de capturar',sw('captura_anotar'),'Depois de escolher a área aparece uma barra para desenhar por cima: seta, retângulo, elipse, linha, caneta, texto, texto com fundo, números, marca-texto, desfocar, pixelar, tarja e cursor. Com ✥ dá para mover as anotações e ajustar as bordas da área. Enter, clique duplo ou ✓ captura; Esc cancela. Desligado: a captura sai assim que você solta o mouse.')}
+    ${it('Lupa com posição e cor do pixel',sw('captura_lupa'),'As setas do teclado movem o mouse 1 pixel (Shift: 10) para acertar a seleção.')}
+    ${it('Atraso da “região com atraso”',sel('captura_atraso_s',{1:'1 s',2:'2 s',3:'3 s',5:'5 s',10:'10 s'}),'Tempo para abrir um menu ou passar o mouse antes de congelar a tela.')}
+    ${it('Captura com rolagem','<span class="mut2">automática</span>','Rola sozinha até o fim da página. Para parar antes, clique em “Parar e salvar” na janelinha, aperte Esc ou o mesmo atalho. Tirar o mouse de cima da área pausa a rolagem.')}</div>
+  <h2 class="secao">Gravação de tela</h2><div class="painel" id="cfgGrav">
+    ${it('Quadros por segundo',sel('captura_gravar_fps',{10:'10',15:'15',24:'24',30:'30',60:'60'}),'O GIF sai sempre com 15 quadros por segundo e no máximo 960 px de largura, para ficar leve.')}
+    ${it('Mostrar o mouse no vídeo',sw('captura_gravar_cursor'))}
+    <div class="item"><b>ffmpeg (gravador)</b><div class="ctl" id="cfgFfmpeg"><span class="mut">—</span></div><small>A gravação usa o ffmpeg, baixado do GitHub na primeira gravação (cerca de 90 MB) com a soma de verificação conferida. Se já houver um ffmpeg no PATH, ele é usado.</small></div></div>
+  <h2 class="secao">Envio (upload)</h2><div class="painel" id="cfgEnvio"><div class="vazio">Carregando…</div></div>`; }
+function renderCapOpcoes(){ const el=$('#capOpcoes'); if(!el) return;
+  if(REMOTO){ el.innerHTML='<div class="vazio">As opções de captura só aparecem no próprio computador.</div>'; return; }
+  el.innerHTML=capOpcoesHtml(); carregarCfgCaptura();
+  $('#capPastaEsc').onclick=()=>capPasta('captura_escolher_pasta'); $('#capPastaAbrir').onclick=()=>capPasta('captura_abrir_pasta');
+  const p=$('#capPastaPadrao'); if(p) p.onclick=async()=>{ const r=await POST('config',{captura_pasta:''}).catch(()=>null); if(r&&r.valores){ CFG=r.valores; toast('Voltou para Imagens\\Monitor do PC.'); } renderCapOpcoes(); }; }
+async function capPasta(tipo){ const r=await POST('acao',{tipo}).catch(()=>null); if(!r){ toast('O serviço não respondeu.',1); return; }
+  if(r.erro||!r.pendente){ toast(r.erro||r.msg,!r.ok); return; }
+  if(tipo==='captura_escolher_pasta') toast('Escolha a pasta na janela que abriu.');
+  const x=await esperarResultado(r.id, tipo==='captura_escolher_pasta'?1200:24); if(x) toast(x.msg,!x.ok);
+  if(tipo==='captura_escolher_pasta'){ await carregarCfg(); if(vista==='capturas'&&CAP_ABA==='opcoes') renderCapOpcoes(); } }
 /* atalhos: o campo grava a combinação apertada (Print Screen só chega no "soltar" da tecla) */
 const TECLA_NOME={PrintScreen:'Print',Pause:'Pause',ScrollLock:'ScrollLock',Insert:'Insert',Delete:'Delete',Home:'Home',End:'End',PageUp:'PageUp',PageDown:'PageDown',Space:'Space'};
 function teclaAtalho(e){ let t=TECLA_NOME[e.code]; if(!t&&/^Key[A-Z]$/.test(e.code)) t=e.code.slice(3); if(!t&&/^Digit\d$/.test(e.code)) t=e.code.slice(5); if(!t&&/^F\d{1,2}$/.test(e.code)) t=e.code; if(!t) return null;

@@ -334,6 +334,10 @@ def executar_captura(tipo, a):
     if tipo == "captura_editada":
         ok, d = CAP.editada(a.get("cid"), caminho, a.get("png", ""), a.get("nova"), a.get("copiar"))
         return ok, d["msg"], {"id": d["id"]}
+    if tipo == "captura_escolher_pasta":
+        return CAP.escolher_pasta()
+    if tipo == "captura_abrir_pasta":
+        return CAP.abrir_pasta()
     if not os.path.isfile(caminho):
         return False, "O arquivo não existe mais (foi movido ou apagado)."
     if tipo == "captura_copiar":
@@ -757,6 +761,44 @@ def main():
     def gravando(tipo):
         return bool(CAP and CAP.gravador.gravando and CAP.gravador.tipo == tipo)
 
+    def salvar_cfg(valores):
+        threading.Thread(target=lambda: (api_post("api/config", valores), cfg(True)), daemon=True).start()
+
+    def opcao(rotulo, chave, padrao=False):
+        """Liga/desliga uma opção de captura (a mesma da janela do Monitor)."""
+        return pystray.MenuItem(rotulo, lambda *_: salvar_cfg({chave: not cfg(True).get(chave, padrao)}),
+                                checked=lambda *_: bool(_cfg["v"].get(chave, padrao)))
+
+    def escolha(rotulo, chave, valor, padrao):
+        return pystray.MenuItem(rotulo, lambda *_: salvar_cfg({chave: valor}), radio=True,
+                                checked=lambda *_: _cfg["v"].get(chave, padrao) == valor)
+
+    def pasta_capturas(*_):
+        def tarefa():
+            ok, msg = CAP.escolher_pasta()
+            if ok:
+                notificar(msg, "Captura de tela")
+        if CAP:
+            threading.Thread(target=tarefa, daemon=True).start()
+
+    from monitorpc import envio
+    menu_pos_captura = pystray.Menu(
+        opcao("Copiar a imagem", "captura_copiar", True), opcao("Salvar em arquivo", "captura_salvar", True),
+        opcao("Perguntar onde salvar (Salvar como…)", "captura_perguntar"),
+        opcao("Copiar o caminho do arquivo", "captura_copiar_caminho"),
+        opcao("Mostrar o arquivo na pasta", "captura_mostrar_pasta"),
+        opcao("Copiar o texto da imagem (OCR)", "captura_ocr_auto"), opcao("Mostrar aviso", "captura_notificar", True),
+        opcao("Abrir no editor", "captura_editor"), opcao("Enviar (upload)", "captura_enviar"),
+        pystray.Menu.SEPARATOR,
+        opcao("Ferramentas de anotação na seleção de região", "captura_anotar", True),
+    )
+    menu_pos_envio = pystray.Menu(
+        opcao("Copiar o link", "captura_envio_copiar", True),
+        pystray.MenuItem("Formato do link", pystray.Menu(
+            *[escolha(t, "captura_envio_formato", k, "url") for k, t in envio.FORMATOS.items()])),
+        opcao("Abrir o link no navegador", "captura_envio_abrir"), opcao("Mostrar aviso", "captura_envio_notificar", True),
+    )
+
     menu_captura = pystray.Menu(
         item_cap("Região", "regiao"), item_cap("Janela ativa", "janela"), item_cap("Monitor do mouse", "monitor"),
         item_cap("Tela inteira", "tela"), item_cap("Região com atraso", "atraso"), item_cap("Com rolagem", "rolagem"),
@@ -769,6 +811,15 @@ def main():
         item_cap("Copiar texto da tela (OCR)", "ocr"), item_cap("Seletor de cor", "cor"), item_cap("Régua", "regua"),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Histórico de capturas", lambda *_: abrir_janela("capturas")),
+        pystray.Menu.SEPARATOR,
+        pystray.MenuItem("Tarefas pós-captura", menu_pos_captura),
+        pystray.MenuItem("Tarefas pós-envio", menu_pos_envio),
+        pystray.MenuItem("Enviar para", pystray.Menu(
+            *[escolha(t, "captura_destino", k, "catbox") for k, t in envio.DESTINOS.items()])),
+        pystray.MenuItem("Escolher a pasta das capturas…", pasta_capturas),
+        pystray.MenuItem("Abrir a pasta das capturas", lambda *_: CAP and threading.Thread(target=CAP.abrir_pasta,
+                                                                                           daemon=True).start()),
+        pystray.MenuItem("Opções de captura…", lambda *_: abrir_janela("capturas/opcoes")),
     )
 
     menu = pystray.Menu(
