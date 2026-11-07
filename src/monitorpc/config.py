@@ -2,7 +2,7 @@
 import os
 import sys
 
-VERSAO = "2.4.0"
+VERSAO = "2.4.1"
 WIN = os.name == "nt"
 
 if os.environ.get("MONITORPC_DADOS"):
@@ -150,6 +150,8 @@ PADRAO = {
     "captura_imgur_id": "",       # Client-ID do Imgur (registrado pelo usuário)
     "captura_uploader": None,     # preenchido com envio.UPLOADER_PADRAO
     "captura_atraso_s": 3,
+    "captura_afastar_mouse": "",  # canto para onde o mouse vai antes de fotografar ("" = não mexe)
+    "captura_afastar_voltar": True,
     "captura_gravar_fps": 30,
     "captura_gravar_cursor": True,
     "captura_gravar_audio": "",   # nome do dispositivo de áudio (DirectShow): microfone ou "Mixagem estéreo"
@@ -182,6 +184,7 @@ OPCOES = {
     "captura_litter_tempo": ["1h", "12h", "24h", "72h"],
     "captura_envio_formato": ["url", "markdown", "html", "bbcode"],
     "captura_atraso_s": [1, 2, 3, 5, 10],
+    "captura_afastar_mouse": ["", "sup_esq", "sup_dir", "inf_esq", "inf_dir"],
     "captura_gravar_fps": [10, 15, 24, 30, 60],
 }
 SEGREDOS = os.path.join(BASE, "segredos.bin")

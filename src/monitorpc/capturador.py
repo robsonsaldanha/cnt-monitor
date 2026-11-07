@@ -186,7 +186,7 @@ class Capturador:
             self.notificar(f"Capturando em {n} s…", "Captura com atraso")
             time.sleep(n)
         if acao in ("regiao", "atraso", "rolagem", "ocr", "video", "gif", "cor", "regua", "regioes", "qr", "fixar"):
-            img, ox, oy = captura.capturar()
+            img, ox, oy = self._foto(c)
             modo = acao if acao in ("cor", "regua", "regioes") else "regiao"
             sel = captura.selecionar(img, ox, oy, modo, captura.janelas_visiveis() if modo in ("regiao", "regioes") else (),
                                      anotar=acao in ("regiao", "atraso") and c.get("captura_anotar", True),
@@ -229,17 +229,28 @@ class Capturador:
             if not self.ultima:
                 self.notificar("Ainda não há uma região capturada nesta sessão.", "Repetir a última região")
                 return
-            return self._pronto(captura.capturar(self.ultima)[0], acao)
+            return self._pronto(self._foto(c, self.ultima)[0], acao)
         if acao == "janela":
             r = captura.janela_ativa()
             if not r:
                 raise RuntimeError("nenhuma janela ativa")
-            return self._pronto(captura.capturar(r)[0], acao)
+            return self._pronto(self._foto(c, r)[0], acao)
         if acao == "monitor":
-            return self._pronto(captura.capturar(captura.monitor_do_mouse())[0], acao)
+            return self._pronto(self._foto(c, captura.monitor_do_mouse())[0], acao)
         if acao == "tela":
-            return self._pronto(captura.capturar()[0], acao)
+            return self._pronto(self._foto(c)[0], acao)
         raise RuntimeError("ação de captura desconhecida")
+
+    def _foto(self, c, bbox=None):
+        """Fotografa a tela; com a opção ligada, afasta o mouse antes (some o efeito de passar o mouse) e devolve depois."""
+        pos = captura.afastar_mouse(c.get("captura_afastar_mouse") or "")
+        try:
+            if pos:
+                time.sleep(0.25)
+            return captura.capturar(bbox)
+        finally:
+            if pos and c.get("captura_afastar_voltar", True):
+                captura.devolver_mouse(pos)
 
     def _arquivo(self, c, ext):
         if c.get("captura_salvar", True):
