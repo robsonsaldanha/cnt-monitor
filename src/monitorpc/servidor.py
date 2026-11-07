@@ -81,7 +81,7 @@ def banco_captura(c):
         raise ParamInvalido("registro inválido")
     tipo = c.get("tipo")
     caminho = str(c.get("caminho") or "")[:1000]
-    if tipo not in ("imagem", "video", "gif") or not caminho:
+    if tipo not in ("imagem", "video", "gif", "arquivo") or not caminho:
         raise ParamInvalido("registro inválido")
     dur = c.get("duracao")
     return {"tipo": tipo, "modo": str(c.get("modo") or "")[:20], "caminho": caminho,
@@ -463,7 +463,11 @@ def fabrica(motor, TOKEN, remoto=False):
         def _get_capturas(self, r, q):
             if r == "/api/capturas":
                 return self._json({"itens": banco.capturas_listar(_num(q, "limite", 300, int)), "estado": motor.captura_estado,
-                                   "acoes": {k: v[0] for k, v in captura.ACOES.items()}, "destinos": envio.DESTINOS})
+                                   "acoes": {k: v[0] for k, v in captura.ACOES.items()}, "destinos": envio.DESTINOS,
+                                   "compartilhar": {k: v[0] for k, v in envio.COMPARTILHAR.items()},
+                                   "acoes_imagem": captura.ACOES_IMAGEM, "tarefas": captura.TAREFAS})
+            if r == "/api/capturas/stats":
+                return self._json(banco.capturas_stats(_num(q, "dias", 30, int)))
             cid = _num(q, "id", 0, int)
             if r == "/api/capturas/mini":
                 dados = banco.captura_mini(cid)
@@ -490,11 +494,18 @@ def fabrica(motor, TOKEN, remoto=False):
                 campos = {k: corpo[k] for k in ("largura", "altura", "bytes") if isinstance(corpo.get(k), int)}
                 if isinstance(corpo.get("url"), str):
                     campos["url"] = corpo["url"][:2000]
+                if isinstance(corpo.get("favorito"), bool):
+                    campos["favorito"] = int(corpo["favorito"])
+                if isinstance(corpo.get("tags"), str):
+                    campos["tags"] = ", ".join(t.strip() for t in corpo["tags"].split(",") if t.strip())[:200]
+                if isinstance(corpo.get("caminho"), str) and corpo["caminho"].strip():
+                    campos["caminho"] = corpo["caminho"][:1000]
                 banco.captura_atualizar(_num(corpo, "id", 0, int), campos, mini_jpeg(corpo.get("mini")))
                 return self._json({"ok": True})
             if r == "/api/capturas/conteudo":
                 cid = _num(corpo, "id", 0, int)
-                tipo = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif"}.get(
+                tipo = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif",
+                        ".webp": "image/webp", ".bmp": "image/bmp"}.get(
                     str(corpo.get("ext", "")).lower())
                 try:
                     dados = base64.b64decode(str(corpo.get("dados", "")), validate=True)
@@ -506,6 +517,16 @@ def fabrica(motor, TOKEN, remoto=False):
                 while len(m.captura_cache) > 3:
                     m.captura_cache.pop(next(iter(m.captura_cache)))
                 return self._json({"ok": True})
+            if r == "/api/capturas/sxcu":
+                try:
+                    u = envio.de_sxcu(corpo.get("sxcu"))
+                except ValueError as e:
+                    msg = str(e)
+                    return self._json({"ok": False, "msg": msg[:1].upper() + msg[1:] + "."})
+                configuracao.salvar({"captura_uploader": u, "captura_destino": "personalizado"})
+                m.config_mudou()
+                return self._json({"ok": True, "msg": f'Uploader “{u["nome"] or u["url"]}” importado e escolhido como destino.',
+                                   "valores": configuracao.publico()})
             if r == "/api/capturas/editada":
                 d = banco.captura(_num(corpo, "id", 0, int))
                 if not d:
@@ -542,7 +563,7 @@ def fabrica(motor, TOKEN, remoto=False):
                 if r == "/api/acao":
                     return self._json(m.acao(corpo))
                 if r == "/api/config":
-                    final = configuracao.salvar_publico(corpo)
+                    final = configuracao.salvar_publico(corpo, remoto=remoto)
                     m.config_mudou()
                     return self._json({"valores": configuracao.publico(), "ok": bool(final)})
                 if r == "/api/historico/apagar":

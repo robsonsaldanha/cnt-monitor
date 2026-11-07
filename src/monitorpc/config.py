@@ -2,7 +2,7 @@
 import os
 import sys
 
-VERSAO = "2.3.3"
+VERSAO = "2.4.0"
 WIN = os.name == "nt"
 
 if os.environ.get("MONITORPC_DADOS"):
@@ -80,7 +80,8 @@ PADRAO = {
     "captura_pasta": "",          # vazio = Imagens\Monitor do PC
     "captura_nome": "%Y-%m-%d_%H-%M-%S",
     "captura_formato": "png",
-    "captura_qualidade": 90,      # JPG
+    "captura_qualidade": 90,      # JPG e WebP
+    "captura_webp_sem_perda": False,
     # tarefas pós-captura (na ordem em que rodam; na área de transferência fica a última)
     "captura_copiar": True,       # copiar a imagem para a área de transferência
     "captura_salvar": True,
@@ -91,14 +92,59 @@ PADRAO = {
     "captura_notificar": True,
     "captura_editor": False,      # abrir no editor depois de capturar
     "captura_enviar": False,      # enviar (upload) e copiar o link
+    "captura_tarefas_rapidas": False,  # menu perto do mouse para escolher o que fazer com a captura
+    "captura_janela_pos": False,  # janela "Pós-captura" com a prévia e os botões
+    "captura_embelezar": False,   # margem, fundo, cantos arredondados e sombra
+    "captura_efeitos": False,     # borda e marca d'água
+    "captura_editor_fotos": False,  # abrir no editor de imagens do Windows (verbo "editar")
+    "captura_fixar": False,       # fixar na tela
+    "captura_imprimir": False,
+    "captura_miniatura": False,   # salvar também uma miniatura (_mini)
+    "captura_miniatura_largura": 300,
+    "captura_rodar_acoes": False,  # rodar os programas de captura_acoes com o arquivo
+    "captura_copiar_arquivo": False,  # o arquivo em si (para colar no Explorer, WhatsApp, Discord)
+    "captura_copiar_pasta": False,
+    "captura_qr": False,          # ler código QR da imagem e copiar o conteúdo
+    "captura_ia": False,          # analisar a imagem com IA (chave do usuário)
+    "captura_pre_envio": False,   # confirmar (com a prévia) antes de enviar
+    "captura_apagar_local": False,  # depois de enviar, mandar o arquivo para a Lixeira
+    "captura_sem_metadados": True,  # tirar EXIF/textos das imagens antes de enviar
+    # aviso próprio (no lugar da notificação do Windows)
+    "captura_aviso_clique": "abrir",
+    "captura_aviso_canto": "inf_dir",
+    "captura_aviso_segundos": 6,
+    "captura_aviso_botoes": True,
+    "captura_som": False,         # som ao concluir
+    # embelezar e efeitos
+    "captura_emb_margem": 40,
+    "captura_emb_fundo": "azul",
+    "captura_emb_cantos": 12,
+    "captura_emb_sombra": True,
+    "captura_marca_texto": "",
+    "captura_marca_canto": "inf_dir",
+    "captura_marca_opacidade": 60,
+    "captura_borda": 0,
+    "captura_borda_cor": "#000000",
+    "captura_acoes": [],          # [{nome, programa, args}] — só configurável no próprio PC
+    "captura_fluxos": [],         # fluxos de trabalho: atalho próprio + ação + tarefas
+    # análise por IA (a chave fica cifrada no perfil do usuário, nunca na configuração)
+    "captura_ia_provedor": "openai",
+    "captura_ia_modelo": "",
+    "captura_ia_prompt": "Descreva esta imagem em português, de forma objetiva. Se houver texto, transcreva.",
     # tarefas pós-envio
     "captura_envio_copiar": True,
     "captura_envio_formato": "url",
     "captura_envio_abrir": False,  # abrir o link no navegador
     "captura_envio_notificar": True,
+    "captura_envio_janela": False,  # janela "Pós-envio" com link, QR e botões
+    "captura_envio_encurtar": False,  # is.gd
+    "captura_envio_compartilhar": "",  # "" ou um serviço de envio.COMPARTILHAR
+    "captura_envio_qr": False,      # janela com o código QR do link
     # seleção de área
     "captura_anotar": True,       # barra de anotação (setas, texto, desfocar…) antes de confirmar a região
     "captura_lupa": True,
+    "captura_escurecer": True,    # escurecer fora da área escolhida
+    "captura_cruz": True,         # linhas que seguem o mouse e cruz no centro da área
     "captura_destino": "catbox",
     "captura_litter_tempo": "24h",
     "captura_imgur_id": "",       # Client-ID do Imgur (registrado pelo usuário)
@@ -106,6 +152,9 @@ PADRAO = {
     "captura_atraso_s": 3,
     "captura_gravar_fps": 30,
     "captura_gravar_cursor": True,
+    "captura_gravar_audio": "",   # nome do dispositivo de áudio (DirectShow): microfone ou "Mixagem estéreo"
+    "captura_gravar_atraso": 0,
+    "captura_gravar_cronometro": True,
 }
 
 OPCOES = {
@@ -116,7 +165,19 @@ OPCOES = {
     "mini_canto": ["sup_dir", "sup_esq", "inf_dir", "inf_esq", "sup_centro", "inf_centro"],
     "mini_tamanho": ["pequeno", "normal", "grande"],
     "mini_layout": ["horizontal", "vertical"],
-    "captura_formato": ["png", "jpg"],
+    "captura_formato": ["png", "jpg", "webp"],
+    "captura_aviso_clique": ["abrir", "pasta", "editor", "link", "copiar", "fixar", "nada"],
+    "captura_aviso_canto": ["inf_dir", "inf_esq", "sup_dir", "sup_esq"],
+    "captura_aviso_segundos": [3, 4, 6, 8, 10, 15, 30],
+    "captura_miniatura_largura": [100, 150, 200, 300, 400, 600],
+    "captura_emb_margem": [0, 16, 24, 40, 64, 96],
+    "captura_emb_fundo": ["azul", "roxo", "por_do_sol", "verde", "escuro", "claro", "transparente"],
+    "captura_emb_cantos": [0, 6, 12, 20, 32],
+    "captura_marca_canto": ["inf_dir", "inf_esq", "sup_dir", "sup_esq", "centro"],
+    "captura_borda": [0, 1, 2, 4, 8],
+    "captura_envio_compartilhar": ["", "whatsapp", "telegram", "x", "reddit", "email"],
+    "captura_ia_provedor": ["openai", "gemini", "openrouter"],
+    "captura_gravar_atraso": [0, 3, 5, 10],
     "captura_destino": ["catbox", "litterbox", "uguu", "tmpfiles", "imgur", "personalizado"],
     "captura_litter_tempo": ["1h", "12h", "24h", "72h"],
     "captura_envio_formato": ["url", "markdown", "html", "bbcode"],

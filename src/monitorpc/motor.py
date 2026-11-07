@@ -1141,12 +1141,30 @@ class Motor:
             return {"ok": True, "msg": "Regra apagada."}
         if tipo == "captura":
             modo = a.get("modo")
-            if modo not in captura.ACOES and modo not in ("parar", "ffmpeg"):
+            if modo not in captura.ACOES and modo not in ("parar", "ffmpeg") and not str(modo).startswith("fluxo:"):
                 return {"ok": False, "msg": "Tipo de captura desconhecido."}
             return self._enfileirar({"tipo": "captura", "modo": modo})
         if tipo in ("captura_escolher_pasta", "captura_abrir_pasta"):   # quem abre o diálogo/Explorer é o ícone
             return self._enfileirar({"tipo": tipo})
-        if tipo in ("captura_copiar", "captura_enviar", "captura_ler", "captura_apagar", "captura_pasta", "captura_abrir"):
+        if tipo == "captura_tarefa":   # ferramentas sem arquivo: rodam no ícone, na sessão do usuário
+            if a.get("nome") not in captura.TAREFAS_ICONE:
+                return {"ok": False, "msg": "Tarefa desconhecida."}
+            return self._enfileirar({"tipo": tipo, "nome": a["nome"]})
+        if tipo in ("captura_favorito", "captura_tags"):
+            try:
+                d = banco.captura(int(a.get("id") or 0))
+            except (TypeError, ValueError):
+                d = None
+            if not d:
+                return {"ok": False, "msg": "Essa captura não está mais no histórico."}
+            if tipo == "captura_favorito":
+                banco.captura_atualizar(d["id"], {"favorito": int(bool(a.get("valor")))})
+                return {"ok": True, "msg": "Marcada como favorita." if a.get("valor") else "Tirada das favoritas."}
+            tags = ", ".join(t.strip() for t in str(a.get("valor") or "").split(",") if t.strip())[:200]
+            banco.captura_atualizar(d["id"], {"tags": tags})
+            return {"ok": True, "msg": "Etiquetas salvas." if tags else "Etiquetas apagadas."}
+        if tipo in ("captura_copiar", "captura_enviar", "captura_ler", "captura_apagar", "captura_pasta", "captura_abrir",
+                    "captura_ferramenta", "captura_renomear"):
             try:
                 d = banco.captura(int(a.get("id") or 0))
             except (TypeError, ValueError):
@@ -1162,6 +1180,13 @@ class Motor:
                 return self._enfileirar({"tipo": "pasta", "caminho": d["caminho"]})
             if tipo == "captura_abrir":
                 return self._enfileirar({"tipo": "abrir_exe", "caminho": d["caminho"]})
+            if tipo == "captura_ferramenta":
+                if a.get("nome") not in captura.FERRAMENTAS_ARQUIVO:
+                    return {"ok": False, "msg": "Ferramenta desconhecida."}
+                return self._enfileirar({"tipo": tipo, "nome": a["nome"], "cid": d["id"], "caminho": d["caminho"]})
+            if tipo == "captura_renomear":
+                return self._enfileirar({"tipo": tipo, "cid": d["id"], "caminho": d["caminho"],
+                                         "novo": str(a.get("novo") or "")[:150]})
             return self._enfileirar({"tipo": tipo, "cid": d["id"], "caminho": d["caminho"]})  # "id" é o da fila
         if tipo == "alerta_teste":
             if time.time() - self.bandeja_ts > 40:

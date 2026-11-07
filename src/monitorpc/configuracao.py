@@ -23,6 +23,8 @@ def _validar(c):
     out["mini_itens"] = list(config.PADRAO["mini_itens"])
     out["regras_prog"] = []
     out["vps"] = []
+    out["captura_acoes"] = []
+    out["captura_fluxos"] = []
     for k, padrao in config.PADRAO.items():
         if k not in c:
             continue
@@ -53,6 +55,14 @@ def _validar(c):
             if isinstance(v, dict):
                 out[k] = envio.validar_uploader(v)
             continue
+        if k == "captura_acoes":
+            if isinstance(v, list):
+                out[k] = captura.validar_acoes(v)
+            continue
+        if k == "captura_fluxos":
+            if isinstance(v, list):
+                out[k] = captura.validar_fluxos(v)
+            continue
         if isinstance(padrao, bool):
             out[k] = bool(v)
         elif isinstance(padrao, int):
@@ -76,6 +86,8 @@ def _validar(c):
                 v = max(1024, min(65535, v))
             if k == "captura_qualidade":
                 v = max(50, min(100, v))
+            if k == "captura_marca_opacidade":
+                v = max(10, min(100, v))
             out[k] = v
         elif isinstance(padrao, str):
             if k in config.OPCOES and v not in config.OPCOES[k]:
@@ -91,6 +103,15 @@ def _validar(c):
                     continue  # só caminho completo (C:\..., \\servidor\...); senão fica a pasta padrão
             elif k == "captura_imgur_id":
                 v = "".join(ch for ch in v if ch.isalnum())[:64]
+            elif k == "captura_borda_cor":
+                import re
+                if not re.fullmatch(r"#[0-9a-fA-F]{6}", v):
+                    continue
+                v = v.lower()
+            elif k in ("captura_marca_texto", "captura_ia_modelo", "captura_gravar_audio"):
+                v = "".join(ch for ch in v if ord(ch) >= 32 and ch != '"').strip()[:100 if k != "captura_gravar_audio" else 200]
+            elif k == "captura_ia_prompt":
+                v = "".join(ch for ch in v if ord(ch) >= 32 or ch == "\n").strip()[:1000] or padrao
             out[k] = v
     return out
 
@@ -158,11 +179,14 @@ def aplicar_inicializacao(c=None):
 
 
 PROTEGIDAS = {"acesso_senha", "api_chave"}   # só mudam pelas funções próprias, nunca pelo formulário
+# só mudam no próprio PC: rodam programas, decidem para onde as capturas vão ou usam a chave de IA
+SO_LOCAL = {"captura_acoes", "captura_rodar_acoes", "captura_uploader", "captura_destino", "captura_ia",
+            "captura_ia_provedor", "captura_ia_modelo", "captura_ia_prompt", "captura_fluxos", "captura_pasta"}
 OCULTO = "••••••"   # no lugar do valor dos cabeçalhos do uploader (podem ter token)
 
 
-def salvar_publico(novos):
-    novos = {k: v for k, v in (novos or {}).items() if k not in PROTEGIDAS}
+def salvar_publico(novos, remoto=False):
+    novos = {k: v for k, v in (novos or {}).items() if k not in PROTEGIDAS and not (remoto and k in SO_LOCAL)}
     up = novos.get("captura_uploader")
     if isinstance(up, dict) and isinstance(up.get("cabecalhos"), dict):
         atuais = obter("captura_uploader")["cabecalhos"]

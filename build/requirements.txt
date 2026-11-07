@@ -6,3 +6,4 @@ pillow==11.3.0
 pyinstaller==6.16.0
 paramiko==3.5.1
 qrcode==8.2
+zxing-cpp==2.3.0

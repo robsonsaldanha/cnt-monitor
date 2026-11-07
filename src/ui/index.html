@@ -310,6 +310,16 @@ code{font-family:"Cascadia Mono",Consolas,monospace;font-size:12px;background:va
 .cap .inf{padding:7px 10px 0;font-size:12.5px;display:flex;gap:6px;align-items:center;min-width:0}
 .cap .inf b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
 .cap .inf2{padding:2px 10px 8px;font-size:11.5px;color:var(--txt3)}
+.cap .estrela{color:#ffb300;font-size:14px;line-height:1}
+.cap .etq{display:inline-block;background:var(--painel2);border-radius:4px;padding:0 5px;margin-right:4px;font-size:11px;color:var(--txt2)}
+.cap .tb .arq{font-size:22px;font-weight:600;color:var(--txt2)}
+.stat-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:14px}
+.stat-grade .painel{padding:12px 14px}.stat-grade b{display:block;font-size:22px}.stat-grade span{color:var(--txt3);font-size:12.5px}
+.barras{display:flex;align-items:flex-end;gap:3px;height:120px;padding:12px 14px}
+.barras div{flex:1;background:var(--acento);border-radius:3px 3px 0 0;min-height:2px}
+.lista-kv{padding:6px 14px 12px}.lista-kv div{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--borda)}
+.modal input.pedir{width:100%;margin:-6px 0 14px}
+.tab-edit{width:100%;border-collapse:collapse}.tab-edit td{padding:4px 6px 4px 0;vertical-align:middle}.tab-edit input[type=text]{width:100%}
 input.atalho{width:170px;text-align:center;cursor:pointer}
 .ed-barra{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px}
 .ed-barra .sep{width:1px;align-self:stretch;background:var(--borda)}
@@ -571,14 +581,16 @@ input.atalho{width:170px;text-align:center;cursor:pointer}
 
 <section id="v-capturas" hidden>
   <h1>Captura de tela</h1><p class="sub">Prints, gravação de tela, texto da tela (OCR) e envio com link — pelos atalhos de teclado, pelo menu do ícone perto do relógio ou pelos botões abaixo. Clique numa captura para ver as opções; clique duas vezes para editar.</p>
-  <div class="seg" id="capAbas" style="margin-bottom:14px"><button data-a="capturar" aria-pressed="true">Capturar e histórico</button><button data-a="opcoes" aria-pressed="false">Opções</button></div>
+  <div class="seg" id="capAbas" style="margin-bottom:14px"><button data-a="capturar" aria-pressed="true">Capturar e histórico</button><button data-a="opcoes" aria-pressed="false">Opções</button><button data-a="estatisticas" aria-pressed="false">Estatísticas</button></div>
   <div id="capPainel">
   <div id="capAvisos"></div>
   <div class="painel"><div class="cab"><h2>Capturar</h2><span class="desc">Pelos botões, a janela do Monitor some antes da captura.</span><div class="dir"><button class="btn" id="capCfg">Atalhos e opções</button></div></div><div class="cap-bts" id="capBts"></div></div>
-  <div class="rel-cab secao"><h2 style="margin:0">Histórico</h2><span class="mut" id="capTot"></span><input type="search" id="bCap" placeholder="Buscar pelo nome" style="margin-left:auto;width:220px"></div>
+  <div class="painel"><div class="cab"><h2>Enviar e ferramentas</h2><span class="desc">Também no menu do ícone perto do relógio.</span></div><div class="cap-bts" id="capFerr"></div></div>
+  <div class="rel-cab secao"><h2 style="margin:0">Histórico</h2><span class="mut" id="capTot"></span><span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap"><select id="capFiltro" title="Mostrar"><option value="">Tudo</option><option value="imagem">Imagens</option><option value="video">Vídeos e GIFs</option><option value="fav">Favoritas</option><option value="url">Enviadas</option><option value="arquivo">Outros arquivos</option></select><input type="search" id="bCap" placeholder="Buscar por nome ou etiqueta" style="width:220px"></span></div>
   <div class="cap-grade" id="capLista"><div class="vazio">Carregando…</div></div>
   </div>
   <div class="cfg" id="capOpcoes" hidden></div>
+  <div id="capStats" hidden></div>
 </section>
 
 <section id="v-editor" hidden>
@@ -776,12 +788,12 @@ const eixoN=v=>CFG.rede_em_bits?(v*8>=1e6?nf1.format(v*8/1e6)+' Mb/s':nf0.format
 const VISTAS=['geral','recurso','programas','processos','capturas','editor','jogo','otimizar','regras','inicializacao','energia','servicos','rede','hardware','historico','lentidao','alertas','relatorio','comparar','vps','config'];
 let vista='geral', recurso='cpu', ED_ID=0, CAP_ABA='capturar';
 function ir(h){ h=(h||'geral').replace(/^#/,''); let v=h, r=null; if(h.startsWith('recurso/')){ v='recurso'; r=h.split('/')[1]; }
-  if(h==='capturas'||h.startsWith('capturas/')){ v='capturas'; CAP_ABA=h==='capturas/opcoes'?'opcoes':'capturar'; }
+  if(h==='capturas'||h.startsWith('capturas/')){ v='capturas'; CAP_ABA=h==='capturas/opcoes'?'opcoes':h==='capturas/estatisticas'?'estatisticas':'capturar'; }
   if(h.startsWith('editor/')){ v='editor'; ED_ID=parseInt(h.split('/')[1])||0; } if(v==='editor'&&!ED_ID) v='capturas'; if(!VISTAS.includes(v)) v='geral';
   if(v==='recurso' && r==='temp'){ v='hardware'; }
   vista=v; if(r) recurso=r; for(const x of VISTAS) $('#v-'+x).hidden = x!==v;
   document.querySelectorAll('#nav button[data-v]').forEach(b=>{ if(b.dataset.v===v||(v==='recurso'&&b.dataset.v==='geral')||(v==='editor'&&b.dataset.v==='capturas')) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
-  const alvo = v==='recurso'?'recurso/'+recurso:v==='editor'?'editor/'+ED_ID:v==='capturas'&&CAP_ABA==='opcoes'?'capturas/opcoes':v; if(location.hash!=='#'+alvo) history.replaceState(null,'','#'+alvo);
+  const alvo = v==='recurso'?'recurso/'+recurso:v==='editor'?'editor/'+ED_ID:v==='capturas'&&CAP_ABA!=='capturar'?'capturas/'+CAP_ABA:v; if(location.hash!=='#'+alvo) history.replaceState(null,'','#'+alvo);
   scrollTo(0,0); entrar(); }
 $('#nav').addEventListener('click',e=>{ const b=e.target.closest('button[data-v]'); if(b) ir(b.dataset.v); });
 addEventListener('hashchange',()=>ir(location.hash));
@@ -1665,61 +1677,105 @@ $('#relHtml').onclick=()=>{ if(!REL) return; baixarHtml('Relatório do computado
 
 /* =================== CAPTURA DE TELA =================== */
 let CAPS=null, CAP_ASSIN='';
-const CAP_BTS=[['regiao','Região'],['janela','Janela (a de trás)'],['monitor','Monitor'],['tela','Tela inteira'],['atraso','Com atraso'],['rolagem','Com rolagem'],['video','Gravar vídeo'],['gif','Gravar GIF'],['ocr','Texto (OCR)'],['cor','Cor'],['regua','Régua']];
+const CAP_BTS=[['regiao','Região'],['regioes','Várias regiões'],['janela','Janela (a de trás)'],['monitor','Monitor'],['tela','Tela inteira'],['atraso','Com atraso'],['rolagem','Com rolagem'],['video','Gravar vídeo'],['gif','Gravar GIF'],['ocr','Texto (OCR)'],['qr','Código QR'],['fixar','Fixar na tela'],['cor','Cor'],['regua','Régua']];
+const CAP_FERR=[['enviar_arquivo','Enviar arquivo…'],['enviar_area','Enviar da área de transferência'],['enviar_texto','Enviar texto…'],['fixar_area','Fixar da área de transferência'],['escolher_fixar','Fixar imagem de arquivo…'],['escolher_embelezar','Embelezar imagem…'],['escolher_editor','Abrir imagem no editor…'],['escolher_qr','Ler QR de imagem…'],['escolher_hash','Verificador de hash…'],['importar','Importar pasta para o histórico…'],['barra','Barra de ferramentas de ações']];
 const espera = ms => new Promise(s=>setTimeout(s,ms));
 async function esperarResultado(id, tentativas){ for(let i=0;i<tentativas;i++){ await espera(250); const x=await API('acao/resultado?id='+id).catch(()=>null); if(x&&x.resultado) return x.resultado; } return null; }
+function pedirTexto(tit, txt, valor){ return new Promise(ok=>{ $('#mTit').textContent=tit; $('#mTxt').textContent=txt; const inp=document.createElement('input'); inp.type='text'; inp.className='pedir'; inp.value=valor||''; $('#mTxt').after(inp);
+  const s=$('#mSim'); s.textContent='Salvar'; s.className='btn pri'; $('#modal').classList.add('on');
+  const fim=v=>{ $('#modal').classList.remove('on'); inp.remove(); s.onclick=null; $('#mNao').onclick=null; ok(v); };
+  s.onclick=()=>fim(inp.value); $('#mNao').onclick=()=>fim(null); inp.onkeydown=e=>{ if(e.key==='Enter') fim(inp.value); }; setTimeout(()=>{ inp.focus(); inp.select(); },0); }); }
 async function vCapturas(primeira){ let d; try{ d=await API('capturas'); }catch(_){ if(primeira) $('#capLista').innerHTML='<div class="vazio">'+(REMOTO?'As capturas de tela só aparecem no próprio computador.':'O serviço não respondeu.')+'</div>'; return; }
-  const assin=JSON.stringify([d.itens.map(x=>[x.id,x.url,x.bytes]),d.estado,CFG.captura_atalhos,CFG.captura_ativa]);
-  if(!primeira && assin===CAP_ASSIN) return; CAP_ASSIN=assin; CAPS=d; renderCapturas(); }
+  const assin=JSON.stringify([d.itens.map(x=>[x.id,x.url,x.bytes,x.favorito,x.tags,x.caminho]),d.estado,CFG.captura_atalhos,CFG.captura_ativa]);
+  if(!primeira && assin===CAP_ASSIN) return; CAP_ASSIN=assin; CAPS=d; renderCapturas(); if(CAP_ABA==='estatisticas') renderStats(); }
 function renderCapturas(){ if(!CAPS) return; const d=CAPS, e=d.estado||{}, est=e.atalhos||{}, ata=CFG.captura_atalhos||{}, grav=e.gravando;
   const av=[];
-  if(!CFG.captura_ativa) av.push(['','Os atalhos de captura estão desligados (aba Opções). Os botões abaixo e o menu do ícone continuam funcionando.']);
-  const ruins=Object.entries(est).filter(([_,v])=>v!=='ok'); if(CFG.captura_ativa && ruins.length) av.push(['erro','Atalho não registrado: '+ruins.map(([k,v])=>`<b>${esc(ata[k]||k)}</b> (${esc(d.acoes[k]||k)}) — ${esc(v)}`).join('; ')+'. Feche o programa que usa a mesma tecla (ShareX, Lightshot, Ferramenta de Captura) ou troque o atalho.']);
+  if(!CFG.captura_ativa) av.push(['','Os atalhos de captura estão desligados (aba Opções ou “Desativar atalhos” no menu do ícone). Os botões abaixo e o menu do ícone continuam funcionando.']);
+  const ruins=Object.entries(est).filter(([_,v])=>v!=='ok'); if(ruins.length) av.push(['erro','Atalho não registrado: '+ruins.map(([k,v])=>`<b>${esc(ata[k]||k)}</b> (${esc(d.acoes[k]||k)}) — ${esc(v)}`).join('; ')+'. Feche o programa que usa a mesma tecla (ShareX, Lightshot, Ferramenta de Captura) ou troque o atalho.']);
   if(e.baixando!=null) av.push(['',`Baixando o ffmpeg para gravar a tela… ${e.baixando}%`]);
-  if(grav) av.push(['forte',`Gravando ${grav==='gif'?'GIF':'vídeo'} há ${dur(Date.now()/1000-(e.gravando_desde||Date.now()/1000))}. Aperte o mesmo atalho ou o botão “Parar” para terminar.`]);
+  if(grav) av.push(['forte',`${e.pausado?'Gravação pausada':'Gravando '+(grav==='gif'?'GIF':'vídeo')} — ${dur(Date.now()/1000-(e.gravando_desde||Date.now()/1000))}. Aperte o mesmo atalho ou o botão “Parar” para terminar.`]);
   $('#capAvisos').innerHTML=av.map(([c,t])=>`<div class="aviso ${c}">${t}</div>`).join('');
-  $('#capBts').innerHTML=CAP_BTS.map(([k,t])=>{ const g=grav&&k===grav; return `<button class="btn ${g?'perigo':k==='regiao'?'pri':''}" data-cap="${k}" title="${esc(d.acoes[k]||'')}">${g?'■ Parar':esc(t)}${ata[k]&&CFG.captura_ativa?` <span class="tag">${esc(ata[k])}</span>`:''}</button>`; }).join('');
-  const f=$('#bCap').value.trim().toLowerCase(), l=d.itens.filter(x=>!f||x.caminho.toLowerCase().includes(f));
+  $('#capBts').innerHTML=CAP_BTS.map(([k,t])=>{ const g=grav&&k===grav; return `<button class="btn ${g?'perigo':k==='regiao'?'pri':''}" data-cap="${k}" title="${esc(d.acoes[k]||'')}">${g?'■ Parar':esc(t)}${ata[k]&&CFG.captura_ativa?` <span class="tag">${esc(ata[k])}</span>`:''}</button>`; }).join('')
+    +(grav?`<button class="btn" data-cap="pausar">${e.pausado?'▶ Continuar':'❚❚ Pausar'}</button>`:'')
+    +(CFG.captura_fluxos||[]).map(f=>`<button class="btn" data-cap="fluxo:${esc(f.id)}" title="Fluxo de trabalho">${esc(f.nome)}${f.atalho&&CFG.captura_ativa?` <span class="tag">${esc(f.atalho)}</span>`:''}</button>`).join('');
+  $('#capFerr').innerHTML=CAP_FERR.map(([k,t])=>`<button class="btn" data-tarefa="${k}" ${k==='barra'&&e.barra?'aria-pressed="true"':''}>${k==='barra'&&e.barra?'Fechar a barra de ações':esc(t)}</button>`).join('');
+  const f=$('#bCap').value.trim().toLowerCase(), filtro=$('#capFiltro').value;
+  const l=d.itens.filter(x=>(!f||x.caminho.toLowerCase().includes(f)||(x.tags||'').toLowerCase().includes(f))
+    &&(!filtro||(filtro==='fav'?x.favorito:filtro==='url'?x.url:filtro==='video'?(x.tipo==='video'||x.tipo==='gif'):x.tipo===filtro)));
   $('#capTot').textContent=d.itens.length?`${d.itens.length} captura${d.itens.length>1?'s':''}`:'';
-  $('#capLista').innerHTML=l.map(x=>`<button class="cap" data-id="${x.id}"><div class="tb" ${x.tem_mini?`style="background-image:url('/api/capturas/mini?id=${x.id}&v=${x.bytes}')"`:''}>${x.tem_mini?'':'sem prévia'}${x.tipo!=='imagem'?`<span>${x.tipo==='gif'?'GIF':'MP4'}${x.duracao?' · '+dur(x.duracao):''}</span>`:''}</div>
-    <div class="inf"><b title="${esc(x.caminho)}">${esc(exeNome(x.caminho))}</b>${x.url?'<span class="tag on">link</span>':''}</div><div class="inf2">${quando(x.ts)}${x.largura?` · ${x.largura}×${x.altura}`:''} · ${fB(x.bytes)}</div></button>`).join('')
-    ||`<div class="vazio">${f?'Nada encontrado.':'Nenhuma captura ainda. Use os botões acima ou o atalho '+esc(ata.regiao||'de região')+'.'}</div>`; }
+  const ext=c=>(c.split('.').pop()||'').toUpperCase().slice(0,5);
+  $('#capLista').innerHTML=l.map(x=>`<button class="cap" data-id="${x.id}"><div class="tb" ${x.tem_mini?`style="background-image:url('/api/capturas/mini?id=${x.id}&v=${x.bytes}')"`:''}>${x.tem_mini?'':x.tipo==='arquivo'?`<span class="arq">${esc(ext(x.caminho))}</span>`:'sem prévia'}${x.tipo==='video'||x.tipo==='gif'?`<span>${x.tipo==='gif'?'GIF':'MP4'}${x.duracao?' · '+dur(x.duracao):''}</span>`:''}</div>
+    <div class="inf">${x.favorito?'<span class="estrela" title="Favorita">★</span>':''}<b title="${esc(x.caminho)}">${esc(exeNome(x.caminho))}</b>${x.url?'<span class="tag on">link</span>':''}</div><div class="inf2">${x.tags?x.tags.split(',').map(t=>`<span class="etq">${esc(t.trim())}</span>`).join(''):''}${quando(x.ts)}${x.largura?` · ${x.largura}×${x.altura}`:''} · ${fB(x.bytes)}</div></button>`).join('')
+    ||`<div class="vazio">${f||filtro?'Nada encontrado.':'Nenhuma captura ainda. Use os botões acima ou o atalho '+esc(ata.regiao||'de região')+'.'}</div>`; }
 $('#capBts').addEventListener('click',e=>{ const b=e.target.closest('[data-cap]'); if(b) acao({tipo:'captura',modo:b.dataset.cap}); });
+$('#capFerr').addEventListener('click',async e=>{ const b=e.target.closest('[data-tarefa]'); if(!b) return; await acao({tipo:'captura_tarefa',nome:b.dataset.tarefa}); setTimeout(()=>vCapturas(true),1500); });
 $('#capCfg').onclick=()=>abaCaptura('opcoes');
 seg($('#capAbas'), d=>abaCaptura(d.a));
 function abaCaptura(a){ CAP_ABA=a; $('#capAbas').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.a===a));
-  $('#capPainel').hidden=a!=='capturar'; $('#capOpcoes').hidden=a!=='opcoes'; if(a==='opcoes') renderCapOpcoes();
-  const alvo=a==='opcoes'?'#capturas/opcoes':'#capturas'; if(vista==='capturas'&&location.hash!==alvo) history.replaceState(null,'',alvo); }
-$('#bCap').addEventListener('input',renderCapturas);
+  $('#capPainel').hidden=a!=='capturar'; $('#capOpcoes').hidden=a!=='opcoes'; $('#capStats').hidden=a!=='estatisticas';
+  if(a==='opcoes') renderCapOpcoes(); if(a==='estatisticas') renderStats();
+  const alvo=a==='capturar'?'#capturas':'#capturas/'+a; if(vista==='capturas'&&location.hash!==alvo) history.replaceState(null,'',alvo); }
+$('#bCap').addEventListener('input',renderCapturas); $('#capFiltro').addEventListener('change',renderCapturas);
+async function renderStats(){ const el=$('#capStats'); let s; try{ s=await API('capturas/stats?dias=30'); }catch(_){ el.innerHTML='<div class="vazio">O serviço não respondeu.</div>'; return; }
+  const NOME_MODO={regiao:'Região',regioes:'Várias regiões',janela:'Janela',monitor:'Monitor',tela:'Tela inteira',ultima:'Repetir região',atraso:'Com atraso',rolagem:'Rolagem',video:'Vídeo',gif:'GIF',editor:'Editor',envio:'Envio de arquivo',area:'Área de transferência',importada:'Importada',embelezar:'Embelezada',arquivo:'Arquivo'};
+  const NOME_TIPO={imagem:'Imagens',video:'Vídeos',gif:'GIFs',arquivo:'Outros arquivos'};
+  const dias=[]; for(let i=29;i>=0;i--){ const d=new Date(Date.now()-i*864e5); dias.push(d.toLocaleDateString('sv-SE')); }
+  const mapa=Object.fromEntries(s.por_dia), max=Math.max(1,...dias.map(d=>mapa[d]||0));
+  const kv=(o,nomes)=>Object.entries(o).map(([k,v])=>`<div><span>${esc((nomes&&nomes[k])||k)}</span><b>${nf0.format(v)}</b></div>`).join('')||'<div class="mut">—</div>';
+  el.innerHTML=`<div class="stat-grade"><div class="painel"><b>${nf0.format(s.total)}</b><span>no histórico</span></div><div class="painel"><b>${fB(s.bytes)}</b><span>de espaço</span></div><div class="painel"><b>${nf0.format(s.enviadas)}</b><span>enviadas com link</span></div><div class="painel"><b>${nf0.format(s.favoritas)}</b><span>favoritas</span></div><div class="painel"><b>${s.desde?quando(s.desde):'—'}</b><span>a mais antiga</span></div></div>
+    <div class="painel"><div class="cab"><h2>Últimos 30 dias</h2><span class="desc">capturas por dia (máximo ${max})</span></div><div class="barras">${dias.map(d=>`<div title="${d}: ${mapa[d]||0}" style="height:${(mapa[d]||0)/max*100}%"></div>`).join('')}</div></div>
+    <div class="stat-grade" style="margin-top:14px"><div class="painel" style="padding:0"><div class="cab"><h2>Por tipo</h2></div><div class="lista-kv">${kv(s.por_tipo,NOME_TIPO)}</div></div><div class="painel" style="padding:0"><div class="cab"><h2>Por modo</h2></div><div class="lista-kv">${kv(s.por_modo,NOME_MODO)}</div></div><div class="painel" style="padding:0"><div class="cab"><h2>Para onde foram</h2></div><div class="lista-kv">${kv(s.sites)}</div></div></div>`; }
 const capItem = el => CAPS && CAPS.itens.find(x=>x.id===+el.dataset.id);
 $('#capLista').addEventListener('click',e=>{ const b=e.target.closest('.cap'); if(b) menuCaptura(e, capItem(b)); });
 $('#capLista').addEventListener('dblclick',e=>{ const b=e.target.closest('.cap'), x=b&&capItem(b); if(!x) return; fecharMenu(); if(x.tipo==='imagem') ir('editor/'+x.id); else acao({tipo:'captura_abrir',id:x.id}); });
-function menuCaptura(e, x){ if(!x) return; const img=x.tipo==='imagem';
+function menuCaptura(e, x){ if(!x) return; const img=x.tipo==='imagem', so=!img?'só imagens':'';
+  const ferr=(nome)=>()=>acao({tipo:'captura_ferramenta',id:x.id,nome});
+  const depois=async p=>{ await p; CAP_ASSIN=''; vCapturas(true); };
   abrirMenu(e, exeNome(x.caminho), [
-    {t:'Abrir no editor', ic:'janela', des:!img, mot:!img?'só imagens':'', f:()=>ir('editor/'+x.id)},
+    {t:'Abrir no editor', ic:'janela', des:!img, mot:so, f:()=>ir('editor/'+x.id)},
     {t:'Abrir', ic:'prog', f:()=>acao({tipo:'captura_abrir',id:x.id})},
-    {t:img?'Copiar imagem':'Copiar caminho do arquivo', ic:'copiar', f:()=>acao({tipo:'captura_copiar',id:x.id})},
+    {t:'Abrir no editor de imagens do Windows', ic:'janela', des:!img, mot:so, f:ferr('editor_fotos')},
+    {t:img?'Copiar imagem':'Copiar o arquivo', ic:'copiar', f:()=>acao({tipo:'captura_copiar',id:x.id})},
+    {t:'Copiar o arquivo (para colar no Explorer, WhatsApp…)', ic:'copiar', des:!img, f:ferr('copiar_arquivo')},
     {t:'Enviar e copiar o link', ic:'web', f:()=>acao({tipo:'captura_enviar',id:x.id})},
     {t:'Copiar o link', ic:'copiar', des:!x.url, f:()=>copiar(x.url)},
     {t:'Abrir local do arquivo', ic:'pasta', f:()=>acao({tipo:'captura_pasta',id:x.id})},
     '-',
+    {t:'Fixar na tela', ic:'janela', des:!img, mot:so, f:ferr('fixar')},
+    {t:'Embelezar (cria uma cópia)', ic:'janela', des:!img, mot:so, f:()=>depois(acao({tipo:'captura_ferramenta',id:x.id,nome:'embelezar'}))},
+    {t:'Copiar o texto (OCR)', ic:'copiar', des:!img, mot:so, f:ferr('ocr')},
+    {t:'Ler código QR', ic:'det', des:!img, mot:so, f:ferr('qr')},
+    {t:'Analisar com IA', ic:'det', des:!img, mot:so, f:ferr('ia')},
+    {t:'Imprimir', ic:'prog', f:ferr('imprimir')},
+    {t:'Verificar hash (MD5, SHA-256)', ic:'det', f:ferr('hash')},
+    '-',
+    {t:x.favorito?'Tirar das favoritas':'Marcar como favorita', ic:'liga', f:()=>depois(acao({tipo:'captura_favorito',id:x.id,valor:!x.favorito}))},
+    {t:'Etiquetas…', ic:'det', f:async()=>{ const v=await pedirTexto('Etiquetas','Separe por vírgula (ex.: trabalho, cliente X). Dá para buscar por elas no histórico.',x.tags); if(v!==null) depois(acao({tipo:'captura_tags',id:x.id,valor:v})); }},
+    {t:'Renomear arquivo…', ic:'det', f:async()=>{ const v=await pedirTexto('Renomear arquivo','Novo nome (a extensão é mantida). O arquivo continua na mesma pasta.',exeNome(x.caminho).replace(/\.[^.]+$/,'')); if(v) depois(acao({tipo:'captura_renomear',id:x.id,novo:v})); }},
     {t:'Tirar do histórico', ic:'fechar', f:async()=>{ await acao({tipo:'captura_apagar',id:x.id}); vCapturas(true); }},
     {t:'Apagar o arquivo (vai para a Lixeira)', ic:'matar', perigo:1, f:async()=>{ if(!await confirmar('Apagar este arquivo?',`${exeNome(x.caminho)} vai para a Lixeira e sai do histórico.`,'Apagar',1)) return; await acao({tipo:'captura_apagar',id:x.id,arquivo:true}); vCapturas(true); }},
   ]); }
 
 /* =================== EDITOR DE CAPTURAS =================== */
-const ED={base:null, formas:[], desfazer:[], refazer:[], ferr:'seta', cor:'#e53935', esp:4, num:1, arr:null, carregado:0, nome:''};
-const ED_FERR=[['seta','Seta'],['ret','Retângulo'],['elipse','Elipse'],['linha','Linha'],['caneta','Caneta'],['texto','Texto'],['numero','Número'],['marca','Marca-texto'],['pixelar','Pixelar'],['desfocar','Desfocar'],['recortar','Recortar']];
+const ED={base:null, formas:[], desfazer:[], refazer:[], ferr:'seta', cor:'#e53935', esp:4, num:1, arr:null, carregado:0, nome:'', tipoNum:'num', seta:'cheia', traco:'solido'};
+const ED_FERR=[['seta','Seta'],['ret','Retângulo'],['elipse','Elipse'],['linha','Linha'],['caneta','Caneta'],['texto','Texto'],['numero','Número'],['marca','Marca-texto'],['lupa','Lupa'],['holofote','Holofote'],['pixelar','Pixelar'],['desfocar','Desfocar'],['recortar','Recortar']];
+function edRomano(n){ const t=[[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']]; let s=''; for(const [v,r] of t) while(n>=v){ s+=r; n-=v; } return s; }
+function edLetra(n){ let s=''; while(n>0){ n--; s=String.fromCharCode(65+n%26)+s; n=Math.floor(n/26); } return s; }
+function edRotulo(n,tipo){ return tipo==='AB'?edLetra(n):tipo==='ab'?edLetra(n).toLowerCase():tipo==='rom'?edRomano(n):String(n); }
 const edCv=$('#edCanvas');
 function edBarra(){ if($('#edBarra').childElementCount) return;
   $('#edBarra').innerHTML=`<div class="seg" id="edFerr">${ED_FERR.map(([k,t])=>`<button data-f="${k}" aria-pressed="${k===ED.ferr}">${t}</button>`).join('')}</div>
     <input type="color" id="edCor" value="${ED.cor}" title="Cor" style="width:38px;height:30px;padding:0 2px">
     <select id="edEsp" title="Espessura">${[2,3,4,6,8,12].map(n=>`<option value="${n}" ${n===ED.esp?'selected':''}>${n} px</option>`).join('')}</select>
+    <select id="edTraco" title="Traço (retângulo, elipse, linha, seta, caneta)"><option value="solido">─ contínuo</option><option value="tracejado">╌ tracejado</option><option value="pontilhado">┈ pontilhado</option></select>
+    <select id="edSeta" title="Estilo da seta"><option value="cheia">➤ seta cheia</option><option value="aberta">→ seta aberta</option><option value="dupla">↔ seta dupla</option></select>
+    <select id="edNumTipo" title="Numeração"><option value="num">1, 2, 3</option><option value="AB">A, B, C</option><option value="ab">a, b, c</option><option value="rom">I, II, III</option></select>
     <span class="sep"></span><button class="btn" id="edDesf" title="Desfazer (Ctrl+Z)">Desfazer</button><button class="btn" id="edRef" title="Refazer (Ctrl+Y)">Refazer</button>
     <select id="edZoom" title="Zoom"><option value="ajustar">Ajustar à tela</option><option value="real">Tamanho real</option></select>
     <span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="edCopiar" title="Ctrl+C">Copiar</button><button class="btn" id="edBaixar">Baixar</button><button class="btn" id="edEnviar">Salvar e enviar</button><button class="btn" id="edNova">Salvar como nova</button><button class="btn pri" id="edSalvar" title="Ctrl+S">Salvar</button></span>`;
   seg($('#edFerr'), d=>{ ED.ferr=d.f; });
   $('#edCor').oninput=e=>{ ED.cor=e.target.value; }; $('#edEsp').onchange=e=>{ ED.esp=+e.target.value; };
+  $('#edTraco').onchange=e=>{ ED.traco=e.target.value; }; $('#edSeta').onchange=e=>{ ED.seta=e.target.value; }; $('#edNumTipo').onchange=e=>{ ED.tipoNum=e.target.value; ED.num=1; };
   $('#edZoom').onchange=e=>edCv.classList.toggle('real', e.target.value==='real');
   $('#edDesf').onclick=edDesfazer; $('#edRef').onclick=edRefazer;
   $('#edCopiar').onclick=edCopiar; $('#edBaixar').onclick=edBaixar;
@@ -1737,20 +1793,28 @@ async function vEditor(){ edBarra(); if(ED.carregado===ED_ID && ED.base){ edDese
   const it=CAPS&&CAPS.itens.find(x=>x.id===ED_ID); ED.nome=it?exeNome(it.caminho):'captura-'+ED_ID+'.png';
   $('#edSub').textContent=`${ED.nome} · ${c.width}×${c.height}. Segure Shift para linhas retas e quadrados. Ctrl+Z desfaz, Ctrl+S salva.`; edDesenhar(); }
 function edRetan(f){ return [Math.min(f.x0,f.x1), Math.min(f.y0,f.y1), Math.abs(f.x1-f.x0), Math.abs(f.y1-f.y0)]; }
+function edCabeca(ctx, x, y, a, cab, aberta){ ctx.beginPath(); ctx.moveTo(x-cab*Math.cos(a-0.45),y-cab*Math.sin(a-0.45)); ctx.lineTo(x,y); ctx.lineTo(x-cab*Math.cos(a+0.45),y-cab*Math.sin(a+0.45));
+  if(aberta){ ctx.setLineDash([]); ctx.stroke(); } else { ctx.closePath(); ctx.fill(); } }
 function edForma(ctx, f){ ctx.save(); ctx.strokeStyle=ctx.fillStyle=f.cor; ctx.lineWidth=f.esp; ctx.lineCap='round'; ctx.lineJoin='round';
   const [x,y,w,h]=edRetan(f);
+  if(['ret','elipse','linha','seta','caneta'].includes(f.t)) ctx.setLineDash(f.traco==='tracejado'?[f.esp*3,f.esp*2]:f.traco==='pontilhado'?[0.1,f.esp*2]:[]);
   if(f.t==='ret') ctx.strokeRect(x,y,w,h);
   else if(f.t==='elipse'){ ctx.beginPath(); ctx.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,Math.PI*2); ctx.stroke(); }
-  else if(f.t==='linha'||f.t==='seta'){ const a=Math.atan2(f.y1-f.y0,f.x1-f.x0), cab=Math.max(12,f.esp*4), enc=f.t==='seta'?cab*0.8:0;
-    ctx.beginPath(); ctx.moveTo(f.x0,f.y0); ctx.lineTo(f.x1-Math.cos(a)*enc,f.y1-Math.sin(a)*enc); ctx.stroke();
-    if(f.t==='seta'){ ctx.beginPath(); ctx.moveTo(f.x1,f.y1); ctx.lineTo(f.x1-cab*Math.cos(a-0.45),f.y1-cab*Math.sin(a-0.45)); ctx.lineTo(f.x1-cab*Math.cos(a+0.45),f.y1-cab*Math.sin(a+0.45)); ctx.closePath(); ctx.fill(); } }
+  else if(f.t==='linha'||f.t==='seta'){ const a=Math.atan2(f.y1-f.y0,f.x1-f.x0), cab=Math.max(12,f.esp*4), est=f.estiloSeta||'cheia', aberta=est==='aberta';
+    const enc=f.t==='seta'&&!aberta?cab*0.8:0, enc0=f.t==='seta'&&est==='dupla'?cab*0.8:0;
+    ctx.beginPath(); ctx.moveTo(f.x0+Math.cos(a)*enc0,f.y0+Math.sin(a)*enc0); ctx.lineTo(f.x1-Math.cos(a)*enc,f.y1-Math.sin(a)*enc); ctx.stroke();
+    if(f.t==='seta'){ edCabeca(ctx,f.x1,f.y1,a,cab,aberta); if(est==='dupla') edCabeca(ctx,f.x0,f.y0,a+Math.PI,cab,false); } }
   else if(f.t==='caneta'){ ctx.beginPath(); f.pts.forEach(([px,py],i)=>i?ctx.lineTo(px,py):ctx.moveTo(px,py)); ctx.stroke(); }
   else if(f.t==='marca'){ ctx.globalCompositeOperation='multiply'; ctx.globalAlpha=.45; ctx.fillRect(x,y,w,h); }
   else if(f.t==='texto'){ const tam=Math.max(14,f.esp*5); ctx.font=`600 ${tam}px "Segoe UI",sans-serif`; ctx.textBaseline='top';
     const [r,g,b]=[1,3,5].map(i=>parseInt(f.cor.slice(i,i+2),16)); ctx.strokeStyle=(r*299+g*587+b*114)/1000>140?'#000':'#fff'; ctx.lineWidth=Math.max(2,tam/7);
     f.txt.split('\n').forEach((l,i)=>{ ctx.strokeText(l,f.x0,f.y0+i*tam*1.25); ctx.fillText(l,f.x0,f.y0+i*tam*1.25); }); }
   else if(f.t==='numero'){ const r=Math.max(13,f.esp*3.5); ctx.beginPath(); ctx.arc(f.x0,f.y0,r,0,Math.PI*2); ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle='#fff'; ctx.stroke();
-    ctx.fillStyle='#fff'; ctx.font=`700 ${Math.round(r*1.1)}px "Segoe UI",sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(f.n),f.x0,f.y0+1); }
+    const rot=f.rotulo||String(f.n); ctx.fillStyle='#fff'; ctx.font=`700 ${Math.round(r*(rot.length>2?0.75:rot.length>1?0.9:1.1))}px "Segoe UI",sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(rot,f.x0,f.y0+1); }
+  else if(f.t==='lupa' && w>4 && h>4){ const raio=Math.min(w,h)/2, cx=x+w/2, cy=y+h/2, zoom=2, src=raio*2/zoom;
+    const t=document.createElement('canvas'); t.width=t.height=Math.ceil(raio*2); t.getContext('2d').drawImage(ctx.canvas,cx-src/2,cy-src/2,src,src,0,0,raio*2,raio*2);
+    ctx.beginPath(); ctx.arc(cx,cy,raio,0,Math.PI*2); ctx.save(); ctx.clip(); ctx.drawImage(t,cx-raio,cy-raio); ctx.restore(); ctx.lineWidth=Math.max(2,f.esp); ctx.stroke(); }
+  else if(f.t==='holofote' && w>2 && h>2){ ctx.fillStyle='rgba(0,0,0,.6)'; ctx.beginPath(); ctx.rect(0,0,ctx.canvas.width,ctx.canvas.height); ctx.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,Math.PI*2); ctx.fill('evenodd'); }
   else if((f.t==='pixelar'||f.t==='desfocar') && w>1 && h>1){
     if(f.t==='pixelar'){ const bl=Math.max(5,f.esp*3), sw=Math.max(1,Math.round(w/bl)), sh=Math.max(1,Math.round(h/bl)), t=document.createElement('canvas'); t.width=sw; t.height=sh;
       t.getContext('2d').drawImage(ctx.canvas,x,y,w,h,0,0,sw,sh); ctx.imageSmoothingEnabled=false; ctx.drawImage(t,0,0,sw,sh,x,y,w,h); }
@@ -1778,8 +1842,8 @@ function edTexto(e,x,y){ const t=document.createElement('textarea'); t.className
   t.onkeydown=ev=>{ ev.stopPropagation(); if(ev.key==='Enter'&&!ev.shiftKey){ ev.preventDefault(); fim(true); } if(ev.key==='Escape') fim(false); }; t.onblur=()=>fim(true); }
 edCv.addEventListener('pointerdown',e=>{ if(!ED.base||e.button!==0) return; e.preventDefault(); const [x,y]=edPonto(e);
   if(ED.ferr==='texto'){ edTexto(e,x,y); return; }
-  if(ED.ferr==='numero'){ edMudar(()=>ED.formas.push({t:'numero',x0:x,y0:y,x1:x,y1:y,cor:ED.cor,esp:ED.esp,n:ED.num++})); return; }
-  edCv.setPointerCapture(e.pointerId); ED.arr={t:ED.ferr,x0:x,y0:y,x1:x,y1:y,cor:ED.cor,esp:ED.esp,pts:ED.ferr==='caneta'?[[x,y]]:null}; });
+  if(ED.ferr==='numero'){ edMudar(()=>{ const n=ED.num++; ED.formas.push({t:'numero',x0:x,y0:y,x1:x,y1:y,cor:ED.cor,esp:ED.esp,n,rotulo:edRotulo(n,ED.tipoNum)}); }); return; }
+  edCv.setPointerCapture(e.pointerId); ED.arr={t:ED.ferr,x0:x,y0:y,x1:x,y1:y,cor:ED.cor,esp:ED.esp,pts:ED.ferr==='caneta'?[[x,y]]:null,traco:ED.traco,estiloSeta:ED.seta}; });
 edCv.addEventListener('pointermove',e=>{ const a=ED.arr; if(!a) return; let [x,y]=edPonto(e);
   if(a.t==='caneta'){ a.pts.push([x,y]); }
   else if(e.shiftKey && (a.t==='linha'||a.t==='seta')){ const dx=x-a.x0, dy=y-a.y0, ang=Math.round(Math.atan2(dy,dx)/(Math.PI/4))*(Math.PI/4), d=Math.hypot(dx,dy); x=Math.round(a.x0+d*Math.cos(ang)); y=Math.round(a.y0+d*Math.sin(ang)); }
@@ -1845,37 +1909,116 @@ function capOpcoesHtml(){ const c=CFG, sel=(k,op)=>`<select data-cfg="${k}">${Ob
   <h2 class="secao">Onde salvar</h2><div class="painel">
     ${it('Pasta das capturas',`${txt('captura_pasta','Imagens\\Monitor do PC',280)}<button class="btn" id="capPastaEsc">Escolher pasta…</button><button class="btn" id="capPastaAbrir">Abrir</button>${c.captura_pasta?'<button class="btn" id="capPastaPadrao">Usar a padrão</button>':''}`,'“Escolher pasta…” abre a janela de pastas do Windows. Também dá para colar um caminho completo (ex.: D:\\Prints). Vazio = Imagens\\Monitor do PC.')}
     ${it('Nome do arquivo',txt('captura_nome','%Y-%m-%d_%H-%M-%S',220),'Data e hora: %Y ano, %m mês, %d dia, %H hora, %M minuto, %S segundo. Se o nome já existir, ganha _2, _3…')}
-    ${it('Formato',`${sel('captura_formato',{png:'PNG (sem perda)',jpg:'JPG (menor)'})} ${num('captura_qualidade',50,100)}<span class="mut2">qualidade JPG</span>`)}</div>
-  <h2 class="secao">Tarefas pós-captura</h2><div class="painel">
-    ${it('Copiar a imagem',sw('captura_copiar'),'Fica pronta para colar (Ctrl+V) em qualquer programa.')}
-    ${it('Salvar em arquivo',sw('captura_salvar'),'Desligado: a captura fica só no histórico (numa pasta interna).')}
-    ${it('Perguntar onde salvar (Salvar como…)',sw('captura_perguntar'),'Abre a janela do Windows para escolher a pasta e o nome a cada captura. Se cancelar, vale a pasta acima.')}
-    ${it('Copiar o caminho do arquivo',sw('captura_copiar_caminho'),'')}
-    ${it('Mostrar o arquivo na pasta',sw('captura_mostrar_pasta'),'Abre o Explorador de Arquivos com a captura selecionada.')}
-    ${it('Copiar o texto da imagem (OCR)',sw('captura_ocr_auto'),'Usa o OCR do próprio Windows.')}
-    ${it('Mostrar aviso perto do relógio',sw('captura_notificar'))}
-    ${it('Abrir no editor',sw('captura_editor'),'Abre a janela do Monitor com a captura pronta para marcar setas, textos, números, desfocar e recortar.')}
-    ${it('Enviar (upload)',sw('captura_enviar'),'Manda a captura para o site escolhido em “Envio” e roda as tarefas pós-envio. Vale também para vídeos e GIFs.')}
-    <div class="item"><small style="grid-column:1/-1">Ordem: salvar → copiar a imagem → copiar o caminho → texto (OCR) → aviso → mostrar na pasta → enviar → editor. Na área de transferência fica o último item que copia algo (o link, se o envio estiver ligado).</small></div></div>
-  <h2 class="secao">Tarefas pós-envio</h2><div class="painel">
-    ${it('Copiar o link',`${sw('captura_envio_copiar')} ${sel('captura_envio_formato',{url:'Só o link',markdown:'Markdown',html:'HTML',bbcode:'BBCode (fóruns)'})}`,'Markdown, HTML e BBCode viram imagem embutida (vídeos viram um link com o nome do arquivo).')}
-    ${it('Abrir o link no navegador',sw('captura_envio_abrir'))}
-    ${it('Mostrar aviso perto do relógio',sw('captura_envio_notificar'))}</div>
+    ${it('Formato',`${sel('captura_formato',{png:'PNG (sem perda)',jpg:'JPG (menor)',webp:'WebP (bem menor)'})} ${num('captura_qualidade',50,100)}<span class="mut2">qualidade JPG/WebP</span>`)}
+    ${it('WebP sem perda',sw('captura_webp_sem_perda'),'Ligado: o WebP guarda a imagem exata (como o PNG), mas costuma ficar menor.')}</div>
+  <h2 class="secao">Tarefas após a captura</h2><div class="painel">
+    ${it('Mostrar menu de tarefas rápidas',sw('captura_tarefas_rapidas'),'Depois de capturar aparece um menu perto do mouse para escolher na hora: salvar e copiar, só copiar, enviar, editor, fixar, OCR, QR, IA, imprimir. As tarefas abaixo ficam valendo só quando o menu está desligado.')}
+    ${it('Mostrar janela “Pós-captura”',sw('captura_janela_pos'),'Janela com a prévia e botões (copiar, enviar, fixar, OCR, QR, IA, imprimir…).')}
+    ${it('Embelezar imagem',sw('captura_embelezar'),'Margem, fundo em degradê, cantos arredondados e sombra (ajuste em “Embelezar e efeitos”).')}
+    ${it('Efeitos de imagem / marca d’água',sw('captura_efeitos'),'Borda e marca d’água de texto (ajuste em “Embelezar e efeitos”).')}
+    ${it('Copiar imagem para a área de transferência',sw('captura_copiar'),'Fica pronta para colar (Ctrl+V) em qualquer programa.')}
+    ${it('Copiar o arquivo para a área de transferência',sw('captura_copiar_arquivo'),'Copia o arquivo em si, para colar no Explorer, WhatsApp, Discord ou num e-mail.')}
+    ${it('Salvar imagem',sw('captura_salvar'),'Desligado: a captura fica só no histórico (numa pasta interna).')}
+    ${it('Salvar imagem como…',sw('captura_perguntar'),'Abre a janela do Windows para escolher a pasta e o nome a cada captura. Se cancelar, vale a pasta acima.')}
+    ${it('Salvar miniatura',`${sw('captura_miniatura')} ${sel('captura_miniatura_largura',{100:'100 px',150:'150 px',200:'200 px',300:'300 px',400:'400 px',600:'600 px'})}`,'Salva também uma cópia pequena com “_mini” no nome.')}
+    ${it('Copiar caminho do arquivo',sw('captura_copiar_caminho'))}
+    ${it('Copiar caminho da pasta',sw('captura_copiar_pasta'))}
+    ${it('Mostrar arquivo no Explorer',sw('captura_mostrar_pasta'))}
+    ${it('Abrir no editor',sw('captura_editor'),'Abre a janela do Monitor com a captura pronta para marcar setas, textos, números, lupa, holofote, desfocar e recortar.')}
+    ${it('Abrir no editor de imagens do Windows',sw('captura_editor_fotos'),'Abre no programa que o Windows usa para “Editar” imagens (normalmente o Paint).')}
+    ${it('Fixar na tela',sw('captura_fixar'),'A captura fica por cima de tudo: arraste para mover, roda do mouse muda o tamanho, Ctrl+roda a transparência, clique duplo minimiza, Ctrl+C copia, Esc ou botão direito fecha.')}
+    ${it('Imprimir imagem',sw('captura_imprimir'))}
+    ${it('Reconhecer texto (OCR) e copiar',sw('captura_ocr_auto'),'Usa o OCR do próprio Windows.')}
+    ${it('Ler código QR e copiar',sw('captura_qr'),CAPS&&CAPS.estado&&CAPS.estado.qr===false?'<span style="color:var(--perigo)">O leitor de QR não está disponível nesta instalação.</span>':'Copia o conteúdo do primeiro código encontrado e mostra todos numa janela.')}
+    ${it('Analisar imagem com IA',sw('captura_ia'),'Manda a imagem para a IA escolhida em “Analisar com IA” (precisa da sua chave) e mostra a resposta.')}
+    ${it('Realizar ações',sw('captura_rodar_acoes'),'Roda os programas da seção “Realizar ações” com o arquivo da captura.')}
+    ${it('Mostrar janela “Pré-envio”',sw('captura_pre_envio'),'Pergunta antes de enviar, com a prévia.')}
+    ${it('Enviar imagem para hospedagem',sw('captura_enviar'),'Manda a captura para o site escolhido em “Envio” e roda as tarefas após o envio. Vale também para vídeos e GIFs.')}
+    ${it('Apagar o arquivo local depois de enviar',sw('captura_apagar_local'),'Depois que o envio dá certo, o arquivo vai para a Lixeira (o link continua no histórico).')}
+    ${it('Mostrar aviso',sw('captura_notificar'),'Aviso do próprio Monitor no canto da tela (ajuste em “Aviso”).')}
+    <div class="item"><small style="grid-column:1/-1">Ordem: efeitos → embelezar → salvar → copiar imagem → copiar arquivo → miniatura → copiar caminho → copiar pasta → OCR → QR → aviso → Explorer → editor do Windows → imprimir → ações → fixar → janela pós-captura → IA → enviar → editor. Na área de transferência fica o último item que copia algo (o link, se o envio estiver ligado).</small></div></div>
+  <h2 class="secao">Tarefas após o envio</h2><div class="painel">
+    ${it('Mostrar janela “Pós-envio”',sw('captura_envio_janela'),'Link, código QR e botões para abrir, encurtar e compartilhar.')}
+    ${it('Encurtar URL',sw('captura_envio_encurtar'),'Pelo is.gd (sem conta).')}
+    ${it('Compartilhar URL',sel('captura_envio_compartilhar',{'':'Não compartilhar',whatsapp:'WhatsApp',telegram:'Telegram',x:'X (Twitter)',reddit:'Reddit',email:'E-mail'}),'Abre o site escolhido no navegador com o link pronto para enviar.')}
+    ${it('Copiar URL para a área de transferência',`${sw('captura_envio_copiar')} ${sel('captura_envio_formato',{url:'Só o link',markdown:'Markdown',html:'HTML',bbcode:'BBCode (fóruns)'})}`,'Markdown, HTML e BBCode viram imagem embutida (vídeos viram um link com o nome do arquivo).')}
+    ${it('Abrir URL',sw('captura_envio_abrir'))}
+    ${it('Mostrar janela de código QR',sw('captura_envio_qr'),'Para abrir o link no celular apontando a câmera.')}
+    ${it('Mostrar aviso',sw('captura_envio_notificar'))}
+    ${it('Tirar metadados antes de enviar',sw('captura_sem_metadados'),'Tira dados escondidos das fotos (local do GPS, câmera, data) de uma cópia antes de enviar. O arquivo original não muda.')}</div>
+  <h2 class="secao">Aviso</h2><div class="painel">
+    ${it('Ao clicar no aviso',sel('captura_aviso_clique',{abrir:'Abrir a imagem',pasta:'Abrir a pasta (com o arquivo selecionado)',editor:'Abrir no editor do Monitor',link:'Abrir o link (se foi enviado)',copiar:'Copiar a imagem',fixar:'Fixar na tela',nada:'Não fazer nada'}),'O aviso é do próprio Monitor (não do Windows). Com o mouse em cima, ele espera.')}
+    ${it('Botões no aviso',sw('captura_aviso_botoes'),'Copiar, Editor, Pasta e Enviar (ou Abrir link).')}
+    ${it('Posição',sel('captura_aviso_canto',{inf_dir:'Embaixo, à direita',inf_esq:'Embaixo, à esquerda',sup_dir:'Em cima, à direita',sup_esq:'Em cima, à esquerda'}))}
+    ${it('Some depois de',sel('captura_aviso_segundos',{3:'3 s',4:'4 s',6:'6 s',8:'8 s',10:'10 s',15:'15 s',30:'30 s'}))}
+    ${it('Som ao concluir',sw('captura_som'))}</div>
+  <h2 class="secao">Embelezar e efeitos</h2><div class="painel">
+    ${it('Fundo do embelezar',sel('captura_emb_fundo',{azul:'Degradê azul',roxo:'Degradê roxo',por_do_sol:'Pôr do sol',verde:'Degradê verde',escuro:'Escuro',claro:'Claro',transparente:'Transparente (PNG/WebP)'}))}
+    ${it('Margem',sel('captura_emb_margem',{0:'Nenhuma',16:'16 px',24:'24 px',40:'40 px',64:'64 px',96:'96 px'}))}
+    ${it('Cantos arredondados',sel('captura_emb_cantos',{0:'Retos',6:'6 px',12:'12 px',20:'20 px',32:'32 px'}))}
+    ${it('Sombra',sw('captura_emb_sombra'))}
+    ${it('Borda',`${sel('captura_borda',{0:'Sem borda',1:'1 px',2:'2 px',4:'4 px',8:'8 px'})} <input type="color" data-cfg="captura_borda_cor" value="${esc(c.captura_borda_cor||'#000000')}" style="width:42px;height:30px;padding:0 2px">`)}
+    ${it('Marca d’água (texto)',txt('captura_marca_texto','ex.: © Seu nome',220),'Vazio: sem marca d’água.')}
+    ${it('Posição e opacidade da marca',`${sel('captura_marca_canto',{inf_dir:'Embaixo, à direita',inf_esq:'Embaixo, à esquerda',sup_dir:'Em cima, à direita',sup_esq:'Em cima, à esquerda',centro:'No centro'})} ${num('captura_marca_opacidade',10,100)}<span class="mut2">%</span>`)}</div>
   <h2 class="secao">Seleção de região</h2><div class="painel">
     ${it('Ferramentas de anotação antes de capturar',sw('captura_anotar'),'Depois de escolher a área aparece uma barra para desenhar por cima: seta, retângulo, elipse, linha, caneta, texto, texto com fundo, números, marca-texto, desfocar, pixelar, tarja e cursor. Com ✥ dá para mover as anotações e ajustar as bordas da área. Enter, clique duplo ou ✓ captura; Esc cancela. Desligado: a captura sai assim que você solta o mouse.')}
     ${it('Lupa com posição e cor do pixel',sw('captura_lupa'),'As setas do teclado movem o mouse 1 pixel (Shift: 10) para acertar a seleção.')}
+    ${it('Escurecer fora da área',sw('captura_escurecer'),'Desligado: a tela fica com o brilho normal enquanto você escolhe.')}
+    ${it('Linhas-guia e cruz no centro',sw('captura_cruz'),'Linhas que seguem o mouse de ponta a ponta e uma cruz no meio da área.')}
     ${it('Atraso da “região com atraso”',sel('captura_atraso_s',{1:'1 s',2:'2 s',3:'3 s',5:'5 s',10:'10 s'}),'Tempo para abrir um menu ou passar o mouse antes de congelar a tela.')}
+    ${it('Várias regiões','<span class="mut2">botão “Várias regiões”</span>','Marque quantas áreas quiser; Enter ou clique duplo junta todas numa imagem (o que fica fora delas sai transparente). Botão direito desfaz a última.')}
     ${it('Captura com rolagem','<span class="mut2">automática</span>','Rola sozinha até o fim da página. Para parar antes, clique em “Parar e salvar” na janelinha, aperte Esc ou o mesmo atalho. Tirar o mouse de cima da área pausa a rolagem.')}</div>
   <h2 class="secao">Gravação de tela</h2><div class="painel" id="cfgGrav">
     ${it('Quadros por segundo',sel('captura_gravar_fps',{10:'10',15:'15',24:'24',30:'30',60:'60'}),'O GIF sai sempre com 15 quadros por segundo e no máximo 960 px de largura, para ficar leve.')}
     ${it('Mostrar o mouse no vídeo',sw('captura_gravar_cursor'))}
+    ${it('Áudio',`<select data-cfg="captura_gravar_audio" id="cfgAudio"><option value="">Sem áudio</option>${c.captura_gravar_audio?`<option value="${esc(c.captura_gravar_audio)}" selected>${esc(c.captura_gravar_audio)}</option>`:''}</select>`,'Microfone, ou o som do PC se o Windows tiver “Mixagem estéreo” ligada (Som › Gravação). Só no vídeo; o GIF não tem som.')}
+    ${it('Começar depois de',sel('captura_gravar_atraso',{0:'Na hora',3:'3 s',5:'5 s',10:'10 s'}))}
+    ${it('Cronômetro na moldura',sw('captura_gravar_cronometro'),'Mostra o tempo e “PAUSADO” logo acima da área (fora do vídeo). Pausar: menu do ícone, botão na página ou um atalho.')}
     <div class="item"><b>ffmpeg (gravador)</b><div class="ctl" id="cfgFfmpeg"><span class="mut">—</span></div><small>A gravação usa o ffmpeg, baixado do GitHub na primeira gravação (cerca de 90 MB) com a soma de verificação conferida. Se já houver um ffmpeg no PATH, ele é usado.</small></div></div>
+  <h2 class="secao">Fluxos de trabalho</h2><div class="painel" id="cfgFluxos"></div>
+  <h2 class="secao">Realizar ações</h2><div class="painel" id="cfgAcoes"></div>
+  <h2 class="secao">Analisar com IA</h2><div class="painel">
+    ${it('Serviço',sel('captura_ia_provedor',{openai:'OpenAI (ChatGPT)',gemini:'Google Gemini',openrouter:'OpenRouter'}),'Opcional. Você usa a sua própria chave e paga direto ao serviço.')}
+    ${it('Chave de API',`<span id="iaChave" class="mut2">—</span> <button class="btn" id="iaCadastrar">Cadastrar ou trocar…</button>`,'A chave é digitada numa janela do ícone perto do relógio e fica cifrada pelo Windows só no seu usuário. Ela não passa por esta página, não vai no backup e não aparece no celular.')}
+    ${it('Modelo',txt('captura_ia_modelo','padrão do serviço',220),'Vazio usa o padrão (gpt-4o-mini, gemini-2.5-flash ou openai/gpt-4o-mini). Confira os nomes disponíveis no site do serviço.')}
+    <div class="item"><b>Pedido</b><div class="ctl" style="flex:1"><textarea data-cfg="captura_ia_prompt" rows="2" style="width:100%">${esc(c.captura_ia_prompt||'')}</textarea></div><small>O que pedir para a IA sobre a imagem.</small></div></div>
   <h2 class="secao">Envio (upload)</h2><div class="painel" id="cfgEnvio"><div class="vazio">Carregando…</div></div>`; }
 function renderCapOpcoes(){ const el=$('#capOpcoes'); if(!el) return;
   if(REMOTO){ el.innerHTML='<div class="vazio">As opções de captura só aparecem no próprio computador.</div>'; return; }
-  el.innerHTML=capOpcoesHtml(); carregarCfgCaptura();
+  el.innerHTML=capOpcoesHtml(); carregarCfgCaptura(); renderFluxos(); renderAcoes();
   $('#capPastaEsc').onclick=()=>capPasta('captura_escolher_pasta'); $('#capPastaAbrir').onclick=()=>capPasta('captura_abrir_pasta');
+  $('#iaCadastrar').onclick=async()=>{ toast('Digite a chave na janela que abriu.'); await acao({tipo:'captura_tarefa',nome:'ia_chave'}); setTimeout(carregarCfgCaptura,1500); };
   const p=$('#capPastaPadrao'); if(p) p.onclick=async()=>{ const r=await POST('config',{captura_pasta:''}).catch(()=>null); if(r&&r.valores){ CFG=r.valores; toast('Voltou para Imagens\\Monitor do PC.'); } renderCapOpcoes(); }; }
+async function salvarCfgLista(chave, lista, msg){ const r=await POST('config',{[chave]:lista}).catch(()=>null);
+  if(!r||!r.valores){ toast('Não consegui salvar.',1); return; } CFG=r.valores; toast(msg||'Salvo.'); if(chave==='captura_fluxos') renderFluxos(); else renderAcoes(); }
+function renderFluxos(){ const el=$('#cfgFluxos'), D=CAP_META||CAPS; if(!el||!D) return; const l=CFG.captura_fluxos||[];
+  const tar={captura_salvar:'Salvar',captura_copiar:'Copiar imagem',captura_enviar:'Enviar',captura_editor:'Editor',captura_fixar:'Fixar',captura_ocr_auto:'OCR',captura_embelezar:'Embelezar',captura_efeitos:'Efeitos',captura_copiar_arquivo:'Copiar arquivo',captura_mostrar_pasta:'Mostrar no Explorer',captura_notificar:'Aviso',captura_anotar:'Anotação'};
+  el.innerHTML=`<div class="item"><small style="grid-column:1/-1">Um fluxo é um atalho com tarefas próprias. Ex.: Ctrl+F1 = região + enviar, sem salvar. As tarefas marcadas ligam e as desmarcadas desligam; o resto segue as opções acima.</small></div>`
+    +l.map((f,i)=>`<div class="item" data-fluxo="${i}"><b><input type="text" data-f="nome" value="${esc(f.nome)}" style="width:180px"></b><div class="ctl" style="flex-wrap:wrap;max-width:560px">
+      <select data-f="acao">${D.acoes_imagem.map(k=>`<option value="${k}" ${f.acao===k?'selected':''}>${esc(D.acoes[k])}</option>`).join('')}</select>
+      <input type="text" class="atalho" readonly data-f="atalho" value="${esc(f.atalho)}" placeholder="sem atalho" title="Clique e aperte a combinação">
+      <select data-f="destino"><option value="">Destino padrão</option>${Object.entries(D.destinos).map(([k,t])=>`<option value="${k}" ${f.destino===k?'selected':''}>${esc(t)}</option>`).join('')}</select>
+      ${Object.entries(tar).map(([k,t])=>`<label class="chip"><input type="checkbox" data-t="${k}" ${f.tarefas[k]?'checked':''} ${k in f.tarefas?'':'data-vazio="1"'}> ${t}</label>`).join('')}
+      <button class="btn perigo" data-f="apagar">Apagar</button></div><small></small></div>`).join('')
+    +`<div class="item"><div class="ctl"><button class="btn" id="fluxoNovo">Novo fluxo</button></div></div>`;
+  const ler=()=>[...el.querySelectorAll('[data-fluxo]')].map(d=>{ const f={...l[+d.dataset.fluxo], tarefas:{}}; f.nome=d.querySelector('[data-f=nome]').value; f.acao=d.querySelector('[data-f=acao]').value; f.atalho=d.querySelector('[data-f=atalho]').value; f.destino=d.querySelector('[data-f=destino]').value;
+    d.querySelectorAll('[data-t]').forEach(c=>{ if(c.checked) f.tarefas[c.dataset.t]=true; else if(!c.dataset.vazio) f.tarefas[c.dataset.t]=false; }); return f; });
+  el.querySelectorAll('[data-fluxo] input[data-f=nome],[data-fluxo] select').forEach(i=>i.onchange=ev=>{ ev.stopPropagation(); salvarCfgLista('captura_fluxos',ler()); });
+  el.querySelectorAll('[data-t]').forEach(c=>c.onchange=ev=>{ ev.stopPropagation(); delete c.dataset.vazio; salvarCfgLista('captura_fluxos',ler()); });
+  el.querySelectorAll('[data-f=apagar]').forEach(b=>b.onclick=()=>{ const i=+b.closest('[data-fluxo]').dataset.fluxo; salvarCfgLista('captura_fluxos',ler().filter((_,j)=>j!==i),'Fluxo apagado.'); });
+  el.querySelectorAll('input.atalho[data-f=atalho]').forEach(inp=>{ const antes=inp.value; inp.onfocus=()=>{ inp.value=''; inp.placeholder='aperte as teclas…'; }; inp.onblur=()=>{ if(!inp.dataset.ok){ inp.value=antes; inp.placeholder='sem atalho'; } };
+    const pegar=e=>{ if(e.key==='Escape'){ inp.blur(); return; } if(e.key==='Delete'||e.key==='Backspace'){ e.preventDefault(); inp.dataset.ok=1; inp.value=''; inp.blur(); salvarCfgLista('captura_fluxos',ler(),'Atalho removido.'); return; } const v=teclaAtalho(e); e.preventDefault(); e.stopPropagation(); if(!v) return; inp.dataset.ok=1; inp.value=v; inp.blur(); salvarCfgLista('captura_fluxos',ler(),`Atalho ${v} salvo.`); };
+    inp.onkeydown=e=>{ if(e.code!=='PrintScreen') pegar(e); }; inp.onkeyup=e=>{ if(e.code==='PrintScreen') pegar(e); }; });
+  $('#fluxoNovo').onclick=()=>salvarCfgLista('captura_fluxos',[...ler(),{nome:'Região e enviar',acao:'regiao',atalho:'',tarefas:{captura_enviar:true,captura_salvar:false},destino:''}],'Fluxo criado: escolha um atalho para ele.'); }
+function renderAcoes(){ const el=$('#cfgAcoes'); if(!el) return; const l=CFG.captura_acoes||[];
+  el.innerHTML=`<div class="item"><small style="grid-column:1/-1">Programas que recebem o arquivo da captura quando a tarefa “Realizar ações” está ligada. Nos argumentos, <code>%arquivo</code> vira o caminho da captura e <code>%pasta</code> a pasta dela. Ex.: programa <code>C:\\Program Files\\GIMP 2\\bin\\gimp-2.10.exe</code>, argumentos <code>"%arquivo"</code>. Só dá para configurar no próprio PC.</small></div>
+    <div class="item"><table class="tab-edit" style="grid-column:1/-1">${l.map((a,i)=>`<tr data-acao="${i}"><td style="width:24px"><input type="checkbox" data-a="ativo" ${a.ativo?'checked':''} title="Ligada"></td><td style="width:22%"><input type="text" data-a="nome" value="${esc(a.nome)}"></td><td><input type="text" data-a="programa" value="${esc(a.programa)}"></td><td style="width:24%"><input type="text" data-a="args" value="${esc(a.args)}"></td><td style="width:70px"><button class="btn perigo" data-a="apagar">Apagar</button></td></tr>`).join('')}
+    <tr><td></td><td><input type="text" id="acNome" placeholder="Nome"></td><td><input type="text" id="acProg" placeholder="C:\\caminho\\programa.exe"></td><td><input type="text" id="acArgs" value='"%arquivo"'></td><td><button class="btn" id="acAdd">Adicionar</button></td></tr></table></div>`;
+  const ler=()=>[...el.querySelectorAll('[data-acao]')].map(tr=>({ativo:tr.querySelector('[data-a=ativo]').checked,nome:tr.querySelector('[data-a=nome]').value,programa:tr.querySelector('[data-a=programa]').value,args:tr.querySelector('[data-a=args]').value}));
+  el.querySelectorAll('[data-acao] input').forEach(i=>i.onchange=ev=>{ ev.stopPropagation(); salvarCfgLista('captura_acoes',ler()); });
+  el.querySelectorAll('[data-a=apagar]').forEach(b=>b.onclick=()=>{ const i=+b.closest('[data-acao]').dataset.acao; salvarCfgLista('captura_acoes',ler().filter((_,j)=>j!==i),'Ação apagada.'); });
+  el.querySelectorAll('#acNome,#acProg,#acArgs').forEach(i=>i.onchange=ev=>ev.stopPropagation());
+  $('#acAdd').onclick=()=>{ const p=$('#acProg').value.trim(); if(!p){ toast('Informe o caminho do programa.',1); return; } salvarCfgLista('captura_acoes',[...ler(),{ativo:true,nome:$('#acNome').value,programa:p,args:$('#acArgs').value}],'Ação adicionada.'); }; }
 async function capPasta(tipo){ const r=await POST('acao',{tipo}).catch(()=>null); if(!r){ toast('O serviço não respondeu.',1); return; }
   if(r.erro||!r.pendente){ toast(r.erro||r.msg,!r.ok); return; }
   if(tipo==='captura_escolher_pasta') toast('Escolha a pasta na janela que abriu.');
@@ -1889,7 +2032,9 @@ async function salvarAtalho(k, v){ const novo={...(CFG.captura_atalhos||{}),[k]:
   if(!r||!r.valores){ toast('Não consegui salvar.',1); return; } CFG=r.valores; const fic=CFG.captura_atalhos[k];
   if(v&&fic!==v) toast(`“${v}” não pode ser usado (letras e números precisam de Ctrl, Alt ou Win; e cada atalho só vale para uma ação).`,1);
   else toast(v?`Atalho ${fic} salvo.`:'Atalho removido.'); carregarCfgCaptura(); }
+let CAP_META=null;
 async function carregarCfgCaptura(){ let d; try{ d=await API('capturas?limite=1'); }catch(_){ return; } const el=$('#cfgCapAtalhos'); if(!el) return;
+  const novo=!CAP_META; CAP_META=d; if(novo) renderFluxos();
   const at=CFG.captura_atalhos||{}, est=(d.estado||{}).atalhos||{};
   el.innerHTML=Object.entries(d.acoes).map(([k,t])=>{ const s=est[k]; return `<div class="item"><b>${esc(t)}</b><div class="ctl"><input type="text" class="atalho" readonly data-atalho="${k}" value="${esc(at[k]||'')}" placeholder="sem atalho" title="Clique e aperte a combinação"><button class="btn" data-limpar="${k}" ${at[k]?'':'disabled'}>Limpar</button></div><small>${!at[k]?'':!CFG.captura_ativa?'atalhos desligados':s==='ok'?'<span style="color:var(--ok)">funcionando</span>':s?`<span style="color:var(--perigo)">${esc(s)}</span>`:'aguardando o ícone perto do relógio'}</small></div>`; }).join('')
     +`<div class="item"><small style="grid-column:1/-1">Clique num campo e aperte a combinação (ex.: Ctrl+Shift+S). Esc cancela. Uma combinação que já está em uso por um atalho ativo não chega até aqui: limpe o atalho antigo primeiro.</small></div>`;
@@ -1902,21 +2047,28 @@ async function carregarCfgCaptura(){ let d; try{ d=await API('capturas?limite=1'
   const e=d.estado||{}, ff=$('#cfgFfmpeg');
   if(ff) ff.innerHTML=e.baixando!=null?`<span class="mut">baixando… ${e.baixando}%</span>`:e.ffmpeg?'<span style="color:var(--ok)">instalado</span>':'<button class="btn" id="ffBaixar">Baixar agora</button>';
   const fb=$('#ffBaixar'); if(fb) fb.onclick=()=>acao({tipo:'captura',modo:'ffmpeg'});
+  const au=$('#cfgAudio'); if(au) (e.audio||[]).forEach(n=>{ if(![...au.options].some(o=>o.value===n)) au.add(new Option(n,n,false,n===CFG.captura_gravar_audio)); });
+  if(au&&!e.ffmpeg&&au.options.length<2) au.title='A lista de dispositivos aparece depois que o ffmpeg for baixado.';
+  const ic=$('#iaChave'); if(ic) ic.innerHTML=e.ia_chave?'<span style="color:var(--ok)">cadastrada</span>':'nenhuma';
   const c=CFG, up=c.captura_uploader||{}, en=$('#cfgEnvio'); if(!en) return;
   const linhas=o=>Object.entries(o||{}).map(([k,v])=>`${k}: ${v}`).join('\n');
   en.innerHTML=`<div class="item"><b>Para onde enviar</b><div class="ctl"><select data-cfg="captura_destino">${Object.entries(d.destinos).map(([k,t])=>`<option value="${k}" ${c.captura_destino===k?'selected':''}>${esc(t)}</option>`).join('')}</select></div><small>Catbox, Litterbox, Uguu e tmpfiles não pedem conta. Tudo o que vai para esses sites fica público para quem tiver o link: não envie nada sigiloso.</small></div>
     ${c.captura_destino==='litterbox'?`<div class="item"><b>Apagar do Litterbox depois de</b><div class="ctl">${['1h','12h','24h','72h'].map(v=>`<label class="chip"><input type="radio" name="lt" data-cfg="captura_litter_tempo" value="${v}" ${c.captura_litter_tempo===v?'checked':''}> ${v}</label>`).join(' ')}</div><small></small></div>`:''}
     ${c.captura_destino==='imgur'?`<div class="item"><b>Client-ID do Imgur</b><div class="ctl"><input type="text" data-cfg="captura_imgur_id" value="${esc(c.captura_imgur_id||'')}" style="width:220px"></div><small>Crie de graça em api.imgur.com/oauth2/addclient (tipo “Anonymous usage without user authorization”) e cole o Client-ID aqui.</small></div>`:''}
-    ${c.captura_destino==='personalizado'?`<div class="form" id="cfgUp"><label class="campo largo">Endereço (POST)<input type="text" data-up="url" value="${esc(up.url||'')}" placeholder="https://meusite.com/upload"></label>
+    <div class="item"><b>Importar uploader do ShareX (.sxcu)</b><div class="ctl"><label class="btn">Escolher arquivo…<input type="file" id="sxcuArq" accept=".sxcu,.json,application/json" hidden></label></div><small>Usa um uploader personalizado que você já tem no ShareX (envio de imagens ou arquivos por formulário). Ele vira o destino “Uploader personalizado”.</small></div>
+    ${c.captura_destino==='personalizado'?`<div class="form" id="cfgUp">${up.nome?`<b class="largo">${esc(up.nome)}</b>`:''}<label class="campo largo">Endereço (POST)<input type="text" data-up="url" value="${esc(up.url||'')}" placeholder="https://meusite.com/upload"></label>
       <label class="campo">Campo do arquivo<input type="text" data-up="campo" value="${esc(up.campo||'file')}"></label>
       <label class="campo">Onde está o link na resposta (JSON)<input type="text" data-up="resposta" value="${esc(up.resposta||'')}" placeholder="ex.: data.url (vazio = resposta inteira)"></label>
+      <label class="campo largo">Modelo do link (opcional)<input type="text" data-up="modelo" value="${esc(up.modelo||'')}" placeholder="ex.: https://i.site.com/{json:data.id}.png  — aceita {json:caminho} e {response}"></label>
       <label class="campo">Cabeçalhos (um por linha: Nome: valor)<textarea data-up="cabecalhos" rows="3">${esc(linhas(up.cabecalhos))}</textarea></label>
       <label class="campo">Campos extras (um por linha: nome: valor)<textarea data-up="campos" rows="3">${esc(linhas(up.campos))}</textarea></label>
       <small class="largo mut">Igual ao “uploader personalizado” do ShareX. Os cabeçalhos (ex.: um token) ficam só neste PC: aparecem ocultos aqui e no celular e não vão no backup. Para trocar um valor, escreva o novo no lugar dos pontos.</small></div>`:''}`;
   en.querySelectorAll('[data-up]').forEach(i=>i.onchange=async ev=>{ ev.stopPropagation(); const pares=t=>Object.fromEntries(t.split('\n').map(l=>l.split(/:(.*)/s)).filter(p=>p[0]&&p[0].trim()).map(p=>[p[0].trim(),(p[1]||'').trim()]));
-    const v={url:en.querySelector('[data-up=url]').value.trim(), campo:en.querySelector('[data-up=campo]').value.trim(), resposta:en.querySelector('[data-up=resposta]').value.trim(),
+    const v={url:en.querySelector('[data-up=url]').value.trim(), campo:en.querySelector('[data-up=campo]').value.trim(), resposta:en.querySelector('[data-up=resposta]').value.trim(), modelo:en.querySelector('[data-up=modelo]').value.trim(), nome:up.nome||'',
       cabecalhos:pares(en.querySelector('[data-up=cabecalhos]').value), campos:pares(en.querySelector('[data-up=campos]').value)};
-    const r=await POST('config',{captura_uploader:v}).catch(()=>null); if(r&&r.valores){ CFG=r.valores; toast(v.url&&!CFG.captura_uploader.url?'O endereço precisa começar com https:// ou http://.':'Configuração salva.', !!(v.url&&!CFG.captura_uploader.url)); } else toast('Não consegui salvar.',1); }); }
+    const r=await POST('config',{captura_uploader:v}).catch(()=>null); if(r&&r.valores){ CFG=r.valores; toast(v.url&&!CFG.captura_uploader.url?'O endereço precisa começar com https:// ou http://.':'Configuração salva.', !!(v.url&&!CFG.captura_uploader.url)); } else toast('Não consegui salvar.',1); });
+  const sx=$('#sxcuArq'); if(sx) sx.onchange=async ev=>{ ev.stopPropagation(); const f=ev.target.files[0]; if(!f) return; let d; try{ d=JSON.parse(await f.text()); }catch(_){ toast('Esse arquivo não é um .sxcu válido.',1); return; }
+    const r=await POST('capturas/sxcu',{sxcu:d}).catch(()=>null); if(!r){ toast('O serviço não respondeu.',1); return; } toast(r.msg,!r.ok); if(r.ok&&r.valores){ CFG=r.valores; renderCapOpcoes(); } }; }
 async function carregarAcesso(){ try{ ACESSO=await API('acesso'); }catch(_){ return; } const a=ACESSO, el=$('#cfgAcesso'); if(!el) return;
   el.innerHTML=`<div class="item"><b>Permitir acesso pela rede de casa</b><div class="ctl"><label class="sw"><input type="checkbox" data-cfg="acesso_remoto" ${a.ativo?'checked':''} ${a.tem_senha?'':'disabled'}><span></span></label></div><small>Abra o Monitor do PC no navegador do celular (conectado no mesmo Wi-Fi). Pede senha. Só funciona em redes marcadas como “Privada” no Windows — nunca fica aberto na internet.${a.tem_senha?'':' <b>Crie uma senha primeiro.</b>'}</small></div>
     <div class="item"><b>${a.tem_senha?'Trocar a senha de acesso':'Criar senha de acesso'}</b><div class="ctl"><input type="password" id="acSenha" placeholder="mínimo 6 caracteres" autocomplete="new-password" style="width:190px"><button class="btn" id="acSalvar">Salvar senha</button></div><small>Guardada de forma irreversível (hash); nem o Monitor do PC sabe a senha.</small></div>

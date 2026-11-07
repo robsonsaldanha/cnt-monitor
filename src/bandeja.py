@@ -5,6 +5,8 @@ da sessão do usuário (mostrar janela de um programa, abrir pasta, fechar janel
 
   MonitorPC.exe            -> abre a janela (e o ícone, se ainda não estiver aberto)
   MonitorPC.exe --bandeja  -> só o ícone (usado ao ligar o Windows)
+  MonitorPC.exe --ferramenta NOME "arquivo"  -> enviar, editor, fixar, ocr, qr, hash, embelezar, imprimir,
+                                               copiar_arquivo (menu do botão direito do Explorer)
 """
 import os
 import sys
@@ -228,11 +230,7 @@ def executar(a):
             return True, "Programa aberto."
         return False, "Arquivo não encontrado."
     if tipo == "notificar":
-        if ICONE is not None:
-            try:
-                ICONE.notify(a.get("msg", "")[:250], a.get("titulo", "Monitor do PC")[:60])
-            except Exception as e:  # noqa: BLE001
-                return False, str(e)
+        notificar(a.get("msg", ""), a.get("titulo", "Monitor do PC"))
         return True, "Notificação mostrada."
     if tipo.startswith("captura"):
         return executar_captura(tipo, a)
@@ -288,15 +286,24 @@ def loop_janelas():
 
 # ------------------------------------------------------------------ captura de tela
 CAP = None
-EXT_IMAGEM = (".png", ".jpg", ".jpeg", ".gif")
+AVISOS = None
+EXT_IMAGEM = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp")
 
 
-def notificar(msg, titulo="Monitor do PC"):
+def notificar_windows(msg, titulo="Monitor do PC"):
     if ICONE is not None:
         try:
             ICONE.notify(str(msg)[:250], str(titulo)[:60])
         except Exception:
             pass
+
+
+def notificar(msg, titulo="Monitor do PC"):
+    """Aviso próprio do Monitor no canto da tela (o do Windows só se o próprio falhar)."""
+    if AVISOS is not None:
+        AVISOS.mostrar(titulo, msg)
+    else:
+        notificar_windows(msg, titulo)
 
 
 def esconder_janela():
@@ -338,12 +345,18 @@ def executar_captura(tipo, a):
         return CAP.escolher_pasta()
     if tipo == "captura_abrir_pasta":
         return CAP.abrir_pasta()
+    if tipo == "captura_tarefa":
+        return tarefa_icone(a.get("nome"))
     if not os.path.isfile(caminho):
         return False, "O arquivo não existe mais (foi movido ou apagado)."
     if tipo == "captura_copiar":
         return CAP.copiar(caminho)
     if tipo == "captura_enviar":
         return CAP.enviar(a.get("cid"), caminho)
+    if tipo == "captura_ferramenta":
+        return CAP.ferramenta(a.get("nome"), caminho, a.get("cid"))
+    if tipo == "captura_renomear":
+        return CAP.renomear(a.get("cid"), caminho, a.get("novo", ""))
     if tipo == "captura_ler":
         ext = os.path.splitext(caminho)[1].lower()
         if ext not in EXT_IMAGEM:
@@ -359,6 +372,27 @@ def executar_captura(tipo, a):
             return True, "Arquivo enviado para a Lixeira e tirado do histórico."
         return False, "Tirei do histórico, mas não consegui mandar o arquivo para a Lixeira."
     return False, "Ação desconhecida."
+
+
+def tarefa_icone(nome):
+    """Ferramentas sem arquivo (pedidas pela janela ou pelo menu). As que abrem janela rodam numa thread."""
+    if CAP is None:
+        return False, "A captura de tela ainda está iniciando."
+    if nome == "importar":
+        return CAP.importar_pasta()
+    if nome == "ia_chave":
+        return CAP.cadastrar_chave_ia()
+    acoes = {"barra": CAP.alternar_barra, "enviar_arquivo": CAP.enviar_arquivo, "enviar_area": CAP.enviar_area,
+             "enviar_texto": CAP.enviar_texto, "fixar_area": CAP.fixar_area,
+             "atalhos": lambda: CAP.executar("atalhos"), "pausar": lambda: CAP.executar("pausar")}
+    if nome in acoes:
+        alvo = acoes[nome]
+    elif nome and nome.startswith("escolher_"):
+        alvo = lambda: CAP.escolher_e(nome[9:])   # noqa: E731
+    else:
+        return False, "Tarefa desconhecida."
+    threading.Thread(target=alvo, daemon=True).start()
+    return True, "ok"
 
 
 def loop_captura():
@@ -638,7 +672,7 @@ def desenhar(mem, cpu, ok=True, jogo=False):
     return img
 
 
-ESTADO = {"jogo": False, "planos": [], "fps": None}
+ESTADO = {"jogo": False, "planos": [], "fps": None, "recentes": [], "fluxos": []}
 
 
 def atualizar_icone():
@@ -689,6 +723,15 @@ def atualizar_extras(forcar=False):
         ESTADO["planos"] = pl
     except Exception:
         pass
+    try:   # "Itens recentes" e "Fluxos de trabalho" do menu
+        rec = api_get("api/capturas?limite=10", com_token=True).get("itens", [])
+        rec = [{k: x[k] for k in ("id", "caminho", "url", "tipo")} for x in rec]
+        fl = [(f["id"], f["nome"], f["atalho"]) for f in cfg().get("captura_fluxos") or []]
+        if rec != ESTADO["recentes"] or fl != ESTADO["fluxos"]:
+            mudou = True
+        ESTADO["recentes"], ESTADO["fluxos"] = rec, fl
+    except Exception:
+        pass
     if (mudou or forcar) and ICONE is not None:
         try:
             ICONE.update_menu()
@@ -709,9 +752,50 @@ def instancia_unica():
     return ctypes.windll.kernel32.GetLastError() != 183
 
 
+FERRAMENTAS_CLI = ("enviar", "editor", "fixar", "ocr", "qr", "hash", "embelezar", "imprimir", "copiar_arquivo")
+
+
+def linha_de_comando():
+    """`--ferramenta NOME arquivo` (menu do botão direito do Explorer). Devolve (nome, caminho) ou None."""
+    if "--ferramenta" not in sys.argv:
+        return None
+    i = sys.argv.index("--ferramenta")
+    if len(sys.argv) < i + 3 or sys.argv[i + 1] not in FERRAMENTAS_CLI:
+        return None
+    return sys.argv[i + 1], os.path.abspath(sys.argv[i + 2])
+
+
+def rodar_ferramenta(capturador, nome, caminho):
+    """Roda a ferramenta neste processo e espera as janelas e os avisos que ela abriu."""
+    from monitorpc import captura, telas
+    captura.dpi_por_monitor()
+    cap = capturador.Capturador(api_post, cfg, notificar, abrir_janela, lambda: None, PASTA_USUARIO, AVISOS)
+    if nome == "fixar":
+        cap.fixar_arquivo(caminho)
+    elif nome == "hash":
+        from monitorpc import efeitos
+        telas.hash_janela(os.path.basename(caminho), efeitos.hash_arquivo(caminho))
+    else:
+        ok, msg = cap.ferramenta(nome, caminho)
+        if not ok:
+            notificar(msg, "Monitor do PC")
+    for t in threading.enumerate():
+        if t is not threading.current_thread() and t.name != "atalhos":
+            t.join()
+
+
 def main():
-    global ICONE, CAP
+    global ICONE, CAP, AVISOS
     _log()
+    from monitorpc import aviso
+    AVISOS = aviso.Avisos(cfg, notificar_windows) if WIN else None
+    cli = linha_de_comando()
+    if cli:
+        from monitorpc import capturador
+        if cli[0] != "editor":
+            return rodar_ferramenta(capturador, *cli)
+        rodar_ferramenta(capturador, *cli)   # registra no histórico e abre o editor; o ícone (aberto) lê o arquivo
+        sys.argv.append("--bandeja")
     so_icone = "--bandeja" in sys.argv
     if not instancia_unica():
         if not so_icone:
@@ -722,7 +806,7 @@ def main():
     if not so_icone:
         threading.Timer(0.5, abrir_janela).start()
     if WIN:
-        CAP = capturador.Capturador(api_post, cfg, notificar, abrir_janela, esconder_janela, PASTA_USUARIO)
+        CAP = capturador.Capturador(api_post, cfg, notificar, abrir_janela, esconder_janela, PASTA_USUARIO, AVISOS)
         threading.Thread(target=loop_captura, daemon=True).start()
     for alvo in (loop_fila, loop_janelas, atualizar_icone, loop_extras):
         threading.Thread(target=alvo, daemon=True).start()
@@ -733,9 +817,9 @@ def main():
         def tarefa():
             try:
                 r = api_post("api/acao", {"tipo": "jogo_desligar" if ESTADO["jogo"] else "jogo_ligar"}, timeout=40)
-                ICONE.notify(r.get("msg", "")[:250], "Modo Jogo")
+                notificar(r.get("msg", ""), "Modo Jogo")
             except Exception as e:  # noqa: BLE001
-                ICONE.notify(str(e)[:250], "Modo Jogo")
+                notificar(str(e), "Modo Jogo")
             atualizar_extras(True)
         threading.Thread(target=tarefa, daemon=True).start()
 
@@ -758,8 +842,14 @@ def main():
     def item_cap(rotulo, modo):
         return pystray.MenuItem(rotulo, lambda *_: capturar_em_segundo_plano(modo, "menu"))
 
-    def gravando(tipo):
-        return bool(CAP and CAP.gravador.gravando and CAP.gravador.tipo == tipo)
+    def item_tarefa_rodar(nome):
+        threading.Thread(target=tarefa_icone, args=(nome,), daemon=True).start()
+
+    def item_tarefa(rotulo, nome):
+        return pystray.MenuItem(rotulo, lambda *_: item_tarefa_rodar(nome))
+
+    def gravando(tipo=None):
+        return bool(CAP and CAP.gravador.gravando and (tipo is None or CAP.gravador.tipo == tipo))
 
     def salvar_cfg(valores):
         threading.Thread(target=lambda: (api_post("api/config", valores), cfg(True)), daemon=True).start()
@@ -781,61 +871,135 @@ def main():
         if CAP:
             threading.Thread(target=tarefa, daemon=True).start()
 
-    from monitorpc import envio
-    menu_pos_captura = pystray.Menu(
-        opcao("Copiar a imagem", "captura_copiar", True), opcao("Salvar em arquivo", "captura_salvar", True),
-        opcao("Perguntar onde salvar (Salvar como…)", "captura_perguntar"),
-        opcao("Copiar o caminho do arquivo", "captura_copiar_caminho"),
-        opcao("Mostrar o arquivo na pasta", "captura_mostrar_pasta"),
-        opcao("Copiar o texto da imagem (OCR)", "captura_ocr_auto"), opcao("Mostrar aviso", "captura_notificar", True),
-        opcao("Abrir no editor", "captura_editor"), opcao("Enviar (upload)", "captura_enviar"),
-        pystray.Menu.SEPARATOR,
-        opcao("Ferramentas de anotação na seleção de região", "captura_anotar", True),
-    )
-    menu_pos_envio = pystray.Menu(
-        opcao("Copiar o link", "captura_envio_copiar", True),
-        pystray.MenuItem("Formato do link", pystray.Menu(
-            *[escolha(t, "captura_envio_formato", k, "url") for k, t in envio.FORMATOS.items()])),
-        opcao("Abrir o link no navegador", "captura_envio_abrir"), opcao("Mostrar aviso", "captura_envio_notificar", True),
-    )
+    def item_recente(x):
+        nome = os.path.basename(x["caminho"]) + ("  🔗" if x["url"] else "")
 
-    menu_captura = pystray.Menu(
-        item_cap("Região", "regiao"), item_cap("Janela ativa", "janela"), item_cap("Monitor do mouse", "monitor"),
-        item_cap("Tela inteira", "tela"), item_cap("Região com atraso", "atraso"), item_cap("Com rolagem", "rolagem"),
+        def abrir(*_):
+            if x["url"]:
+                from monitorpc import captura
+                captura.copiar_texto(x["url"])
+                notificar(f"Link copiado: {x['url']}", "Itens recentes")
+            elif os.path.isfile(x["caminho"]):
+                os.startfile(x["caminho"])
+        return pystray.MenuItem(nome[:60], abrir)
+
+    def sobre(*_):
+        notificar(f"Monitor do PC {config.VERSAO} — monitor do computador, captura de tela e envio. "
+                  "github.com/robsonsaldanha/monitor-pc", "Sobre")
+
+    from monitorpc import envio
+    menu_capturar = pystray.Menu(
+        item_cap("Região", "regiao"), item_cap("Várias regiões", "regioes"), item_cap("Janela ativa", "janela"),
+        item_cap("Monitor do mouse", "monitor"), item_cap("Tela inteira", "tela"),
+        item_cap("Repetir a última região", "ultima"), item_cap("Região com atraso", "atraso"),
+        item_cap("Com rolagem", "rolagem"),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem(lambda *_: "Parar gravação de vídeo" if gravando("video") else "Gravar vídeo (MP4)",
                          lambda *_: capturar_em_segundo_plano("video", "menu")),
         pystray.MenuItem(lambda *_: "Parar gravação do GIF" if gravando("gif") else "Gravar GIF",
                          lambda *_: capturar_em_segundo_plano("gif", "menu")),
-        pystray.Menu.SEPARATOR,
-        item_cap("Copiar texto da tela (OCR)", "ocr"), item_cap("Seletor de cor", "cor"), item_cap("Régua", "regua"),
-        pystray.Menu.SEPARATOR,
-        pystray.MenuItem("Histórico de capturas", lambda *_: abrir_janela("capturas")),
-        pystray.Menu.SEPARATOR,
-        pystray.MenuItem("Tarefas pós-captura", menu_pos_captura),
-        pystray.MenuItem("Tarefas pós-envio", menu_pos_envio),
-        pystray.MenuItem("Enviar para", pystray.Menu(
-            *[escolha(t, "captura_destino", k, "catbox") for k, t in envio.DESTINOS.items()])),
-        pystray.MenuItem("Escolher a pasta das capturas…", pasta_capturas),
-        pystray.MenuItem("Abrir a pasta das capturas", lambda *_: CAP and threading.Thread(target=CAP.abrir_pasta,
-                                                                                           daemon=True).start()),
-        pystray.MenuItem("Opções de captura…", lambda *_: abrir_janela("capturas/opcoes")),
+        pystray.MenuItem(lambda *_: "Continuar a gravação" if CAP and CAP.gravador.pausado else "Pausar a gravação",
+                         lambda *_: item_tarefa_rodar("pausar"), visible=lambda *_: gravando()),
     )
 
+    menu_upload = pystray.Menu(
+        item_tarefa("Enviar arquivo…", "enviar_arquivo"), item_tarefa("Enviar da área de transferência", "enviar_area"),
+        item_tarefa("Enviar texto…", "enviar_texto"),
+        pystray.Menu.SEPARATOR,
+        item_tarefa("Importar pasta para o histórico…", "importar"),
+    )
+    menu_fluxos = pystray.Menu(lambda: [
+        *[pystray.MenuItem(f"{n}  ({a})" if a else n, lambda *_, i=i: capturar_em_segundo_plano(f"fluxo:{i}", "menu"))
+          for i, n, a in ESTADO["fluxos"]],
+        *([pystray.Menu.SEPARATOR] if ESTADO["fluxos"] else []),
+        pystray.MenuItem("Criar e editar fluxos…", lambda *_: abrir_janela("capturas/opcoes"))])
+    menu_ferramentas = pystray.Menu(
+        item_cap("Seletor de cor", "cor"), item_cap("Régua", "regua"), item_cap("Copiar texto da tela (OCR)", "ocr"),
+        item_cap("Ler código QR da tela", "qr"),
+        pystray.Menu.SEPARATOR,
+        item_cap("Fixar uma região na tela", "fixar"), item_tarefa("Fixar da área de transferência", "fixar_area"),
+        item_tarefa("Fixar imagem de um arquivo…", "escolher_fixar"),
+        pystray.Menu.SEPARATOR,
+        item_tarefa("Embelezar imagem…", "escolher_embelezar"), item_tarefa("Abrir imagem no editor…", "escolher_editor"),
+        item_tarefa("Ler código QR de uma imagem…", "escolher_qr"), item_tarefa("Copiar texto de uma imagem (OCR)…", "escolher_ocr"),
+        item_tarefa("Verificador de hash…", "escolher_hash"),
+        pystray.Menu.SEPARATOR,
+        pystray.MenuItem("Barra de ferramentas de ações", lambda *_: item_tarefa_rodar("barra"),
+                         checked=lambda *_: bool(CAP and CAP.barra_fim and not CAP.barra_fim.is_set())),
+    )
+    menu_pos_captura = pystray.Menu(
+        opcao("Mostrar menu de tarefas rápidas", "captura_tarefas_rapidas"),
+        opcao("Mostrar janela \"Pós-captura\"", "captura_janela_pos"),
+        opcao("Embelezar imagem", "captura_embelezar"), opcao("Efeitos de imagem / marca d'água", "captura_efeitos"),
+        opcao("Abrir no editor", "captura_editor"), opcao("Abrir no editor de imagens do Windows", "captura_editor_fotos"),
+        opcao("Copiar imagem para a área de transferência", "captura_copiar", True), opcao("Fixar na tela", "captura_fixar"),
+        opcao("Imprimir imagem", "captura_imprimir"),
+        opcao("Salvar imagem", "captura_salvar", True), opcao("Salvar imagem como…", "captura_perguntar"),
+        opcao("Salvar miniatura", "captura_miniatura"), opcao("Realizar ações", "captura_rodar_acoes"),
+        opcao("Copiar arquivo para a área de transferência", "captura_copiar_arquivo"),
+        opcao("Copiar caminho do arquivo", "captura_copiar_caminho"),
+        opcao("Copiar caminho da pasta", "captura_copiar_pasta"),
+        opcao("Mostrar arquivo no Explorer", "captura_mostrar_pasta"),
+        opcao("Analisar imagem com IA", "captura_ia"), opcao("Ler código QR", "captura_qr"),
+        opcao("Reconhecer texto (OCR)", "captura_ocr_auto"), opcao("Mostrar janela \"Pré-envio\"", "captura_pre_envio"),
+        opcao("Enviar imagem para hospedagem", "captura_enviar"), opcao("Apagar o arquivo local depois de enviar", "captura_apagar_local"),
+        pystray.Menu.SEPARATOR,
+        opcao("Mostrar aviso", "captura_notificar", True),
+        opcao("Ferramentas de anotação na seleção de região", "captura_anotar", True),
+    )
+    menu_pos_envio = pystray.Menu(
+        opcao("Mostrar janela \"Pós-envio\"", "captura_envio_janela"), opcao("Encurtar URL", "captura_envio_encurtar"),
+        pystray.MenuItem("Compartilhar URL", pystray.Menu(
+            escolha("Não compartilhar", "captura_envio_compartilhar", "", ""),
+            *[escolha(t, "captura_envio_compartilhar", k, "") for k, (t, _u) in envio.COMPARTILHAR.items()])),
+        opcao("Copiar URL para a área de transferência", "captura_envio_copiar", True),
+        pystray.MenuItem("Formato do link", pystray.Menu(
+            *[escolha(t, "captura_envio_formato", k, "url") for k, t in envio.FORMATOS.items()])),
+        opcao("Abrir URL", "captura_envio_abrir"), opcao("Mostrar janela de código QR", "captura_envio_qr"),
+        opcao("Mostrar aviso", "captura_envio_notificar", True),
+    )
+    menu_recentes = pystray.Menu(lambda: [item_recente(x) for x in ESTADO["recentes"]] or
+                                 [pystray.MenuItem("nenhuma captura ainda", None, enabled=False)])
+
     menu = pystray.Menu(
+        pystray.MenuItem("Capturar", menu_capturar, visible=WIN),
+        pystray.MenuItem("Upload", menu_upload, visible=WIN),
+        pystray.MenuItem("Fluxos de trabalho", menu_fluxos, visible=WIN),
+        pystray.MenuItem("Ferramentas", menu_ferramentas, visible=WIN),
+        pystray.Menu.SEPARATOR,
+        pystray.MenuItem("Tarefas após a captura", menu_pos_captura, visible=WIN),
+        pystray.MenuItem("Tarefas após o envio", menu_pos_envio, visible=WIN),
+        pystray.MenuItem("Destinos", pystray.Menu(
+            *[escolha(t, "captura_destino", k, "catbox") for k, t in envio.DESTINOS.items()]), visible=WIN),
+        pystray.Menu.SEPARATOR,
+        pystray.MenuItem("Configurações…", lambda *_: abrir_janela("config")),
+        pystray.MenuItem("Configuração de tarefas…", lambda *_: abrir_janela("capturas/opcoes")),
+        pystray.MenuItem("Teclas de atalho…", lambda *_: abrir_janela("capturas/opcoes")),
+        pystray.MenuItem("Desativar atalhos", lambda *_: item_tarefa_rodar("atalhos"),
+                         checked=lambda *_: not _cfg["v"].get("captura_ativa", True)),
+        pystray.MenuItem("Destinos e uploader personalizado…", lambda *_: abrir_janela("capturas/opcoes")),
+        pystray.Menu.SEPARATOR,
+        pystray.MenuItem("Pasta das capturas", lambda *_: CAP and threading.Thread(target=CAP.abrir_pasta, daemon=True).start()),
+        pystray.MenuItem("Escolher a pasta das capturas…", pasta_capturas),
+        pystray.MenuItem("Histórico", lambda *_: abrir_janela("capturas")),
+        pystray.MenuItem("Itens recentes", menu_recentes),
+        pystray.MenuItem("Estatísticas…", lambda *_: abrir_janela("capturas/estatisticas")),
+        pystray.Menu.SEPARATOR,
         pystray.MenuItem("Abrir Monitor do PC", lambda *_: abrir_janela(), default=True),
         pystray.MenuItem("Programas", lambda *_: abrir_janela("programas")),
-        pystray.MenuItem("Capturar tela", menu_captura, visible=WIN),
-        pystray.Menu.SEPARATOR,
         pystray.MenuItem(lambda *_: "Desligar Modo Jogo" if ESTADO["jogo"] else "Ligar Modo Jogo", alternar_jogo),
         pystray.MenuItem("Plano de energia", pystray.Menu(lambda: [item_plano(p) for p in ESTADO["planos"]] or
                                                           [pystray.MenuItem("carregando…", None, enabled=False)])),
         pystray.MenuItem("Mini painel", alternar_mini, checked=lambda *_: bool(_cfg["v"].get("mini_ativo"))),
-        pystray.Menu.SEPARATOR,
         pystray.MenuItem("Otimizar", lambda *_: abrir_janela("otimizar")),
         pystray.MenuItem("Relatório", lambda *_: abrir_janela("relatorio")),
-        pystray.MenuItem("Configurações", lambda *_: abrir_janela("config")),
         pystray.Menu.SEPARATOR,
+        pystray.MenuItem("Depuração", pystray.Menu(
+            pystray.MenuItem("Abrir o registro do ícone (bandeja.log)",
+                             lambda *_: os.path.isfile(os.path.join(PASTA_USUARIO, "bandeja.log")) and
+                             os.startfile(os.path.join(PASTA_USUARIO, "bandeja.log"))),
+            pystray.MenuItem("Abrir a pasta de dados do ícone", lambda *_: os.startfile(PASTA_USUARIO)))),
+        pystray.MenuItem("Sobre…", sobre),
         pystray.MenuItem("Fechar ícone (o monitoramento continua)", lambda *_: fechar_icone()),
     )
     ICONE = pystray.Icon("monitor-pc", desenhar(0, 0), "Monitor do PC", menu)
