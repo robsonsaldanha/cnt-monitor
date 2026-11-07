@@ -28,6 +28,9 @@ jobs:
       - name: Testes da captura de tela
         run: python build/teste_captura.py
 
+      - name: Testes das ventoinhas
+        run: python build/teste_ventoinhas.py
+
       - name: LibreHardwareMonitor (sensores)
         shell: pwsh
         run: ./build/baixar-lhm.ps1

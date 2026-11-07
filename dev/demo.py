@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.join(AQUI, "..", "src"))
 os.environ.setdefault("MONITORPC_DADOS", os.path.join(tempfile.gettempdir(), "monitorpc-demo"))
 
 import psutil  # noqa: E402
-from monitorpc import config, banco, motor, servidor, temperatura, rede, gpu, inicializacao, energia, servicos, icones  # noqa: E402
+from monitorpc import config, banco, motor, servidor, temperatura, rede, gpu, inicializacao, energia, servicos, icones, ventoinhas  # noqa: E402
 
 PROGS = ["Claude", "Google Chrome", "WSL (Linux)", "Maestri", "Vynex Forge", "Discord", "OneDrive",
          "Antivírus (Defender)", "MobaXterm", "Spotify"]
@@ -58,6 +58,20 @@ def semear():
     con.close()
 
 
+FAN_DEMO = {"pct": 45.0}     # "hardware" da ventoinha falsa; mude o valor aqui para simular outro programa
+
+
+class VentoinhasFake(ventoinhas.Ventoinhas):
+    def _controles(self):
+        return {"/lpc/0/control/1": object()}
+
+    def _escrever(self, ctl, pct):
+        FAN_DEMO["pct"] = float(pct)
+
+    def _soltar(self, ctl):
+        FAN_DEMO["pct"] = 45.0
+
+
 class SensoresFake(temperatura.Sensores):
     def iniciar(self):
         self.fontes = ["LibreHardwareMonitor (demo)"]
@@ -78,6 +92,8 @@ class SensoresFake(temperatura.Sensores):
             ("/nvme/0/load/30", "SSD NVMe 512GB", "Armazenamento", "Used Space", "Load", 71.2),
             ("/lpc/0/fan/0", "Placa-mãe", "Placa-mãe", "Fan #1", "Fan", 2200 + random.random() * 100),
         ]
+        base += [("/lpc/0/control/1", "Placa-mãe", "Placa-mãe", "Fan Control #1", "Control", FAN_DEMO["pct"]),
+                 ("/lpc/0/fan/1", "Placa-mãe", "Placa-mãe", "Fan #1", "Fan", FAN_DEMO["pct"] * 28 + random.random() * 20)]
         out = []
         for sid, hw, thw, nome, t, v in base:
             rot, un = temperatura.TIPOS[t]
@@ -155,6 +171,7 @@ if __name__ == "__main__":
         semear()
     m = motor.Motor()
     m.sens = SensoresFake()
+    m.vent = VentoinhasFake(m.sens, m.vent._ler_cfg, m.vent._gravar_cfg)
     m.rede = RedeFake()
     m.gpu = GPUFake()
     inicializacao.listar = ini_fake

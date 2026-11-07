@@ -17,7 +17,7 @@ from collections import deque, defaultdict
 import psutil
 
 from . import config, configuracao, banco, rede, temperatura, nt, gpu, discos, inicializacao
-from . import alertas, jogo, energia, servicos, atualizacao, sessao, regras, limpeza, vps, captura
+from . import alertas, jogo, energia, servicos, atualizacao, sessao, regras, limpeza, vps, captura, ventoinhas
 
 WIN = os.name == "nt"
 NCPU = psutil.cpu_count() or 1
@@ -109,6 +109,8 @@ class Motor:
         self.rede = rede.MonitorRede()
         self.dns = rede.DNS()
         self.sens = temperatura.Sensores()
+        self.vent = ventoinhas.Ventoinhas(self.sens, lambda: configuracao.obter("ventoinhas"),
+                                          lambda v: configuracao.salvar({"ventoinhas": v}))
         self.gpu = gpu.MonitorGPU()
         self.discos = discos.Discos()
         self.inicio = time.time()
@@ -190,6 +192,7 @@ class Motor:
 
     def parar(self):
         self.parar_ev.set()
+        self.vent.liberar()
         self.rede.parar()
 
     def _loop_rapido(self):
@@ -323,6 +326,7 @@ class Motor:
                     if not self.sens.fontes and not self.sens.avisos:
                         self.sens.iniciar()
                     self.sens.ler()
+                    self.vent.ciclo()
                 if c["gpu_por_processo"]:
                     if not self.gpu.ok and self.gpu.erro is None:
                         self.gpu.iniciar()
@@ -1188,6 +1192,10 @@ class Motor:
                 return self._enfileirar({"tipo": tipo, "cid": d["id"], "caminho": d["caminho"],
                                          "novo": str(a.get("novo") or "")[:150]})
             return self._enfileirar({"tipo": tipo, "cid": d["id"], "caminho": d["caminho"]})  # "id" é o da fila
+        if tipo == "vent_canal":
+            return res(self.vent.definir(str(a.get("canal") or ""), a.get("dados") if isinstance(a.get("dados"), dict) else {}))
+        if tipo == "vent_global":
+            return res(self.vent.definir_global(a.get("dados") if isinstance(a.get("dados"), dict) else {}))
         if tipo == "alerta_teste":
             if time.time() - self.bandeja_ts > 40:
                 return {"ok": False, "msg": "O ícone perto do relógio precisa estar aberto para mostrar notificações."}

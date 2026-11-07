@@ -315,6 +315,11 @@ code{font-family:"Cascadia Mono",Consolas,monospace;font-size:12px;background:va
 .cap .tb .arq{font-size:22px;font-weight:600;color:var(--txt2)}
 .stat-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:14px}
 .stat-grade .painel{padding:12px 14px}.stat-grade b{display:block;font-size:22px}.stat-grade span{color:var(--txt3);font-size:12.5px}
+.vt{margin-bottom:12px}.vt-cab{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px}.vt-liv{text-align:right;color:var(--txt2);white-space:nowrap}
+.vt-sub{margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}.vt-sub[hidden]{display:none}.vt-curva{flex-direction:column;align-items:stretch}.vt-curva td input{width:64px}.vt-av{margin-top:10px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;color:var(--txt2);font-size:13px}
+.vt-av input[type=number]{width:70px}.vt-linha{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0}
+.aj{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--painel2);border:1px solid var(--borda);color:var(--txt2);font-size:11px;cursor:help;position:relative;margin-left:6px;flex:none}
+.aj:hover::after,.aj:focus::after{content:attr(data-aj);position:absolute;z-index:30;left:50%;top:22px;transform:translateX(-50%);width:max-content;max-width:300px;white-space:normal;text-align:left;background:var(--painel);color:var(--txt);border:1px solid var(--borda);border-radius:8px;padding:8px 10px;font-size:12.5px;line-height:1.45;box-shadow:0 6px 24px #0006;font-weight:400}
 .barras{display:flex;align-items:flex-end;gap:3px;height:120px;padding:12px 14px}
 .barras div{flex:1;background:var(--acento);border-radius:3px 3px 0 0;min-height:2px}
 .lista-kv{padding:6px 14px 12px}.lista-kv div{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--borda)}
@@ -346,6 +351,7 @@ input.atalho{width:170px;text-align:center;cursor:pointer}
   <button data-v="processos"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Processos</button>
   <button data-v="rede"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>Rede e IPs</button>
   <button data-v="hardware"><svg viewBox="0 0 24 24"><path d="M10 14V5a2 2 0 1 1 4 0v9a4 4 0 1 1-4 0z"/></svg>Temperatura e hardware</button>
+  <button data-v="ventoinhas"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1.8"/><path d="M12 10.2C12 6 10 3 8 3.5c-2 .6-1 4.5 2.4 6M13.8 12c4.200 0 7.200 2 6.700 4-.6 2-4.500 1-6-2.400M12 13.800C12 18 14 21 16 20.500c2-.6 1-4.500-2.400-6M10.200 12C6 12 3 10 3.500 8c.6-2 4.500-1 6 2.400"/></svg>Ventoinhas</button>
   <div class="grp">Ferramentas</div>
   <button data-v="capturas"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Captura de tela<span class="cont" id="capTag" hidden style="background:var(--perigo)">REC</span></button>
   <button data-v="jogo"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 10.5v4M5 12.5h4M15.5 11.5h.01M18 13.5h.01"/></svg>Modo Jogo<span class="cont" id="jogoTag" hidden style="background:var(--ok)">ON</span></button>
@@ -456,6 +462,11 @@ input.atalho{width:170px;text-align:center;cursor:pointer}
     <div class="painel"><div class="cab"><h2>Espaço nas unidades</h2></div><div id="hwPart"></div></div>
   </div>
   <div id="hwSensores"></div>
+</section>
+
+<section id="v-ventoinhas" hidden>
+  <h1>Ventoinhas</h1><p class="sub">Velocidade das ventoinhas que o seu hardware deixa controlar (processador, placa-mãe, placa de vídeo, water cooler e outras). Se outro programa (como o Gigabyte Control Center) mudar uma ventoinha, o Monitor só acompanha o valor novo, sem brigar. Se você mudar aqui, vale daqui para frente.</p>
+  <div id="ventCorpo"><div class="vazio">Carregando…</div></div>
 </section>
 
 <section id="v-historico" hidden>
@@ -785,7 +796,7 @@ const eixoPct=v=>nf0.format(v)+'%', eixoB=v=>v>=GB?nf1.format(v/GB)+' GB':nf0.fo
 const eixoN=v=>CFG.rede_em_bits?(v*8>=1e6?nf1.format(v*8/1e6)+' Mb/s':nf0.format(v*8/1e3)+' Kb/s'):eixoR(v);
 
 /* =================== navegação =================== */
-const VISTAS=['geral','recurso','programas','processos','capturas','editor','jogo','otimizar','regras','inicializacao','energia','servicos','rede','hardware','historico','lentidao','alertas','relatorio','comparar','vps','config'];
+const VISTAS=['geral','recurso','programas','processos','capturas','editor','jogo','otimizar','regras','inicializacao','energia','servicos','rede','hardware','ventoinhas','historico','lentidao','alertas','relatorio','comparar','vps','config'];
 let vista='geral', recurso='cpu', ED_ID=0, CAP_ABA='capturar';
 function ir(h){ h=(h||'geral').replace(/^#/,''); let v=h, r=null; if(h.startsWith('recurso/')){ v='recurso'; r=h.split('/')[1]; }
   if(h==='capturas'||h.startsWith('capturas/')){ v='capturas'; CAP_ABA=h==='capturas/opcoes'?'opcoes':h==='capturas/estatisticas'?'estatisticas':'capturar'; }
@@ -816,6 +827,7 @@ async function ciclo(){
   if(vista==='geral') vGeral(); else if(vista==='recurso') vRecurso(false); else if(vista==='programas') vArvore(); else if(vista==='processos') renderProc();
   else if(vista==='rede' && (contRede++ % Math.max(1,Math.round(1000/CFG.intervalo_ms)))===0) vRede();
   else if(vista==='hardware' && (contHw++ % Math.max(1,Math.round(2000/CFG.intervalo_ms)))===0) vHardware(false);
+  else if(vista==='ventoinhas' && (contHw++ % Math.max(1,Math.round(2000/CFG.intervalo_ms)))===0) vVentoinhas(false);
   else if(vista==='jogo' && (contHw++ % Math.max(1,Math.round(500/CFG.intervalo_ms)))===0) vJogo(false);
   else if(vista==='vps' && (contHw++ % Math.max(1,Math.round(5000/CFG.intervalo_ms)))===0) vVps(false);
   else if(vista==='capturas' && (contHw++ % Math.max(1,Math.round(2000/CFG.intervalo_ms)))===0) vCapturas(false);
@@ -824,7 +836,7 @@ async function ciclo(){
 async function loop(){ const t0=performance.now(); await ciclo(); setTimeout(loop, Math.max(60, CFG.intervalo_ms-(performance.now()-t0))); }
 function entrar(){ fecharMenu();
   if(vista==='geral'&&E) vGeral(); if(vista==='recurso') vRecurso(true); if(vista==='programas') vArvore(); if(vista==='processos') renderProc();
-  if(vista==='inicializacao') vIni(); if(vista==='rede') vRede(); if(vista==='hardware') vHardware(true);
+  if(vista==='inicializacao') vIni(); if(vista==='rede') vRede(); if(vista==='hardware') vHardware(true); if(vista==='ventoinhas') vVentoinhas(true);
   if(vista==='historico') vHistorico(); if(vista==='lentidao') vLentidao(); if(vista==='relatorio') vRelatorio(); if(vista==='config') vConfig();
   if(vista==='jogo') vJogo(true); if(vista==='energia') vEnergia(); if(vista==='servicos') vServicos(); if(vista==='alertas') vAlertas();
   if(vista==='otimizar') vOtimizar(); if(vista==='regras') vRegras(); if(vista==='vps') vVps(true); if(vista==='comparar') vComparar();
@@ -1270,6 +1282,70 @@ $('#enCorpo').addEventListener('change',async e=>{ const s=e.target.closest('[da
   const w=e.target.closest('[data-win]'); if(w){ const r=await POST('acao',{tipo:'windows_ajuste',chave:w.dataset.win,ativo:w.checked}).catch(()=>null); if(r) toast(r.ok?'Salvo.':r.msg,!r.ok); vEnergia(); return; }
   if(e.target.id==='brilho'){ const r=await POST('acao',{tipo:'brilho',nivel:+e.target.value}).catch(()=>null); if(r&&!r.ok) toast(r.msg,1); } });
 $('#enCorpo').addEventListener('input',e=>{ if(e.target.id==='brilho') $('#brilhoV').textContent=e.target.value+'%'; });
+
+/* =================== VENTOINHAS =================== */
+let VT=null, VT_SIG='';
+const AJ = t => `<span class="aj" tabindex="0" data-aj="${esc(t)}">?</span>`;
+const AJUDA_VT = {
+  modo:'Automático: quem manda é a placa-mãe, a BIOS ou outro programa; o Monitor não escreve nada. Fixo: mantém sempre a mesma velocidade. Curva: a velocidade acompanha a temperatura do sensor escolhido.',
+  fixo:'Porcentagem da velocidade máxima da ventoinha. 0% pode parar a ventoinha (se o mínimo permitir). Vale até você voltar ao Automático ou outro programa mudar.',
+  curva:'Cada linha diz: a partir de tal temperatura, use tal velocidade. Entre dois pontos o Monitor faz a transição suave. Abaixo do primeiro ponto vale o primeiro; acima do último vale o último.',
+  sensor:'Temperatura que a curva observa. “Mais quente entre CPU e GPU” é a escolha mais segura para ventoinha de caixa; para a ventoinha do processador escolha a temperatura dele.',
+  hist:'Quantos graus a temperatura precisa mudar antes da velocidade ser recalculada. Evita a ventoinha ficar acelerando e desacelerando a cada oscilação.',
+  min:'Velocidade mínima que o Monitor nunca vai ultrapassar para baixo nesta ventoinha. Em branco usa o mínimo geral. Protege contra parar uma ventoinha importante por engano.',
+  prot:'Se ligado e a temperatura mais alta (processador ou placa de vídeo) chegar ao limite abaixo, o Monitor devolve as ventoinhas ao Automático até a temperatura cair 10 °C, e depois retoma a sua configuração.',
+  lim:'Temperatura em que a proteção devolve o controle ao Automático. Entre 60 e 100 °C. Padrão 85 °C.',
+  mingeral:'Velocidade mínima usada em todas as ventoinhas que não tiverem um mínimo próprio. Padrão 30%.',
+  apelido:'Um nome seu para reconhecer a ventoinha (ex.: “Frontal 1”).'
+};
+function vtCurvaLinhas(cv){ return cv.map(p=>`<tr><td><input type="number" class="vt-t" min="-20" max="130" value="${p[0]}"> °C</td><td><input type="number" class="vt-p" min="0" max="100" value="${p[1]}"> %</td><td><button class="btn" data-vt="rm" title="Tirar ponto">×</button></td></tr>`).join(''); }
+function vtCard(c, d){
+  const nome=c.apelido||`${c.hw} — ${c.nome}`, fixo=c.modo==='manual'?c.valor:Math.round(c.pct||0);
+  const sens=`<option value="">Mais quente entre CPU e GPU</option>`+d.temperaturas.map(t=>`<option value="${esc(t.id)}" ${t.id===c.sensor?'selected':''}>${esc(t.nome)} (${nf0.format(t.valor)} °C)</option>`).join('');
+  return `<div class="painel pad vt" data-cid="${esc(c.id)}" data-modo="${c.modo}">
+    <div class="vt-cab"><div><b>${esc(nome)}</b><div class="mut2" style="font-size:12px">${esc(c.tipo_hw)}${c.sub?' · '+esc(c.sub):''}</div></div>
+      <div class="vt-liv"><span data-live="rpm">${c.rpm!=null?nf0.format(c.rpm)+' RPM':'—'}</span> · <b data-live="pct">${fP(c.pct,0)}</b></div></div>
+    <div class="vt-linha"><div class="seg">${[['auto','Automático'],['manual','Fixo'],['curva','Curva']].map(([m,t])=>`<button data-vt="modo" data-m="${m}" aria-pressed="${c.modo===m}">${t}</button>`).join('')}</div>${AJ(AJUDA_VT.modo)}</div>
+    <div class="vt-sub vt-fixo" ${c.modo==='manual'?'':'hidden'}><input type="range" min="0" max="100" value="${fixo}" class="vt-r"><b class="vt-rv">${fixo}%</b>${AJ(AJUDA_VT.fixo)}</div>
+    <div class="vt-sub vt-curva" ${c.modo==='curva'?'':'hidden'}><div class="vt-linha"><span>Sensor</span><select class="vt-s">${sens}</select>${AJ(AJUDA_VT.sensor)}</div>
+      <table><thead><tr><th>Temperatura</th><th>Velocidade</th><th></th></tr></thead><tbody>${vtCurvaLinhas(c.curva)}</tbody></table>
+      <div class="vt-linha"><button class="btn" data-vt="add">+ Ponto</button>${AJ(AJUDA_VT.curva)}<button class="btn pri" data-vt="curva">${c.modo==='curva'?'Aplicar mudanças':'Ativar curva'}</button></div></div>
+    <div class="vt-av"><label>Nome <input type="text" class="vt-ap" maxlength="40" value="${esc(c.apelido)}" placeholder="opcional" style="width:150px"></label>${AJ(AJUDA_VT.apelido)}
+      <label>Mínimo <input type="number" class="vt-min" min="0" max="100" value="${c.minimo==null?'':c.minimo}" placeholder="${d.minimo}"> %</label>${AJ(AJUDA_VT.min)}
+      <label>Histerese <input type="number" class="vt-h" min="0" max="15" value="${c.histerese}"> °C</label>${AJ(AJUDA_VT.hist)}</div>
+  </div>`; }
+function vtRender(){ const d=VT, el=$('#ventCorpo');
+  if(!d.suportado){ el.innerHTML='<div class="painel vazio">Nenhuma ventoinha controlável foi encontrada. O Monitor só controla canais que o hardware libera para programas (pela biblioteca LibreHardwareMonitor). Placas com controle fechado do fabricante, ou sem o driver PawnIO instalado, aparecem só para leitura na guia Temperatura e hardware.</div>'; return; }
+  const g=`<div class="painel pad vt"><h2 style="margin:0 0 8px">Segurança</h2>
+    <div class="vt-linha"><label class="sw"><input type="checkbox" id="vtProt" ${d.protecao?'checked':''}><span></span></label><b>Devolver ao Automático se esquentar demais</b>${AJ(AJUDA_VT.prot)}</div>
+    <div class="vt-linha"><label>Limite <input type="number" id="vtLim" min="60" max="100" value="${d.limite_temp}" style="width:70px"> °C</label>${AJ(AJUDA_VT.lim)}
+      <label>Mínimo geral <input type="number" id="vtMin" min="0" max="100" value="${d.minimo}" style="width:70px"> %</label>${AJ(AJUDA_VT.mingeral)}
+      <span class="mut2">Temperatura mais alta agora: <b data-live="tmax">${d.temp_max!=null?nf0.format(d.temp_max)+' °C':'—'}</b></span></div></div>`;
+  el.innerHTML=g+d.canais.map(c=>vtCard(c,d)).join(''); }
+async function vVentoinhas(forcar){ let d; try{ d=await API('ventoinhas'); }catch(_){ return; } VT=d; const el=$('#ventCorpo');
+  const sig=JSON.stringify([d.suportado,d.canais.map(c=>[c.id,c.modo]),d.protecao,d.limite_temp,d.minimo]);
+  if(forcar||(sig!==VT_SIG&&!el.contains(document.activeElement))){ VT_SIG=sig; vtRender(); return; }
+  d.canais.forEach(c=>{ const card=[...el.querySelectorAll('.vt')].find(x=>x.dataset.cid===c.id); if(!card) return;
+    card.querySelector('[data-live=rpm]').textContent=c.rpm!=null?nf0.format(c.rpm)+' RPM':'—'; card.querySelector('[data-live=pct]').textContent=fP(c.pct,0); });
+  const t=el.querySelector('[data-live=tmax]'); if(t) t.textContent=d.temp_max!=null?nf0.format(d.temp_max)+' °C':'—'; }
+async function vtEnviar(cid, dados){ const r=await POST('acao',{tipo:'vent_canal',canal:cid,dados}).catch(()=>null); if(r) toast(r.msg||r.erro,!r.ok); await vVentoinhas(true); }
+function vtMinimo(card){ const v=card.querySelector('.vt-min').value.trim(); return v===''?null:+v; }
+function vtLerCurva(card){ return [...card.querySelectorAll('.vt-curva tbody tr')].map(tr=>[+tr.querySelector('.vt-t').value,+tr.querySelector('.vt-p').value]).filter(p=>!isNaN(p[0])&&!isNaN(p[1])); }
+$('#ventCorpo').addEventListener('click',e=>{ const b=e.target.closest('[data-vt]'); if(!b) return; const card=b.closest('.vt'); const cid=card&&card.dataset.cid, k=b.dataset.vt;
+  if(k==='modo'){ const m=b.dataset.m; card.querySelectorAll('[data-vt=modo]').forEach(x=>x.setAttribute('aria-pressed',x===b));
+    card.querySelector('.vt-fixo').hidden=m!=='manual'; card.querySelector('.vt-curva').hidden=m!=='curva';
+    if(m==='auto') vtEnviar(cid,{modo:'auto'}); else if(m==='manual') vtEnviar(cid,{modo:'manual',valor:+card.querySelector('.vt-r').value,minimo:vtMinimo(card)}); return; }
+  if(k==='add'){ const tb=card.querySelector('.vt-curva tbody'), ult=vtLerCurva(card).slice(-1)[0]||[40,40]; tb.insertAdjacentHTML('beforeend',vtCurvaLinhas([[Math.min(130,ult[0]+10),Math.min(100,ult[1]+10)]])); return; }
+  if(k==='rm'){ if(card.querySelectorAll('.vt-curva tbody tr').length<=2){ toast('A curva precisa de pelo menos 2 pontos.',1); return; } b.closest('tr').remove(); return; }
+  if(k==='curva') vtEnviar(cid,{modo:'curva',curva:vtLerCurva(card),sensor:card.querySelector('.vt-s').value,histerese:+card.querySelector('.vt-h').value,minimo:vtMinimo(card)}); });
+$('#ventCorpo').addEventListener('input',e=>{ if(e.target.classList.contains('vt-r')) e.target.parentNode.querySelector('.vt-rv').textContent=e.target.value+'%'; });
+$('#ventCorpo').addEventListener('change',async e=>{ const t=e.target, card=t.closest('.vt');
+  if(t.id==='vtProt'||t.id==='vtLim'||t.id==='vtMin'){ const r=await POST('acao',{tipo:'vent_global',dados:{protecao:$('#vtProt').checked,limite_temp:+$('#vtLim').value,minimo:+$('#vtMin').value}}).catch(()=>null); if(r) toast(r.msg||r.erro,!r.ok); vVentoinhas(true); return; }
+  if(!card) return; const cid=card.dataset.cid;
+  if(t.classList.contains('vt-r')) vtEnviar(cid,{modo:'manual',valor:+t.value,minimo:vtMinimo(card)});
+  else if(t.classList.contains('vt-ap')) vtEnviar(cid,{apelido:t.value.trim()});
+  else if((t.classList.contains('vt-min')||t.classList.contains('vt-h'))&&card.dataset.modo==='manual') vtEnviar(cid,{modo:'manual',valor:+card.querySelector('.vt-r').value,minimo:vtMinimo(card),histerese:+card.querySelector('.vt-h').value});
+  else if((t.classList.contains('vt-min')||t.classList.contains('vt-h'))&&card.dataset.modo==='curva') card.querySelector('[data-vt=curva]').click(); });
 
 /* =================== SERVIÇOS =================== */
 let SVC=[], filtroSvc='terceiros';

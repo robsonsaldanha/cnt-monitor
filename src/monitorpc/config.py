@@ -2,7 +2,7 @@
 import os
 import sys
 
-VERSAO = "2.4.1"
+VERSAO = "2.5.0"
 WIN = os.name == "nt"
 
 if os.environ.get("MONITORPC_DADOS"):
@@ -125,6 +125,7 @@ PADRAO = {
     "captura_marca_opacidade": 60,
     "captura_borda": 0,
     "captura_borda_cor": "#000000",
+    "ventoinhas": {},             # controle de ventoinhas (validado em ventoinhas.validar) — só no próprio PC
     "captura_acoes": [],          # [{nome, programa, args}] — só configurável no próprio PC
     "captura_fluxos": [],         # fluxos de trabalho: atalho próprio + ação + tarefas
     # análise por IA (a chave fica cifrada no perfil do usuário, nunca na configuração)
