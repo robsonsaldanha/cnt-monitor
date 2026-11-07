@@ -5,9 +5,13 @@ Catbox (catbox.moe/tools.php), Litterbox (litterbox.catbox.moe/tools.php), Uguu 
 e tmpfiles (tmpfiles.org/api). O Imgur exige um Client-ID registrado pelo usuário.
 """
 import os
+import re
 import json
 import uuid
+import shutil
+import tempfile
 import mimetypes
+import urllib.parse
 import urllib.error
 import urllib.request
 
@@ -46,7 +50,66 @@ def validar_uploader(d):
 
     campo = "".join(ch for ch in str(d.get("campo") or "file") if ch.isalnum() or ch in "_-[]")[:60] or "file"
     return {"url": url, "campo": campo, "cabecalhos": pares(d.get("cabecalhos")), "campos": pares(d.get("campos")),
-            "resposta": str(d.get("resposta") or "").strip()[:200]}
+            "resposta": str(d.get("resposta") or "").strip()[:200],
+            "modelo": "".join(ch for ch in str(d.get("modelo") or "") if ch not in "\r\n").strip()[:500],
+            "nome": "".join(ch for ch in str(d.get("nome") or "") if ord(ch) >= 32).strip()[:60]}
+
+
+_SXCU_JSON = re.compile(r"\{json:([^}]+)\}|\$json:([^$]+)\$")
+
+
+def _caminho_sxcu(p):
+    """files[0].url / files.0.url -> files.0.url"""
+    return re.sub(r"\[(\d+)\]", r".\1", p.strip()).strip(".")
+
+
+def de_sxcu(d):
+    """Converte um uploader personalizado do ShareX (.sxcu) para o formato do Monitor.
+    Aceita POST multipart; o link pode ser {json:caminho}, {response} ou um modelo com eles. Erro: ValueError."""
+    if not isinstance(d, dict) or not d.get("RequestURL"):
+        raise ValueError("esse arquivo não é um uploader do ShareX (.sxcu)")
+    if str(d.get("RequestMethod") or "POST").upper() != "POST":
+        raise ValueError("só dá para importar uploaders que usam POST")
+    if str(d.get("Body") or "MultipartFormData") != "MultipartFormData":
+        raise ValueError("só dá para importar uploaders que enviam o arquivo como formulário (MultipartFormData)")
+    tipos = str(d.get("DestinationType") or "ImageUploader")
+    if not any(t in tipos for t in ("ImageUploader", "FileUploader")):
+        raise ValueError("esse uploader não é de imagens nem de arquivos")
+    url = str(d["RequestURL"]).strip()
+    params = d.get("Parameters") if isinstance(d.get("Parameters"), dict) else {}
+    if params:
+        url += ("&" if "?" in url else "?") + urllib.parse.urlencode({str(k): str(v) for k, v in params.items()})
+    modelo = str(d.get("URL") or "").strip()
+    resposta = ""
+    m = _SXCU_JSON.fullmatch(modelo)
+    if m:
+        resposta, modelo = _caminho_sxcu(m.group(1) or m.group(2)), ""
+    elif modelo in ("{response}", "$response$"):
+        modelo = ""
+    elif modelo:
+        modelo = _SXCU_JSON.sub(lambda x: "{json:" + _caminho_sxcu(x.group(1) or x.group(2)) + "}", modelo)
+        modelo = modelo.replace("$response$", "{response}")
+        if re.search(r"\{(?!json:|response\})[^}]*\}", modelo):
+            raise ValueError("o link desse uploader usa recursos que o Monitor ainda não entende (só {json:…} e {response})")
+    u = validar_uploader({"url": url, "campo": d.get("FileFormName") or "file", "cabecalhos": d.get("Headers"),
+                          "campos": d.get("Arguments"), "resposta": resposta, "modelo": modelo, "nome": d.get("Name")})
+    if not u["url"]:
+        raise ValueError("o endereço do uploader precisa começar com https:// ou http://")
+    return u
+
+
+def montar_link(modelo, bruto):
+    """Preenche {json:caminho} e {response} do modelo com a resposta do site."""
+    txt = bruto.decode("utf-8", "replace").strip()
+    obj = None
+
+    def valor(m):
+        nonlocal obj
+        if obj is None:
+            obj = _json(bruto)
+        v = caminho_json(obj, m.group(1))
+        return "" if v is None else str(v)
+    return re.sub(r"\{json:([^}]+)\}", valor, modelo).replace("{response}", txt)
 
 
 def _multipart(campos, campo_arq, caminho):
@@ -157,7 +220,66 @@ def enviar(caminho, c):
         if not u["url"]:
             raise RuntimeError("configure o endereço do uploader personalizado nas Configurações")
         bruto = _post(u["url"], u["campos"], u["campo"], caminho, u["cabecalhos"])
+        if u["modelo"]:
+            return _link(montar_link(u["modelo"], bruto))
         if not u["resposta"]:
             return _link(bruto.decode("utf-8", "replace"))
         return _link(caminho_json(_json(bruto), u["resposta"]))
     raise RuntimeError("destino de envio desconhecido")
+
+
+def enviar_limpo(caminho, c):
+    """Envia tirando antes os metadados das imagens (se a opção estiver ligada); o arquivo original não muda."""
+    from . import efeitos
+    alvo = caminho
+    if c.get("captura_sem_metadados", True):
+        try:
+            alvo = efeitos.sem_metadados(caminho)
+        except (OSError, ValueError):
+            alvo = caminho
+    try:
+        return enviar(alvo, c)
+    finally:
+        if alvo != caminho:
+            shutil.rmtree(os.path.dirname(alvo), ignore_errors=True)
+
+
+def enviar_texto(texto, c):
+    """Envia um texto como arquivo .txt."""
+    pasta = tempfile.mkdtemp(prefix="mpc-texto-")
+    arq = os.path.join(pasta, "texto.txt")
+    try:
+        with open(arq, "w", encoding="utf-8") as f:
+            f.write(texto)
+        return enviar(arq, c)
+    finally:
+        shutil.rmtree(pasta, ignore_errors=True)
+
+
+# ---------------------------------------------------------------- depois do envio
+def encurtar(url, timeout=20):
+    """Link curto pelo is.gd (sem conta; API em is.gd/apishorteningreference.php)."""
+    req = urllib.request.Request("https://is.gd/create.php?format=simple&url=" + urllib.parse.quote(url, safe=""),
+                                 headers={"User-Agent": AGENTE})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return _link(r.read().decode("utf-8", "replace"))
+    except urllib.error.HTTPError as e:
+        raise RuntimeError("o is.gd recusou: " + e.read()[:200].decode("utf-8", "replace").strip()) from None
+    except urllib.error.URLError as e:
+        raise RuntimeError(f"sem conexão com o is.gd ({e.reason})") from None
+
+
+COMPARTILHAR = {
+    "whatsapp": ("WhatsApp", "https://wa.me/?text={u}"),
+    "telegram": ("Telegram", "https://t.me/share/url?url={u}"),
+    "x": ("X (Twitter)", "https://twitter.com/intent/tweet?url={u}"),
+    "reddit": ("Reddit", "https://www.reddit.com/submit?url={u}"),
+    "email": ("E-mail", "mailto:?subject=Captura%20de%20tela&body={u}"),
+}
+
+
+def link_compartilhar(servico, url):
+    if servico not in COMPARTILHAR:
+        raise ValueError("serviço desconhecido")
+    return COMPARTILHAR[servico][1].format(u=urllib.parse.quote(url, safe=""))

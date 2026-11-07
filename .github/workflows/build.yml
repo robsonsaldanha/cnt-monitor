@@ -60,7 +60,8 @@ jobs:
             --collect-all pythonnet --collect-all clr_loader `
             --add-data "src/ui;ui" --add-data "lhm;lhm" --add-data "presentmon;presentmon" src/servico.py
           pyinstaller --noconfirm --clean --windowed --name MonitorPC --icon instalador/icone.ico `
-            --paths src --hidden-import pystray._win32 --hidden-import PIL.ImageTk --hidden-import PIL.ImageGrab src/bandeja.py
+            --paths src --hidden-import pystray._win32 --hidden-import PIL.ImageTk --hidden-import PIL.ImageGrab `
+            --collect-submodules qrcode --hidden-import zxingcpp src/bandeja.py
           Get-ChildItem dist | Format-Table Name
 
       - name: Teste 1 - serviço em modo console (admin)

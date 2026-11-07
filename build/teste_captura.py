@@ -232,6 +232,240 @@ def teste_cabecalhos_ocultos():
     assert configuracao.obter("captura_uploader")["cabecalhos"]["Authorization"] == "Bearer seg"
 
 
+def teste_config_so_local():
+    """Pelo celular n\u00e3o d\u00e1 para mudar a\u00e7\u00f5es (programas), destino do envio nem a IA; no pr\u00f3prio PC d\u00e1."""
+    configuracao.salvar_publico({"captura_acoes": [{"programa": "C:\\x.exe"}], "captura_destino": "uguu",
+                                 "captura_borda": 4}, remoto=True)
+    c = configuracao.obter()
+    assert c["captura_acoes"] == [] and c["captura_destino"] == "catbox" and c["captura_borda"] == 4
+    configuracao.salvar_publico({"captura_acoes": [{"programa": "C:\\x.exe"}], "captura_destino": "uguu"})
+    c = configuracao.obter()
+    assert c["captura_acoes"][0]["programa"] == "C:\\x.exe" and c["captura_destino"] == "uguu"
+
+
+def teste_opcoes_novas():
+    v = configuracao._validar
+    d = v({})
+    assert d["captura_aviso_clique"] == "abrir" and d["captura_sem_metadados"] and not d["captura_fixar"]
+    r = v({"captura_formato": "webp", "captura_borda_cor": "#ABCDEF", "captura_marca_opacidade": 500,
+           "captura_aviso_clique": "x", "captura_envio_compartilhar": "whatsapp", "captura_gravar_audio": 'Mic "1"\n',
+           "captura_ia_prompt": "", "captura_emb_fundo": "neon"})
+    assert r["captura_formato"] == "webp" and r["captura_borda_cor"] == "#abcdef" and r["captura_marca_opacidade"] == 100
+    assert r["captura_aviso_clique"] == "abrir" and r["captura_envio_compartilhar"] == "whatsapp"
+    assert r["captura_gravar_audio"] == "Mic 1" and r["captura_ia_prompt"] == d["captura_ia_prompt"]
+    assert r["captura_emb_fundo"] == "azul"
+    assert v({"captura_borda_cor": "red"})["captura_borda_cor"] == "#000000"
+
+
+def teste_acoes_e_fluxos():
+    a = captura.validar_acoes([{"programa": '"C:\\Prog\\x.exe"', "args": '-i "%arquivo" --out %pasta'},
+                               {"programa": "a|b"}, "lixo", {"programa": ""}])
+    assert len(a) == 1 and a[0]["programa"] == "C:\\Prog\\x.exe" and a[0]["nome"] == "x.exe"
+    cmd = captura.montar_comando(a[0], "C:\\Fotos\\minha captura.png")
+    assert cmd == ["C:\\Prog\\x.exe", "-i", "C:\\Fotos\\minha captura.png", "--out", "C:\\Fotos"]
+    f = captura.validar_fluxos([
+        {"id": "a1", "nome": "Enviar r\u00e1pido", "acao": "regiao", "atalho": "ctrl+f1",
+         "tarefas": {"captura_enviar": 1, "captura_salvar": 0, "rm -rf": True}, "destino": "uguu"},
+        {"id": "a1", "acao": "tela", "atalho": "Ctrl+F1", "destino": "xx"},
+        {"acao": "cor"}])
+    assert len(f) == 2
+    assert f[0]["atalho"] == "Ctrl+F1" and f[0]["tarefas"] == {"captura_enviar": True, "captura_salvar": False}
+    assert f[0]["destino"] == "uguu"
+    assert f[1]["id"] != "a1" and f[1]["atalho"] == "" and f[1]["destino"] == "" and f[1]["nome"]
+
+
+def teste_tarefas_rapidas():
+    from monitorpc import capturador
+    c = configuracao._validar({"captura_enviar": True, "captura_copiar": True, "captura_notificar": True})
+    r = capturador.tarefas_rapidas(c, "fixar")
+    assert r["captura_fixar"] and r["captura_copiar"] and not r["captura_enviar"] and not r["captura_salvar"]
+    assert r["captura_notificar"]   # o aviso continua
+    assert capturador.tipo_arquivo("a.WEBP") == "imagem" and capturador.tipo_arquivo("b.mkv") == "video"
+    assert capturador.tipo_arquivo("c.gif") == "gif" and capturador.tipo_arquivo("d.zip") == "arquivo"
+
+
+def teste_efeitos():
+    from PIL import Image
+    from monitorpc import efeitos
+    img = Image.new("RGB", (200, 100), (10, 200, 30))
+    e = efeitos.embelezar(img, margem=40, fundo="roxo", cantos=12, sombra=True)
+    assert e.size == (280, 180) and e.mode == "RGBA"
+    assert e.getpixel((140, 90))[:3] == (10, 200, 30)          # o meio \u00e9 a captura
+    assert e.getpixel((40, 40))[:3] != (10, 200, 30)            # canto arredondado mostra o fundo
+    t = efeitos.embelezar(img, margem=16, fundo="transparente", sombra=False)
+    assert t.getpixel((0, 0))[3] == 0
+    b = efeitos.borda(img, 4, "#ff0000")
+    assert b.size == (208, 108) and b.getpixel((0, 0)) == (255, 0, 0) and b.getpixel((4, 4)) == (10, 200, 30)
+    assert efeitos.posicao_marca((800, 600), (100, 20), "inf_dir") == (688, 568)
+    assert efeitos.posicao_marca((800, 600), (100, 20), "sup_esq") == (12, 12)
+    assert efeitos.posicao_marca((800, 600), (100, 20), "centro") == (350, 290)
+    m = efeitos.marca_dagua(Image.new("RGB", (400, 300), (0, 0, 0)), "Monitor", "inf_dir", 100)
+    assert m.mode == "RGB" and m.getbbox() is not None and m.crop((0, 0, 200, 150)).getbbox() is None
+    assert efeitos.miniatura(Image.new("RGB", (1000, 500)), 300).size == (300, 150)
+    base = Image.new("RGB", (100, 100), (255, 0, 0))
+    j, pos = efeitos.juntar_regioes(base, [[10, 10, 30, 30], [50, 60, 70, 90]])
+    assert pos == (10, 10) and j.size == (60, 80)
+    assert j.getpixel((5, 5))[3] == 255 and j.getpixel((30, 20))[3] == 0 and j.getpixel((45, 60))[3] == 255
+
+
+def teste_metadados_e_hash():
+    import tempfile
+    import shutil
+    from PIL import Image
+    from monitorpc import efeitos
+    pasta = tempfile.mkdtemp()
+    try:
+        arq = os.path.join(pasta, "foto.jpg")
+        exif = Image.Exif()
+        exif[0x010F] = "CameraX"       # Make
+        Image.new("RGB", (50, 40), (1, 2, 3)).save(arq, "JPEG", exif=exif)
+        limpa = efeitos.sem_metadados(arq)
+        assert limpa != arq
+        with Image.open(limpa) as im:
+            assert not im.getexif() and im.size == (50, 40)
+        shutil.rmtree(os.path.dirname(limpa))
+        png = os.path.join(pasta, "a.png")
+        Image.new("RGB", (5, 5)).save(png)
+        assert efeitos.sem_metadados(png) == png       # sem metadados: envia o pr\u00f3prio arquivo
+        txt = os.path.join(pasta, "t.txt")
+        with open(txt, "wb") as f:
+            f.write(b"abc")
+        s = efeitos.hash_arquivo(txt)
+        assert s["SHA-256"] == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        assert s["MD5"] == "900150983cd24fb0d6963f7d28e17f72"
+        assert efeitos.confere_hash(s, " BA7816BF 8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad ") == "SHA-256"
+        assert efeitos.confere_hash(s, "00") is None and efeitos.confere_hash(s, "") is None
+    finally:
+        shutil.rmtree(pasta, ignore_errors=True)
+
+
+def teste_qr():
+    from monitorpc import efeitos
+    img = efeitos.qr_imagem("https://exemplo.com/x?a=1")
+    assert efeitos.ler_qr(img) == ["https://exemplo.com/x?a=1"]
+    from PIL import Image
+    assert efeitos.ler_qr(Image.new("RGB", (80, 80), (255, 255, 255))) == []
+
+
+def teste_salvar_formatos():
+    import tempfile
+    import shutil
+    from PIL import Image
+    pasta = tempfile.mkdtemp()
+    try:
+        rgba = Image.new("RGBA", (20, 10), (0, 0, 0, 0))
+        captura.salvar_imagem(rgba, os.path.join(pasta, "a.jpg"), {})
+        with Image.open(os.path.join(pasta, "a.jpg")) as im:
+            assert im.getpixel((5, 5))[0] > 240             # transparente vira branco no JPG
+        captura.salvar_imagem(Image.new("RGB", (20, 10), (9, 9, 9)), os.path.join(pasta, "b.webp"),
+                              {"captura_webp_sem_perda": True})
+        with Image.open(os.path.join(pasta, "b.webp")) as im:
+            assert im.format == "WEBP" and im.getpixel((1, 1))[:3] == (9, 9, 9)
+        assert captura.extensao({"captura_formato": "webp"}) == ".webp" and captura.extensao({}) == ".png"
+    finally:
+        shutil.rmtree(pasta, ignore_errors=True)
+
+
+def teste_area_transferencia_arquivo():
+    import struct
+    d = captura.dados_drop(["C:\\a b.png", "D:\\c.txt"])
+    assert struct.unpack("<IiiII", d[:20]) == (20, 0, 0, 0, 1)
+    assert d[20:].decode("utf-16-le") == "C:\\a b.png\0D:\\c.txt\0\0"
+
+
+def teste_sxcu():
+    u = envio.de_sxcu({"Version": "15.0.0", "Name": "Meu host", "DestinationType": "ImageUploader, FileUploader",
+                       "RequestMethod": "POST", "RequestURL": "https://up.ex.com/api", "Parameters": {"k": "v w"},
+                       "Headers": {"Authorization": "Bearer t"}, "Body": "MultipartFormData",
+                       "Arguments": {"album": "1"}, "FileFormName": "image", "URL": "{json:files[0].url}"})
+    assert u["url"] == "https://up.ex.com/api?k=v+w" and u["campo"] == "image" and u["resposta"] == "files.0.url"
+    assert u["cabecalhos"] == {"Authorization": "Bearer t"} and u["campos"] == {"album": "1"} and u["nome"] == "Meu host"
+    assert envio.de_sxcu({"RequestURL": "https://x.com/u", "URL": "$json:data.link$"})["resposta"] == "data.link"
+    m = envio.de_sxcu({"RequestURL": "https://x.com/u", "URL": "https://i.x.com/{json:id}.png"})
+    assert m["modelo"] == "https://i.x.com/{json:id}.png" and m["resposta"] == ""
+    assert envio.de_sxcu({"RequestURL": "https://x.com/u", "URL": "{response}"})["modelo"] == ""
+    for ruim in ({"RequestURL": "https://x.com", "RequestMethod": "GET"}, {"RequestURL": "https://x.com", "Body": "JSON"},
+                 {"RequestURL": "ftp://x"}, {"Name": "sem url"}, {"RequestURL": "https://x.com", "URL": "{regex:a}"},
+                 {"RequestURL": "https://x.com", "DestinationType": "URLShortener"}):
+        try:
+            envio.de_sxcu(ruim)
+        except ValueError:
+            continue
+        raise AssertionError(ruim)
+    assert envio.montar_link("https://i.x.com/{json:data.id}.png", b'{"data": {"id": "abc"}}') == "https://i.x.com/abc.png"
+    assert envio.montar_link("{response}", b" https://a.b/c \n") == "https://a.b/c"
+
+
+def teste_compartilhar():
+    assert envio.link_compartilhar("whatsapp", "https://a.b/c?d=1") == "https://wa.me/?text=https%3A%2F%2Fa.b%2Fc%3Fd%3D1"
+    assert envio.link_compartilhar("email", "https://a.b").startswith("mailto:?subject=")
+    try:
+        envio.link_compartilhar("orkut", "https://a.b")
+    except ValueError:
+        return
+    raise AssertionError("servi\u00e7o inv\u00e1lido aceito")
+
+
+def teste_gravacao_comando():
+    from monitorpc import gravacao
+    c = gravacao.comando("ff", (10, 20, 110, 80), "s.mp4", "video", 30, True, "Microfone (Realtek)")
+    assert c[c.index("-video_size") + 1] == "100x60" and "audio=Microfone (Realtek)" in c and "aac" in c
+    assert c[-1] == "s.mp4"
+    g = gravacao.comando("ff", (0, 0, 10, 10), "g.mp4", "gif", 15, False, "Microfone")
+    assert "dshow" not in g and "-crf" in g and g[g.index("-draw_mouse") + 1] == "0"
+    novo = '[in#0 @ 1] "Microfone (Realtek Audio)" (audio)\n[in#0 @ 1]   Alternative name "@device_cm_x"\n' \
+           '[in#0 @ 1] "OBS Virtual Camera" (video)\n[in#0 @ 1] "Mixagem est\u00e9reo (Realtek)" (audio)'
+    assert gravacao.dispositivos_audio(novo) == ["Microfone (Realtek Audio)", "Mixagem est\u00e9reo (Realtek)"]
+    antigo = '[dshow @ 1] DirectShow video devices\n[dshow @ 1]  "Webcam"\n[dshow @ 1] DirectShow audio devices\n' \
+             '[dshow @ 1]  "Microfone"\n[dshow @ 1]     Alternative name "@device_cm_{1}"'
+    assert gravacao.dispositivos_audio(antigo) == ["Microfone"]
+
+
+def teste_aviso_posicao():
+    from monitorpc import aviso
+    area = (0, 0, 1920, 1040)
+    assert aviso.posicao(0, area, "inf_dir", 380, 100) == (1526, 926)
+    assert aviso.posicao(1, area, "inf_dir", 380, 100, 112) == (1526, 814)    # empilha para cima
+    assert aviso.posicao(0, area, "sup_esq", 380, 100) == (14, 14)
+    assert aviso.posicao(1, area, "sup_esq", 380, 100, 112) == (14, 126)      # empilha para baixo
+
+
+def teste_ia_pedido():
+    from monitorpc import ia
+    url, cab, corpo = ia.montar_pedido("openai", "", "Descreva", "QUJD", "sk-1")
+    assert url.endswith("/chat/completions") and cab == {"Authorization": "Bearer sk-1"}
+    assert corpo["model"] == ia.PROVEDORES["openai"][1]
+    assert corpo["messages"][0]["content"][1]["image_url"]["url"] == "data:image/jpeg;base64,QUJD"
+    url, cab, corpo = ia.montar_pedido("gemini", "gemini-x", "D", "QUJD", "g-1")
+    assert "models/gemini-x:generateContent" in url and cab == {"x-goog-api-key": "g-1"} and "g-1" not in url
+    assert ia.ler_resposta("openai", {"choices": [{"message": {"content": " oi "}}]}) == "oi"
+    assert ia.ler_resposta("gemini", {"candidates": [{"content": {"parts": [{"text": "a"}, {"text": "b"}]}}]}) == "ab"
+    try:
+        ia.ler_resposta("openai", {"erro": 1})
+    except RuntimeError:
+        return
+    raise AssertionError("resposta inv\u00e1lida aceita")
+
+
+def teste_historico_banco():
+    import tempfile
+    from monitorpc import banco, config
+    config.DB = os.path.join(tempfile.mkdtemp(), "h.db")
+    banco.iniciar()
+    banco.iniciar()   # migra\u00e7\u00e3o das colunas novas n\u00e3o quebra na 2\u00aa vez
+    base = {"tipo": "imagem", "modo": "regiao", "caminho": "C:\\a.png", "largura": 1, "altura": 1, "bytes": 10}
+    a = banco.captura_registrar(base)
+    b = banco.captura_registrar({**base, "tipo": "video", "caminho": "C:\\b.mp4", "bytes": 30})
+    banco.captura_atualizar(a, {"favorito": 1, "tags": "trabalho", "url": "https://files.catbox.moe/x.png"})
+    banco.captura_atualizar(b, {"caminho": "C:\\novo.mp4"})
+    itens = {x["id"]: x for x in banco.capturas_listar()}
+    assert itens[a]["favorito"] and itens[a]["tags"] == "trabalho" and itens[b]["caminho"] == "C:\\novo.mp4"
+    s = banco.capturas_stats()
+    assert s["total"] == 2 and s["bytes"] == 40 and s["enviadas"] == 1 and s["favoritas"] == 1
+    assert s["por_tipo"] == {"imagem": 1, "video": 1} and s["sites"] == {"files.catbox.moe": 1}
+    assert len(s["por_dia"]) == 1 and s["por_dia"][0][1] == 2
+
+
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
         if nome.startswith("teste_"):

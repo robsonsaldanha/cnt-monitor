@@ -29,8 +29,31 @@ ACOES = {
     "ocr": ("Copiar texto da tela (OCR)", ""),
     "cor": ("Seletor de cor", ""),
     "regua": ("Régua", ""),
+    "regioes": ("Capturar várias regiões", ""),
+    "qr": ("Ler código QR da tela", ""),
+    "fixar": ("Fixar uma região na tela", ""),
+    "pausar": ("Pausar / continuar a gravação", ""),
+    "enviar_arquivo": ("Enviar um arquivo", ""),
+    "enviar_area": ("Enviar da área de transferência", ""),
+    "barra": ("Barra de ferramentas de ações", ""),
+    "atalhos": ("Desligar / ligar os atalhos", ""),
 }
 ATALHOS_PADRAO = {k: v[1] for k, v in ACOES.items()}
+# ações que geram uma imagem e passam pelas tarefas pós-captura (as que um fluxo de trabalho pode usar)
+ACOES_IMAGEM = ("regiao", "janela", "monitor", "tela", "ultima", "atraso", "rolagem", "regioes")
+# ferramentas sobre um arquivo do histórico (capturador.ferramenta) e tarefas do ícone sem arquivo (bandeja)
+FERRAMENTAS_ARQUIVO = ("fixar", "imprimir", "editor_fotos", "embelezar", "qr", "ocr", "hash", "ia", "copiar_arquivo")
+TAREFAS_ICONE = ("importar", "ia_chave", "barra", "enviar_arquivo", "enviar_area", "enviar_texto", "fixar_area",
+                 "escolher_fixar", "escolher_hash", "escolher_qr", "escolher_ocr", "escolher_embelezar", "escolher_editor",
+                 "atalhos", "pausar")
+# tarefas pós-captura e pós-envio (liga/desliga) que um fluxo pode sobrepor
+TAREFAS = ("captura_copiar", "captura_salvar", "captura_perguntar", "captura_copiar_caminho", "captura_mostrar_pasta",
+           "captura_ocr_auto", "captura_notificar", "captura_editor", "captura_enviar", "captura_tarefas_rapidas",
+           "captura_janela_pos", "captura_embelezar", "captura_efeitos", "captura_editor_fotos", "captura_fixar",
+           "captura_imprimir", "captura_miniatura", "captura_rodar_acoes", "captura_copiar_arquivo",
+           "captura_copiar_pasta", "captura_qr", "captura_ia", "captura_pre_envio", "captura_apagar_local",
+           "captura_envio_copiar", "captura_envio_abrir", "captura_envio_notificar", "captura_envio_janela",
+           "captura_envio_encurtar", "captura_envio_qr", "captura_anotar")
 
 MODS = {"ctrl": 0x2, "alt": 0x1, "shift": 0x4, "win": 0x8}
 _ESPECIAIS = {"print": "Print", "pause": "Pause", "scrolllock": "ScrollLock", "insert": "Insert", "delete": "Delete",
@@ -71,6 +94,54 @@ def validar_atalhos(d):
         if txt:
             usados.add(txt.lower())
         out[k] = txt
+    return out
+
+
+def validar_acoes(lista):
+    """"Realizar ações": [{nome, programa, args}]. `args` aceita %arquivo (caminho entre aspas) e %pasta."""
+    out = []
+    for a in lista[:10]:
+        if not isinstance(a, dict):
+            continue
+        prog = str(a.get("programa") or "").strip().strip('"')[:260]
+        if not prog or any(ch in prog for ch in '<>|\r\n\t"'):
+            continue
+        out.append({"nome": ("".join(ch for ch in str(a.get("nome") or "") if ord(ch) >= 32).strip()[:60]
+                             or os.path.basename(prog)),
+                    "programa": prog,
+                    "args": "".join(ch for ch in str(a.get("args") or "%arquivo") if ch not in "\r\n")[:500],
+                    "ativo": bool(a.get("ativo", True))})
+    return out
+
+
+def montar_comando(acao, caminho):
+    """Lista de argumentos para subprocess (sem shell): o arquivo nunca é interpretado como comando."""
+    import shlex
+    pasta = os.path.dirname(caminho)
+    partes = shlex.split(acao["args"].replace("\\", "\\\\"), posix=True) if acao["args"].strip() else []
+    return [acao["programa"]] + [p.replace("%arquivo", caminho).replace("%pasta", pasta) for p in partes]
+
+
+def validar_fluxos(lista):
+    """Fluxos de trabalho: {id, nome, acao (de ACOES_IMAGEM), atalho, tarefas {chave: bool}, destino}."""
+    from .envio import DESTINOS
+    out, usados, ids = [], set(), set()
+    for f in lista[:20]:
+        if not isinstance(f, dict) or f.get("acao") not in ACOES_IMAGEM:
+            continue
+        fid = "".join(ch for ch in str(f.get("id") or "") if ch.isalnum())[:16] or f"f{len(out) + 1}"
+        while fid in ids:
+            fid += "x"
+        ids.add(fid)
+        r = ler_atalho(f.get("atalho")) if f.get("atalho") else None
+        atalho = r[2] if r and r[2].lower() not in usados else ""
+        if atalho:
+            usados.add(atalho.lower())
+        t = f.get("tarefas") if isinstance(f.get("tarefas"), dict) else {}
+        out.append({"id": fid, "nome": "".join(ch for ch in str(f.get("nome") or "") if ord(ch) >= 32).strip()[:60]
+                    or ACOES[f["acao"]][0], "acao": f["acao"], "atalho": atalho,
+                    "tarefas": {k: bool(v) for k, v in t.items() if k in TAREFAS},
+                    "destino": f.get("destino") if f.get("destino") in DESTINOS else ""})
     return out
 
 
@@ -405,13 +476,15 @@ def desenhar_formas(img, formas, ox=0, oy=0):
 
 
 # ================================================================ seleção na tela congelada
-def selecionar(img, ox, oy, modo="regiao", janelas=(), anotar=False, lupa=True, estilo=None):
+def selecionar(img, ox, oy, modo="regiao", janelas=(), anotar=False, lupa=True, estilo=None, escurecer=True, cruz=True):
     """Mostra a imagem por cima de tudo e deixa o usuário escolher.
     regiao -> (l, t, r, b, formas) relativo à imagem; formas = anotações (vazio com `anotar` desligado)
+    regioes -> [[l, t, r, b], ...] (várias áreas; Enter ou clique duplo termina)
     cor -> (r, g, b) | regua -> (dx, dy) | None se cancelou (Esc / botão direito).
     `estilo` (dict) guarda a ferramenta, a cor e a espessura escolhidas para a próxima vez."""
     try:
-        return _Selecao(img, ox, oy, modo, janelas, anotar, lupa, estilo if isinstance(estilo, dict) else {}).rodar()
+        return _Selecao(img, ox, oy, modo, janelas, anotar, lupa, estilo if isinstance(estilo, dict) else {},
+                        escurecer, cruz).rodar()
     finally:
         coletar_tk()
 
@@ -430,13 +503,16 @@ class _Selecao:
     CURSOR_ALCA = {"lt": "size_nw_se", "rb": "size_nw_se", "rt": "size_ne_sw", "lb": "size_ne_sw",
                    "l": "size_we", "r": "size_we", "t": "size_ns", "b": "size_ns"}
 
-    def __init__(self, img, ox, oy, modo, janelas, anotar, lupa, estilo):
+    def __init__(self, img, ox, oy, modo, janelas, anotar, lupa, estilo, escurecer=True, cruz=True):
         import tkinter as tk
         from PIL import ImageEnhance, ImageTk
         self.tk, self.ImageTk = tk, ImageTk
         self.img, self.ox, self.oy, self.modo, self.janelas = img, ox, oy, modo, janelas
+        self.area_modo = modo in ("regiao", "regioes")
         self.anotar = bool(anotar) and modo == "regiao"
-        self.com_lupa = bool(lupa) or modo != "regiao"
+        self.com_lupa = bool(lupa) or not self.area_modo
+        self.usar_cruz = bool(cruz) and self.area_modo
+        self.regs, self.regs_itens = [], []
         ids = [x[0] for x in FERRAMENTAS]
         self.estilo = estilo
         if estilo.get("ferr") not in ids:
@@ -458,9 +534,12 @@ class _Selecao:
         self.cv = cv = tk.Canvas(root, width=W, height=H, highlightthickness=0, bd=0, cursor="crosshair", bg="black")
         cv.pack()
         # master=root sempre: com o mini painel aberto existe outro Tk (em outra thread) e a imagem iria para ele
-        self.fotos["fundo"] = ImageTk.PhotoImage(ImageEnhance.Brightness(img).enhance(0.55) if modo == "regiao" else img,
-                                                 master=root)
+        escuro = self.area_modo and escurecer
+        self.fotos["fundo"] = ImageTk.PhotoImage(ImageEnhance.Brightness(img).enhance(0.55) if escuro else img, master=root)
         cv.create_image(0, 0, anchor="nw", image=self.fotos["fundo"])
+        self.cruz_h = cv.create_line(0, 0, 0, 0, fill="#9fd0ff", dash=(3, 4), state="hidden")
+        self.cruz_v = cv.create_line(0, 0, 0, 0, fill="#9fd0ff", dash=(3, 4), state="hidden")
+        self.centro = [cv.create_line(0, 0, 0, 0, fill="#4ea1ff", width=1, state="hidden") for _ in range(2)]
         self.claro = cv.create_image(0, 0, anchor="nw")
         self.borda = cv.create_rectangle(0, 0, 0, 0, outline="#4ea1ff", width=2, state="hidden")
         self.alcas = [cv.create_rectangle(0, 0, 0, 0, fill="#4ea1ff", outline="#ffffff", state="hidden") for _ in range(8)]
@@ -515,6 +594,11 @@ class _Selecao:
             return "Clique na cor  ·  setas movem o mouse 1 px  ·  Esc cancela"
         if self.modo == "regua":
             return "Arraste para medir  ·  setas movem o mouse 1 px  ·  Esc cancela"
+        if self.modo == "regioes":
+            n = len(self.regs)
+            return ((f"{n} área{'s' if n > 1 else ''} marcada{'s' if n > 1 else ''}  ·  " if n else "") +
+                    "Arraste para marcar cada área  ·  clique numa janela para pegá-la  ·  Enter ou clique duplo captura  ·  "
+                    "botão direito desfaz a última  ·  Esc cancela")
         if self.fase == 1:
             return ("Arraste para escolher a área  ·  clique numa janela para pegá-la inteira  ·  "
                     "setas movem o mouse 1 px (Shift: 10)  ·  Esc cancela")
@@ -579,7 +663,13 @@ class _Selecao:
         l, t, r, b = max(0, int(l)), max(0, int(t)), min(self.W, int(r)), min(self.H, int(b))
         if r - l < 1 or b - t < 1:
             return
-        if self.modo == "regiao":
+        if self.usar_cruz:
+            mx, my, s = (l + r) // 2, (t + b) // 2, 6
+            for item, c in zip(self.centro, ((mx - s, my, mx + s + 1, my), (mx, my - s, mx, my + s + 1))):
+                cv.coords(item, *c)
+                cv.itemconfigure(item, state="normal" if r - l > 30 and b - t > 30 else "hidden")
+                cv.tag_raise(item)
+        if self.area_modo:
             recorte = self.img.crop((l, t, r, b))
             if formas and self.formas:
                 recorte = desenhar_formas(recorte, self.formas, l, t)
@@ -606,11 +696,23 @@ class _Selecao:
         self.root.destroy()
 
     # ------------------------------------------------------------ mouse
+    def guias(self, x, y):
+        """Linhas que seguem o mouse, de borda a borda (só escolhendo a área)."""
+        if not self.usar_cruz:
+            return
+        cv = self.cv
+        cv.coords(self.cruz_h, 0, y, self.W, y)
+        cv.coords(self.cruz_v, x, 0, x, self.H)
+        for i in (self.cruz_h, self.cruz_v):
+            cv.itemconfigure(i, state="normal" if self.fase == 1 else "hidden")
+            cv.tag_lower(i, self.claro)
+
     def mover(self, e):
         if self.fase == 1:
+            self.guias(e.x, e.y)
             if self.com_lupa:
                 self.mostrar_lupa(e.x, e.y)
-            if self.modo == "regiao" and self.ini is None:
+            if self.area_modo and self.ini is None:
                 alvo = self.janela_em(e.x, e.y)
                 if alvo != self.hover:
                     self.hover = alvo
@@ -684,12 +786,13 @@ class _Selecao:
     def arrastar(self, e):
         x, y = e.x, e.y
         if self.fase == 1:
+            self.guias(x, y)
             if self.com_lupa:
                 self.mostrar_lupa(x, y)
             if self.ini is None:
                 return
             x0, y0 = self.ini
-            if self.modo == "regiao":
+            if self.area_modo:
                 self.realce(min(x0, x), min(y0, y), max(x0, x) + 1, max(y0, y) + 1)
             elif self.modo == "regua":
                 self.cv.coords(self.linha, x0, y0, x, y)
@@ -787,17 +890,50 @@ class _Selecao:
                 reg = list(self.hover)
             else:
                 return
+            if self.modo == "regioes":
+                self._clique = 0 if arrastou else time.time()
+                return self.marcar(reg)
             if self.anotar:
                 self.entrar_fase2(reg)
                 return
             self.res = (*reg, [])
         self.root.destroy()
 
+    # ------------------------------------------------------------ várias regiões
+    def marcar(self, reg):
+        cv = self.cv
+        n = len(self.regs)
+        self.fotos[f"r{n}"] = self.ImageTk.PhotoImage(self.img.crop(reg), master=self.root)
+        itens = [cv.create_image(reg[0], reg[1], anchor="nw", image=self.fotos[f"r{n}"]),
+                 cv.create_rectangle(*reg, outline="#4ea1ff", width=2),
+                 cv.create_text(reg[0] + 6, reg[1] + 4, anchor="nw", text=str(n + 1), fill="#ffffff",
+                                font=("Segoe UI", 11, "bold"))]
+        self.regs.append(reg)
+        self.regs_itens.append(itens)
+        for i in (self.claro, self.borda, self.rot, self.rot_f, *self.centro):
+            cv.itemconfigure(i, state="hidden")
+        self.dica()
+
+    def desmarcar(self):
+        if not self.regs:
+            return self.cancelar()
+        self.regs.pop()
+        for i in self.regs_itens.pop():
+            self.cv.delete(i)
+        self.dica()
+
     def duplo(self, _e):
+        if self.modo == "regioes":
+            # o 1º clique do clique duplo marcou a janela debaixo do mouse: desfaz, a não ser que seja a única área
+            if len(self.regs) > 1 and time.time() - getattr(self, "_clique", 0) < 0.6:
+                self.desmarcar()
+            return self.confirmar()
         if self.fase == 2 and not self.entrada and self.estilo["ferr"] not in _DE_CLICAR and self.dentro(_e.x, _e.y):
             self.confirmar()
 
     def direito(self, _e):
+        if self.modo == "regioes":
+            return self.desmarcar()
         if self.fase == 1:
             return self.cancelar()
         if self.entrada:
@@ -946,6 +1082,11 @@ class _Selecao:
             self.pintar()
 
     def confirmar(self):
+        if self.modo == "regioes":
+            if self.regs:
+                self.res = [list(r) for r in self.regs]
+                self.root.destroy()
+            return
         if self.fase != 2:
             return
         self.fechar_entrada(True)
@@ -1374,6 +1515,50 @@ def copiar_texto(txt):
     _area_transferencia([(13, (str(txt) + "\0").encode("utf-16-le"))])
 
 
+def dados_drop(caminhos):
+    """Conteúdo do formato CF_HDROP: DROPFILES (20 bytes, nomes em UTF-16) + nomes separados por \\0 + \\0 final."""
+    import struct
+    nomes = "".join(os.path.abspath(p) + "\0" for p in caminhos) + "\0"
+    return struct.pack("<IiiII", 20, 0, 0, 0, 1) + nomes.encode("utf-16-le")
+
+
+def copiar_arquivos(caminhos):
+    """O arquivo em si na área de transferência (colar no Explorer, WhatsApp, Discord, e-mail)."""
+    efeito = (1).to_bytes(4, "little")   # DROPEFFECT_COPY
+    _area_transferencia([(15, dados_drop(caminhos)), (_u.RegisterClipboardFormatW("Preferred DropEffect"), efeito)])
+
+
+def ler_area_transferencia():
+    """("imagem", PIL) | ("arquivos", [caminhos]) | ("texto", str) | (None, None)."""
+    from PIL import ImageGrab
+    try:
+        d = ImageGrab.grabclipboard()
+    except OSError:
+        d = None
+    if isinstance(d, list) and d:
+        return "arquivos", [p for p in d if os.path.isfile(p)]
+    if d is not None and hasattr(d, "size"):
+        return "imagem", d
+    _u.GetClipboardData.restype = wt.HANDLE
+    for _ in range(20):
+        if _u.OpenClipboard(None):
+            break
+        time.sleep(0.05)
+    else:
+        return None, None
+    try:
+        h = _u.GetClipboardData(13)
+        if not h:
+            return None, None
+        p = _k.GlobalLock(h)
+        try:
+            return "texto", ctypes.wstring_at(p)
+        finally:
+            _k.GlobalUnlock(h)
+    finally:
+        _u.CloseClipboard()
+
+
 # ================================================================ tecla Print Screen do Windows
 _TECLADO = r"Control Panel\Keyboard"
 _VALOR_PRINT = "PrintScreenKeyForSnippingEnabled"
@@ -1575,13 +1760,35 @@ def perguntar_arquivo(sugestao):
     """"Salvar como…": pasta e nome escolhidos na hora. None = cancelou."""
     pasta, nome = os.path.split(sugestao)
     ext = os.path.splitext(nome)[1] or ".png"
-    tipos = [("PNG", "*.png"), ("JPG", "*.jpg;*.jpeg")]
+    tipos = [("PNG", "*.png"), ("JPG", "*.jpg;*.jpeg"), ("WebP", "*.webp")]
+    tipos.sort(key=lambda t: ext not in t[1])
     p = _dialogo("asksaveasfilename", title="Salvar captura como", initialdir=pasta, initialfile=nome,
-                 defaultextension=ext, filetypes=tipos if ext == ".png" else tipos[::-1])
+                 defaultextension=ext, filetypes=tipos)
     if not p:
         return None
     p = os.path.normpath(p)
-    return p if p.lower().endswith((".png", ".jpg", ".jpeg")) else p + ext
+    return p if p.lower().endswith((".png", ".jpg", ".jpeg", ".webp")) else p + ext
+
+
+def escolher_arquivos(titulo="Escolha o arquivo", varios=False, tipos=None):
+    """Janela "Abrir" do Windows. Devolve uma lista de caminhos (vazia se cancelou)."""
+    kw = {"title": titulo, "initialdir": pasta_imagens()}
+    if tipos:
+        kw["filetypes"] = tipos
+    r = _dialogo("askopenfilenames" if varios else "askopenfilename", **kw)
+    if not r:
+        return []
+    return [os.path.normpath(p) for p in (r if isinstance(r, (list, tuple)) else [r])]
+
+
+def abrir_com(caminho, verbo="open"):
+    """Abre com o programa padrão do Windows. verbo: open, edit (editor de imagens), print."""
+    try:
+        os.startfile(caminho, verbo)
+    except OSError:
+        if verbo == "open":
+            raise
+        os.startfile(caminho)   # sem esse verbo para o tipo de arquivo: abre normalmente
 
 
 def mostrar_no_explorer(caminho):
@@ -1608,11 +1815,30 @@ def nome_arquivo(c, ext):
     return nome_livre(pasta, base, ext)
 
 
+def _sem_alfa(img):
+    """JPG não tem transparência: o fundo transparente vira branco."""
+    if img.mode in ("RGBA", "LA", "P"):
+        from PIL import Image
+        img = img.convert("RGBA")
+        fundo = Image.new("RGB", img.size, (255, 255, 255))
+        fundo.paste(img, mask=img.getchannel("A"))
+        return fundo
+    return img.convert("RGB")
+
+
 def salvar_imagem(img, caminho, c):
-    if caminho.lower().endswith((".jpg", ".jpeg")):
-        img.convert("RGB").save(caminho, "JPEG", quality=int(c.get("captura_qualidade") or 90), optimize=True)
+    q = int(c.get("captura_qualidade") or 90)
+    low = caminho.lower()
+    if low.endswith((".jpg", ".jpeg")):
+        _sem_alfa(img).save(caminho, "JPEG", quality=q, optimize=True)
+    elif low.endswith(".webp"):
+        img.save(caminho, "WEBP", lossless=bool(c.get("captura_webp_sem_perda")), quality=q, method=4)
     else:
         img.save(caminho, "PNG", optimize=False)
+
+
+def extensao(c):
+    return {"jpg": ".jpg", "webp": ".webp"}.get(c.get("captura_formato"), ".png")
 
 
 def para_lixeira(caminho):

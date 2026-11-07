@@ -44,6 +44,11 @@ def iniciar():
         con.execute("PRAGMA auto_vacuum=INCREMENTAL")
     con.execute("PRAGMA journal_mode=WAL")
     con.executescript(ESQUEMA)
+    for col in ("favorito INTEGER DEFAULT 0", "tags TEXT DEFAULT ''"):   # colunas novas (2.4.0) em bancos antigos
+        try:
+            con.execute(f"ALTER TABLE capturas ADD COLUMN {col}")
+        except sqlite3.OperationalError:
+            pass
     con.commit()
     con.close()
 
@@ -278,10 +283,12 @@ def info():
 # ---------------------------------------------------------------- capturas de tela (histórico)
 def _sem_mini(r):
     return {"id": r[0], "ts": r[1], "tipo": r[2], "modo": r[3], "caminho": r[4], "largura": r[5], "altura": r[6],
-            "bytes": r[7], "duracao": r[8], "url": r[9], "tem_mini": bool(r[10])}
+            "bytes": r[7], "duracao": r[8], "url": r[9], "tem_mini": bool(r[10]), "favorito": bool(r[11]),
+            "tags": r[12] or ""}
 
 
-_CAMPOS_CAP = "id, ts, tipo, modo, caminho, largura, altura, bytes, duracao, url, mini IS NOT NULL"
+_CAMPOS_CAP = ("id, ts, tipo, modo, caminho, largura, altura, bytes, duracao, url, mini IS NOT NULL, "
+               "COALESCE(favorito, 0), COALESCE(tags, '')")
 MAX_CAPTURAS = 2000
 
 
@@ -299,7 +306,7 @@ def captura_registrar(d, mini=None):
 
 
 def captura_atualizar(cid, campos, mini=None):
-    sets = {k: v for k, v in campos.items() if k in ("url", "largura", "altura", "bytes")}
+    sets = {k: v for k, v in campos.items() if k in ("url", "largura", "altura", "bytes", "caminho", "favorito", "tags")}
     if mini is not None:
         sets["mini"] = mini
     if not sets:
@@ -330,6 +337,26 @@ def captura_mini(cid):
     con.close()
     return r[0] if r else None
 
+
+def capturas_stats(dias=30):
+    """Totais do histórico: por tipo, por modo, por dia (últimos `dias`), por site de envio e espaço."""
+    from urllib.parse import urlparse
+    con = conectar()
+    n, tam, env, fav = con.execute("SELECT COUNT(*), COALESCE(SUM(bytes), 0), COALESCE(SUM(url <> ''), 0), "
+                                   "COALESCE(SUM(favorito), 0) FROM capturas").fetchone()
+    por_tipo = dict(con.execute("SELECT tipo, COUNT(*) FROM capturas GROUP BY tipo").fetchall())
+    por_modo = dict(con.execute("SELECT modo, COUNT(*) FROM capturas GROUP BY modo ORDER BY 2 DESC").fetchall())
+    por_dia = con.execute("SELECT date(ts, 'unixepoch', 'localtime') d, COUNT(*) FROM capturas WHERE ts >= ? "
+                          "GROUP BY d ORDER BY d", (int(time.time() - dias * 86400),)).fetchall()
+    sites = {}
+    for (u,) in con.execute("SELECT url FROM capturas WHERE url <> ''"):
+        h = urlparse(u).hostname or "?"
+        sites[h] = sites.get(h, 0) + 1
+    primeira = con.execute("SELECT MIN(ts) FROM capturas").fetchone()[0]
+    con.close()
+    return {"total": n, "bytes": tam, "enviadas": env, "favoritas": fav, "por_tipo": por_tipo, "por_modo": por_modo,
+            "por_dia": [list(x) for x in por_dia], "sites": dict(sorted(sites.items(), key=lambda x: -x[1])),
+            "desde": primeira}
 
 def captura_apagar(cid):
     con = conectar()

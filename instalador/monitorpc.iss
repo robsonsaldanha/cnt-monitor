@@ -42,6 +42,31 @@ Source: "PawnIO_setup.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall skipifso
 Name: "{autoprograms}\Monitor do PC"; Filename: "{app}\MonitorPC.exe"
 Name: "{autodesktop}\Monitor do PC"; Filename: "{app}\MonitorPC.exe"; Tasks: desktop
 
+[Registry]
+; Botão direito do Explorer: "Monitor do PC" em qualquer arquivo e "Monitor do PC — imagem" nas imagens.
+Root: HKLM; Subkey: "Software\Classes\*\shell\MonitorPC"; ValueType: string; ValueName: "MUIVerb"; ValueData: "Monitor do PC"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\*\shell\MonitorPC"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\MonitorPC.exe"
+Root: HKLM; Subkey: "Software\Classes\*\shell\MonitorPC"; ValueType: string; ValueName: "SubCommands"; ValueData: ""
+Root: HKLM; Subkey: "Software\Classes\*\shell\MonitorPC\shell\1enviar"; ValueType: string; ValueName: ""; ValueData: "Enviar e copiar o link"
+Root: HKLM; Subkey: "Software\Classes\*\shell\MonitorPC\shell\1enviar\command"; ValueType: string; ValueName: ""; ValueData: """{app}\MonitorPC.exe"" --ferramenta enviar ""%1"""
+Root: HKLM; Subkey: "Software\Classes\*\shell\MonitorPC\shell\2copiar"; ValueType: string; ValueName: ""; ValueData: "Copiar o arquivo"
+Root: HKLM; Subkey: "Software\Classes\*\shell\MonitorPC\shell\2copiar\command"; ValueType: string; ValueName: ""; ValueData: """{app}\MonitorPC.exe"" --ferramenta copiar_arquivo ""%1"""
+Root: HKLM; Subkey: "Software\Classes\*\shell\MonitorPC\shell\3hash"; ValueType: string; ValueName: ""; ValueData: "Verificar hash (MD5, SHA-256)"
+Root: HKLM; Subkey: "Software\Classes\*\shell\MonitorPC\shell\3hash\command"; ValueType: string; ValueName: ""; ValueData: """{app}\MonitorPC.exe"" --ferramenta hash ""%1"""
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\image\shell\MonitorPCImagem"; ValueType: string; ValueName: "MUIVerb"; ValueData: "Monitor do PC — imagem"; Flags: uninsdeletekey
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\image\shell\MonitorPCImagem"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\MonitorPC.exe"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\image\shell\MonitorPCImagem"; ValueType: string; ValueName: "SubCommands"; ValueData: ""
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\image\shell\MonitorPCImagem\shell\1editor"; ValueType: string; ValueName: ""; ValueData: "Editar no Monitor do PC"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\image\shell\MonitorPCImagem\shell\1editor\command"; ValueType: string; ValueName: ""; ValueData: """{app}\MonitorPC.exe"" --ferramenta editor ""%1"""
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\image\shell\MonitorPCImagem\shell\2fixar"; ValueType: string; ValueName: ""; ValueData: "Fixar na tela"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\image\shell\MonitorPCImagem\shell\2fixar\command"; ValueType: string; ValueName: ""; ValueData: """{app}\MonitorPC.exe"" --ferramenta fixar ""%1"""
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\image\shell\MonitorPCImagem\shell\3embelezar"; ValueType: string; ValueName: ""; ValueData: "Embelezar (cria uma cópia)"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\image\shell\MonitorPCImagem\shell\3embelezar\command"; ValueType: string; ValueName: ""; ValueData: """{app}\MonitorPC.exe"" --ferramenta embelezar ""%1"""
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\image\shell\MonitorPCImagem\shell\4ocr"; ValueType: string; ValueName: ""; ValueData: "Copiar o texto (OCR)"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\image\shell\MonitorPCImagem\shell\4ocr\command"; ValueType: string; ValueName: ""; ValueData: """{app}\MonitorPC.exe"" --ferramenta ocr ""%1"""
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\image\shell\MonitorPCImagem\shell\5qr"; ValueType: string; ValueName: ""; ValueData: "Ler código QR"
+Root: HKLM; Subkey: "Software\Classes\SystemFileAssociations\image\shell\MonitorPCImagem\shell\5qr\command"; ValueType: string; ValueName: ""; ValueData: """{app}\MonitorPC.exe"" --ferramenta qr ""%1"""
+
 [InstallDelete]
 Type: files; Name: "{commonstartup}\Monitor do PC.lnk"
 
