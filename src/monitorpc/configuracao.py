@@ -85,7 +85,10 @@ def _validar(c):
                 v = "".join(ch for ch in v if ch not in '<>:"/\\|?*' and ord(ch) >= 32).strip(" .")[:120]
                 v = v or padrao
             elif k == "captura_pasta":
-                v = v.strip()[:260]
+                import ntpath
+                v = v.strip().strip('"')[:260]
+                if v and not (ntpath.isabs(v) and ntpath.splitdrive(v)[0]):
+                    continue  # só caminho completo (C:\..., \\servidor\...); senão fica a pasta padrão
             elif k == "captura_imgur_id":
                 v = "".join(ch for ch in v if ch.isalnum())[:64]
             out[k] = v

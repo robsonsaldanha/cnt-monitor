@@ -1144,6 +1144,8 @@ class Motor:
             if modo not in captura.ACOES and modo not in ("parar", "ffmpeg"):
                 return {"ok": False, "msg": "Tipo de captura desconhecido."}
             return self._enfileirar({"tipo": "captura", "modo": modo})
+        if tipo in ("captura_escolher_pasta", "captura_abrir_pasta"):   # quem abre o diálogo/Explorer é o ícone
+            return self._enfileirar({"tipo": tipo})
         if tipo in ("captura_copiar", "captura_enviar", "captura_ler", "captura_apagar", "captura_pasta", "captura_abrir"):
             try:
                 d = banco.captura(int(a.get("id") or 0))

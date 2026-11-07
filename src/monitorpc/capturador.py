@@ -6,6 +6,7 @@ import json
 import time
 import base64
 import threading
+import webbrowser
 
 from . import captura, envio, gravacao
 
@@ -24,6 +25,9 @@ class Capturador:
         self.gif_final = None
         self.baixando = None
         self._aplicado = None
+        self.estilo = {}                         # ferramenta, cor e espessura da anotação (lembradas na sessão)
+        self.rolando = False
+        self.parar_rolagem = threading.Event()
         self.atalhos = captura.Atalhos(self.executar)
 
     # ------------------------------------------------------------ atalhos e estado
@@ -66,6 +70,9 @@ class Capturador:
     # ------------------------------------------------------------ ações
     def executar(self, acao, origem="atalho"):
         titulo = captura.ACOES.get(acao, ("Captura",))[0]
+        if self.rolando and acao in ("parar", "rolagem"):
+            self.parar_rolagem.set()             # o mesmo atalho (ou "parar") termina a captura com rolagem
+            return
         if acao == "parar" or (acao in ("video", "gif") and self.gravador.gravando):
             return self._parar_gravacao()
         if not self.lock.acquire(blocking=False):
@@ -92,7 +99,9 @@ class Capturador:
         if acao in ("regiao", "atraso", "rolagem", "ocr", "video", "gif", "cor", "regua"):
             img, ox, oy = captura.capturar()
             modo = acao if acao in ("cor", "regua") else "regiao"
-            sel = captura.selecionar(img, ox, oy, modo, captura.janelas_visiveis() if modo == "regiao" else ())
+            sel = captura.selecionar(img, ox, oy, modo, captura.janelas_visiveis() if modo == "regiao" else (),
+                                     anotar=acao in ("regiao", "atraso") and c.get("captura_anotar", True),
+                                     lupa=c.get("captura_lupa", True), estilo=self.estilo)
             if not sel:
                 return
             if acao == "cor":
@@ -108,12 +117,14 @@ class Capturador:
             bbox = (sel[0] + ox, sel[1] + oy, sel[2] + ox, sel[3] + oy)
             if acao in ("regiao", "atraso"):
                 self.ultima = bbox
-                return self._pronto(img.crop(sel), acao)
+                recorte = img.crop(sel[:4])
+                if sel[4]:
+                    recorte = captura.desenhar_formas(recorte, sel[4], sel[0], sel[1])
+                return self._pronto(recorte, acao)
             if acao == "rolagem":
-                time.sleep(0.15)
-                return self._pronto(captura.rolagem(bbox), acao)
+                return self._rolagem(bbox)
             if acao == "ocr":
-                texto = captura.ocr(img.crop(sel))
+                texto = captura.ocr(img.crop(sel[:4]))
                 if not texto:
                     self.notificar("Não encontrei texto nessa área.", "OCR")
                     return
@@ -144,18 +155,53 @@ class Capturador:
         os.makedirs(pasta, exist_ok=True)
         return captura.nome_livre(pasta, time.strftime("%Y-%m-%d_%H-%M-%S"), ext)
 
+    def _rolagem(self, bbox):
+        self.parar_rolagem.clear()
+        self.rolando = True
+        try:
+            img, motivo = captura.rolagem(bbox, self.parar_rolagem)
+        finally:
+            self.rolando = False
+        if motivo == "emenda":
+            self.notificar("Parei antes do fim: a página mudou demais entre um passo e outro. Salvei o que já tinha.",
+                           "Captura com rolagem")
+        elif motivo == "limite":
+            self.notificar("Parei no limite de 40.000 px de altura. Salvei o que já tinha.", "Captura com rolagem")
+        return self._pronto(img, "rolagem")
+
     def _pronto(self, img, modo):
+        """Tarefas pós-captura, nesta ordem (na área de transferência fica a última que copiar algo):
+        salvar -> copiar imagem -> copiar caminho -> texto (OCR) -> aviso -> mostrar na pasta -> enviar -> editor."""
         c = self.cfg()
-        caminho = self._arquivo(c, ".jpg" if c.get("captura_formato") == "jpg" else ".png")
+        ext = ".jpg" if c.get("captura_formato") == "jpg" else ".png"
+        caminho = None
+        if c.get("captura_perguntar"):
+            caminho = captura.perguntar_arquivo(captura.nome_arquivo(c, ext))   # cancelou: segue a regra normal
+        caminho = caminho or self._arquivo(c, ext)
         captura.salvar_imagem(img, caminho, c)
+        feito = []
         if c.get("captura_copiar", True):
             captura.copiar_imagem(img)
+            feito.append("copiada")
         cid = self._registrar(caminho, "imagem", modo, img)
+        if c.get("captura_salvar", True) or c.get("captura_perguntar"):
+            feito.append(f"salva em {os.path.basename(caminho)}")
+        if c.get("captura_copiar_caminho"):
+            captura.copiar_texto(caminho)
+            feito.append("caminho copiado")
+        if c.get("captura_ocr_auto"):
+            try:
+                texto = captura.ocr(img)
+            except RuntimeError as e:
+                self.notificar(f"OCR: {e}", "Captura de tela")
+                texto = ""
+            if texto:
+                captura.copiar_texto(texto)
+                feito.append("texto copiado")
         if c.get("captura_notificar", True):
-            feito = ["copiada"] if c.get("captura_copiar", True) else []
-            if c.get("captura_salvar", True):
-                feito.append(f"salva em {os.path.basename(caminho)}")
-            self.notificar(f"{img.width} × {img.height} " + (" e ".join(feito) or "capturada") + ".", "Captura de tela")
+            self.notificar(f"{img.width} × {img.height} " + (", ".join(feito) or "capturada") + ".", "Captura de tela")
+        if c.get("captura_mostrar_pasta"):
+            captura.mostrar_no_explorer(caminho)
         if c.get("captura_enviar"):
             self._enviar(cid, caminho, c)
         if c.get("captura_editor") and cid:
@@ -173,18 +219,24 @@ class Capturador:
             return None
 
     def _enviar(self, cid, caminho, c):
+        """Envia e roda as tarefas pós-envio (copiar o link no formato escolhido, abrir no navegador, aviso)."""
         try:
             url = envio.enviar(caminho, c)
         except (RuntimeError, OSError) as e:
             self.notificar(f"Não consegui enviar: {e}", "Envio")
             return None
-        captura.copiar_texto(url)
         if cid:
             try:
                 self.api_post("api/capturas/atualizar", {"id": cid, "url": url})
             except Exception:
                 pass
-        self.notificar(f"Link copiado: {url}", "Envio")
+        copiou = c.get("captura_envio_copiar", True)
+        if copiou:
+            captura.copiar_texto(envio.formatar_link(url, c.get("captura_envio_formato"), caminho))
+        if c.get("captura_envio_abrir"):
+            webbrowser.open(url)   # envio.enviar só devolve http(s)://
+        if c.get("captura_envio_notificar", True):
+            self.notificar(f"{'Link copiado' if copiou else 'Enviado'}: {url}", "Envio")
         return url
 
     # ------------------------------------------------------------ gravação
@@ -265,6 +317,23 @@ class Capturador:
             return True, "Imagem copiada."
         captura.copiar_texto(caminho)
         return True, "Caminho do arquivo copiado."
+
+    def escolher_pasta(self):
+        p = captura.escolher_pasta(captura.pasta_capturas(self.cfg(True)))
+        if not p:
+            return False, "Nenhuma pasta escolhida."
+        os.makedirs(p, exist_ok=True)
+        r = self.api_post("api/config", {"captura_pasta": p})
+        if (r.get("valores") or {}).get("captura_pasta") != p:
+            return False, "Não consegui usar essa pasta."
+        self.cfg(True)
+        return True, f"As capturas vão para {p}."
+
+    def abrir_pasta(self):
+        p = captura.pasta_capturas(self.cfg(True))
+        os.makedirs(p, exist_ok=True)
+        os.startfile(p)
+        return True, "Pasta aberta."
 
     def enviar(self, cid, caminho):
         if not os.path.isfile(caminho):

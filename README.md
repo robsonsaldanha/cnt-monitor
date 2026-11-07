@@ -15,7 +15,7 @@ Depois de instalado, ele se atualiza sozinho (Configurações → Atualizações
 | Processos | Todos os processos com caminho, usuário, threads, handles, rede, GPU, conexões e IPs. |
 | Rede e IPs | Quanto cada programa envia e recebe, com quais IPs conversa (com nome) e as conexões abertas. |
 | Temperatura e hardware | CPU, GPU, SSD, placa-mãe, ventoinhas, clocks e consumo (LibreHardwareMonitor + PawnIO). |
-| Captura de tela | Prints por atalho (região com lupa e “ímã” de janela, janela ativa, monitor, tela inteira, com atraso, com rolagem), gravação em MP4/GIF, texto da tela (OCR do Windows), seletor de cor, régua, editor (setas, textos, números, desfocar, pixelar, recortar), histórico e envio com link (Catbox, Litterbox, Uguu, tmpfiles, Imgur ou uploader personalizado). |
+| Captura de tela | Prints por atalho (região com lupa e “ímã” de janela, janela ativa, monitor, tela inteira, com atraso, com rolagem até o fim da página), anotação na própria seleção antes de capturar (seta, retângulo, elipse, linha, caneta, texto, números, marca-texto, desfocar, pixelar, tarja, cursor), tarefas pós-captura e pós-envio, pasta escolhida pelo usuário, gravação em MP4/GIF, texto da tela (OCR do Windows), seletor de cor, régua, editor, histórico e envio com link (Catbox, Litterbox, Uguu, tmpfiles, Imgur ou uploader personalizado). Opções em Captura de tela › Opções e no menu do ícone. |
 | Modo Jogo | Fecha o que pesa, plano de alto desempenho, prioridade ao jogo, silencia notificações e mede o FPS. |
 | Otimizar | Diagnóstico rápido, limpeza de disco segura, cache dos navegadores, otimizar unidades, componentes do Windows e detecção de vazamento de memória. |
 | Regras por programa | Prioridade, núcleos, não deixar abrir, avisar ao abrir, limite de memória (avisar ou encerrar). |
@@ -58,4 +58,4 @@ usado pela atualização automática.
 
 Para testar a interface fora do Windows: `python dev/demo.py` e abra http://127.0.0.1:48731/
 
-Testes da captura de tela (atalhos, emenda da rolagem, uploader): `python build/teste_captura.py`
+Testes da captura de tela (atalhos, emenda da rolagem, anotações, uploader, opções): `python build/teste_captura.py`
