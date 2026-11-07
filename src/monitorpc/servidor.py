@@ -350,6 +350,8 @@ def fabrica(motor, TOKEN, remoto=False):
                 return self._json(m.rede_estado())
             if r == "/api/hardware":
                 return self._json(m.hardware())
+            if r == "/api/ventoinhas":
+                return self._json(m.vent.canais())
             if r == "/api/inicializacao":
                 return self._json(m.inicializacao())
             if r == "/api/historico":
@@ -561,6 +563,8 @@ def fabrica(motor, TOKEN, remoto=False):
             m = motor
             try:
                 if r == "/api/acao":
+                    if remoto and str(corpo.get("tipo", "")).startswith("vent_"):
+                        return self._json({"erro": "só no próprio computador"}, 403)
                     return self._json(m.acao(corpo))
                 if r == "/api/config":
                     final = configuracao.salvar_publico(corpo, remoto=remoto)
