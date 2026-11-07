@@ -466,6 +466,30 @@ def teste_historico_banco():
     assert len(s["por_dia"]) == 1 and s["por_dia"][0][1] == 2
 
 
+def teste_formas_suaves():
+    from PIL import Image
+    branco = Image.new("RGB", (200, 200), "white")
+    for forma in ({"t": "elipse", "x0": 20, "y0": 20, "x1": 160, "y1": 120},
+                  {"t": "seta", "x0": 20, "y0": 30, "x1": 170, "y1": 140},
+                  {"t": "numero", "x0": 100, "y0": 100, "n": 3},
+                  {"t": "caneta", "x0": 10, "y0": 10, "pts": [[10, 10], [60, 90], [120, 40], [180, 160]]}):
+        out = captura.desenhar_formas(branco, [{**forma, "cor": "#e53935", "esp": 4}])
+        tons = {p for p in out.getdata() if p != (255, 255, 255)}
+        assert len(tons) > 12, (forma["t"], len(tons))   # bordas com tons intermediários = sem serrilhado
+        assert (200, 200) == out.size
+    # forma parcialmente fora da imagem e com recorte deslocado não quebra
+    captura.desenhar_formas(branco, [{"t": "seta", "x0": -50, "y0": -50, "x1": 30, "y1": 30, "cor": "#000000", "esp": 8}], 0, 0)
+
+
+def teste_afastar_mouse_opcoes():
+    from monitorpc import config, configuracao
+    assert captura.afastar_mouse("") is None and captura.afastar_mouse("lugar-nenhum") is None
+    v = configuracao._validar({"captura_afastar_mouse": "inf_dir", "captura_afastar_voltar": False})
+    assert v["captura_afastar_mouse"] == "inf_dir" and v["captura_afastar_voltar"] is False
+    assert configuracao._validar({"captura_afastar_mouse": "xx"})["captura_afastar_mouse"] == ""
+    assert "" in config.OPCOES["captura_afastar_mouse"]
+
+
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
         if nome.startswith("teste_"):

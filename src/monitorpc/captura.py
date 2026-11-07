@@ -272,6 +272,27 @@ def janelas_visiveis():
     return out
 
 
+CANTOS_MOUSE = {"sup_esq": (0, 0), "sup_dir": (1, 0), "inf_esq": (0, 1), "inf_dir": (1, 1)}
+
+
+def afastar_mouse(canto):
+    """Leva o mouse para o canto do monitor onde ele está (tira o efeito de passar o mouse e dicas). Devolve a posição
+    anterior para `devolver_mouse`; sem canto válido não mexe e devolve None."""
+    if canto not in CANTOS_MOUSE:
+        return None
+    pt = wt.POINT()
+    _u.GetCursorPos(ctypes.byref(pt))
+    l, t, r, b = monitor_do_mouse()
+    dx, dy = CANTOS_MOUSE[canto]
+    _u.SetCursorPos(r - 2 if dx else l + 1, b - 2 if dy else t + 1)
+    return pt.x, pt.y
+
+
+def devolver_mouse(pos):
+    if pos:
+        _u.SetCursorPos(pos[0], pos[1])
+
+
 def capturar(bbox=None):
     """Imagem RGB da tela. bbox = (esq, topo, dir, baixo) em coordenadas da tela; None = todos os monitores.
     Devolve (imagem, x, y) com a posição do canto da imagem na tela."""
@@ -390,6 +411,24 @@ def mover_forma(f, dx, dy):
     return g
 
 
+def _aa(out, caixa, desenhar):
+    """Desenho com bordas suaves: pinta numa camada ampliada (até 4x) e reduz com LANCZOS por cima da imagem.
+    `desenhar(d, P, S)` recebe o ImageDraw da camada, P(x, y) -> ponto na camada e a ampliação S."""
+    from PIL import Image, ImageDraw
+    W, H = out.size
+    l, t = max(0, int(caixa[0])), max(0, int(caixa[1]))
+    r, b = min(W, int(caixa[2]) + 1), min(H, int(caixa[3]) + 1)
+    w, h = r - l, b - t
+    if w < 1 or h < 1:
+        return
+    S = max(1, min(4, int((12_000_000 / (w * h)) ** 0.5)))   # limita a memória em áreas grandes
+    camada = Image.new("RGBA", (w * S, h * S), (0, 0, 0, 0))
+    desenhar(ImageDraw.Draw(camada), lambda x, y: ((x - l) * S, (y - t) * S), S)
+    if S > 1:
+        camada = camada.resize((w, h), Image.LANCZOS)
+    out.paste(camada, (l, t), camada)
+
+
 def desenhar_formas(img, formas, ox=0, oy=0):
     """Desenha as anotações numa cópia da imagem. As coordenadas das formas são as da tela congelada;
     (ox, oy) é onde o canto desta imagem estava nela."""
@@ -431,23 +470,34 @@ def desenhar_formas(img, formas, ox=0, oy=0):
             elif t == "ret":
                 d.rectangle((l, tp, r, b), outline=cor, width=esp)
             elif t == "elipse":
-                d.ellipse((l, tp, r, b), outline=cor, width=esp)
+                def _el(d, P, S):
+                    d.ellipse((*P(l, tp), *P(r, b)), outline=cor, width=esp * S)
+                _aa(out, (l - esp - 2, tp - esp - 2, r + esp + 2, b + esp + 2), _el)
             elif t in ("linha", "seta"):
                 ang, cab, rr = math.atan2(Y1 - Y0, X1 - X0), max(12, esp * 4), esp / 2
                 enc = cab * 0.8 if t == "seta" else 0
-                d.line((X0, Y0, X1 - math.cos(ang) * enc, Y1 - math.sin(ang) * enc), fill=cor, width=esp)
-                d.ellipse((X0 - rr, Y0 - rr, X0 + rr, Y0 + rr), fill=cor)
-                if t == "seta":
-                    d.polygon([(X1, Y1), (X1 - cab * math.cos(ang - 0.45), Y1 - cab * math.sin(ang - 0.45)),
-                               (X1 - cab * math.cos(ang + 0.45), Y1 - cab * math.sin(ang + 0.45))], fill=cor)
-                else:
-                    d.ellipse((X1 - rr, Y1 - rr, X1 + rr, Y1 + rr), fill=cor)
+
+                def _ln(d, P, S):
+                    d.line((*P(X0, Y0), *P(X1 - math.cos(ang) * enc, Y1 - math.sin(ang) * enc)), fill=cor, width=esp * S)
+                    for px, py in ((X0, Y0),) + (() if t == "seta" else ((X1, Y1),)):
+                        cx, cy = P(px, py)
+                        d.ellipse((cx - rr * S, cy - rr * S, cx + rr * S, cy + rr * S), fill=cor)
+                    if t == "seta":
+                        d.polygon([P(X1, Y1), P(X1 - cab * math.cos(ang - 0.45), Y1 - cab * math.sin(ang - 0.45)),
+                                   P(X1 - cab * math.cos(ang + 0.45), Y1 - cab * math.sin(ang + 0.45))], fill=cor)
+                pad = cab + esp + 2
+                _aa(out, (l - pad, tp - pad, r + pad, b + pad), _ln)
             elif t == "caneta":
                 pts, rr = [(p[0] - ox, p[1] - oy) for p in f.get("pts") or []], esp / 2
-                if len(pts) > 1:
-                    d.line(pts, fill=cor, width=esp, joint="curve")
-                for px, py in pts[:1] + pts[-1:]:
-                    d.ellipse((px - rr, py - rr, px + rr, py + rr), fill=cor)
+                if pts:
+                    def _cn(d, P, S):
+                        q = [P(*p) for p in pts]
+                        if len(q) > 1:
+                            d.line(q, fill=cor, width=esp * S, joint="curve")
+                        for cx, cy in q[:1] + q[-1:]:
+                            d.ellipse((cx - rr * S, cy - rr * S, cx + rr * S, cy + rr * S), fill=cor)
+                    xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+                    _aa(out, (min(xs) - esp - 2, min(ys) - esp - 2, max(xs) + esp + 2, max(ys) + esp + 2), _cn)
             elif t in ("texto", "texto_fundo"):
                 txt = str(f.get("txt") or "")
                 if not txt:
@@ -463,13 +513,21 @@ def desenhar_formas(img, formas, ox=0, oy=0):
                                      stroke_width=max(2, tam // 8), stroke_fill=_contraste(cor))
             elif t == "numero":
                 rr = _raio_numero(esp)
-                d.ellipse((X0 - rr, Y0 - rr, X0 + rr, Y0 + rr), fill=cor, outline=(255, 255, 255), width=2)
-                d.text((X0, Y0), str(int(f.get("n") or 1)), font=_fonte(int(rr * 1.1)), fill=_contraste(cor), anchor="mm")
+                n = str(int(f.get("n") or 1))
+
+                def _nm(d, P, S):
+                    cx, cy = P(X0, Y0)
+                    d.ellipse((cx - rr * S, cy - rr * S, cx + rr * S, cy + rr * S), fill=cor, outline=(255, 255, 255), width=2 * S)
+                    d.text((cx, cy), n, font=_fonte(int(rr * 1.1 * S)), fill=_contraste(cor), anchor="mm")
+                _aa(out, (X0 - rr - 3, Y0 - rr - 3, X0 + rr + 3, Y0 + rr + 3), _nm)
             elif t == "cursor":
                 s = max(1.0, esp / 3)
-                pts = [(X0 + x * s, Y0 + y * s) for x, y in _SETA_CURSOR]
-                d.polygon(pts, fill=(255, 255, 255))
-                d.line(pts + pts[:1], fill=(0, 0, 0), width=max(1, round(s)))
+
+                def _cr(d, P, S):
+                    q = [P(X0 + x * s, Y0 + y * s) for x, y in _SETA_CURSOR]
+                    d.polygon(q, fill=(255, 255, 255))
+                    d.line(q + q[:1], fill=(0, 0, 0), width=max(1, round(s * S)))
+                _aa(out, (X0 - 3, Y0 - 3, X0 + 12 * s + 3, Y0 + 20 * s + 3), _cr)
         except (ValueError, TypeError) as e:   # forma degenerada: pula só ela
             print("anotação ignorada:", t, e)
     return out
@@ -1156,6 +1214,14 @@ class _Selecao:
         def separador():
             tk.Frame(f, width=1, bg="#3a4350").pack(side="left", fill="y", padx=5)
 
+        alca = tk.Label(f, text="⠿", bg=self.FUNDO, fg="#8fa3b8", font=("Segoe UI Symbol", 14), cursor="fleur", padx=2)
+        alca.pack(side="left", padx=(0, 3))
+        for w in (alca, f):   # arrastar pela alça ou pela borda da barra
+            w.bind("<Button-1>", self._barra_apertar)
+            w.bind("<B1-Motion>", self._barra_arrastar)
+            w.bind("<Double-Button-1>", self._barra_resetar)
+        alca.bind("<Enter>", lambda _e: self.dica("Arraste para mover a barra  ·  clique duplo volta ao lugar padrão"))
+        alca.bind("<Leave>", lambda _e: self.dica())
         for fid, ic, nome, k in FERRAMENTAS:
             botao(fid, ic, f"{nome}  ({k.upper()})", lambda fid=fid: self.escolher(fid))
         separador()
@@ -1184,11 +1250,33 @@ class _Selecao:
         for esp, *_ in ESPESSURAS:
             self.bts[f"esp{esp}"].configure(bg=self.ATIVO if esp == self.estilo["esp"] else self.FUNDO)
 
+    def _barra_apertar(self, e):
+        x, y = self.cv.coords(self.barra_id)
+        self._barra_ref = (e.x_root, e.y_root, x, y)
+
+    def _barra_arrastar(self, e):
+        ref = getattr(self, "_barra_ref", None)
+        if not ref:
+            return
+        fw, fh = self.barra.winfo_reqwidth(), self.barra.winfo_reqheight()
+        x = max(0, min(self.W - fw, ref[2] + e.x_root - ref[0]))
+        y = max(0, min(self.H - fh, ref[3] + e.y_root - ref[1]))
+        self.estilo["barra_xy"] = (x, y)   # vale também para as próximas capturas
+        self.cv.coords(self.barra_id, x, y)
+
+    def _barra_resetar(self, _e):
+        self.estilo.pop("barra_xy", None)
+        self.posicionar_barra()
+
     def posicionar_barra(self):
         if not self.barra:
             return
         self.barra.update_idletasks()
         fw, fh = self.barra.winfo_reqwidth(), self.barra.winfo_reqheight()
+        manual = self.estilo.get("barra_xy")
+        if manual:
+            self.cv.coords(self.barra_id, max(0, min(self.W - fw, manual[0])), max(0, min(self.H - fh, manual[1])))
+            return
         l, t, r, b = self.reg
         y = b + 8
         if y + fh > self.H:

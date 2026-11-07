@@ -211,7 +211,7 @@ def enviar(caminho, c):
     if destino == "imgur":
         cid = c.get("captura_imgur_id") or ""
         if not cid:
-            raise RuntimeError("cadastre o Client-ID do Imgur nas Configurações (Captura de tela)")
+            raise RuntimeError("o Imgur exige um Client-ID próprio: crie um grátis em api.imgur.com/oauth2/addclient e cole em Captura de tela › Opções › Envio")
         campo = "video" if caminho.lower().endswith(".mp4") else "image"
         return _link(caminho_json(_json(_post("https://api.imgur.com/3/image", {}, campo, caminho,
                                               {"Authorization": f"Client-ID {cid}"})), "data.link"))
