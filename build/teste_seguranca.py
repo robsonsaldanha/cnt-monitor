@@ -275,6 +275,51 @@ def teste_instalador_travado():
     finally:
         shutil.rmtree(pasta, ignore_errors=True)
 
+def teste_atualizacao_mostra_o_andamento():
+    """Baixar e conferir informam a porcentagem; arquivo que não confere não é executado e o motivo fica no estado."""
+    if not WIN:
+        return
+    import io
+    conteudo = os.urandom(300_000)
+
+    class Resp(io.BytesIO):
+        headers = {"Content-Length": str(len(conteudo))}
+
+    a = atualizacao.Atualizador()
+    vistos, rodou = [], []
+    andou = a._andou
+    a._andou = lambda feito, total: (andou(feito, total), vistos.append((a.situacao, a.pct)))
+    originais = atualizacao.urllib.request.urlopen, atualizacao.subprocess.Popen
+    atualizacao.urllib.request.urlopen = lambda *x, **k: Resp(conteudo)
+    atualizacao.subprocess.Popen = lambda cmd, **k: rodou.append(cmd)
+    try:
+        a.disponivel = {"versao": "9.9.9", "url": "https://exemplo.invalid/x.exe", "tamanho": len(conteudo),
+                        "sha256": hashlib.sha256(conteudo).hexdigest()}
+        ok, msg = a.instalar()
+        assert ok and len(rodou) == 1 and rodou[0][0].endswith("MonitorDoPC-Setup-9.9.9.exe"), msg
+        for etapa in ("baixando", "conferindo"):
+            pcts = [p for s, p in vistos if s == etapa]
+            assert len(pcts) >= 3 and pcts == sorted(pcts) and pcts[-1] == 100 and 0 < pcts[0] < 100, (etapa, pcts)
+        e = a.estado()
+        assert e["situacao"] == "instalando" and e["alvo"] == "9.9.9" and e["erro"] is None
+        assert a.verificar() is a.disponivel and a.situacao == "instalando"      # não apaga o andamento
+        assert a.instalar_ao_fundo() == (True, "A atualização já está em andamento.") and len(rodou) == 1
+
+        b = atualizacao.Atualizador()
+        b.disponivel = dict(a.disponivel, sha256="0" * 64)
+        ok, msg = b.instalar_ao_fundo()
+        assert ok and b.alvo == "9.9.9"
+        for _ in range(100):
+            if b.situacao == "erro":
+                break
+            time.sleep(0.05)
+        assert b.situacao == "erro" and "não confere" in b.estado()["erro"] and len(rodou) == 1
+    finally:
+        atualizacao.urllib.request.urlopen, atualizacao.subprocess.Popen = originais
+        shutil.rmtree(atualizacao.PASTA, ignore_errors=True)
+        if os.path.exists(atualizacao.FLAG_REABRIR):
+            os.remove(atualizacao.FLAG_REABRIR)
+
 
 if __name__ == "__main__":
     try:

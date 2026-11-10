@@ -314,7 +314,7 @@ class Motor:
             if tipo == "ajuda_estado":
                 return estado()
             if tipo == "ajuda_pedir":
-                return estado(*self.ajuda.pedir(configuracao.obter("ajuda_stun")))
+                return estado(*self.ajuda.pedir())
             if tipo == "ajuda_resposta":
                 return estado(*self.ajuda.ordem("resposta", codigo=str(a.get("codigo") or "")))
             if tipo == "ajuda_aceitar":
@@ -1111,7 +1111,7 @@ class Motor:
                 return {"ok": False, "msg": self.atualizador.erro}
             return {"ok": True, "msg": f'Versão {d["versao"]} disponível!' if d else "Você já está na versão mais nova."}
         if tipo == "atualizar_instalar":
-            return res(self.atualizador.instalar())
+            return res(self.atualizador.instalar_ao_fundo())
         if tipo == "limpeza":
             ids = [str(x) for x in (a.get("ids") or [])]
             if not ids:

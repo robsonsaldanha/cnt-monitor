@@ -3,8 +3,8 @@
 Faz a conexão direta com o técnico (WebRTC), manda a tela e aplica mouse/teclado. Quem manda
 nele é o serviço, por linhas JSON na entrada padrão; ele responde com o estado na saída padrão:
 
-  entrada:  {"cmd": "resposta", "codigo": "MPC2-..."} | {"cmd": "aceitar"} | {"cmd": "encerrar"}
-  saída:    {"estado": "convite", "convite": "MPC1-...", "senha": "ABCD-EFGH-JKLM", ...}
+  entrada:  {"cmd": "resposta", "codigo": "MPCR..."} | {"cmd": "aceitar"} | {"cmd": "encerrar"}
+  saída:    {"estado": "convite", "convite": "MPCC...", "senha": "ABCD-EFGH-JKLM", ...}
 
 Se o serviço fechar a entrada padrão (parou, caiu), a sessão é encerrada na hora.
 As regras (senha, uma tentativa, aceite, prazos) estão em monitorpc/remoto.py.

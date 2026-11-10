@@ -77,6 +77,10 @@ Filename: "{sys}\sc.exe"; Parameters: "create MonitorPC binPath= ""\""{app}\serv
 Filename: "{sys}\sc.exe"; Parameters: "config MonitorPC binPath= ""\""{app}\servico\MonitorPCServico.exe\"""" start= auto"; Flags: runhidden waituntilterminated
 Filename: "{sys}\sc.exe"; Parameters: "description MonitorPC ""Coleta CPU, memória, disco, rede, IPs e temperatura por programa para o Monitor do PC."""; Flags: runhidden waituntilterminated
 Filename: "{sys}\sc.exe"; Parameters: "failure MonitorPC reset= 86400 actions= restart/5000/restart/10000/restart/60000"; Flags: runhidden waituntilterminated
+; Acesso remoto na mesma rede: o técnico chega direto ao agente, e o firewall do Windows barraria essa entrada.
+; Só UDP, só para o agente (que existe apenas durante um pedido de ajuda) e só vindo da rede local.
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""Monitor do PC (acesso remoto)"""; Flags: runhidden waituntilterminated
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""Monitor do PC (acesso remoto)"" dir=in action=allow program=""{app}\remoto\MonitorPCRemoto.exe"" protocol=UDP remoteip=localsubnet profile=any"; Flags: runhidden waituntilterminated
 Filename: "{sys}\sc.exe"; Parameters: "start MonitorPC"; StatusMsg: "Iniciando o monitoramento..."; Flags: runhidden waituntilterminated
 Filename: "{app}\MonitorPC.exe"; Description: "Abrir o Monitor do PC agora"; Flags: postinstall nowait skipifsilent runasoriginaluser
 
@@ -86,6 +90,7 @@ Filename: "{sys}\sc.exe"; Parameters: "stop MonitorPC"; Flags: runhidden waitunt
 Filename: "{sys}\timeout.exe"; Parameters: "/t 3 /nobreak"; Flags: runhidden waituntilterminated; RunOnceId: "espera"
 Filename: "{sys}\reg.exe"; Parameters: "delete HKLM\Software\Microsoft\Windows\CurrentVersion\Run /v MonitorDoPC /f"; Flags: runhidden waituntilterminated; RunOnceId: "removeinicio"
 Filename: "{sys}\sc.exe"; Parameters: "delete MonitorPC"; Flags: runhidden waituntilterminated; RunOnceId: "removeservico"
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""Monitor do PC (acesso remoto)"""; Flags: runhidden waituntilterminated; RunOnceId: "removefirewall"
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{commonappdata}\MonitorPC"

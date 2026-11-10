@@ -2,7 +2,7 @@
 import os
 import sys
 
-VERSAO = "2.6.1"
+VERSAO = "2.6.2"
 WIN = os.name == "nt"
 
 if os.environ.get("MONITORPC_DADOS"):
@@ -75,7 +75,6 @@ PADRAO = {
     "api_chave": "",              # chave para outros programas lerem a API pela rede
     "api_cors": False,            # deixa páginas web deste PC lerem a API (só leitura)
     "vps": [],                    # servidores cadastrados (sem senhas: ficam criptografadas à parte)
-    "ajuda_stun": True,           # acesso remoto: perguntar o IP público a um serviço STUN (desligado = só rede local)
     "captura_ativa": True,        # atalhos de captura de tela ligados (quem captura é o ícone da bandeja)
     "captura_atalhos": None,      # preenchido com captura.ATALHOS_PADRAO
     "captura_pasta": "",          # vazio = Imagens\Monitor do PC

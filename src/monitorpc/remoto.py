@@ -37,7 +37,30 @@ DURACAO_MAXIMA = 4 * 3600
 _MAX_CODIGO = 40000
 _MAX_SDP = 60000
 _RE_IMPRESSAO = re.compile(r"^a=fingerprint:sha-256 ([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){31})\s*$", re.M)
+_RE_OUTRA_IMPRESSAO = re.compile(r"^a=fingerprint:(?!sha-256 ).*\r?\n", re.M)
 PAPEIS = ("tecnico", "atendido")
+# Os códigos só têm letras maiúsculas e números (base32). Com "_", "-" ou "*" no meio, WhatsApp, Telegram e
+# clientes de e-mail tratam trechos como itálico/negrito e somem com os símbolos: o código chegava estragado.
+PREFIXO_CONVITE, PREFIXO_RESPOSTA = "MPCC", "MPCR"
+# Texto que quase todo SDP repete: serve de dicionário para a compactação e deixa o código mais curto.
+# Mudar isto muda o formato: os dois lados precisam da mesma versão.
+_DICIONARIO = (
+    "a=rtcp-fb:101 nack pli\r\na=rtcp-fb:101 goog-remb\r\na=rtpmap:102 rtx/90000\r\na=fmtp:102 apt=101\r\n"
+    "a=fmtp:99 level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f\r\n"
+    "a=fmtp:99 level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42001f\r\n"
+    "a=rtpmap:99 H264/90000\r\na=rtpmap:98 rtx/90000\r\na=fmtp:98 apt=97\r\na=rtpmap:97 VP8/90000\r\n"
+    "a=rtcp-fb:97 nack\r\na=rtcp-fb:97 nack pli\r\na=rtcp-fb:97 goog-remb\r\n"
+    "a=extmap:3 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\n"
+    "a=extmap:1 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=msid-semantic:WMS *\r\na=msid-semantic: WMS\r\n"
+    "a=ssrc-group:FID a=ssrc: cname: a=msid:\r\na=rtcp:9 IN IP4 0.0.0.0\r\na=rtcp-mux\r\na=rtcp-rsize\r\n"
+    "a=sendrecv\r\na=recvonly\r\na=sendonly\r\na=ice-options:trickle\r\na=end-of-candidates\r\n"
+    " typ srflx raddr 0.0.0.0 rport  typ srflx raddr 192.168. rport .local 1 udp 1694498815  generation 0 network-cost 999\r\n"
+    " 1 udp 2130706431 192.168. typ host generation 0 network-id \r\na=candidate:"
+    "a=ice-ufrag:\r\na=ice-pwd:\r\na=setup:actpass\r\na=setup:active\r\na=mid:1\r\na=sctp-port:5000\r\n"
+    "a=max-message-size:262144\r\nm=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\nc=IN IP4 0.0.0.0\r\n"
+    "m=video 9 UDP/TLS/RTP/SAVPF 97 98 99 100 101 102\r\nc=IN IP4 192.168.\r\na=mid:0\r\n"
+    "v=0\r\no=- IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\na=group:BUNDLE 0 1\r\na=fingerprint:sha-256 "
+    '{"v":2,"sdp":"v=0\\r\\no=- ').encode("ascii")
 
 
 class Erro(ValueError):
@@ -62,45 +85,66 @@ def formatar_senha(senha):
 def _codigo(prefixo, sdp):
     if not isinstance(sdp, str) or not sdp or len(sdp) > _MAX_SDP:
         raise Erro("Não consegui montar o código.")
-    bruto = zlib.compress(json.dumps({"v": 1, "sdp": sdp}, separators=(",", ":")).encode("utf-8"), 9)
-    return prefixo + base64.urlsafe_b64encode(bruto).decode("ascii").rstrip("=")
+    # a prova da senha e o DTLS usam a impressão SHA-256; as outras só deixariam o código mais comprido
+    sdp = _RE_OUTRA_IMPRESSAO.sub("", sdp)
+    c = zlib.compressobj(9, zdict=_DICIONARIO)
+    bruto = c.compress(json.dumps({"v": 2, "sdp": sdp}, separators=(",", ":")).encode("utf-8")) + c.flush()
+    return prefixo + base64.b32encode(bruto).decode("ascii").rstrip("=")
 
 
 def _ler(prefixo, codigo, nome):
-    invalido = Erro(f"Esse {nome} não é válido. Copie o texto inteiro e cole de novo.")
-    txt = "".join(str(codigo or "").split())       # quebras de linha de e-mail/WhatsApp
-    if len(txt) > _MAX_CODIGO or not txt.startswith(prefixo):
-        raise invalido
+    # só letras e números contam: espaços, quebras de linha e símbolos postos pelo aplicativo de mensagem saem
+    txt = re.sub(r"[^A-Za-z0-9]", "", str(codigo or "")[:4 * _MAX_CODIGO]).upper()
+    outro, nome_outro = ((PREFIXO_RESPOSTA, "código de resposta") if prefixo == PREFIXO_CONVITE
+                         else (PREFIXO_CONVITE, "convite"))
+    if not txt:
+        raise Erro(f"Cole o {nome}.")
+    if re.fullmatch(r"\d{6}", txt):
+        raise Erro(f"Esse é o código de conferência (6 números), que só serve para comparar os dois lados. "
+                   f"O {nome} é o texto longo que começa com {prefixo}: use o botão Copiar.")
+    if txt.startswith(("MPC1", "MPC2")):
+        raise Erro(f"Esse {nome} foi gerado por uma versão antiga do Monitor do PC. "
+                   "Atualize os dois computadores e gere outro.")
+    if txt.startswith(outro):
+        raise Erro(f"Esse texto é um {nome_outro}, não um {nome}.")
+    if not txt.startswith(prefixo) or len(txt) > _MAX_CODIGO:
+        raise Erro(f"Isso não é um {nome}. Ele começa com {prefixo}: copie pelo botão Copiar e cole inteiro.")
+    cortado = Erro(f"O {nome} chegou cortado (falta o final). Copie pelo botão Copiar e cole inteiro.")
+    alterado = Erro(f"O {nome} chegou alterado no caminho. Copie pelo botão Copiar e mande de novo "
+                    "(de preferência num arquivo de texto ou por e-mail).")
+    corpo = txt[len(prefixo):]
+    if len(corpo) % 8 in (1, 3, 6):                 # tamanho que o base32 nunca produz: sobrou um pedaço de letra
+        corpo = corpo[:-1]
     try:
-        corpo = txt[len(prefixo):]
-        bruto = base64.urlsafe_b64decode(corpo + "=" * (-len(corpo) % 4))
-        d = zlib.decompressobj()
+        bruto = base64.b32decode(corpo + "=" * (-len(corpo) % 8))
+        d = zlib.decompressobj(zdict=_DICIONARIO)
         dados = d.decompress(bruto, _MAX_SDP + 200)   # limite: código pequeno não vira gigabytes
-        if d.unconsumed_tail or not d.eof:
-            raise invalido
-        obj = json.loads(dados.decode("utf-8"))
-    except (ValueError, zlib.error):
-        raise invalido from None
-    if not isinstance(obj, dict) or obj.get("v") != 1 or not isinstance(obj.get("sdp"), str) or not obj["sdp"]:
-        raise invalido
+        inteiro = d.eof and not d.unconsumed_tail
+        obj = json.loads(dados.decode("utf-8")) if inteiro else None
+    except (ValueError, zlib.error):                # o zlib confere a soma do conteúdo: qualquer troca cai aqui
+        raise alterado from None
+    if not inteiro:
+        raise alterado if d.unconsumed_tail else cortado
+    if not isinstance(obj, dict) or obj.get("v") != 2 or not isinstance(obj.get("sdp"), str) or not obj["sdp"]:
+        raise alterado
     impressao(obj["sdp"])
     return obj["sdp"]
 
 
 def convite(sdp):
-    return _codigo("MPC1-", sdp)
+    return _codigo(PREFIXO_CONVITE, sdp)
 
 
 def ler_convite(codigo):
-    return _ler("MPC1-", codigo, "convite")
+    return _ler(PREFIXO_CONVITE, codigo, "convite")
 
 
 def resposta(sdp):
-    return _codigo("MPC2-", sdp)
+    return _codigo(PREFIXO_RESPOSTA, sdp)
 
 
 def ler_resposta(codigo):
-    return _ler("MPC2-", codigo, "código de resposta")
+    return _ler(PREFIXO_RESPOSTA, codigo, "código de resposta")
 
 
 # ---------------------------------------------------------------- prova da senha

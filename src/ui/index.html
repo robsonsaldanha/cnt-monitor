@@ -235,6 +235,12 @@ input[type=range]{width:220px;max-width:100%;accent-color:var(--acento)}
 .rel-cab{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
 .aj-passo{padding:14px;border-bottom:1px solid var(--grade)} .aj-passo:last-child{border-bottom:0} .aj-passo>b{display:block;margin-bottom:8px} .aj-passo p{margin:8px 0 0}
 .aj-senha{font:700 26px/1.2 Consolas,"Cascadia Mono",monospace;letter-spacing:2px;user-select:all}
+.atu-barra{grid-column:1/3;height:6px;border-radius:3px;background:var(--barra);overflow:hidden}
+.atu-barra i{display:block;height:100%;border-radius:3px;background:var(--acento);transition:width .3s}
+.atu-vai i{animation:atu-vai 1.4s ease-in-out infinite alternate}
+@keyframes atu-vai{from{margin-left:0}to{margin-left:65%}}
+.atu-ok{color:var(--ok)}
+@media (prefers-reduced-motion:reduce){.atu-vai i{animation:none}}
 .aj-vivo{background:color-mix(in srgb,var(--perigo) 12%,var(--painel));border:1px solid var(--perigo);border-radius:var(--raio);padding:14px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:space-between}
 .aj-tela{background:#000;border-radius:var(--raio);outline:none;overflow:hidden} .aj-tela:focus{box-shadow:0 0 0 2px var(--acento)}
 .aj-tela video{width:100%;max-height:calc(100vh - 230px);object-fit:contain;display:block} .aj-tela:fullscreen video{height:100vh;max-height:100vh}
@@ -350,6 +356,8 @@ input.atalho{width:170px;text-align:center;cursor:pointer}
 <div class="app">
 <nav class="lateral" id="nav" aria-label="Telas">
   <div class="marca"><svg width="26" height="26" viewBox="0 0 64 64"><rect x="2" y="2" width="60" height="60" rx="14" fill="#1c1e26"/><rect x="10" y="10" width="28" height="44" rx="4" fill="#373a46"/><rect x="10" y="26" width="28" height="28" rx="4" fill="#66bb6a"/><rect x="44" y="10" width="10" height="44" rx="4" fill="#373a46"/><rect x="44" y="38" width="10" height="16" rx="4" fill="#ffb74d"/></svg>Monitor do PC</div>
+  <div class="grp">Suporte</div>
+  <button data-v="ajuda"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4M9 10l2 2 4-4"/></svg>Acesso remoto<span class="cont" id="ajudaTag" hidden style="background:var(--perigo)">AO VIVO</span></button>
   <div class="grp">Agora</div>
   <button data-v="geral"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Visão geral</button>
   <button data-v="programas"><svg viewBox="0 0 24 24"><path d="M4 4h6v5H4zM14 15h6v5h-6zM7 9v8.5h7M14 7h6v5h-6zM7 9.5h7"/></svg>Programas</button>
@@ -373,8 +381,6 @@ input.atalho{width:170px;text-align:center;cursor:pointer}
   <button data-v="comparar"><svg viewBox="0 0 24 24"><path d="M8 4v16M16 4v16"/><path d="M4 8h4M16 12h4M4 15h4M16 17h4"/></svg>Comparar períodos</button>
   <div class="grp">Servidores</div>
   <button data-v="vps"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/><path d="M7 7.5h.01M7 16.5h.01M11 7.5h6M11 16.5h6"/></svg>Servidores (VPS)<span class="cont" id="contVps" hidden></span></button>
-  <div class="grp">Suporte</div>
-  <button data-v="ajuda"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4M9 10l2 2 4-4"/></svg>Acesso remoto<span class="cont" id="ajudaTag" hidden style="background:var(--perigo)">AO VIVO</span></button>
   <div class="grp">Programa</div>
   <button data-v="config"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Configurações</button>
   <div class="rod"><div class="vivo" id="vivo"><i></i><span>conectando…</span></div><div id="rodInfo"></div></div>
@@ -833,18 +839,16 @@ function ajRender(){ const el=$('#ajCorpo'); ajTag(); if(AJU.modo==='pedir') ret
   el.innerHTML=`<div class="grade" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
     <div class="painel aj-passo"><b>Preciso de ajuda</b><p class="mut2" style="margin:0 0 12px">Gera um convite e uma senha para você passar a um técnico. Ele só entra depois que você permitir, e você encerra quando quiser.</p><button class="btn pri" id="ajPedir">Pedir ajuda</button></div>
     <div class="painel aj-passo"><b>Vou ajudar alguém</b><p class="mut2" style="margin:0 0 12px">Cole o convite que a pessoa mandou e a senha que ela disse. Você vê e controla o computador dela enquanto ela deixar.</p><button class="btn" id="ajAjudar">Ajudar alguém</button></div></div>
-    <div class="painel secao"><div class="item"><b>Descobrir meu endereço na internet (STUN)</b><div class="ctl"><label class="sw"><input type="checkbox" id="ajStun" ${CFG.ajuda_stun?'checked':''}><span></span></label></div>
-    <span class="mut">Necessário quando os dois computadores estão em redes diferentes. Só pergunta o endereço público a um serviço do Google/Cloudflare; nada da sessão passa por lá. Desligado, funciona apenas na mesma rede.</span></div></div>`;
+    <p class="mut" style="margin-top:12px">Funciona entre computadores da mesma rede e pela internet. Para achar o caminho pela internet, cada lado pergunta o próprio endereço público a um serviço do Google/Cloudflare; nada da sessão passa por lá.</p>`;
   $('#ajPedir').onclick=async()=>{ $('#ajPedir').disabled=true; const r=await ajAcao('ajuda_pedir'); if(!r.ok){ toast(r.msg,1); $('#ajPedir').disabled=false; return; } AJU.modo='pedir'; AJU.est=r.dados; ajVigiar(); ajRender(); };
-  $('#ajAjudar').onclick=()=>{ AJU.modo='tecnico'; AJU.fase='form'; ajRender(); };
-  $('#ajStun').onchange=async e=>{ const r=await POST('config',{ajuda_stun:e.target.checked}).catch(()=>null); if(r&&r.valores) CFG=r.valores; }; }
+  $('#ajAjudar').onclick=()=>{ AJU.modo='tecnico'; AJU.fase='form'; ajRender(); }; }
 function ajVigiar(){ clearInterval(AJU.timer); AJU.timer=setInterval(async()=>{ if(AJU.modo!=='pedir'){ clearInterval(AJU.timer); return; }
   const r=await ajAcao('ajuda_estado'); if(!r.ok||!r.dados) return; AJU.est=r.dados; if(r.dados.estado==='encerrada'||r.dados.estado==='parada') clearInterval(AJU.timer);
   if(JSON.stringify(r.dados)!==AJU.visto){ ajTag(); if(vista==='ajuda') ajRender(); if(r.dados.estado==='aguardando_aceite'&&vista!=='ajuda') ir('ajuda'); } },1000); }
 function ajRenderPedir(el){ const e=AJU.est||{estado:'iniciando'}; AJU.visto=JSON.stringify(e); let h='';
-  if(e.estado==='convite') h=`<div class="painel"><div class="aj-passo"><b>1. Mande este convite ao técnico</b><textarea readonly rows="4" id="ajConv">${esc(e.convite)}</textarea><p><button class="btn pri" id="ajCopConv">Copiar convite</button> <span class="mut">Pode ir por WhatsApp ou e-mail. Vale 10 minutos e uma vez só.</span></p></div>
+  if(e.estado==='convite') h=`<div class="painel"><div class="aj-passo"><b>1. Mande este convite ao técnico</b><textarea readonly rows="4" id="ajConv">${esc(e.convite)}</textarea><p><button class="btn pri" id="ajCopConv">Copiar convite</button> <span class="mut">Pode ir por WhatsApp ou e-mail (só tem letras e números). Vale 10 minutos e uma vez só.</span></p></div>
     <div class="aj-passo"><b>2. Diga esta senha ao técnico por outro meio (telefone, por exemplo)</b><div class="aj-senha">${esc(e.senha)}</div><p class="mut">Não mande a senha na mesma conversa do convite: é ela que garante que quem conecta é o técnico que você chamou.</p></div>
-    <div class="aj-passo"><b>3. Cole aqui o código de resposta que o técnico devolver</b><textarea rows="4" id="ajResp" placeholder="MPC2-…"></textarea><p><button class="btn pri" id="ajConectar">Conectar</button> <button class="btn" id="ajCancelar">Cancelar pedido</button></p></div></div>`;
+    <div class="aj-passo"><b>3. Cole aqui o código de resposta que o técnico devolver</b><textarea rows="4" id="ajResp" placeholder="MPCR…"></textarea><p><button class="btn pri" id="ajConectar">Conectar</button> <button class="btn" id="ajCancelar">Cancelar pedido</button> <span class="mut">É um texto longo que começa com MPCR, parecido com o convite.</span></p></div></div>`;
   else if(e.estado==='conectando'||e.estado==='iniciando') h=`<div class="painel aj-passo"><b>Conectando ao técnico…</b><p class="mut">Leva alguns segundos. Se não completar em 1 minuto, o pedido é cancelado.</p><p><button class="btn" id="ajCancelar">Cancelar pedido</button></p></div>`;
   else if(e.estado==='aguardando_aceite') h=`<div class="painel aj-passo"><b>Permitir que o técnico veja e controle este computador?</b><p>Quem conectou informou a senha certa. Código de conferência: <span class="aj-senha">${esc(e.conferencia)}</span></p><p class="mut">Pergunte ao técnico se o código dele é igual. Se for diferente, recuse. Até você permitir, ele não vê nada.</p><p><button class="btn pri" id="ajPermitir">Permitir acesso</button> <button class="btn perigo" id="ajCancelar">Recusar</button></p></div>`;
   else if(e.estado==='ativa') h=`<div class="aj-vivo"><div><b>Este computador está sendo visto e controlado pelo técnico.</b><br><span class="mut2">Você pode encerrar a qualquer momento. A sessão acaba sozinha em 4 horas.</span></div><button class="btn perigo" id="ajCancelar">Encerrar agora</button></div>`;
@@ -860,7 +864,7 @@ function ajTecFechar(){ const pc=AJU.pc, c=AJU.canal; AJU.pc=AJU.canal=AJU.fluxo
 function ajTecFim(motivo){ if(AJU.modo!=='tecnico'||AJU.fase==='fim') return; ajTecFechar(); AJU.fase='fim'; AJU.msg=motivo; ajRender(); }
 async function ajTecConectar(){ const bt=$('#ajGerar'); bt.disabled=true; const senha=$('#ajSenhaT').value; const r=await ajAcao('ajuda_tec_convite',{codigo:$('#ajConvT').value}); if(!r.ok){ toast(r.msg,1); bt.disabled=false; return; }
   ajTecFechar(); AJU.oferta=r.dados.sdp; AJU.senha=senha; AJU.resp=null;
-  const pc=AJU.pc=new RTCPeerConnection({iceServers:CFG.ajuda_stun?[{urls:AJ_STUN}]:[]});
+  const pc=AJU.pc=new RTCPeerConnection({iceServers:[{urls:AJ_STUN}]});
   pc.ontrack=e=>{ AJU.fluxo=(e.streams&&e.streams[0])||new MediaStream([e.track]); const v=$('#ajVideo'); if(v) v.srcObject=AJU.fluxo; };
   pc.ondatachannel=e=>{ const c=AJU.canal=e.channel; const provar=()=>{ if(AJU.resp) c.send(JSON.stringify({t:'prova',mac:AJU.resp.prova})); }; c.onmessage=ajTecMsg; if(c.readyState==='open') provar(); else c.onopen=provar; };
   pc.onconnectionstatechange=()=>{ if(AJU.pc===pc&&['failed','closed'].includes(pc.connectionState)) ajTecFim('A conexão caiu ou não pôde ser feita. Quando os dois lados estão em 4G (ou em certas redes de empresa), a ligação direta não é possível.'); };
@@ -877,14 +881,16 @@ async function ajTecMsg(ev){ let m; try{ m=JSON.parse(ev.data); }catch(_){ retur
   else if(m.t==='ativa'&&AJU.fase==='aguardando'){ AJU.fase='ativa'; ajRender(); }
   else if(m.t==='fim') ajTecFim(typeof m.motivo==='string'&&m.motivo?m.motivo:'A sessão foi encerrada pelo outro lado.'); }
 function ajRenderTecnico(el){ const conf=AJU.resp?esc(AJU.resp.conferencia):'';
-  if(AJU.fase==='form'){ el.innerHTML=`<div class="painel"><div class="aj-passo"><b>1. Cole o convite que a pessoa mandou</b><textarea rows="4" id="ajConvT" placeholder="MPC1-…"></textarea></div>
+  if(AJU.fase==='form'){ el.innerHTML=`<div class="painel"><div class="aj-passo"><b>1. Cole o convite que a pessoa mandou</b><textarea rows="4" id="ajConvT" placeholder="MPCC…"></textarea></div>
       <div class="aj-passo"><b>2. Digite a senha que ela disse</b><input type="text" id="ajSenhaT" placeholder="XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" style="width:220px;font:600 16px Consolas,monospace;text-transform:uppercase"></div>
       <div class="aj-passo"><button class="btn pri" id="ajGerar">Gerar código de resposta</button> <button class="btn" id="ajSair">Voltar</button></div></div>`;
     $('#ajGerar').onclick=ajTecConectar; $('#ajSair').onclick=()=>{ AJU.modo=null; ajRender(); }; return; }
-  if(AJU.fase==='codigo'||AJU.fase==='aguardando'){ el.innerHTML=`<div class="painel">${AJU.fase==='codigo'?`<div class="aj-passo"><b>3. Mande este código de resposta de volta</b><textarea readonly rows="4">${esc(AJU.resp.codigo)}</textarea><p><button class="btn pri" id="ajCopResp">Copiar código de resposta</button> <span class="mut">A conexão começa quando a pessoa colar o código no Monitor dela.</span></p></div>`
-      :`<div class="aj-passo"><b>Senha conferida nos dois lados.</b><p class="mut">Aguardando a pessoa permitir o acesso no computador dela.</p></div>`}
-      <div class="aj-passo"><b>Código de conferência</b><div class="aj-senha">${conf}</div><p class="mut">A pessoa vai ver um código antes de permitir. Tem de ser igual a este.</p><p><button class="btn" id="ajSair">Cancelar</button></p></div></div>`;
-    if($('#ajCopResp')) $('#ajCopResp').onclick=()=>ajCopiar(AJU.resp.codigo); $('#ajSair').onclick=()=>{ ajTecFechar(); AJU.fase='form'; ajRender(); }; return; }
+  if(AJU.fase==='codigo'){ el.innerHTML=`<div class="painel"><div class="aj-passo"><b>3. Mande este código de resposta de volta</b><textarea readonly rows="4">${esc(AJU.resp.codigo)}</textarea><p><button class="btn pri" id="ajCopResp">Copiar código de resposta</button> <button class="btn" id="ajSair">Cancelar</button></p>
+      <p class="mut">É este texto inteiro que a pessoa cola no passo 3 do Monitor dela. A conexão começa sozinha depois disso; esta tela muda quando a senha for conferida.</p></div></div>`;
+    $('#ajCopResp').onclick=()=>ajCopiar(AJU.resp.codigo); $('#ajSair').onclick=()=>{ ajTecFechar(); AJU.fase='form'; ajRender(); }; return; }
+  if(AJU.fase==='aguardando'){ el.innerHTML=`<div class="painel"><div class="aj-passo"><b>Senha conferida nos dois lados.</b><p class="mut">Aguardando a pessoa permitir o acesso no computador dela.</p></div>
+      <div class="aj-passo"><b>Código de conferência</b><div class="aj-senha">${conf}</div><p class="mut">A pessoa está vendo um código antes de permitir. Tem de ser igual a este; não precisa digitar em lugar nenhum.</p><p><button class="btn" id="ajSair">Cancelar</button></p></div></div>`;
+    $('#ajSair').onclick=()=>{ ajTecFechar(); AJU.fase='form'; ajRender(); }; return; }
   if(AJU.fase==='ativa'){ el.innerHTML=`<div class="rel-cab"><b>Conectado</b><span class="mut">Clique na tela para o teclado ir para o outro computador.</span><span style="flex:1"></span><button class="btn" id="ajCheia">Tela cheia</button><button class="btn" id="ajArea">Enviar minha área de transferência</button><button class="btn perigo" id="ajSair">Encerrar</button></div>
       <div class="aj-tela" id="ajTela" tabindex="0"><video id="ajVideo" autoplay playsinline muted></video></div>`; ajControle(); return; }
   el.innerHTML=`<div class="painel aj-passo"><b>Sessão encerrada</b><p>${esc(AJU.msg)}</p><p><button class="btn pri" id="ajSair">Voltar</button></p></div>`; $('#ajSair').onclick=()=>{ AJU.modo=null; AJU.fase='form'; ajRender(); }; }
@@ -1298,7 +1304,40 @@ const CFG_DEF=[
 function aplicarTema(){ const t=CFG.tema; if(t==='escuro') document.documentElement.dataset.theme='dark'; else if(t==='claro') document.documentElement.dataset.theme='light'; else delete document.documentElement.dataset.theme; }
 async function carregarCfg(){ try{ const d=await API('config'); CFG=d.valores; aplicarTema(); }catch(_){} }
 let CFG_ATU={};
-async function vConfig(){ try{ CFG_ATU=await API('atualizacao'); }catch(_){} let h=''; const s=STATUS||{};
+// Atualização acompanhada na tela: baixar e conferir têm % real; durante a instalação o serviço fica parado e não há o que medir.
+let ATU={ativo:false, fase:'', pct:0, alvo:'', de:'', erro:'', fora:false, desde:0, timer:null};
+const ATU_FASES=['baixando','conferindo','instalando'];
+function atuAcompanhar(d){ if(ATU.ativo&&ATU.timer) return; clearInterval(ATU.timer);
+  ATU={ativo:true, fase:ATU_FASES.includes(d.situacao)?d.situacao:'baixando', pct:d.pct||0, alvo:d.alvo||(d.disponivel&&d.disponivel.versao)||'', de:d.versao_atual||'', erro:'', fora:false, desde:Date.now(), timer:setInterval(atuPasso,600)}; atuRender(); }
+async function atuPasso(){ let d=null; try{ d=await API('atualizacao'); }catch(_){ }
+  if(!d){ if(!ATU.fora){ ATU.fora=true; ATU.desde=Date.now(); } ATU.fase='instalando'; }      // sem resposta: o instalador parou o serviço para trocar os arquivos
+  else{ CFG_ATU=d;
+    if(d.versao_atual!==ATU.de) ATU.fase='pronto';
+    else if(d.situacao==='erro'){ ATU.fase='erro'; ATU.erro=d.erro||'A atualização falhou sem dizer o motivo.'; }
+    else if(ATU_FASES.includes(d.situacao)){ ATU.fase=d.situacao; ATU.pct=d.pct||0; if(d.alvo) ATU.alvo=d.alvo; }
+    else if(ATU.fora){ ATU.fase='erro'; ATU.erro='O serviço voltou, mas ainda na versão '+d.versao_atual+'. O motivo fica em C:\\ProgramData\\MonitorPC\\atualizacao\\instalacao.log.'; } }
+  if(ATU.fase==='pronto'||ATU.fase==='erro'){ clearInterval(ATU.timer); ATU.timer=null; }
+  atuRender(); }
+function atuRender(){ const el=$('#atuPainel'); if(!el) return; const s=STATUS||{};
+  if(!ATU.ativo){ el.innerHTML=`<div class="item"><b>Versão instalada: ${esc(CFG_ATU.versao_atual||s.versao||'—')}</b><div class="ctl" style="display:flex;gap:8px"><button class="btn" id="atuVer">Procurar agora</button><button class="btn pri" id="atuInst" ${CFG_ATU.disponivel?'':'disabled'}>${CFG_ATU.disponivel?'Atualizar para '+esc(CFG_ATU.disponivel.versao):'Atualizar'}</button></div><small>${CFG_ATU.erro?esc(CFG_ATU.erro):CFG_ATU.disponivel?'Versão nova disponível.':CFG_ATU.ultima_verificacao?'Última verificação: '+quando(CFG_ATU.ultima_verificacao)+' — você está na versão mais nova.':'Ainda não verificado.'}</small></div>
+      <div class="item"><b>Atualizar automaticamente</b><div class="ctl"><label class="sw"><input type="checkbox" data-cfg="atualizacao_auto" ${CFG.atualizacao_auto?'checked':''}><span></span></label></div><small>Procura versão nova no GitHub a cada 6 horas e instala sozinho (nunca durante o Modo Jogo).</small></div>`;
+    $('#atuVer').onclick=async()=>{ $('#atuVer').disabled=true; const r=await POST('acao',{tipo:'atualizar_verificar'}).catch(()=>null); if(r) toast(r.msg,!r.ok); CFG_ATU=await API('atualizacao').catch(()=>CFG_ATU); atuRender(); };
+    $('#atuInst').onclick=async()=>{ if(!await confirmar('Atualizar agora?','O Monitor do PC vai baixar a versão nova, conferir a assinatura e instalar. O andamento aparece aqui; no fim, use o botão Recarregar.','Atualizar')) return;
+      const r=await POST('acao',{tipo:'atualizar_instalar'}).catch(()=>null); if(!r||!r.ok){ toast(r?r.msg:'O serviço não respondeu.',1); return; } atuAcompanhar(await API('atualizacao').catch(()=>CFG_ATU)); };
+    return; }
+  const n=ATU.fase==='pronto'?3:ATU.fase==='erro'?-1:ATU_FASES.indexOf(ATU.fase), v=esc(ATU.alvo||'nova');
+  const passo=(i,t,semPct)=>{ const feito=n>i, agora=n===i, p=feito?100:agora?ATU.pct:0;
+    return `<div class="item atu-passo"><b>${i+1}. ${t}</b><div class="ctl"><span class="n ${feito?'atu-ok':''}">${feito?'concluído':agora?(semPct?'em andamento…':p+'%'):'aguardando'}</span></div><div class="atu-barra${agora&&semPct?' atu-vai':''}"><i style="width:${agora&&semPct?35:p}%"></i></div></div>`; };
+  let h='';
+  if(n>=0) h=passo(0,`Baixar a versão ${v}`)+passo(1,'Conferir a assinatura (SHA-256)')+passo(2,'Instalar e reiniciar o serviço',true);
+  if(ATU.fase==='instalando') h+=`<div class="item"><small>${Date.now()-ATU.desde>240000?'Está demorando mais que o normal. Se não terminar, veja C:\\ProgramData\\MonitorPC\\atualizacao\\instalacao.log.':'O serviço fica parado enquanto os arquivos são trocados, por isso esta etapa não tem porcentagem. Costuma levar menos de 1 minuto.'}</small></div>`;
+  if(ATU.fase==='pronto') h+=`<div class="item"><b class="atu-ok">Versão ${esc(CFG_ATU.versao_atual||v)} instalada.</b><div class="ctl"><button class="btn pri" id="atuRecarregar">Recarregar</button></div><small>Recarregue para a tela passar a usar a versão nova.</small></div>`;
+  if(ATU.fase==='erro') h+=`<div class="item"><b style="color:var(--perigo)">A atualização não foi concluída</b><div class="ctl"><button class="btn" id="atuVoltar">Voltar</button></div><small>${esc(ATU.erro)}</small></div>`;
+  el.innerHTML=h;
+  if($('#atuRecarregar')) $('#atuRecarregar').onclick=async()=>{ $('#atuRecarregar').disabled=true; try{ await fetch(location.pathname,{cache:'reload'}); }catch(_){ } location.reload(); };   // o mesmo que Ctrl+Shift+R: busca a página de novo, sem usar a cópia guardada
+  if($('#atuVoltar')) $('#atuVoltar').onclick=()=>{ ATU.ativo=false; atuRender(); }; }
+async function vConfig(){ try{ CFG_ATU=await API('atualizacao'); }catch(_){} const s=STATUS||{};
+  let h='<h2 class="secao" style="margin-bottom:8px">Atualizações</h2><div class="painel" id="atuPainel"></div>';
   for(const [sec,itens] of CFG_DEF){ h+=`<h2 class="secao" style="margin-bottom:8px">${sec}</h2><div class="painel">`;
     for(const [k,tipo,t,d,op] of itens){ let ctl='';
       if(tipo==='sw') ctl=`<label class="sw"><input type="checkbox" data-cfg="${k}" ${CFG[k]?'checked':''}><span></span></label>`;
@@ -1306,8 +1345,6 @@ async function vConfig(){ try{ CFG_ATU=await API('atualizacao'); }catch(_){} let
       if(tipo==='num') ctl=`<input type="number" data-cfg="${k}" min="${op[0]}" max="${op[1]}" value="${CFG[k]}" style="width:90px">`;
       h+=`<div class="item"><b>${t}</b><div class="ctl">${ctl}</div>${d?`<small>${d}</small>`:''}</div>`; }
     h+='</div>'; }
-  h+=`<h2 class="secao" style="margin-bottom:8px">Atualizações</h2><div class="painel"><div class="item"><b>Atualizar automaticamente</b><div class="ctl"><label class="sw"><input type="checkbox" data-cfg="atualizacao_auto" ${CFG.atualizacao_auto?'checked':''}><span></span></label></div><small>Procura versão nova no GitHub a cada 6 horas e instala sozinho (nunca durante o Modo Jogo).</small></div>
-    <div class="item"><b>Versão instalada: ${esc(CFG_ATU.versao_atual||s.versao||'—')}</b><div class="ctl" style="display:flex;gap:8px"><button class="btn" id="atuVer">Procurar agora</button><button class="btn pri" id="atuInst" ${CFG_ATU.disponivel?'':'disabled'}>${CFG_ATU.disponivel?'Atualizar para '+esc(CFG_ATU.disponivel.versao):'Atualizar'}</button></div><small>${CFG_ATU.erro?esc(CFG_ATU.erro):CFG_ATU.disponivel?'Versão nova disponível.':CFG_ATU.ultima_verificacao?'Última verificação: '+quando(CFG_ATU.ultima_verificacao)+' — você está na versão mais nova.':'Ainda não verificado.'}</small></div></div>`;
   h+=`<h2 class="secao" style="margin-bottom:8px">Manutenção</h2><div class="painel"><div class="item"><b>Apagar todo o histórico</b><div class="ctl"><button class="btn perigo" id="apagarHist">Apagar</button></div><small>Apaga gráficos, relatórios e momentos de lentidão guardados. O monitoramento continua.</small></div></div>`;
   h+=cfgExtras(); h+=`<h2 class="secao" style="margin-bottom:8px">Sobre</h2><div class="painel"><dl class="kv">
     <dt>Versão</dt><dd>${esc(s.versao||'—')}</dd><dt>Serviço como administrador</dt><dd>${s.admin?'sim':'não'}</dd><dt>Leitura dos processos</dt><dd>${s.modo_coleta==='nt'?'rápida (Windows NT)':'padrão (psutil)'} · ${s.tempo_amostra_ms??'—'} ms por leitura (máx. ${s.tempo_amostra_max_ms??'—'} ms)</dd>
@@ -1315,8 +1352,7 @@ async function vConfig(){ try{ CFG_ATU=await API('atualizacao'); }catch(_){} let
     <dt>Sensores</dt><dd>${esc((s.sensores||[]).join(', ')||'—')}${s.pawnio===false?' · driver PawnIO não instalado':''}</dd><dt>Ícone perto do relógio</dt><dd>${s.bandeja_online?'aberto':'fechado'}</dd>
     <dt>Histórico</dt><dd>${s.banco?fB(s.banco.tamanho)+' · desde '+quando(s.banco.desde):'—'}</dd></dl></div>`;
   $('#cfgCorpo').innerHTML=h;
-  $('#atuVer').onclick=async()=>{ $('#atuVer').disabled=true; const r=await POST('acao',{tipo:'atualizar_verificar'}).catch(()=>null); if(r) toast(r.msg,!r.ok); CFG_ATU=await API('atualizacao').catch(()=>CFG_ATU); vConfig(); };
-  $('#atuInst').onclick=async()=>{ if(!await confirmar('Atualizar agora?','O Monitor do PC vai baixar a versão nova, conferir a assinatura e instalar. A janela fecha e volta em alguns segundos.','Atualizar')) return; const r=await POST('acao',{tipo:'atualizar_instalar'}).catch(()=>null); if(r) toast(r.msg,!r.ok); };
+  if(!ATU.ativo&&ATU_FASES.includes(CFG_ATU.situacao)) atuAcompanhar(CFG_ATU); else atuRender();      // instalação automática já em curso também aparece
   ligarCfgExtras();
   $('#apagarHist').onclick=async()=>{ if(!await confirmar('Apagar todo o histórico?','Os gráficos, relatórios e momentos de lentidão guardados serão apagados. Não dá para desfazer.','Apagar',1)) return; const r=await POST('historico/apagar').catch(()=>null); toast(r&&r.ok?'Histórico apagado.':'Não consegui apagar.',!(r&&r.ok)); }; }
 async function salvarCampoCfg(e, depois){ const el=e.target.closest('[data-cfg],[data-mini]'); if(!el) return; let k=el.dataset.cfg;

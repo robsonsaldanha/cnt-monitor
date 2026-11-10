@@ -122,6 +122,9 @@ jobs:
           Get-Process MonitorPC, MonitorPCServico -ErrorAction SilentlyContinue | Format-Table Name, Id, WorkingSet64, CPU
           ./build/teste-acoes.ps1
           if (-not (Test-Path "C:\Program Files\Monitor do PC\remoto\MonitorPCRemoto.exe")) { throw "o agente do acesso remoto não foi instalado" }
+          $fw = netsh advfirewall firewall show rule name="Monitor do PC (acesso remoto)" verbose | Out-String
+          Write-Host $fw
+          if ($fw -notmatch 'MonitorPCRemoto\.exe' -or $fw -notmatch 'UDP' -or $fw -notmatch 'LocalSubnet') { throw "a regra de firewall do acesso remoto (rede local) não foi criada" }
           # no servidor de build pode não haver ninguém logado na tela: aí o pedido é recusado, mas com o motivo escrito.
           # Erro sem mensagem (exceção no serviço) reprova a compilação.
           $tok = (Get-Content C:\ProgramData\MonitorPC\token.txt -Raw).Trim()

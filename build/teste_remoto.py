@@ -52,23 +52,39 @@ def teste_senha():
 
 
 def teste_codigos():
+    import re
+    sem384 = lambda s: s.replace("a=fingerprint:sha-384 AA:BB\r\n", "")     # noqa: E731  (só a SHA-256 viaja)
     c = remoto.convite(A)
-    assert c.startswith("MPC1-") and remoto.ler_convite(c) == A
-    assert remoto.ler_convite("  " + c[:40] + "\r\n " + c[40:] + "\n") == A        # colado com quebras de linha
+    assert c.startswith("MPCC") and remoto.ler_convite(c) == sem384(A)
+    assert remoto.impressao(remoto.ler_convite(c)) == remoto.impressao(A)
     r = remoto.resposta(T)
-    assert r.startswith("MPC2-") and remoto.ler_resposta(r) == T
-    _erro(remoto.ler_convite, r)                    # resposta no lugar do convite e vice-versa
-    _erro(remoto.ler_resposta, c)
-    for ruim in ("", None, "MPC1-", "MPC1-@@@", c[:-20], c[:30] + "A" + c[31:], "MPC1-" + "A" * 50000,
-                 remoto._codigo("MPC1-", "v=0\r\nsem identidade\r\n")):
+    assert r.startswith("MPCR") and remoto.ler_resposta(r) == sem384(T)
+    # só letras maiúsculas e números: nada que WhatsApp, Telegram ou e-mail tratem como formatação
+    assert re.fullmatch(r"[A-Z2-7]+", c) and re.fullmatch(r"[A-Z2-7]+", r)
+    # colado com quebras de linha, espaços, minúsculas e símbolos de formatação enfiados no meio
+    assert remoto.ler_convite("  " + c[:40] + "\r\n " + c[40:] + "\n") == sem384(A)
+    assert remoto.ler_convite("*" + c[:9].lower() + "_" + c[9:50] + "_ ~" + c[50:] + "~*​") == sem384(A)
+    assert "código de resposta" in _erro(remoto.ler_convite, r)        # resposta no lugar do convite e vice-versa
+    assert "convite" in _erro(remoto.ler_resposta, c)
+    assert "conferência" in _erro(remoto.ler_resposta, "572 065")      # os 6 números não são o código de resposta
+    assert "versão antiga" in _erro(remoto.ler_convite, "MPC1-eNrtVltv2zYU_itE")
+    assert "Cole" in _erro(remoto.ler_convite, "") and "Cole" in _erro(remoto.ler_convite, None)
+    for n in range(1, 30):                                              # cortado em qualquer ponto do final
+        assert "cortado" in _erro(remoto.ler_convite, c[:-n]), n
+    for i in (10, len(c) // 2, len(c) - 3):                             # uma letra trocada no caminho
+        assert "alterado" in _erro(remoto.ler_convite, c[:i] + ("A" if c[i] != "A" else "B") + c[i + 1:]), i
+    for ruim in ("MPCC", "MPCC@@@", "MPCC" + "A" * 50000, "qualquer texto",
+                 remoto._codigo("MPCC", "v=0\r\nsem identidade\r\n")):
         _erro(remoto.ler_convite, ruim)
 
     def cru(dados):
-        return "MPC1-" + base64.urlsafe_b64encode(zlib.compress(dados)).decode()
+        z = zlib.compressobj(9, zdict=remoto._DICIONARIO)
+        return "MPCC" + base64.b32encode(z.compress(dados) + z.flush()).decode().rstrip("=")
 
+    assert remoto.ler_convite(cru(json.dumps({"v": 2, "sdp": A}).encode())) == A      # o molde do teste é válido
     _erro(remoto.ler_convite, cru(b'["lista"]'))
-    _erro(remoto.ler_convite, cru(b'{"v":2,"sdp":"x"}'))
-    _erro(remoto.ler_convite, cru(b'{"v":1,"sdp":5}'))
+    _erro(remoto.ler_convite, cru(b'{"v":1,"sdp":"x"}'))
+    _erro(remoto.ler_convite, cru(b'{"v":2,"sdp":5}'))
     _erro(remoto.ler_convite, cru(b" " * 50_000_000))      # 50 MB compactados em poucos KB: para no limite
     _erro(remoto.convite, "x" * 70000)
 
@@ -96,7 +112,7 @@ def teste_prova():
 
 
 def _ate_prova(s, senha=None):
-    assert s.receber_resposta(remoto.resposta(T)) == T
+    assert remoto.impressao(s.receber_resposta(remoto.resposta(T))) == remoto.impressao(T)
     return s.conferir_prova(A, T, remoto.prova(remoto.chave(senha or s.senha, A, T), "tecnico"))
 
 
@@ -140,7 +156,7 @@ def teste_sessao_ordem_e_reuso():
     _erro(s.aceitar)                                                        # aceite antes da prova
     _erro(s.conferir_prova, A, T, "00")                                     # prova antes da resposta
     assert s.estado == "convite"
-    _erro(s.receber_resposta, "MPC2-lixo")                                  # mal colado: pode tentar de novo
+    _erro(s.receber_resposta, "MPCRLIXO")                                  # mal colado: pode tentar de novo
     assert s.estado == "convite"
     _ate_prova(s)
     assert "já foi usado" in _erro(s.receber_resposta, remoto.resposta(T))   # o convite vale uma vez
@@ -323,11 +339,11 @@ def teste_gerente_e_acoes_do_motor():
         r = m.ajuda.pedir(stun=False)
         assert r == (True, ""), r
         e = acao("ajuda_estado")["dados"]
-        assert e["estado"] == "convite" and e["convite"].startswith("MPC1-")
+        assert e["estado"] == "convite" and e["convite"].startswith("MPCC")
         proc = m.ajuda._proc
         assert m.ajuda.pedir(stun=False) == (True, "") and m.ajuda._proc is proc          # não abre um segundo
-        r = acao("ajuda_resposta", codigo="MPC2-lixo")
-        assert not r["ok"] and "não é válido" in r["msg"] and r["dados"]["estado"] == "convite"
+        r = acao("ajuda_resposta", codigo="MPCRLIXO")
+        assert not r["ok"] and "alterado" in r["msg"] and r["dados"]["estado"] == "convite"
         assert not acao("ajuda_aceitar")["ok"]                                              # aceite sem técnico
 
         oferta = acao("ajuda_tec_convite", codigo=e["convite"])["dados"]["sdp"]
@@ -387,8 +403,8 @@ def teste_agente_aberto_pelo_caminho_do_servico():
         proc = g._proc
         assert isinstance(proc, sessao._Processo) and proc.poll() is None
         assert remoto.ler_convite(g.estado()["convite"])
-        ok, msg = g.ordem("resposta", codigo="MPC2-lixo")
-        assert not ok and "não é válido" in msg
+        ok, msg = g.ordem("resposta", codigo="MPCRLIXO")
+        assert not ok and "alterado" in msg
         g.parar()
         assert proc.wait(10) is not None and g.estado()["estado"] == "encerrada"
     finally:
