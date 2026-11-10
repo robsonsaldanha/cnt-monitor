@@ -63,18 +63,60 @@ def segredo(vid):
         return _ler_segredos().get(vid, {})
 
 
-def guardar_segredo(vid, dados):
+def _destino(v):
+    return f'{str(v["host"]).strip().lower()}:{int(v["porta"])}'
+
+
+def segredo_de(v):
+    """A senha/chave guardada para o servidor `v` — só se foi salva para este mesmo endereço e porta.
+    É por aqui que toda conexão pega a credencial: trocar o endereço (pelo formulário, pelas
+    configurações ou por um backup) nunca leva a senha antiga para o servidor novo."""
+    s = segredo(v["id"])
+    return s if s.get("destino") == _destino(v) else {}
+
+
+def guardar_segredo(v, dados):
+    dados = dados if isinstance(dados, dict) else {}
     with _seg_lock:
         d = _ler_segredos()
-        atual = d.get(vid, {})
+        atual = d.get(v["id"], {})
+        if atual.get("destino") != _destino(v):
+            atual = {}          # o que estava guardado era de outro endereço: não acompanha
         for k in ("senha", "chave", "frase"):
             if dados.get(k):
-                atual[k] = dados[k]
+                atual[k] = str(dados[k])
         if dados.get("limpar_chave"):
             atual.pop("chave", None)
             atual.pop("frase", None)
-        d[vid] = atual
+        atual["destino"] = _destino(v)
+        d[v["id"]] = atual
         _gravar_segredos(d)
+
+
+def vincular(lista):
+    """Versões antigas guardavam a senha sem o endereço: prende cada uma ao servidor cadastrado agora.
+    Roda uma vez, quando o serviço inicia."""
+    with _seg_lock:
+        d = _ler_segredos()
+        mudou = False
+        for v in lista:
+            s = d.get(v["id"])
+            if s and "destino" not in s:
+                s["destino"] = _destino(v)
+                mudou = True
+        if mudou:
+            _gravar_segredos(d)
+
+
+MSG_SEGREDO = ("O endereço ou a porta mudou: digite a senha (ou a chave) de novo. "
+               "Por segurança, a que está guardada só é enviada ao servidor para o qual foi salva.")
+
+
+def falta_segredo(v, novo):
+    """Há uma senha/chave guardada para este cadastro, mas para outro endereço, e não veio digitada
+    a credencial do tipo de login escolhido."""
+    novo = novo if isinstance(novo, dict) else {}
+    return bool(segredo(v["id"]) and not segredo_de(v) and not novo.get("chave" if v["auth"] == "chave" else "senha"))
 
 
 def apagar_segredo(vid):
@@ -243,7 +285,9 @@ class Servidor:
     def _conectar(self):
         import paramiko
         v = self.cfg
-        seg = segredo(v["id"])
+        seg = segredo_de(v)
+        if not seg and segredo(v["id"]):
+            raise ValueError(MSG_SEGREDO)
         srv = self
 
         class Politica(paramiko.MissingHostKeyPolicy):
@@ -367,7 +411,12 @@ class Servidor:
     def estado(self):
         v = {k: x for k, x in self.cfg.items()}
         return {**v, "online": self.online, "erro": self.erro, "ultimo": self.ultimo, "dados": self.dados,
-                "urls_status": self.urls, "serie": list(self.serie)[-240:], "tem_senha": bool(segredo(v["id"]))}
+                "urls_status": self.urls, "serie": list(self.serie)[-240:], "tem_senha": _tem_credencial(v)}
+
+
+def _tem_credencial(v):
+    s = segredo_de(v)
+    return bool(s.get("senha") or s.get("chave"))
 
 
 def _impressao(key):
@@ -437,12 +486,15 @@ class Gerenciador:
                     out.append(s.estado())
                 else:
                     out.append({**v, "online": False, "erro": "desligado" if not v["ativo"] else "iniciando",
-                                "dados": {}, "serie": [], "urls_status": [], "tem_senha": bool(segredo(v["id"]))})
+                                "dados": {}, "serie": [], "urls_status": [], "tem_senha": _tem_credencial(v)})
             return out
 
     def testar(self, v, seg, esperado=""):
-        """Testa a conexão sem salvar (usa os dados digitados). Com `esperado` (identidade já gravada),
-        recusa um servidor diferente antes de enviar a senha/chave."""
+        """Testa a conexão sem salvar (usa os dados digitados; o que falta vem do que está guardado
+        para este mesmo endereço). Com `esperado` (identidade já gravada), recusa um servidor
+        diferente antes de enviar a senha/chave."""
+        seg = seg if isinstance(seg, dict) else {}
+        guardado = segredo_de(v)
         import paramiko
 
         class Politica(paramiko.MissingHostKeyPolicy):
@@ -456,9 +508,9 @@ class Gerenciador:
               "auth_timeout": 12, "look_for_keys": False, "allow_agent": False}
         try:
             if v["auth"] == "chave":
-                kw["pkey"] = carregar_chave(seg.get("chave") or segredo(v["id"]).get("chave", ""), seg.get("frase") or segredo(v["id"]).get("frase"))
+                kw["pkey"] = carregar_chave(seg.get("chave") or guardado.get("chave", ""), seg.get("frase") or guardado.get("frase"))
             else:
-                kw["password"] = seg.get("senha") or segredo(v["id"]).get("senha", "")
+                kw["password"] = seg.get("senha") or guardado.get("senha", "")
             c.connect(**kw)
             fp = _impressao(c.get_transport().get_remote_server_key())
             _i, o, _e = c.exec_command("hostname; (. /etc/os-release 2>/dev/null; echo \"$PRETTY_NAME\"); nproc", timeout=15)

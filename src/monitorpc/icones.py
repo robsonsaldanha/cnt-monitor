@@ -1,6 +1,7 @@
 """Ícone de cada programa, extraído do próprio .exe e guardado em PNG (cache em disco)."""
 import io
 import os
+import re
 import hashlib
 import threading
 
@@ -119,7 +120,8 @@ def _extrair(caminho, tam=32):
 
 def png(caminho):
     """PNG 32x32 do ícone do executável, ou None."""
-    if not WIN or not caminho:
+    # só arquivo em disco local (C:\...): caminho de rede faria o serviço se autenticar em outro computador
+    if not WIN or not caminho or not re.fullmatch(r'[A-Za-z]:\\[^"<>|?*]+', caminho):
         return None
     chave = caminho.lower()
     with _lock:

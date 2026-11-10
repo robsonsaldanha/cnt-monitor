@@ -25,6 +25,24 @@ def _versao(t):
     return tuple(int(x) for x in re.findall(r"\d+", t or "")[:3]) or (0,)
 
 
+def travar(caminho):
+    """Abre o arquivo para leitura sem deixar ninguém escrever, renomear ou apagar enquanto estiver aberto
+    (e falha se alguém já estiver com ele aberto para escrita)."""
+    import win32file
+    return win32file.CreateFile(caminho, win32file.GENERIC_READ, win32file.FILE_SHARE_READ, None,
+                                win32file.OPEN_EXISTING, 0, None)
+
+
+def sha256_travado(trava):
+    import win32file
+    h = hashlib.sha256()
+    while True:
+        bloco = win32file.ReadFile(trava, 1 << 16)[1]
+        if not bloco:
+            return h.hexdigest()
+        h.update(bloco)
+
+
 class Atualizador:
     def __init__(self):
         self.lock = threading.Lock()
@@ -74,28 +92,39 @@ class Atualizador:
         destino = os.path.join(PASTA, f"MonitorDoPC-Setup-{info['versao']}.exe")
         self.situacao = "baixando"
         try:
+            if os.path.lexists(destino):
+                os.remove(destino)   # nunca reaproveita um arquivo que já estava lá (poderia ter sido posto por outro usuário)
             req = urllib.request.Request(info["url"], headers={"User-Agent": "MonitorDoPC/" + config.VERSAO})
-            h = hashlib.sha256()
-            with urllib.request.urlopen(req, timeout=120) as r, open(destino, "wb") as f:
+            with urllib.request.urlopen(req, timeout=120) as r, open(destino, "xb") as f:
                 while True:
                     bloco = r.read(1 << 16)
                     if not bloco:
                         break
-                    h.update(bloco)
                     f.write(bloco)
         except Exception as e:  # noqa: BLE001
             self.situacao = "erro"
             return False, f"Não consegui baixar: {e}"
-        if h.hexdigest() != info["sha256"]:
-            os.remove(destino)
+        # confere o que ficou no disco e roda o instalador com o arquivo travado: entre a conferência e a
+        # execução ninguém consegue trocar o conteúdo (o serviço roda como SYSTEM)
+        try:
+            trava = travar(destino)
+        except Exception as e:  # noqa: BLE001
             self.situacao = "erro"
-            return False, "O arquivo baixado não confere com a assinatura SHA-256. Atualização cancelada."
-        with open(FLAG_REABRIR, "w") as f:
-            f.write(info["versao"])
-        self.situacao = "instalando"
-        subprocess.Popen([destino, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-", "/TASKS=pawnio",
-                          "/LOG=" + os.path.join(PASTA, "instalacao.log")],
-                         creationflags=0x00000008 | 0x00000200, close_fds=True)  # DETACHED | NEW_PROCESS_GROUP
+            return False, f"Não consegui conferir o arquivo baixado: {e}"
+        try:
+            if sha256_travado(trava) != info["sha256"]:
+                trava.Close()
+                os.remove(destino)
+                self.situacao = "erro"
+                return False, "O arquivo baixado não confere com a assinatura SHA-256. Atualização cancelada."
+            with open(FLAG_REABRIR, "w") as f:
+                f.write(info["versao"])
+            self.situacao = "instalando"
+            subprocess.Popen([destino, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-", "/TASKS=pawnio",
+                              "/LOG=" + os.path.join(PASTA, "instalacao.log")],
+                             creationflags=0x00000008 | 0x00000200, close_fds=True)  # DETACHED | NEW_PROCESS_GROUP
+        finally:
+            trava.Close()
         return True, f"Instalando a versão {info['versao']}. O Monitor do PC reinicia sozinho em alguns segundos."
 
     def estado(self):

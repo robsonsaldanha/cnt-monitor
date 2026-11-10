@@ -153,6 +153,7 @@ class Motor:
         self.jogo = jogo.ModoJogo(self)
         self.regras = regras.MotorRegras()
         self.tarefas = limpeza.Tarefas()
+        vps.vincular(configuracao.obter("vps"))
         self.vps = vps.Gerenciador()
         self.vazamentos = []
         self._ult_vaz = 0
@@ -1104,7 +1105,9 @@ class Motor:
                 item["fingerprint"] = antigo["fingerprint"]
             else:
                 item["fingerprint"] = ""
-            vps.guardar_segredo(item["id"], a.get("segredo") or {})
+            if vps.falta_segredo(item, a.get("segredo")):
+                return {"ok": False, "msg": vps.MSG_SEGREDO}
+            vps.guardar_segredo(item, a.get("segredo"))
             lista = [v for v in lista if v["id"] != item["id"]] + [item] if not antigo else [item if v["id"] == item["id"] else v for v in lista]
             configuracao.salvar({"vps": lista})
             self.vps.sincronizar(configuracao.obter("vps"))
@@ -1121,8 +1124,11 @@ class Motor:
                 return {"ok": False, "msg": "Preencha o endereço do servidor."}
             item = item[0]
             antigo = next((v for v in configuracao.obter("vps") if v["id"] == item["id"]), None)
-            esperado = antigo["fingerprint"] if antigo and (antigo["host"], antigo["porta"]) == (item["host"], item["porta"]) else ""
-            return res(self.vps.testar(item, a.get("segredo") or {}, esperado))
+            mesmo = antigo and (antigo["host"], antigo["porta"]) == (item["host"], item["porta"])
+            if vps.falta_segredo(item, a.get("segredo")):
+                return {"ok": False, "msg": vps.MSG_SEGREDO}
+            esperado = antigo["fingerprint"] if mesmo else ""
+            return res(self.vps.testar(item, a.get("segredo"), esperado))
         if tipo == "vps_esquecer":
             vid = a.get("id")
             configuracao.salvar({"vps": [dict(v, fingerprint="") if v["id"] == vid else v for v in configuracao.obter("vps")]})

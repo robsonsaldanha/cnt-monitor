@@ -72,8 +72,8 @@ Type: files; Name: "{commonstartup}\Monitor do PC.lnk"
 
 [Run]
 Filename: "{tmp}\PawnIO_setup.exe"; Parameters: "-install -silent"; StatusMsg: "Instalando o driver PawnIO..."; Flags: waituntilterminated skipifdoesntexist; Tasks: pawnio
-Filename: "{sys}\sc.exe"; Parameters: "create MonitorPC binPath= ""{app}\servico\MonitorPCServico.exe"" start= auto DisplayName= ""Monitor do PC"""; StatusMsg: "Registrando o serviço..."; Flags: runhidden waituntilterminated
-Filename: "{sys}\sc.exe"; Parameters: "config MonitorPC binPath= ""{app}\servico\MonitorPCServico.exe"" start= auto"; Flags: runhidden waituntilterminated
+Filename: "{sys}\sc.exe"; Parameters: "create MonitorPC binPath= ""\""{app}\servico\MonitorPCServico.exe\"""" start= auto DisplayName= ""Monitor do PC"""; StatusMsg: "Registrando o serviço..."; Flags: runhidden waituntilterminated
+Filename: "{sys}\sc.exe"; Parameters: "config MonitorPC binPath= ""\""{app}\servico\MonitorPCServico.exe\"""" start= auto"; Flags: runhidden waituntilterminated
 Filename: "{sys}\sc.exe"; Parameters: "description MonitorPC ""Coleta CPU, memória, disco, rede, IPs e temperatura por programa para o Monitor do PC."""; Flags: runhidden waituntilterminated
 Filename: "{sys}\sc.exe"; Parameters: "failure MonitorPC reset= 86400 actions= restart/5000/restart/10000/restart/60000"; Flags: runhidden waituntilterminated
 Filename: "{sys}\sc.exe"; Parameters: "start MonitorPC"; StatusMsg: "Iniciando o monitoramento..."; Flags: runhidden waituntilterminated

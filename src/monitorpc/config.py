@@ -2,7 +2,7 @@
 import os
 import sys
 
-VERSAO = "2.5.1"
+VERSAO = "2.5.2"
 WIN = os.name == "nt"
 
 if os.environ.get("MONITORPC_DADOS"):

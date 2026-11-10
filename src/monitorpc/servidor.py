@@ -263,7 +263,7 @@ def fabrica(motor, TOKEN, remoto=False):
         def _chave_api(self, q):
             chave = configuracao.obter("api_chave")
             dada = self.headers.get("X-API-Key") or q.get("chave") or ""
-            return bool(chave) and secrets.compare_digest(dada, chave)
+            return bool(chave) and secrets.compare_digest(dada.encode("utf-8"), chave.encode("utf-8"))
 
         def _pode_ler(self, q, v1=False):
             if not remoto:
@@ -283,7 +283,7 @@ def fabrica(motor, TOKEN, remoto=False):
                 org = self.headers.get("Origin")
                 if org and org not in ORIGENS_OK:
                     return False
-            return secrets.compare_digest(self.headers.get("X-Token", ""), TOKEN)
+            return secrets.compare_digest(self.headers.get("X-Token", "").encode("utf-8"), TOKEN.encode("utf-8"))
 
         # ---- GET
         def do_GET(self):
@@ -563,8 +563,14 @@ def fabrica(motor, TOKEN, remoto=False):
             m = motor
             try:
                 if r == "/api/acao":
-                    if remoto and str(corpo.get("tipo", "")).startswith("vent_"):
-                        return self._json({"erro": "só no próprio computador"}, 403)
+                    if not isinstance(corpo, dict):
+                        raise ParamInvalido("pedido inválido")
+                    if remoto:
+                        # pela rede: nada de ventoinhas nem de capturas (tela e arquivos do usuário), e "abrir"
+                        # só vale para programa que o Monitor já conhece, nunca para um caminho mandado de fora
+                        if str(corpo.get("tipo", "")).startswith(("vent_", "captura")):
+                            return self._json({"erro": "só no próprio computador"}, 403)
+                        corpo.pop("caminho", None)
                     return self._json(m.acao(corpo))
                 if r == "/api/config":
                     final = configuracao.salvar_publico(corpo, remoto=remoto)

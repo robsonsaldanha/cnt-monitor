@@ -31,6 +31,9 @@ jobs:
       - name: Testes das ventoinhas
         run: python build/teste_ventoinhas.py
 
+      - name: Testes de segurança
+        run: python build/teste_seguranca.py
+
       - name: LibreHardwareMonitor (sensores)
         shell: pwsh
         run: ./build/baixar-lhm.ps1

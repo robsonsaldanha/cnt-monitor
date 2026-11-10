@@ -9,6 +9,7 @@ Regras de segurança:
 """
 import os
 import re
+import stat
 import time
 import threading
 import subprocess
@@ -51,33 +52,44 @@ def _perfis():
     return out
 
 
+def _eh_elo(caminho):
+    """Link simbólico ou junção (atalho de pasta do Windows): aponta para outro lugar do disco.
+    O os.walk e o os.path.islink não reconhecem junções, por isso a conferência é pelo atributo."""
+    st = os.lstat(caminho)
+    return stat.S_ISLNK(st.st_mode) or bool(getattr(st, "st_file_attributes", 0) & stat.FILE_ATTRIBUTE_REPARSE_POINT)
+
+
 def _varrer(pasta, idade_min=UM_DIA, apagar=False, filtro=None):
-    """Soma (ou apaga) arquivos dentro da pasta. Devolve (bytes, arquivos, pulados)."""
+    """Soma (ou apaga) arquivos dentro da pasta, sem nunca entrar em links ou junções.
+    Devolve (bytes, arquivos, pulados)."""
     total = n = pulados = 0
-    if not os.path.isdir(pasta):
+    try:
+        if not os.path.isdir(pasta) or _eh_elo(pasta):
+            return 0, 0, 0
+        itens = os.listdir(pasta)
+    except OSError:
         return 0, 0, 0
     agora = time.time()
-    for raiz, dirs, arqs in os.walk(pasta, topdown=False, followlinks=False):
-        for a in arqs:
-            c = os.path.join(raiz, a)
-            if filtro and not filtro(c):
+    for nome in itens:
+        c = os.path.join(pasta, nome)
+        try:
+            if _eh_elo(c):
                 continue
-            try:
-                st = os.lstat(c)
-                if os.path.islink(c) or (idade_min and agora - st.st_mtime < idade_min):
-                    continue
-                if apagar:
-                    os.remove(c)
-                total += st.st_size
-                n += 1
-            except OSError:
-                pulados += 1
-        if apagar and raiz != pasta:
-            try:
-                if not os.listdir(raiz) and not os.path.islink(raiz):
-                    os.rmdir(raiz)
-            except OSError:
-                pass
+            st = os.lstat(c)
+            if stat.S_ISDIR(st.st_mode):
+                b, q, pu = _varrer(c, idade_min, apagar, filtro)
+                total, n, pulados = total + b, n + q, pulados + pu
+                if apagar and not os.listdir(c):
+                    os.rmdir(c)
+                continue
+            if (filtro and not filtro(c)) or (idade_min and agora - st.st_mtime < idade_min):
+                continue
+            if apagar:
+                os.remove(c)
+            total += st.st_size
+            n += 1
+        except OSError:
+            pulados += 1
     return total, n, pulados
 
 

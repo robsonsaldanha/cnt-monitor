@@ -29,8 +29,36 @@ def preparar_log():
     print(f"\n=== Monitor do PC {config.VERSAO} iniciado em {time.strftime('%Y-%m-%d %H:%M:%S')} ===")
 
 
+def proteger_pasta(pasta):
+    """Só o serviço e os administradores gravam na pasta; os outros usuários só leem."""
+    import pywintypes
+    import win32security as ws
+    os.makedirs(pasta, exist_ok=True)
+    try:
+        # lista nova e sem herança (qualquer permissão que já estivesse na pasta sai);
+        # SIDs fixos: SYSTEM, Administradores e Usuários (os nomes mudam com o idioma do Windows)
+        dacl = ws.ACL()
+        herda = ws.OBJECT_INHERIT_ACE | ws.CONTAINER_INHERIT_ACE
+        for sid, acesso in (("S-1-5-18", 0x1F01FF), ("S-1-5-32-544", 0x1F01FF), ("S-1-5-32-545", 0x1200A9)):
+            dacl.AddAccessAllowedAceEx(ws.ACL_REVISION, herda, acesso, ws.ConvertStringSidToSid(sid))
+        ws.SetNamedSecurityInfo(pasta, ws.SE_FILE_OBJECT,
+                                ws.DACL_SECURITY_INFORMATION | ws.PROTECTED_DACL_SECURITY_INFORMATION,
+                                None, None, dacl, None)
+        return True
+    except (OSError, pywintypes.error) as e:
+        print("Não consegui proteger a pasta de dados:", e)
+        return False
+
+
+def proteger_dados():
+    """(Por padrão o Windows deixa qualquer usuário criar arquivos dentro de ProgramData.)"""
+    if WIN and not os.environ.get("MONITORPC_DADOS"):
+        proteger_pasta(config.BASE)
+
+
 def iniciar_motor():
     from monitorpc import motor, servidor
+    proteger_dados()
     m = motor.Motor()
     m.iniciar()
     srv = servidor.criar(m)
