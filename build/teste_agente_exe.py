@@ -18,8 +18,8 @@ try:
     e = g.estado()
     assert e["estado"] == "convite" and len(e["senha"]) == 14, e
     assert "a=fingerprint:sha-256" in remoto.ler_convite(e["convite"])
-    ok, msg = g.ordem("resposta", codigo="MPC2-lixo")
-    assert not ok and "não é válido" in msg, (ok, msg)
+    ok, msg = g.ordem("resposta", codigo="MPCRLIXO")
+    assert not ok and "alterado" in msg, (ok, msg)
 finally:
     g.parar()
 assert g.estado()["estado"] == "encerrada", g.estado()
