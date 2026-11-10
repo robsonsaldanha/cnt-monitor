@@ -1,0 +1,24 @@
+[Unit]
+Description=CNT Monitor - ponto de encontro do acesso remoto
+After=network.target
+
+[Service]
+Type=simple
+User=robson
+Group=robson
+WorkingDirectory=/var/www/html_cntmonitor/servidor-vps
+EnvironmentFile=/etc/cnt-monitor/encontro.env
+ExecStart=/usr/bin/node /var/www/html_cntmonitor/servidor-vps/encontro.js
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+MemoryMax=256M
+
+[Install]
+WantedBy=multi-user.target

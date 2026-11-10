@@ -1,4 +1,4 @@
-"""Configurações do Monitor do PC (gravadas em ProgramData\\MonitorPC\\config.json)."""
+"""Configurações do CNT Monitor (gravadas em ProgramData\\MonitorPC\\config.json)."""
 import os
 import json
 import threading
@@ -233,7 +233,7 @@ def backup():
 
 def restaurar(dados):
     if not isinstance(dados, dict) or dados.get("app") != "monitor-pc" or not isinstance(dados.get("config"), dict):
-        return False, "Esse arquivo não é um backup do Monitor do PC."
+        return False, "Esse arquivo não é um backup do CNT Monitor."
     novos = {k: v for k, v in dados["config"].items() if k in config.PADRAO and k not in PROTEGIDAS}
     if isinstance(novos.get("captura_uploader"), dict):   # o backup não leva os cabeçalhos: mantém os deste PC
         novos["captura_uploader"] = {**novos["captura_uploader"], "cabecalhos": obter("captura_uploader")["cabecalhos"]}

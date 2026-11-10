@@ -201,7 +201,7 @@ def menu_rapido(img, opcoes):
 def pos_captura(img, info, opcoes, executar):
     """Prévia + botões; cada botão roda executar(chave) numa thread e a janela continua aberta até "Fechar"."""
     import tkinter as tk
-    root = _raiz("Captura de tela — Monitor do PC")
+    root = _raiz("Captura de tela — CNT Monitor")
     caixa = tk.Frame(root, bg=FUNDO, padx=16, pady=14)
     caixa.pack(fill="both", expand=True)
     foto = _previa(root, caixa, img)

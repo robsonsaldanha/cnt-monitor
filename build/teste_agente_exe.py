@@ -16,7 +16,7 @@ try:
     r = g.pedir(stun=False)
     assert r == (True, ""), r
     e = g.estado()
-    assert e["estado"] == "convite" and len(e["senha"]) == 14, e
+    assert e["estado"] == "convite" and len(e["senha"]) == 9, e
     assert "a=fingerprint:sha-256" in remoto.ler_convite(e["convite"])
     ok, msg = g.ordem("resposta", codigo="MPCRLIXO")
     assert not ok and "alterado" in msg, (ok, msg)

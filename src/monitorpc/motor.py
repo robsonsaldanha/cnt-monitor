@@ -1,4 +1,4 @@
-"""Motor de coleta do Monitor do PC.
+"""Motor de coleta do CNT Monitor.
 
 - Leitura rápida (padrão 250 ms) de todos os processos numa única chamada do Windows.
 - CPU, disco e rede são a média do último segundo (atualizada a cada leitura).
@@ -17,11 +17,11 @@ from collections import deque, defaultdict
 import psutil
 
 from . import config, configuracao, banco, rede, temperatura, nt, gpu, discos, inicializacao
-from . import alertas, jogo, energia, servicos, atualizacao, sessao, regras, limpeza, vps, captura, ventoinhas, remoto
+from . import alertas, jogo, energia, servicos, atualizacao, sessao, regras, limpeza, vps, captura, ventoinhas, remoto, encontro
 
 WIN = os.name == "nt"
 NCPU = psutil.cpu_count() or 1
-EU = "Monitor do PC"
+EU = "CNT Monitor"
 
 RAIZES = {
     "system", "system idle process", "registry", "smss.exe", "csrss.exe", "wininit.exe", "winlogon.exe",
@@ -150,11 +150,15 @@ class Motor:
         self._ult_part = 0
         self.atualizador = atualizacao.Atualizador()
         self._ult_atualizacao = 0
+        self._atu_falha = (None, 0)       # (versão, quando) da última instalação automática que falhou
         self.jogo = jogo.ModoJogo(self)
         self.regras = regras.MotorRegras()
         self.tarefas = limpeza.Tarefas()
         vps.vincular(configuracao.obter("vps"))
         self.ajuda = remoto.Gerente()
+        # MONITORPC_ENCONTRO troca o servidor do ID (testes e demonstração); "0" desliga
+        self._url_encontro = os.environ.get("MONITORPC_ENCONTRO") or encontro.SERVIDOR
+        self.encontro = encontro.Encontro(self.ajuda, self._url_encontro)
         self.vps = vps.Gerenciador()
         self.vazamentos = []
         self._ult_vaz = 0
@@ -173,6 +177,8 @@ class Motor:
         if c["gpu_por_processo"]:
             self.gpu.iniciar()
         self.discos.atualizar_mapa(True)
+        if self._url_encontro != "0":
+            self.encontro.iniciar()
         try:
             configuracao.aplicar_inicializacao()
         except Exception:
@@ -197,6 +203,7 @@ class Motor:
 
     def parar(self):
         self.parar_ev.set()
+        self.encontro.parar()
         self.ajuda.parar()
         self.vent.liberar()
         self.rede.parar()
@@ -240,13 +247,21 @@ class Motor:
                 self._extras_lentos(c)
                 if c["atualizacao_auto"] and time.time() - self._ult_atualizacao > atualizacao.VERIFICAR_CADA and time.time() - self.inicio > 120:
                     self._ult_atualizacao = time.time()
-                    # instalar reinicia o serviço: não no meio de um jogo nem de um acesso remoto (derrubaria a sessão)
-                    ocupado = self.jogo.ativo or self.ajuda.estado().get("estado") not in ("parada", "encerrada")
-                    if self.atualizador.verificar() and not ocupado:
-                        self.atualizador.instalar()
+                    self._atualizar_sozinho(time.time())
             except Exception:
                 self.erros.append(traceback.format_exc())
             self.parar_ev.wait(2)
+
+    def _atualizar_sozinho(self, agora):
+        info = self.atualizador.verificar()
+        # instalar reinicia o serviço: não no meio de um jogo nem de um acesso remoto (derrubaria a sessão)
+        if not info or self.jogo.ativo or self.ajuda.estado().get("estado") not in ("parada", "encerrada"):
+            return
+        versao, quando = self._atu_falha
+        if versao == info["versao"] and agora - quando < atualizacao.REPETIR_FALHA:
+            return      # já falhou há pouco: não baixa o instalador inteiro de novo a cada procura
+        ok, _ = self.atualizador.instalar()
+        self._atu_falha = (None, 0) if ok else (info["versao"], agora)
 
     def _notificar(self, titulo, msg, gravar=True, regra="sistema"):
         if gravar:
@@ -314,7 +329,15 @@ class Motor:
             return {"ok": ok, "msg": msg, "dados": self.ajuda.estado()}
         try:
             if tipo == "ajuda_estado":
-                return estado()
+                r = estado()
+                r["dados"]["meu"] = self.encontro.estado()
+                return r
+            if tipo == "ajuda_trocar_id":
+                self.encontro.trocar_id()
+                return {"ok": True, "msg": "", "dados": {"meu": self.encontro.estado()}}
+            if tipo == "ajuda_trocar_senha":
+                self.encontro.trocar_senha()
+                return {"ok": True, "msg": "", "dados": {"meu": self.encontro.estado()}}
             if tipo == "ajuda_pedir":
                 return estado(*self.ajuda.pedir())
             if tipo == "ajuda_resposta":
@@ -393,7 +416,7 @@ class Motor:
         if not WIN and (pid <= 2 or not exe):
             return "Sistema"
         if pid in (0, 4) or pid in self._meus:
-            return "Sistema" if pid in (0, 4) else "Monitor do PC"
+            return "Sistema" if pid in (0, 4) else "CNT Monitor"
         if critico:
             return "Processo crítico do Windows"
         n = nome.lower()
@@ -406,7 +429,7 @@ class Motor:
             if e.startswith(pasta):
                 return motivo
         if e.startswith(config.pasta_programa().lower() + "\\"):
-            return "Monitor do PC"
+            return "CNT Monitor"
         return None
 
     def _nome_programa(self, raiz):
@@ -640,7 +663,7 @@ class Motor:
                     continue
             self._particoes = parts
         for regra, titulo, msg in self.alertas.avaliar(c["alertas"], e, self._particoes):
-            banco.gravar_alerta(time.time(), regra, titulo.replace("Monitor do PC — ", ""), msg)
+            banco.gravar_alerta(time.time(), regra, titulo.replace("CNT Monitor — ", ""), msg)
             if time.time() - self.bandeja_ts < 40:
                 self.fila.put({"tipo": "notificar", "titulo": titulo, "msg": msg, "id": uuid.uuid4().hex[:12]})
 
@@ -949,8 +972,8 @@ class Motor:
     # ================================================================ ações
     def _enfileirar(self, acao):
         if time.time() - self.bandeja_ts > 40:
-            return {"ok": False, "msg": "O ícone do Monitor do PC (perto do relógio) precisa estar aberto para isso. "
-                                        "Abra o Monitor do PC pelo menu Iniciar e tente de novo."}
+            return {"ok": False, "msg": "O ícone do CNT Monitor (perto do relógio) precisa estar aberto para isso. "
+                                        "Abra o CNT Monitor pelo menu Iniciar e tente de novo."}
         acao["id"] = uuid.uuid4().hex[:12]
         self.resultados[acao["id"]] = None
         self.fila.put(acao)
@@ -1245,7 +1268,7 @@ class Motor:
         if tipo == "alerta_teste":
             if time.time() - self.bandeja_ts > 40:
                 return {"ok": False, "msg": "O ícone perto do relógio precisa estar aberto para mostrar notificações."}
-            self.fila.put({"tipo": "notificar", "titulo": "Monitor do PC — teste", "msg": "Os alertas estão funcionando.",
+            self.fila.put({"tipo": "notificar", "titulo": "CNT Monitor — teste", "msg": "Os alertas estão funcionando.",
                            "id": uuid.uuid4().hex[:12]})
             return {"ok": True, "msg": "Notificação de teste enviada."}
         return {"ok": False, "msg": "Ação desconhecida."}

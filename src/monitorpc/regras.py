@@ -91,7 +91,7 @@ class MotorRegras:
             if r["id"] not in self.presentes:
                 self.presentes.add(r["id"])
                 if r["avisar_ao_abrir"] and not r["bloquear"]:
-                    avisos.append((f'{r["programa"]} abriu', "Regra do Monitor do PC."))
+                    avisos.append((f'{r["programa"]} abriu', "Regra do CNT Monitor."))
             if r["bloquear"]:
                 n = 0
                 for p in pids:
@@ -102,7 +102,7 @@ class MotorRegras:
                         pass
                 if n:
                     self._registrar(f'{r["programa"]}: bloqueado ({n} processo(s) encerrados)')
-                    avisos.append((f'{r["programa"]} foi bloqueado', "Uma regra do Monitor do PC não deixa esse programa abrir."))
+                    avisos.append((f'{r["programa"]} foi bloqueado', "Uma regra do CNT Monitor não deixa esse programa abrir."))
                 continue
             for p in pids:
                 d = procs[p]

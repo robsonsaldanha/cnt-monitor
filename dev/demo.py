@@ -142,8 +142,8 @@ def ini_fake():
              "existe": True, "origem": "Registro (Run)", "escopo": "robson", "ativo": True, "descricao": "Discord", "empresa": "Discord Inc.", "_alterar": (None, "Run", "Discord")},
             {"id": "a2", "nome": "OneDrive", "comando": r'"C:\Program Files\Microsoft OneDrive\OneDrive.exe" /background', "exe": "", "args": "",
              "existe": True, "origem": "Registro (Run)", "escopo": "robson", "ativo": False, "descricao": "Microsoft OneDrive", "empresa": "Microsoft Corporation", "_alterar": (None, "Run", "OneDrive")},
-            {"id": "a3", "nome": "Monitor do PC", "comando": r'"C:\Program Files\Monitor do PC\MonitorPC.exe" --bandeja', "exe": "", "args": "",
-             "existe": True, "origem": "Registro (Run)", "escopo": "Todos os usuários", "ativo": True, "descricao": "Monitor do PC", "empresa": "", "_alterar": (None, "Run", "MonitorDoPC")}]
+            {"id": "a3", "nome": "CNT Monitor", "comando": r'"C:\Program Files\CNT Monitor\MonitorPC.exe" --bandeja', "exe": "", "args": "",
+             "existe": True, "origem": "Registro (Run)", "escopo": "Todos os usuários", "ativo": True, "descricao": "CNT Monitor", "empresa": "", "_alterar": (None, "Run", "MonitorDoPC")}]
 
 
 def energia_fake():

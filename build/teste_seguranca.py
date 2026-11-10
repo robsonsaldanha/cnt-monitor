@@ -296,7 +296,7 @@ def teste_atualizacao_mostra_o_andamento():
         a.disponivel = {"versao": "9.9.9", "url": "https://exemplo.invalid/x.exe", "tamanho": len(conteudo),
                         "sha256": hashlib.sha256(conteudo).hexdigest()}
         ok, msg = a.instalar()
-        assert ok and len(rodou) == 1 and rodou[0][0].endswith("MonitorDoPC-Setup-9.9.9.exe"), msg
+        assert ok and len(rodou) == 1 and rodou[0][0].endswith("CNTMonitor-Setup-9.9.9.exe"), msg
         for etapa in ("baixando", "conferindo"):
             pcts = [p for s, p in vistos if s == etapa]
             assert len(pcts) >= 3 and pcts == sorted(pcts) and pcts[-1] == 100 and 0 < pcts[0] < 100, (etapa, pcts)
@@ -321,9 +321,9 @@ def teste_atualizacao_mostra_o_andamento():
             os.remove(atualizacao.FLAG_REABRIR)
 
 
-def teste_atualizacao_procura_de_10_em_10_minutos_sem_gastar_a_cota():
-    """A procura é frequente, então manda o ETag: enquanto nada muda o GitHub responde 304, que não conta
-    na cota de 60 consultas por hora, e o resultado continua sendo o da última resposta inteira."""
+def teste_atualizacao_procura_de_10_em_10_minutos():
+    """A procura é frequente, então manda o ETag: enquanto nada muda o GitHub responde 304 (sem corpo) e o
+    resultado continua sendo o da última resposta inteira. Cota esgotada (403/429) vira um aviso que explica."""
     import io
     assert atualizacao.VERIFICAR_CADA == 600
     corpo = json.dumps({"tag_name": "v99.0.0", "name": "x", "body": "SHA256: " + "ab" * 32, "html_url": "p",
@@ -348,8 +348,72 @@ def teste_atualizacao_procura_de_10_em_10_minutos_sem_gastar_a_cota():
         a.disponivel, a.erro = None, "velho"
         assert a.verificar() == primeira and a.erro is None and a.situacao == "nova versão disponível"
         assert pedidos == [None, '"abc"']
+
+        def limitado(req, **k):
+            raise atualizacao.urllib.error.HTTPError(req.full_url, 403, "rate limit exceeded", {}, None)
+        atualizacao.urllib.request.urlopen = limitado
+        assert a.verificar() is None and a.situacao == "erro" and "60 por hora" in a.erro
     finally:
         atualizacao.urllib.request.urlopen = original
+
+
+def teste_atualizacao_automatica_espera_e_nao_repete_falha():
+    """Não instala com jogo ou pedido de ajuda aberto (reiniciaria o serviço) e, se a instalação falhar,
+    não baixa a mesma versão de novo a cada procura."""
+    from monitorpc import motor
+
+    class Obj:
+        pass
+
+    m = motor.Motor.__new__(motor.Motor)
+    m._atu_falha = (None, 0)
+    m.jogo, m.ajuda, m.atualizador = Obj(), Obj(), Obj()
+    m.jogo.ativo = False
+    situacao = {"estado": "parada"}
+    m.ajuda.estado = lambda: dict(situacao)
+    info = {"versao": "9.9.9"}
+    chamadas, resultado = [], [(True, "ok")]
+    m.atualizador.verificar = lambda: info
+    m.atualizador.instalar = lambda: (chamadas.append(1), resultado[0])[1]
+
+    for estado in ("convite", "conectando", "ativa"):
+        situacao["estado"] = estado
+        m._atualizar_sozinho(1000)
+        assert not chamadas, estado
+    situacao["estado"], m.jogo.ativo = "parada", True
+    m._atualizar_sozinho(1000)
+    assert not chamadas
+    m.jogo.ativo = False
+    for estado in ("parada", "encerrada"):
+        situacao["estado"] = estado
+        m._atualizar_sozinho(1000)
+    assert len(chamadas) == 2
+
+    resultado[0] = (False, "não confere")
+    m._atualizar_sozinho(2000)                                        # falhou
+    m._atualizar_sozinho(2000 + atualizacao.VERIFICAR_CADA)           # mesma versão, pouco depois: não repete
+    assert len(chamadas) == 3
+    info = {"versao": "9.9.10"}                                       # versão nova: tenta
+    m._atualizar_sozinho(2000 + 2 * atualizacao.VERIFICAR_CADA)
+    assert len(chamadas) == 4
+    m._atualizar_sozinho(2000 + 2 * atualizacao.VERIFICAR_CADA + atualizacao.REPETIR_FALHA)   # passou o prazo
+    assert len(chamadas) == 5
+    info = None                                                       # nada novo: nem tenta
+    m._atualizar_sozinho(10 ** 9)
+    assert len(chamadas) == 5
+
+
+def teste_atualizacao_acha_o_instalador_pelo_nome_novo_e_antigo():
+    """A release publica CNTMonitor-Setup (nome atual) e uma cópia MonitorDoPC-Setup para as versões até a 2.6.x."""
+    from monitorpc import atualizacao
+    assert atualizacao.REPO == "robsonsaldanha/cnt-monitor"
+    base = {"tag_name": "v99.0.0", "body": "SHA256: " + "ab" * 32}
+    a = atualizacao.Atualizador()
+    dois = [{"name": "MonitorDoPC-Setup-99.0.0.exe", "browser_download_url": "antigo", "size": 1},
+            {"name": "CNTMonitor-Setup-99.0.0.exe", "browser_download_url": "novo", "size": 1}]
+    assert a._avaliar({**base, "assets": dois})["url"] == "novo"
+    assert a._avaliar({**base, "assets": dois[:1]})["url"] == "antigo"
+    assert a._avaliar({**base, "assets": [{"name": "outro.exe", "browser_download_url": "x", "size": 1}]}) is None
 
 
 if __name__ == "__main__":

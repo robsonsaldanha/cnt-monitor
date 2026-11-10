@@ -37,6 +37,9 @@ jobs:
       - name: Testes do acesso remoto
         run: python build/teste_remoto.py
 
+      - name: Testes do acesso por ID (ponto de encontro em Node)
+        run: python build/teste_encontro.py
+
       - name: LibreHardwareMonitor (sensores)
         shell: pwsh
         run: ./build/baixar-lhm.ps1
@@ -99,12 +102,14 @@ jobs:
           if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress | Out-Host }
           $versao = (Select-String -Path src/monitorpc/config.py -Pattern 'VERSAO = "(.+)"').Matches[0].Groups[1].Value
           & $iscc "/DVersao=$versao" instalador\monitorpc.iss
+          # cópia com o nome antigo: as versões até a 2.6.x só reconhecem MonitorDoPC-Setup-*.exe na atualização automática
+          Copy-Item "saida\CNTMonitor-Setup-$versao.exe" "saida\MonitorDoPC-Setup-$versao.exe"
           Get-ChildItem saida | Format-Table Name, Length
 
       - name: Teste 2 - instalar, rodar como serviço e consultar a API
         shell: pwsh
         run: |
-          $setup = (Get-ChildItem saida\MonitorDoPC-Setup-*.exe)[0].FullName
+          $setup = (Get-ChildItem saida\CNTMonitor-Setup-*.exe)[0].FullName
           Start-Process $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/TASKS=pawnio,desktop','/LOG=setup.log' -Wait
           sc.exe query MonitorPC
           sc.exe query PawnIO
@@ -117,11 +122,11 @@ jobs:
           }
           (Invoke-WebRequest "http://127.0.0.1:48731/" -UseBasicParsing).StatusCode
           $prog = (Get-ChildItem api\api-agora.json).Length; Write-Host "agora.json: $prog bytes"
-          Start-Process "C:\Program Files\Monitor do PC\MonitorPC.exe" -ArgumentList '--bandeja'
+          Start-Process "C:\Program Files\CNT Monitor\MonitorPC.exe" -ArgumentList '--bandeja'
           Start-Sleep 6
           Get-Process MonitorPC, MonitorPCServico -ErrorAction SilentlyContinue | Format-Table Name, Id, WorkingSet64, CPU
           ./build/teste-acoes.ps1
-          if (-not (Test-Path "C:\Program Files\Monitor do PC\remoto\MonitorPCRemoto.exe")) { throw "o agente do acesso remoto não foi instalado" }
+          if (-not (Test-Path "C:\Program Files\CNT Monitor\remoto\MonitorPCRemoto.exe")) { throw "o agente do acesso remoto não foi instalado" }
           $fw = netsh advfirewall firewall show rule name="Monitor do PC (acesso remoto)" verbose | Out-String
           Write-Host $fw
           if ($fw -notmatch 'MonitorPCRemoto\.exe' -or $fw -notmatch 'UDP' -or $fw -notmatch 'LocalSubnet') { throw "a regra de firewall do acesso remoto (rede local) não foi criada" }
@@ -139,11 +144,11 @@ jobs:
       - name: Teste 3 - desinstalar
         shell: pwsh
         run: |
-          $un = "C:\Program Files\Monitor do PC\unins000.exe"
+          $un = "C:\Program Files\CNT Monitor\unins000.exe"
           Start-Process $un -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait
           Start-Sleep 5
           sc.exe query MonitorPC
-          if (Test-Path "C:\Program Files\Monitor do PC\servico") { throw "não removeu os arquivos" }
+          if (Test-Path "C:\Program Files\CNT Monitor\servico") { throw "não removeu os arquivos" }
           Write-Host "desinstalação OK"
           $global:LASTEXITCODE = 0
 
@@ -165,7 +170,7 @@ jobs:
         run: |
           $v = (Select-String -Path src/monitorpc/config.py -Pattern 'VERSAO = "(.+)"').Matches[0].Groups[1].Value
           "v=$v" >> $env:GITHUB_OUTPUT
-          $h = (Get-FileHash (Get-ChildItem saida\MonitorDoPC-Setup-*.exe)[0].FullName -Algorithm SHA256).Hash.ToLower()
+          $h = (Get-FileHash (Get-ChildItem saida\CNTMonitor-Setup-*.exe)[0].FullName -Algorithm SHA256).Hash.ToLower()
           "sha=$h" >> $env:GITHUB_OUTPUT
 
       - name: Publicar release
@@ -173,10 +178,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.versao.outputs.v }}
-          name: Monitor do PC ${{ steps.versao.outputs.v }}
+          name: CNT Monitor ${{ steps.versao.outputs.v }}
           target_commitish: ${{ github.sha }}
           body: |
-            Baixe o **MonitorDoPC-Setup-${{ steps.versao.outputs.v }}.exe**, dê dois cliques e siga o instalador (pede permissão de administrador).
+            Baixe o **CNTMonitor-Setup-${{ steps.versao.outputs.v }}.exe**, dê dois cliques e siga o instalador (pede permissão de administrador). O MonitorDoPC-Setup é o mesmo arquivo, mantido para a atualização automática das versões antigas.
 
             SHA256: ${{ steps.versao.outputs.sha }}
           files: saida/*.exe

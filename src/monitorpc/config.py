@@ -2,7 +2,7 @@
 import os
 import sys
 
-VERSAO = "2.6.3"
+VERSAO = "2.7.0"
 WIN = os.name == "nt"
 
 if os.environ.get("MONITORPC_DADOS"):
@@ -32,6 +32,7 @@ PADRAO = {
     "iniciar_com_windows": True,
     "abrir_janela_ao_iniciar": False,
     "tema": "auto",
+    "tela_inicial": "ajuda",     # tela que abre primeiro (Acesso remoto)
     "rede_por_programa": True,
     "dns_reverso": True,
     "rede_em_bits": False,
@@ -77,7 +78,7 @@ PADRAO = {
     "vps": [],                    # servidores cadastrados (sem senhas: ficam criptografadas à parte)
     "captura_ativa": True,        # atalhos de captura de tela ligados (quem captura é o ícone da bandeja)
     "captura_atalhos": None,      # preenchido com captura.ATALHOS_PADRAO
-    "captura_pasta": "",          # vazio = Imagens\Monitor do PC
+    "captura_pasta": "",          # vazio = Imagens\CNT Monitor
     "captura_nome": "%Y-%m-%d_%H-%M-%S",
     "captura_formato": "png",
     "captura_qualidade": 90,      # JPG e WebP
@@ -163,6 +164,7 @@ PADRAO = {
 OPCOES = {
     "intervalo_ms": [250, 500, 1000, 2000, 5000],
     "tema": ["auto", "escuro", "claro"],
+    "tela_inicial": ["ajuda", "geral", "programas", "processos", "capturas", "hardware", "rede", "historico", "vps", "config"],
     "sensores_intervalo_s": [1, 2, 5, 10],
     "retencao_dias": [1, 3, 7, 15, 30],
     "mini_canto": ["sup_dir", "sup_esq", "inf_dir", "inf_esq", "sup_centro", "inf_centro"],

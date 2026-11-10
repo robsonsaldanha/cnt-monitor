@@ -1,4 +1,4 @@
-"""Serviço do Windows "Monitor do PC" (roda como administrador/SYSTEM).
+"""Serviço do Windows "CNT Monitor" (roda como administrador/SYSTEM).
 
   MonitorPCServico.exe                 -> chamado pelo Windows ao iniciar o serviço
   MonitorPCServico.exe --console       -> roda no terminal (teste)
@@ -26,7 +26,7 @@ def preparar_log():
     f = open(config.LOG, "a", encoding="utf-8", buffering=1)
     sys.stdout = f
     sys.stderr = f
-    print(f"\n=== Monitor do PC {config.VERSAO} iniciado em {time.strftime('%Y-%m-%d %H:%M:%S')} ===")
+    print(f"\n=== CNT Monitor {config.VERSAO} iniciado em {time.strftime('%Y-%m-%d %H:%M:%S')} ===")
 
 
 def proteger_pasta(pasta):
@@ -73,9 +73,9 @@ if WIN:
 
     class Servico(win32serviceutil.ServiceFramework):
         _svc_name_ = "MonitorPC"
-        _svc_display_name_ = "Monitor do PC"
+        _svc_display_name_ = "CNT Monitor"
         _svc_description_ = ("Coleta uso de CPU, memória, disco, rede, conexões e temperatura por programa "
-                             "para o Monitor do PC. Guarda 7 dias de histórico.")
+                             "para o CNT Monitor. Guarda 7 dias de histórico.")
 
         def __init__(self, args):
             super().__init__(args)
@@ -113,7 +113,7 @@ def modo_console():
     if "--saida" in sys.argv:
         saida = sys.argv[sys.argv.index("--saida") + 1]
     m, srv = iniciar_motor()
-    print(f"Monitor do PC rodando em {config.URL}  (Ctrl+C para sair)")
+    print(f"CNT Monitor rodando em {config.URL}  (Ctrl+C para sair)")
     ini = time.time()
     try:
         while segundos is None or time.time() - ini < segundos:

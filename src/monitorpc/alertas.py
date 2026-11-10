@@ -124,7 +124,7 @@ class Alertas:
 
     def _disparar(self, r, t, msg):
         self.ultimo[r["id"]] = t
-        titulo = "Monitor do PC — " + descrever(r)
+        titulo = "CNT Monitor — " + descrever(r)
         self.historico.append({"ts": t, "id": r["id"], "titulo": descrever(r), "msg": msg})
         self.historico = self.historico[-200:]
         return r["id"], titulo, msg

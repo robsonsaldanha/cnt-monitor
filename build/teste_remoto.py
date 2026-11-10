@@ -14,7 +14,7 @@ DADOS = tempfile.mkdtemp(prefix="mpc-teste-remoto-")
 os.environ["MONITORPC_DADOS"] = DADOS   # antes de importar: nada toca na pasta de dados de verdade
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
 
-from monitorpc import remoto  # noqa: E402
+from monitorpc import remoto, encontro  # noqa: E402
 
 
 def _sdp(byte):
@@ -45,9 +45,9 @@ class Relogio:
 
 def teste_senha():
     s = remoto.nova_senha()
-    assert len(s) == 12 and set(s) <= set(remoto.ALFABETO) and remoto.nova_senha() != s
+    assert len(s) == 8 and set(s) <= set(remoto.ALFABETO) and remoto.nova_senha() != s
     f = remoto.formatar_senha(s)
-    assert len(f) == 14 and f.count("-") == 2
+    assert len(f) == 9 and f.count("-") == 1
     assert remoto.limpar_senha(" " + f.lower().replace("-", " - ") + "\n") == s
 
 
@@ -234,8 +234,8 @@ async def _sessao_real(senha_errada=False):
     agente = ra.Agente(estados.append, stun=(), capturar=lambda: Image.new("RGB", (640, 360), (255, 255, 255)),
                        entrada=ra.Entrada(entrou.append, area.append))
     await agente.iniciar()
-    assert estados[-1]["estado"] == "convite" and len(estados[-1]["senha"]) == 14
-    senha = "AAAA-AAAA-AAAA" if senha_errada else estados[-1]["senha"]
+    assert estados[-1]["estado"] == "convite" and len(estados[-1]["senha"]) == 9
+    senha = "AAAA-AAAA" if senha_errada else estados[-1]["senha"]
 
     # o lado do técnico (no programa de verdade é o WebRTC do navegador)
     tec = RTCPeerConnection()
@@ -331,11 +331,11 @@ def teste_resposta_leva_os_enderecos_reais_do_tecnico():
     assert novo.count("a=candidate:") == 5 and "fe80" not in novo and "não é ip" not in novo
     assert remoto.com_enderecos(sdp, []) == sdp                                  # sem endereços, fica como veio
     assert remoto.com_enderecos(sdp, ["192.168.0.7"] * 50).count("a=candidate:") <= 1 + 2 * 6
-    r = remoto.resposta_do_tecnico("ABCD-EFGH-JKLM", A, sdp, ["192.168.0.7"])
+    r = remoto.resposta_do_tecnico("ABCD-EFGH", A, sdp, ["192.168.0.7"])
     lido = remoto.ler_resposta(r["codigo"])
     assert " 192.168.0.7 50001 typ host" in lido and ".local" not in lido
     assert remoto.impressao(lido) == remoto.impressao(sdp)                       # a prova da senha não muda
-    assert r["prova"] == remoto.prova(remoto.chave("ABCD-EFGH-JKLM", A, sdp), "tecnico")
+    assert r["prova"] == remoto.prova(remoto.chave("ABCD-EFGH", A, sdp), "tecnico")
     for ip in remoto.enderecos_locais():
         assert not ip.startswith(("127.", "169.254.")) and ip.count(".") == 3
 
@@ -399,11 +399,13 @@ def teste_gerente_e_acoes_do_motor():
     m = motor.Motor.__new__(motor.Motor)
     m.lock, m.procs, m.estado = threading.Lock(), {}, {}
     m.ajuda = remoto.Gerente()
+    m.encontro = encontro.Encontro(m.ajuda, url="http://127.0.0.1:9", arquivo=os.path.join(DADOS, "id-gerente.json"))
 
     def acao(tipo, **k):
         return m.acao({"tipo": tipo, **k})
 
-    assert acao("ajuda_estado")["dados"] == {"estado": "parada"}
+    e = acao("ajuda_estado")["dados"]
+    assert e["estado"] == "parada" and len(e["meu"]["id"]) == 11 and len(e["meu"]["senha"]) == 9
     assert not acao("ajuda_aceitar")["ok"] and not acao("ajuda_resposta", codigo="x")["ok"]
     assert not acao("ajuda_tec_convite", codigo="lixo")["ok"] and not acao("ajuda_inventada")["ok"]
     assert not m.ajuda._viva()
@@ -420,7 +422,7 @@ def teste_gerente_e_acoes_do_motor():
         assert not acao("ajuda_aceitar")["ok"]                                              # aceite sem técnico
 
         oferta = acao("ajuda_tec_convite", codigo=e["convite"])["dados"]["sdp"]
-        assert "12 letras" in acao("ajuda_tec_resposta", senha="123", oferta=oferta, resposta=oferta)["msg"]
+        assert "8 letras" in acao("ajuda_tec_resposta", senha="123", oferta=oferta, resposta=oferta)["msg"]
 
         async def tecnico():
             tec = RTCPeerConnection()

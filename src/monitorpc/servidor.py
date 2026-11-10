@@ -1,4 +1,4 @@
-"""Servidor web do Monitor do PC.
+"""Servidor web do CNT Monitor.
 
 - Local (127.0.0.1:48731): a janela do programa. Leitura livre só neste PC; alterações exigem
   o token secreto embutido na página (outro site aberto no navegador não consegue lê-lo).
@@ -99,7 +99,7 @@ def mini_jpeg(b64):
         return None
     return dados if dados[:3] == b"\xff\xd8\xff" and len(dados) <= 300_000 else None
 LOGIN_HTML = """<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Monitor do PC — entrar</title><style>
+<title>CNT Monitor — entrar</title><style>
 :root{--bg:#101418;--p:#171c22;--b:#29313b;--t:#e6ebf0;--t2:#9aa6b2;--a:#5aa9e6;--r:#ef5f5f}
 *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--t);font:15px/1.5 "Segoe UI",system-ui,sans-serif;padding:16px}
 form{background:var(--p);border:1px solid var(--b);border-radius:14px;padding:26px 24px;width:min(360px,100%)}
@@ -107,7 +107,7 @@ h1{font-size:20px;margin:0 0 4px}p{color:var(--t2);margin:0 0 18px;font-size:13.
 input{width:100%;background:#1e252d;border:1px solid var(--b);color:var(--t);border-radius:9px;padding:11px 12px;font:inherit;margin-bottom:12px}
 button{width:100%;background:var(--a);border:0;color:#081018;font-weight:600;border-radius:9px;padding:11px;font:inherit;cursor:pointer}
 .e{color:var(--r);font-size:13px;margin-bottom:10px}</style></head><body>
-<form method="post" action="/login"><h1>Monitor do PC</h1><p>Digite a senha de acesso configurada no computador.</p>__ERRO__
+<form method="post" action="/login"><h1>CNT Monitor</h1><p>Digite a senha de acesso configurada no computador.</p>__ERRO__
 <input type="password" name="senha" placeholder="Senha" autofocus autocomplete="current-password"><button>Entrar</button></form></body></html>"""
 
 

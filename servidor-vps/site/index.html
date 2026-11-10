@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CNT Monitor — monitor do computador e acesso remoto</title>
+<meta name="description" content="CNT Monitor: monitor do computador para Windows, captura de tela e acesso remoto com ID e senha, ponta a ponta.">
+<link rel="icon" type="image/png" href="/estatico/cnt-icone.png">
+<style>
+@font-face{font-family:Barlow;font-weight:400;font-display:swap;src:url(/fontes/barlow-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:Barlow;font-weight:600;font-display:swap;src:url(/fontes/barlow-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:Barlow;font-weight:700;font-display:swap;src:url(/fontes/barlow-latin-700-normal.woff2) format("woff2")}
+:root{--azul:#08263d;--azul2:#0d3655;--ouro:#d9a85b;--ouro2:#f4d79c;--txt:#eef3f8;--mut:#a9b8c7}
+*{box-sizing:border-box}
+body{margin:0;font:400 17px/1.55 Barlow,system-ui,sans-serif;color:var(--txt);background:linear-gradient(160deg,var(--azul) 0%,#051726 100%);min-height:100vh}
+main{max-width:980px;margin:0 auto;padding:48px 24px 64px}
+header{display:flex;align-items:center;gap:14px}
+header img{height:44px;width:auto}
+header span{font:700 26px/1 Barlow,sans-serif;letter-spacing:.3px}
+h1{font:700 clamp(30px,5vw,46px)/1.12 Barlow,sans-serif;margin:56px 0 14px;max-width:760px}
+h1 em{font-style:normal;color:var(--ouro2)}
+.lead{color:var(--mut);max-width:680px;margin:0 0 30px;font-size:19px}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:14px 24px;border-radius:10px;font:700 18px Barlow,sans-serif;text-decoration:none;color:#1d1405;background:linear-gradient(90deg,var(--ouro),var(--ouro2));box-shadow:0 6px 24px rgba(217,168,91,.25)}
+.btn:hover{filter:brightness(1.06)}
+.btn:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.nota{color:var(--mut);font-size:14px;margin-top:10px}
+.grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:56px}
+.cartao{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:20px}
+.cartao b{display:block;font:700 19px Barlow,sans-serif;color:var(--ouro2);margin-bottom:6px}
+.cartao p{margin:0;color:var(--mut)}
+h2{font:700 24px Barlow,sans-serif;margin:56px 0 12px}
+ol{margin:0;padding-left:22px;color:var(--mut)}
+ol li{margin:6px 0}
+ol b{color:var(--txt)}
+footer{margin-top:64px;color:var(--mut);font-size:14px;border-top:1px solid rgba(255,255,255,.08);padding-top:18px}
+footer a{color:var(--ouro2)}
+</style>
+</head>
+<body>
+<main>
+  <header><img src="/estatico/cnt-logo.png" alt="CNT" width="129" height="44"><span>Monitor</span></header>
+
+  <h1>Suporte remoto simples e o seu computador <em>sob controle</em>.</h1>
+  <p class="lead">O CNT Monitor mostra o que pesa no Windows, otimiza com segurança, captura e grava a tela e deixa um técnico ajudar você com um ID e uma senha, direto de um computador ao outro.</p>
+  <a class="btn" href="/baixar">Baixar o CNT Monitor para Windows</a>
+  <p class="nota">Windows 10 e 11, 64 bits. A instalação pede permissão de administrador.</p>
+
+  <div class="grade">
+    <div class="cartao"><b>Acesso remoto</b><p>ID e senha temporários, aceite de quem está no computador e conexão criptografada de ponta a ponta.</p></div>
+    <div class="cartao"><b>Monitor do computador</b><p>CPU, memória, disco, rede, temperatura e GPU por programa, com histórico e alertas.</p></div>
+    <div class="cartao"><b>Captura e gravação</b><p>Prints com rolagem, edição, envio por link e gravação da tela em MP4 ou GIF.</p></div>
+  </div>
+
+  <h2>Como receber ajuda</h2>
+  <ol>
+    <li><b>Instale e abra o CNT Monitor.</b> A tela de Acesso remoto já mostra o seu ID e a sua senha.</li>
+    <li><b>Passe o ID e a senha ao técnico.</b> Use “Copiar como texto” ou “Copiar como imagem”.</li>
+    <li><b>Permita o acesso</b> quando o pedido aparecer. Você encerra quando quiser.</li>
+  </ol>
+
+  <footer>CNT Monitor · <a href="https://github.com/robsonsaldanha/cnt-monitor/releases">versões e notas</a></footer>
+</main>
+</body>
+</html>

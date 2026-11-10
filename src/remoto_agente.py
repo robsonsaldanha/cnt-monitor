@@ -3,7 +3,7 @@
 Faz a conexão direta com o técnico (WebRTC), manda a tela e aplica mouse/teclado. Quem manda
 nele é o serviço, por linhas JSON na entrada padrão; ele responde com o estado na saída padrão:
 
-  entrada:  {"cmd": "resposta", "codigo": "MPCR..."} | {"cmd": "aceitar"} | {"cmd": "encerrar"}
+  entrada:  {"cmd": "resposta", "codigo": "MPCR..."} | {"cmd": "senha", "senha": "..."} | {"cmd": "aceitar"} | {"cmd": "encerrar"}
   saída:    {"estado": "convite", "convite": "MPCC...", "senha": "ABCD-EFGH-JKLM", ...}
 
 Se o serviço fechar a entrada padrão (parou, caiu), a sessão é encerrada na hora.
@@ -26,7 +26,10 @@ from monitorpc import remoto  # noqa: E402
 WIN = os.name == "nt"
 STUN_PADRAO = ("stun:stun.l.google.com:19302", "stun:stun.cloudflare.com:3478")
 LARGURA_MAX = 1920
-QUADROS_S = 15
+QUADROS_S = 30
+# Limites de taxa do vídeo. Os da biblioteca (1,5 Mbps no VP8, 3 Mbps no H.264) deixam 1080p borrado; o navegador
+# do técnico ainda baixa a taxa sozinho quando a rede não aguenta.
+TAXAS = {"vpx": (800_000, 2_500_000, 6_000_000), "h264": (1_000_000, 3_000_000, 10_000_000)}   # mínimo, inicial, máximo
 MANTER_CAMINHO_S = 20       # roteadores esquecem um caminho UDP parado em 30 s ou mais
 _MAX_MENSAGEM = 300000
 _MAX_AREA = 100000
@@ -218,14 +221,17 @@ def _quadro_de_espera():
 
 
 class Agente:
-    def __init__(self, ao_estado, stun=STUN_PADRAO, capturar=capturar_tela, entrada=None, agora=time.time):
+    def __init__(self, ao_estado, stun=STUN_PADRAO, capturar=capturar_tela, entrada=None, agora=time.time, turn=None):
         self.sessao = remoto.Sessao(agora)
         self.entrada = entrada or Entrada()
         self._ao_estado = ao_estado
         self._stun = list(stun or [])
+        self._turn = turn            # (urls, usuário, senha) do retransmissor de reserva
         self._capturar = capturar
-        # uma thread só para a tela e a entrada: os eventos saem na ordem em que chegaram
+        # uma thread para a entrada (os eventos saem na ordem em que chegaram) e outra para a tela: um clique
+        # não espera a captura do quadro em andamento
         self._pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="remoto")
+        self._pool_tela = ThreadPoolExecutor(max_workers=1, thread_name_prefix="remoto-tela")
         self._convite = ""
         self._provando = False
         self._fechando = False
@@ -238,7 +244,7 @@ class Agente:
         s = self.sessao
         d = {"estado": s.estado, "motivo": s.motivo, "conferencia": s.conferencia,
              "convite": self._convite if s.estado == "convite" else "",
-             "senha": remoto.formatar_senha(s.senha) if s.estado == "convite" else ""}
+             "senha": remoto.formatar_senha(s.senha) if s.estado == "convite" else "", "senha_errada": s.senha_errada}
         if ordem is not None:        # resposta a uma ordem do serviço: uma linha por ordem, com o número dela
             d.update(erro=erro, id=ordem)
         self._ao_estado(d)
@@ -246,7 +252,10 @@ class Agente:
     # ------------------------------------------------------------ conexão
     async def iniciar(self):
         from aiortc import RTCConfiguration, RTCIceServer, RTCPeerConnection
-        self.pc = RTCPeerConnection(RTCConfiguration(iceServers=[RTCIceServer(urls=u) for u in self._stun]))
+        servidores = [RTCIceServer(urls=u) for u in self._stun]
+        if self._turn:
+            servidores.append(RTCIceServer(urls=list(self._turn[0]), username=self._turn[1], credential=self._turn[2]))
+        self.pc = RTCPeerConnection(RTCConfiguration(iceServers=servidores))
         self.canal = self.pc.createDataChannel("controle")
         self.canal.on("message", lambda msg: asyncio.ensure_future(self._mensagem(msg)))
         self.pc.addTrack(_trilha(self))
@@ -310,6 +319,8 @@ class Agente:
             except Exception:  # noqa: BLE001  (SDP que o WebRTC não aceita)
                 await self.encerrar("O código de resposta não serve para este convite. Gere outro convite.")
                 raise remoto.Erro(self.sessao.motivo) from None
+        elif cmd == "senha":
+            self.sessao.definir_senha(c.get("senha"))
         elif cmd == "aceitar":
             self.sessao.aceitar()
             self._mandar({"t": "ativa"})
@@ -376,6 +387,7 @@ class Agente:
         except Exception:  # noqa: BLE001
             pass
         self._pool.shutdown(wait=False)
+        self._pool_tela.shutdown(wait=False)
         self._avisar()
         self.fim.set()
 
@@ -390,20 +402,24 @@ def _trilha(agente):
         def __init__(self):
             super().__init__()
             self._ini = None
+            self._prox = 0.0
             self._espera = _quadro_de_espera()
 
         async def recv(self):
             # antes do aceite (e depois do fim) só sai um quadro preto, uma vez por segundo
             ativa = agente.sessao.ativa
+            agora = time.time()
             if self._ini is None:
-                self._ini = time.time()
+                self._ini = self._prox = agora
             else:
-                await asyncio.sleep(1 / QUADROS_S if ativa else 1)
+                # ritmo pelo relógio: o tempo da captura conta dentro do intervalo, sem somar atraso
+                self._prox = max(self._prox + (1 / QUADROS_S if ativa else 1), agora)
+                await asyncio.sleep(self._prox - agora)
                 ativa = agente.sessao.ativa
             img = self._espera
             if ativa:
                 try:
-                    img = await asyncio.get_running_loop().run_in_executor(agente._pool, agente._capturar)
+                    img = await asyncio.get_running_loop().run_in_executor(agente._pool_tela, agente._capturar)
                 except Exception:  # noqa: BLE001  (tela indisponível por um instante, fila fechada)
                     img = self._espera
                 if not agente.sessao.ativa:
@@ -416,14 +432,21 @@ def _trilha(agente):
     return Tela()
 
 
-async def _principal(stun):
+def _taxas():
+    from aiortc.codecs import h264, vpx
+    for mod, (minimo, inicial, maximo) in ((vpx, TAXAS["vpx"]), (h264, TAXAS["h264"])):
+        mod.MIN_BITRATE, mod.DEFAULT_BITRATE, mod.MAX_BITRATE = minimo, inicial, maximo
+
+
+async def _principal(stun, turn=None):
+    _taxas()
     loop = asyncio.get_running_loop()
 
     def estado(d):
         sys.stdout.write(json.dumps(d) + "\n")
         sys.stdout.flush()
 
-    agente = Agente(estado, stun)
+    agente = Agente(estado, stun, turn=turn)
 
     def ler():
         for linha in sys.stdin:
@@ -432,7 +455,7 @@ async def _principal(stun):
             except ValueError:
                 continue
             asyncio.run_coroutine_threadsafe(agente.comando(c), loop)
-        asyncio.run_coroutine_threadsafe(agente.encerrar("O Monitor do PC foi fechado."), loop)
+        asyncio.run_coroutine_threadsafe(agente.encerrar("O CNT Monitor foi fechado."), loop)
 
     await agente.iniciar()
     threading.Thread(target=ler, daemon=True).start()
@@ -445,7 +468,15 @@ def main():
         stun = ()
     elif "--stun" in sys.argv:
         stun = tuple(u for u in sys.argv[sys.argv.index("--stun") + 1].split(",") if u.startswith(("stun:", "stuns:")))
-    asyncio.run(_principal(stun))
+    turn = None
+    if "--turn" in sys.argv and "--sem-stun" not in sys.argv:
+        try:
+            a = sys.argv
+            urls = [u for u in a[a.index("--turn") + 1].split(",") if u.startswith("turn:")]
+            turn = (urls, a[a.index("--turn-usuario") + 1], a[a.index("--turn-senha") + 1]) if urls else None
+        except (ValueError, IndexError):
+            turn = None
+    asyncio.run(_principal(stun, turn))
 
 
 if __name__ == "__main__":

@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="token" content="__TOKEN__"><meta name="remoto" content="__REMOTO__">
-<title>Monitor do PC</title>
+<title>CNT Monitor</title>
+<link rel="icon" type="image/png" href="/estatico/cnt-icone.png">
 <style>
 @font-face{font-family:Barlow;font-weight:400;font-display:swap;src:url(/fontes/barlow-latin-400-normal.woff2) format("woff2")}
 @font-face{font-family:Barlow;font-weight:500;font-display:swap;src:url(/fontes/barlow-latin-500-normal.woff2) format("woff2")}
@@ -243,7 +244,21 @@ input[type=range]{width:220px;max-width:100%;accent-color:var(--acento)}
 @media (prefers-reduced-motion:reduce){.atu-vai i{animation:none}}
 .aj-vivo{background:color-mix(in srgb,var(--perigo) 12%,var(--painel));border:1px solid var(--perigo);border-radius:var(--raio);padding:14px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:space-between}
 .aj-tela{background:#000;border-radius:var(--raio);outline:none;overflow:hidden} .aj-tela:focus{box-shadow:0 0 0 2px var(--acento)}
-.aj-tela video{width:100%;max-height:calc(100vh - 230px);object-fit:contain;display:block} .aj-tela:fullscreen video{height:100vh;max-height:100vh}
+.aj-tela video{width:100%;max-height:calc(100vh - 230px);object-fit:contain;display:block}
+.aj-home{grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start}
+.aj-meu,.aj-outro{padding:18px;display:flex;flex-direction:column;gap:10px}
+.aj-meu>b,.aj-outro>b{font:700 18px/1.2 var(--tit)}
+.aj-cred{display:flex;gap:28px;flex-wrap:wrap}
+.aj-cred small{display:block;color:var(--txt3);font-weight:600;text-transform:uppercase;letter-spacing:.6px}
+.aj-num{font:700 34px/1.15 Consolas,"Cascadia Mono",monospace;letter-spacing:1px;user-select:all}
+.aj-sit{margin:0;font-weight:600}.aj-sit.ok{color:var(--ok,#2e9d62)}.aj-sit.fora{color:var(--perigo)}
+.aj-bts{display:flex;gap:8px;flex-wrap:wrap}
+.aj-campo{display:flex;flex-direction:column;gap:4px;font-weight:600;max-width:260px}
+.aj-campo input{font:600 20px Consolas,"Cascadia Mono",monospace;padding:8px 10px;letter-spacing:1px;background:var(--painel2);color:var(--txt);border:1px solid var(--borda);border-radius:8px}
+.aj-outro .btn.pri{align-self:flex-start}
+.so-sessao .app{display:block}.so-sessao .lateral,.so-sessao #v-ajuda>h1,.so-sessao #v-ajuda>.sub{display:none}
+.so-sessao main,.so-sessao .conteudo{padding:8px}
+.so-sessao .aj-tela video{max-height:calc(100vh - 70px)} .aj-tela:fullscreen video{height:100vh;max-height:100vh}
 .so-impressao{display:none}
 .hw{padding:12px 14px}
 .hw .t{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
@@ -294,7 +309,7 @@ code{font-family:"Cascadia Mono",Consolas,monospace;font-size:12px;background:va
   .app{grid-template-columns:1fr}
   nav.lateral{position:sticky;top:0;z-index:20;height:auto;flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:6px 8px;gap:2px;border-right:0;border-bottom:1px solid var(--borda);scrollbar-width:none}
   nav.lateral::-webkit-scrollbar{display:none}
-  nav.lateral .marca{padding:4px 8px 4px 2px;font-size:0;gap:0} nav.lateral .marca svg{width:24px;height:24px}
+  nav.lateral .marca{padding:4px 8px 4px 2px;font-size:0;gap:0} nav.lateral .marca img{width:57px;height:20px}
   nav.lateral .rod,nav.lateral .grp{display:none}
   nav.lateral button{white-space:nowrap;padding:7px 10px;flex:none}
   nav.lateral button[aria-current="page"]::before{left:8px;right:8px;top:auto;bottom:-6px;width:auto;height:3px;border-radius:3px 3px 0 0}
@@ -355,7 +370,7 @@ input.atalho{width:170px;text-align:center;cursor:pointer}
 <body>
 <div class="app">
 <nav class="lateral" id="nav" aria-label="Telas">
-  <div class="marca"><svg width="26" height="26" viewBox="0 0 64 64"><rect x="2" y="2" width="60" height="60" rx="14" fill="#1c1e26"/><rect x="10" y="10" width="28" height="44" rx="4" fill="#373a46"/><rect x="10" y="26" width="28" height="28" rx="4" fill="#66bb6a"/><rect x="44" y="10" width="10" height="44" rx="4" fill="#373a46"/><rect x="44" y="38" width="10" height="16" rx="4" fill="#ffb74d"/></svg>Monitor do PC</div>
+  <div class="marca"><img src="/estatico/cnt-logo.png" alt="CNT" width="66" height="22">Monitor</div>
   <div class="grp">Suporte</div>
   <button data-v="ajuda"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4M9 10l2 2 4-4"/></svg>Acesso remoto<span class="cont" id="ajudaTag" hidden style="background:var(--perigo)">AO VIVO</span></button>
   <div class="grp">Agora</div>
@@ -594,7 +609,7 @@ input.atalho{width:170px;text-align:center;cursor:pointer}
 </section>
 
 <section id="v-ajuda" hidden>
-  <h1>Acesso remoto</h1><p class="sub">Peça ajuda a um técnico ou ajude alguém. A tela e os comandos vão direto de um computador ao outro, criptografados de ponta a ponta: não passam por nenhum servidor. Nada fica salvo — cada sessão precisa de um convite novo, da senha e da permissão de quem está no computador.</p>
+  <h1>Acesso remoto</h1><p class="sub">Receba ajuda com o seu ID e a sua senha, ou acesse outro computador. A tela e os comandos vão direto de um computador ao outro, criptografados de ponta a ponta, e só depois que a pessoa permitir.</p>
   <div id="ajCorpo"></div>
 </section>
 <section id="v-comparar" class="imprimir" hidden>
@@ -827,45 +842,102 @@ $('#nav').addEventListener('click',e=>{ const b=e.target.closest('button[data-v]
 addEventListener('hashchange',()=>ir(location.hash));
 
 /* =================== acesso remoto =================== */
-let AJU={modo:null, est:null, visto:'', timer:null, pc:null, canal:null, fluxo:null, oferta:'', sdp:'', senha:'', resp:null, fase:'form', msg:''};
+let AJU={modo:null, est:null, visto:'', timer:null, pc:null, canal:null, fluxo:null, oferta:'', sdp:'', senha:'', resp:null, fase:'form', msg:'',
+  meu:null, manual:false, srv:'', pedido:null, alvo:''};
+const SESSAO=location.hash==='#sessao';   // janela aberta pelo botão Conectar: uma sessão de técnico, sem o resto do programa
 const AJ_STUN=['stun:stun.l.google.com:19302','stun:stun.cloudflare.com:3478'];
 const ajAcao=(tipo,d)=>POST('acao',{tipo,...(d||{})}).catch(()=>({ok:false,msg:'O serviço não respondeu.'}));
 function ajCopiar(t){ navigator.clipboard.writeText(t).then(()=>toast('Copiado.'),()=>toast('Não consegui copiar. Selecione o texto e use Ctrl+C.',1)); }
 function ajTag(){ $('#ajudaTag').hidden=!((AJU.modo==='pedir'&&AJU.est&&AJU.est.estado==='ativa')||(AJU.modo==='tecnico'&&AJU.fase==='ativa')); }
 async function vAjuda(){ if(REMOTO){ $('#ajCorpo').innerHTML='<div class="vazio">O acesso remoto só pode ser iniciado no próprio computador.</div>'; return; }
-  if(!AJU.modo){ const r=await ajAcao('ajuda_estado'); if(r.ok&&r.dados&&!['parada','encerrada'].includes(r.dados.estado)){ AJU.modo='pedir'; AJU.est=r.dados; ajVigiar(); } }
+  if(SESSAO) return ajRender();
+  const r=await ajAcao('ajuda_estado'); if(r.ok&&r.dados){ if(r.dados.meu) AJU.meu=r.dados.meu; if(!AJU.modo&&AJ_ATIVOS.includes(r.dados.estado)){ AJU.modo='pedir'; AJU.est=r.dados; } }
   ajRender(); }
+function ajSitTexto(m){ if(!m) return ['','Carregando…']; if(m.situacao==='online') return ['ok','Pronto para receber acesso.'];
+  if(m.situacao==='fora') return ['fora',(m.msg||'Sem conexão com o servidor do acesso remoto.')+' Tentando de novo sozinho; o convite manual continua funcionando.'];
+  return ['','Conectando ao servidor do acesso remoto…']; }
+function ajMeuAtualizar(){ const m=AJU.meu; if(!m||!$('#ajMeuId')) return; $('#ajMeuId').textContent=m.id||'…'; $('#ajMeuSenha').textContent=m.senha||'…';
+  const [c,t]=ajSitTexto(m), s=$('#ajSit'); s.className='aj-sit '+c; s.textContent=t; }
 function ajRender(){ const el=$('#ajCorpo'); ajTag(); if(AJU.modo==='pedir') return ajRenderPedir(el); if(AJU.modo==='tecnico') return ajRenderTecnico(el);
-  el.innerHTML=`<div class="grade" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
-    <div class="painel aj-passo"><b>Preciso de ajuda</b><p class="mut2" style="margin:0 0 12px">Gera um convite e uma senha para você passar a um técnico. Ele só entra depois que você permitir, e você encerra quando quiser.</p><button class="btn pri" id="ajPedir">Pedir ajuda</button></div>
-    <div class="painel aj-passo"><b>Vou ajudar alguém</b><p class="mut2" style="margin:0 0 12px">Cole o convite que a pessoa mandou e a senha que ela disse. Você vê e controla o computador dela enquanto ela deixar.</p><button class="btn" id="ajAjudar">Ajudar alguém</button></div></div>
-    <p class="mut" style="margin-top:12px">Funciona entre computadores da mesma rede e pela internet. Para achar o caminho pela internet, cada lado pergunta o próprio endereço público a um serviço do Google/Cloudflare; nada da sessão passa por lá.</p>`;
-  $('#ajPedir').onclick=async()=>{ $('#ajPedir').disabled=true; const r=await ajAcao('ajuda_pedir'); if(!r.ok){ toast(r.msg,1); $('#ajPedir').disabled=false; return; } AJU.modo='pedir'; AJU.est=r.dados; ajVigiar(); ajRender(); };
-  $('#ajAjudar').onclick=()=>{ AJU.modo='tecnico'; AJU.fase='form'; ajRender(); }; }
-function ajVigiar(){ clearInterval(AJU.timer); AJU.timer=setInterval(async()=>{ if(AJU.modo!=='pedir'){ clearInterval(AJU.timer); return; }
-  const r=await ajAcao('ajuda_estado'); if(!r.ok||!r.dados) return; AJU.est=r.dados; if(r.dados.estado==='encerrada'||r.dados.estado==='parada') clearInterval(AJU.timer);
-  if(JSON.stringify(r.dados)!==AJU.visto){ ajTag(); if(vista==='ajuda') ajRender(); if(r.dados.estado==='aguardando_aceite'&&vista!=='ajuda') ir('ajuda'); } },1000); }
+  if(AJU.modo==='manual'){ el.innerHTML=`<div class="grade" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
+    <div class="painel aj-passo"><b>Preciso de ajuda</b><p class="mut2" style="margin:0 0 12px">Gera um convite e uma senha para você passar a um técnico. Ele só entra depois que você permitir, e você encerra quando quiser.</p><button class="btn pri" id="ajPedir">Pedir ajuda com convite</button></div>
+    <div class="painel aj-passo"><b>Vou ajudar alguém</b><p class="mut2" style="margin:0 0 12px">Cole o convite que a pessoa mandou e a senha que ela disse. Você vê e controla o computador dela enquanto ela deixar.</p><button class="btn" id="ajAjudar">Ajudar com convite</button></div></div>
+    <p class="mut" style="margin-top:12px">O convite manual não usa o servidor do acesso remoto: serve quando ele está fora do ar. <button class="btn" id="ajVoltarId">Voltar para ID e senha</button></p>`;
+    $('#ajPedir').onclick=async()=>{ $('#ajPedir').disabled=true; const r=await ajAcao('ajuda_pedir'); if(!r.ok){ toast(r.msg,1); $('#ajPedir').disabled=false; return; } AJU.modo='pedir'; AJU.manual=true; AJU.est=r.dados; ajRender(); };
+    $('#ajAjudar').onclick=()=>{ AJU.modo='tecnico'; AJU.fase='form'; ajRender(); }; $('#ajVoltarId').onclick=()=>{ AJU.modo=null; ajRender(); }; return; }
+  el.innerHTML=`<div class="grade aj-home">
+    <div class="painel aj-meu"><b>Este computador</b><p class="mut2">Passe o ID e a senha para quem vai ajudar você. O acesso só começa depois que você permitir, e você encerra quando quiser.</p>
+      <div class="aj-cred"><div><small>ID</small><div class="aj-num" id="ajMeuId">…</div></div><div><small>Senha</small><div class="aj-num" id="ajMeuSenha">…</div></div></div>
+      <p class="aj-sit" id="ajSit" role="status"></p>
+      <div class="aj-bts"><button class="btn pri" id="ajCopImg">Copiar como imagem</button><button class="btn" id="ajCopTxt">Copiar como texto</button><button class="btn" id="ajTrocaId">Trocar ID</button><button class="btn" id="ajTrocaSenha">Trocar senha</button></div>
+      <p class="mut">A senha muda sozinha depois de cada acesso, e o ID quando o computador reinicia.</p></div>
+    <div class="painel aj-outro"><b>Acessar outro computador</b><p class="mut2">Digite o ID e a senha que a pessoa passou. Cada acesso abre numa janela própria: dá para atender vários computadores ao mesmo tempo.</p>
+      <label class="aj-campo">ID<input id="ajIdT" inputmode="numeric" placeholder="000 000 000" autocomplete="off" maxlength="13"></label>
+      <label class="aj-campo">Senha<input id="ajSenhaId" placeholder="XXXX-XXXX" autocomplete="off" spellcheck="false" maxlength="12"></label>
+      <button class="btn pri" id="ajConectarId">Conectar</button></div></div>
+    <p class="mut" style="margin-top:12px">Os dois computadores se acham pelo servidor da CNT, que só apresenta um ao outro: a tela e os comandos vão direto de um ao outro, criptografados, e a senha nunca passa por ele. <button class="btn" id="ajManual">Usar convite manual</button></p>`;
+  ajMeuAtualizar();
+  $('#ajCopTxt').onclick=()=>{ if(AJU.meu) ajCopiar(AJU.meu.texto); };
+  $('#ajCopImg').onclick=ajCopiarImagem;
+  $('#ajTrocaId').onclick=async()=>{ if(!await confirmar('Trocar o ID?','Quem tem o ID antigo não consegue mais conectar a este computador.','Trocar')) return; const r=await ajAcao('ajuda_trocar_id'); if(r.ok&&r.dados){ AJU.meu=r.dados.meu; ajMeuAtualizar(); toast('ID trocado.'); } else toast(r.msg,1); };
+  $('#ajTrocaSenha').onclick=async()=>{ const r=await ajAcao('ajuda_trocar_senha'); if(r.ok&&r.dados){ AJU.meu=r.dados.meu; ajMeuAtualizar(); toast('Senha trocada.'); } else toast(r.msg,1); };
+  $('#ajManual').onclick=()=>{ AJU.modo='manual'; ajRender(); };
+  const id=$('#ajIdT'), sn=$('#ajSenhaId'), go=()=>ajAbrirSessao(id.value, sn.value);
+  id.oninput=()=>{ const d=id.value.replace(/\D/g,'').slice(0,9); id.value=d.replace(/(\d{3})(?=\d)/g,'$1 '); };
+  sn.oninput=()=>{ const d=sn.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8); sn.value=d.length>4?d.slice(0,4)+'-'+d.slice(4):d; };
+  id.onkeydown=sn.onkeydown=e=>{ if(e.key==='Enter') go(); }; $('#ajConectarId').onclick=go; }
+async function ajCopiarImagem(){ const m=AJU.meu; if(!m||!m.id) return;
+  const c=document.createElement('canvas'); c.width=720; c.height=340; const g=c.getContext('2d');
+  const f=g.createLinearGradient(0,0,720,340); f.addColorStop(0,'#0b3150'); f.addColorStop(1,'#061a2b'); g.fillStyle=f; g.fillRect(0,0,720,340);
+  const logo=new Image(); logo.src='/estatico/cnt-logo.png'; try{ await logo.decode(); g.drawImage(logo,40,34,117,40); }catch(_){ }
+  g.fillStyle='#eef3f8'; g.font='600 26px Barlow, "Segoe UI", sans-serif'; g.fillText('Monitor · acesso remoto',172,64);
+  g.fillStyle='#a9b8c7'; g.font='600 20px Barlow, "Segoe UI", sans-serif'; g.fillText('ID',40,136); g.fillText('Senha',40,240);
+  g.fillStyle='#f4d79c'; g.font='700 54px Consolas, "Cascadia Mono", monospace'; g.fillText(m.id,40,190); g.fillText(m.senha,40,294);
+  const png=await new Promise(ok=>c.toBlob(ok,'image/png'));
+  try{ await navigator.clipboard.write([new ClipboardItem({'image/png':png,'text/plain':new Blob([m.texto],{type:'text/plain'})})]); toast('Imagem copiada. Cole na conversa com Ctrl+V.'); }
+  catch(_){ toast('Não consegui copiar a imagem. Use “Copiar como texto”.',1); } }
+const AJU_JANELAS=new Map();
+function ajAbrirSessao(id, senha){ id=String(id||'').replace(/\D/g,''); senha=String(senha||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(id.length!==9) return toast('O ID tem 9 números.',1); if(senha.length!==8) return toast('A senha tem 8 letras e números.',1);
+  if(AJU.meu&&AJU.meu.id&&AJU.meu.id.replace(/\D/g,'')===id) return toast('Esse é o ID deste computador.',1);
+  const w=window.open('/#sessao','_blank','popup,width=1400,height=860'); if(!w) return toast('O navegador bloqueou a janela nova. Permita janelas pop-up para o CNT Monitor.',1);
+  AJU_JANELAS.set(w,{id,senha,servidor:(AJU.meu&&AJU.meu.servidor)||''}); $('#ajSenhaId').value=''; }
+addEventListener('message',e=>{ if(e.origin!==location.origin||e.data!=='sessao-pronta') return; const p=AJU_JANELAS.get(e.source); if(!p) return; AJU_JANELAS.delete(e.source); e.source.postMessage({tipo:'sessao',...p},location.origin); });
+const AJ_ATIVOS=['convite','conectando','aguardando_aceite','ativa'];
+function ajVigiar(){ clearInterval(AJU.timer); AJU.timer=setInterval(async()=>{
+  const r=await ajAcao('ajuda_estado'); if(!r.ok||!r.dados) return; const d=r.dados; if(d.meu) AJU.meu=d.meu;
+  if(AJ_ATIVOS.includes(d.estado)&&AJU.modo!=='pedir'&&AJU.modo!=='tecnico'){ AJU.modo='pedir'; AJU.manual=false; AJU.foiAtiva=false; }
+  if(AJU.modo!=='pedir'){ if(vista==='ajuda'&&!AJU.modo) ajMeuAtualizar(); return; }
+  if(d.estado==='ativa') AJU.foiAtiva=true;
+  // pelo ID, tentativa que não chegou a abrir (senha errada, recusa, técnico desistiu) volta sozinha para o ID e a senha
+  if(!AJU.manual&&['encerrada','parada'].includes(d.estado)&&!AJU.foiAtiva){ AJU.modo=null; AJU.est=null; if(d.motivo) toast('Acesso remoto: '+d.motivo,1); if(vista==='ajuda') ajRender(); return; }
+  AJU.est=d; if(JSON.stringify(d)!==AJU.visto){ ajTag(); if(vista==='ajuda') ajRender(); if(d.estado==='aguardando_aceite'&&vista!=='ajuda') ir('ajuda'); } },1000); }
 function ajRenderPedir(el){ const e=AJU.est||{estado:'iniciando'}; AJU.visto=JSON.stringify(e); let h='';
-  if(e.estado==='convite') h=`<div class="painel"><div class="aj-passo"><b>1. Mande este convite ao técnico</b><textarea readonly rows="4" id="ajConv">${esc(e.convite)}</textarea><p><button class="btn pri" id="ajCopConv">Copiar convite</button> <span class="mut">Pode ir por WhatsApp ou e-mail (só tem letras e números). Vale 10 minutos e uma vez só.</span></p></div>
+  if(e.estado==='convite'&&AJU.manual) h=`<div class="painel"><div class="aj-passo"><b>1. Mande este convite ao técnico</b><textarea readonly rows="4" id="ajConv">${esc(e.convite)}</textarea><p><button class="btn pri" id="ajCopConv">Copiar convite</button> <span class="mut">Pode ir por WhatsApp ou e-mail (só tem letras e números). Vale 10 minutos e uma vez só.</span></p></div>
     <div class="aj-passo"><b>2. Diga esta senha ao técnico por outro meio (telefone, por exemplo)</b><div class="aj-senha">${esc(e.senha)}</div><p class="mut">Não mande a senha na mesma conversa do convite: é ela que garante que quem conecta é o técnico que você chamou.</p></div>
     <div class="aj-passo"><b>3. Cole aqui o código de resposta que o técnico devolver</b><textarea rows="4" id="ajResp" placeholder="MPCR…"></textarea><p><button class="btn pri" id="ajConectar">Conectar</button> <button class="btn" id="ajCancelar">Cancelar pedido</button> <span class="mut">É um texto longo que começa com MPCR, parecido com o convite.</span></p></div></div>`;
-  else if(e.estado==='conectando'||e.estado==='iniciando') h=`<div class="painel aj-passo"><b>Conectando ao técnico…</b><p class="mut">Leva alguns segundos. Se não completar em 1 minuto, o pedido é cancelado.</p><p><button class="btn" id="ajCancelar">Cancelar pedido</button></p></div>`;
-  else if(e.estado==='aguardando_aceite') h=`<div class="painel aj-passo"><b>Permitir que o técnico veja e controle este computador?</b><p>Quem conectou informou a senha certa. Código de conferência: <span class="aj-senha">${esc(e.conferencia)}</span></p><p class="mut">Pergunte ao técnico se o código dele é igual. Se for diferente, recuse. Até você permitir, ele não vê nada.</p><p><button class="btn pri" id="ajPermitir">Permitir acesso</button> <button class="btn perigo" id="ajCancelar">Recusar</button></p></div>`;
+  else if(['convite','conectando','iniciando'].includes(e.estado)) h=`<div class="painel aj-passo"><b>Um técnico está se conectando…</b><p class="mut">Leva alguns segundos. Ele só vê e controla este computador depois que você permitir.</p><p><button class="btn" id="ajCancelar">Recusar</button></p></div>`;
+  else if(e.estado==='aguardando_aceite') h=`<div class="painel aj-passo"><b>Permitir que o técnico veja e controle este computador?</b><p>Quem conectou informou a senha certa. Código de conferência: <span class="aj-senha">${esc(e.conferencia)}</span></p><p class="mut">Se quiser ter certeza de que é o seu técnico, pergunte se o código dele é igual. Até você permitir, ele não vê nada.</p><p><button class="btn pri" id="ajPermitir">Permitir acesso</button> <button class="btn perigo" id="ajCancelar">Recusar</button></p></div>`;
   else if(e.estado==='ativa') h=`<div class="aj-vivo"><div><b>Este computador está sendo visto e controlado pelo técnico.</b><br><span class="mut2">Você pode encerrar a qualquer momento. A sessão acaba sozinha em 4 horas.</span></div><button class="btn perigo" id="ajCancelar">Encerrar agora</button></div>`;
-  else h=`<div class="painel aj-passo"><b>Sessão encerrada</b><p>${esc(e.motivo||'O pedido de ajuda foi encerrado.')}</p><p><button class="btn pri" id="ajNovo">Voltar</button></p></div>`;
+  else h=`<div class="painel aj-passo"><b>Sessão encerrada</b><p>${esc(e.motivo||'O acesso remoto foi encerrado.')}</p><p><button class="btn pri" id="ajNovo">Voltar</button></p></div>`;
   el.innerHTML=h; const b=id=>$('#'+id);
   if(b('ajCopConv')) b('ajCopConv').onclick=()=>ajCopiar(e.convite);
   if(b('ajConectar')) b('ajConectar').onclick=async()=>{ b('ajConectar').disabled=true; const r=await ajAcao('ajuda_resposta',{codigo:b('ajResp').value}); if(!r.ok) toast(r.msg,1); if(r.dados) AJU.est=r.dados; if(r.ok||(r.dados&&r.dados.estado!=='convite')) ajRender(); else b('ajConectar').disabled=false; };
   if(b('ajPermitir')) b('ajPermitir').onclick=async()=>{ const r=await ajAcao('ajuda_aceitar'); if(!r.ok) toast(r.msg,1); if(r.dados) AJU.est=r.dados; ajRender(); };
   if(b('ajCancelar')) b('ajCancelar').onclick=async()=>{ const r=await ajAcao('ajuda_encerrar'); if(r.dados) AJU.est=r.dados; ajRender(); };
-  if(b('ajNovo')) b('ajNovo').onclick=()=>{ AJU.modo=null; AJU.est=null; ajRender(); }; }
+  if(b('ajNovo')) b('ajNovo').onclick=()=>{ AJU.modo=null; AJU.est=null; AJU.manual=false; AJU.foiAtiva=false; ajRender(); }; }
 function ajTecFechar(){ const pc=AJU.pc, c=AJU.canal; AJU.pc=AJU.canal=AJU.fluxo=null; AJU.senha=''; if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
   try{ if(c&&c.readyState==='open') c.send(JSON.stringify({t:'fim'})); }catch(_){ } if(pc) setTimeout(()=>pc.close(),150); }
 function ajTecFim(motivo){ if(AJU.modo!=='tecnico'||AJU.fase==='fim') return; ajTecFechar(); AJU.fase='fim'; AJU.msg=motivo; ajRender(); }
-async function ajTecConectar(){ const bt=$('#ajGerar'); bt.disabled=true; const senha=$('#ajSenhaT').value; const r=await ajAcao('ajuda_tec_convite',{codigo:$('#ajConvT').value}); if(!r.ok){ toast(r.msg,1); bt.disabled=false; return; }
+function ajPreferirH264(pc){ // H.264: o navegador decodifica pela placa de vídeo e o outro lado comprime mais rápido que o VP8
+  try{ const caps=RTCRtpReceiver.getCapabilities&&RTCRtpReceiver.getCapabilities('video'); if(!caps) return;
+    const h=caps.codecs.filter(c=>/h264/i.test(c.mimeType)), o=caps.codecs.filter(c=>!/h264/i.test(c.mimeType));
+    for(const t of pc.getTransceivers()) if(t.receiver.track&&t.receiver.track.kind==='video'&&t.setCodecPreferences) t.setCodecPreferences([...h,...o]); }catch(_){ } }
+// Prepara a conexão a partir de um convite e devolve '' (AJU.resp com o código de resposta e a prova) ou a mensagem de erro.
+async function ajTecIniciar(codigo, senha, ice){ const r=await ajAcao('ajuda_tec_convite',{codigo}); if(!r.ok) return r.msg||'Esse convite não serve.';
   ajTecFechar(); AJU.oferta=r.dados.sdp; AJU.senha=senha; AJU.resp=null;
-  const pc=AJU.pc=new RTCPeerConnection({iceServers:[{urls:AJ_STUN}]});
-  pc.ontrack=e=>{ AJU.fluxo=(e.streams&&e.streams[0])||new MediaStream([e.track]); const v=$('#ajVideo'); if(v) v.srcObject=AJU.fluxo; };
+  const pc=AJU.pc=new RTCPeerConnection({iceServers:ice});
+  pc.ontrack=e=>{ try{ e.receiver.playoutDelayHint=0; e.receiver.jitterBufferTarget=0; }catch(_){ } AJU.fluxo=(e.streams&&e.streams[0])||new MediaStream([e.track]); const v=$('#ajVideo'); if(v) v.srcObject=AJU.fluxo; };
   pc.ondatachannel=e=>{ const c=AJU.canal=e.channel; const provar=()=>{ if(AJU.resp) c.send(JSON.stringify({t:'prova',mac:AJU.resp.prova})); }; c.onmessage=ajTecMsg; if(c.readyState==='open') provar(); else c.onopen=provar; };
   // Antes de ligar pela primeira vez o navegador desiste sozinho em ~15 s ("failed"), muito antes de a pessoa colar o código de resposta
   // do outro lado. Por isso "failed" só encerra depois de já ter ligado; até lá os endereços do convite são tentados de novo a cada 5 s
@@ -873,39 +945,69 @@ async function ajTecConectar(){ const bt=$('#ajGerar'); bt.disabled=true; const 
   // firewall. Só valem os endereços da primeira parte do convite: é a ligação que sobra depois de juntar vídeo e controle. Prazo: o do convite (10 min) mais o da conexão.
   let ligou=false, vez=0; const m1=AJU.oferta.split(/^m=/m)[1]||'', cands=(m1.match(/^a=candidate:[^\r\n]*/gm)||[]).map(l=>l.slice(2)), mid=(m1.match(/^a=mid:([^\r\n]*)/m)||[])[1]||'0';
   const insistir=setInterval(()=>{ if(AJU.pc!==pc||ligou){ clearInterval(insistir); return; } if(pc.remoteDescription) cands.forEach(c=>pc.addIceCandidate({candidate:c.replace(/^candidate:\S+/,'candidate:'+(++vez)),sdpMid:mid}).catch(()=>{})); },5000);
-  setTimeout(()=>{ if(AJU.pc===pc&&!ligou) ajTecFim('O outro computador não conectou a tempo. Peça um convite novo e tente de novo.'); },720000);
+  setTimeout(()=>{ if(AJU.pc===pc&&!ligou) ajTecFim('O outro computador não conectou a tempo. Tente de novo.'); },720000);
   pc.onconnectionstatechange=()=>{ if(AJU.pc!==pc) return; const s=pc.connectionState; if(s==='connected') ligou=true;
-    if(s==='closed'||(s==='failed'&&ligou)) ajTecFim('A conexão caiu. Para continuar, peça um convite novo a quem precisa de ajuda.'); };
-  try{ await pc.setRemoteDescription({type:'offer',sdp:AJU.oferta}); await pc.setLocalDescription(await pc.createAnswer());
+    if(s==='closed'||(s==='failed'&&ligou)) ajTecFim('A conexão caiu. Conecte de novo para continuar.'); };
+  try{ await pc.setRemoteDescription({type:'offer',sdp:AJU.oferta}); ajPreferirH264(pc); await pc.setLocalDescription(await pc.createAnswer());
     await new Promise(ok=>{ if(pc.iceGatheringState==='complete') return ok(); pc.onicegatheringstatechange=()=>{ if(pc.iceGatheringState==='complete') ok(); }; setTimeout(ok,6000); });
-  }catch(_){ ajTecFechar(); toast('Esse convite não serve. Peça outro a quem precisa de ajuda.',1); bt.disabled=false; return; }
-  AJU.sdp=pc.localDescription.sdp; if(!/^a=candidate:/m.test(AJU.sdp)){ ajTecFechar(); toast('Este navegador ou esta rede não permite conexões diretas (nenhum endereço foi encontrado). Abra o Monitor pelo Edge ou Chrome e confira o firewall.',1); bt.disabled=false; return; }
-  const q=await ajAcao('ajuda_tec_resposta',{senha,oferta:AJU.oferta,resposta:AJU.sdp}); if(!q.ok){ ajTecFechar(); toast(q.msg,1); bt.disabled=false; return; }
-  AJU.resp=q.dados; AJU.fase='codigo'; ajRender(); }
+  }catch(_){ ajTecFechar(); return 'Esse convite não serve. Tente de novo.'; }
+  AJU.sdp=pc.localDescription.sdp; if(!/^a=candidate:/m.test(AJU.sdp)){ ajTecFechar(); return 'Este navegador ou esta rede não permite conexões diretas (nenhum endereço foi encontrado). Abra o CNT Monitor pelo Edge ou Chrome e confira o firewall.'; }
+  const q=await ajAcao('ajuda_tec_resposta',{senha,oferta:AJU.oferta,resposta:AJU.sdp}); if(!q.ok){ ajTecFechar(); return q.msg||'Não consegui responder ao convite.'; }
+  AJU.resp=q.dados; return ''; }
+async function ajTecConectar(){ const bt=$('#ajGerar'); bt.disabled=true; const erro=await ajTecIniciar($('#ajConvT').value,$('#ajSenhaT').value,[{urls:AJ_STUN}]);
+  if(erro){ toast(erro,1); bt.disabled=false; return; } AJU.fase='codigo'; ajRender(); }
+const ajFmtId=i=>String(i||'').replace(/(\d{3})(?=\d)/g,'$1 ');
+const ajEsperar=ms=>new Promise(ok=>setTimeout(ok,ms));
+function ajEncPost(rota,corpo){ return fetch(AJU.srv+rota,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(corpo)}).then(x=>x.json()).catch(()=>null); }
+// Acesso pelo ID: o servidor da CNT entrega o convite do outro PC e leva a nossa resposta; o resto é igual ao convite manual.
+async function ajIdConectar(id, senha, srv){ AJU.srv=srv; AJU.alvo=id; document.title='CNT Monitor — '+ajFmtId(id); AJU.fase='ligando'; ajRender();
+  if(!srv) return ajTecFim('O servidor do acesso remoto não está configurado neste computador.');
+  const r=await ajEncPost('/conectar',{id}); if(AJU.fase!=='ligando') return;
+  if(!r||!r.ok) return ajTecFim((r&&r.erro)||'Não consegui falar com o servidor do acesso remoto. Confira a internet.');
+  const pedido=AJU.pedido=r.pedido, ice=[{urls:AJ_STUN}]; if(r.turn) ice.push(r.turn); const limite=Date.now()+45000;
+  while(AJU.pedido===pedido&&!['ativa','fim'].includes(AJU.fase)){
+    const q=await fetch(srv+'/receber?pedido='+encodeURIComponent(pedido)).then(x=>x.json()).catch(()=>null); if(AJU.pedido!==pedido) return;
+    if(!q||!Array.isArray(q.msgs)){ if(q&&q.erro&&AJU.fase==='ligando') return ajTecFim(q.erro); if(q&&q.erro) break; await ajEsperar(2000); continue; }
+    for(const m of q.msgs){ const d=(m&&m.dados)||{};
+      if(d.tipo==='erro') return ajTecFim(typeof d.msg==='string'&&d.msg?d.msg:'O outro computador recusou a conexão.');
+      if(d.tipo==='convite'&&AJU.fase==='ligando'){ const erro=await ajTecIniciar(d.codigo,senha,ice); if(erro) return ajTecFim(erro);
+        await ajEncPost('/responder',{pedido,dados:{tipo:'resposta',codigo:AJU.resp.codigo}}); if(AJU.fase==='ligando'){ AJU.fase='conferindo'; ajRender(); } } }
+    if(AJU.fase==='ligando'&&Date.now()>limite) return ajTecFim('O outro computador não respondeu. Confira se o CNT Monitor está aberto lá e tente de novo.'); }
+  AJU.pedido=null; }
+function ajDesistir(){ if(AJU.srv&&AJU.pedido&&!['ativa','fim'].includes(AJU.fase)){ try{ navigator.sendBeacon(AJU.srv+'/responder',JSON.stringify({pedido:AJU.pedido,dados:{tipo:'desistiu'}})); }catch(_){ } } AJU.pedido=null; }
+function ajSessaoIniciar(){ document.body.classList.add('so-sessao'); for(const x of VISTAS) $('#v-'+x).hidden=x!=='ajuda'; vista='ajuda';
+  AJU.modo='tecnico'; AJU.fase='ligando'; AJU.alvo=''; ajRender();
+  addEventListener('message',e=>{ if(e.origin!==location.origin||e.source!==window.opener||!e.data||e.data.tipo!=='sessao'||AJU.alvo) return; ajIdConectar(e.data.id,e.data.senha,e.data.servidor); });
+  addEventListener('pagehide',()=>{ ajDesistir(); ajTecFechar(); });
+  if(window.opener) window.opener.postMessage('sessao-pronta',location.origin); else ajTecFim('Abra o acesso pela tela de Acesso remoto do CNT Monitor.'); }
 async function ajTecMsg(ev){ let m; try{ m=JSON.parse(ev.data); }catch(_){ return; } if(!m||typeof m!=='object') return;
-  if(m.t==='prova'&&AJU.fase==='codigo'){ const r=await ajAcao('ajuda_tec_conferir',{senha:AJU.senha,oferta:AJU.oferta,resposta:AJU.sdp,mac:m.mac}); AJU.senha='';
+  if(m.t==='prova'&&(AJU.fase==='codigo'||AJU.fase==='conferindo')){ const r=await ajAcao('ajuda_tec_conferir',{senha:AJU.senha,oferta:AJU.oferta,resposta:AJU.sdp,mac:m.mac}); AJU.senha='';
     if(!r.ok){ ajTecFim('O outro computador não provou que conhece a senha, então a conexão foi encerrada. Pode haver alguém no meio do caminho: peça um convite novo.'); return; }
     AJU.fase='aguardando'; ajRender(); }
   else if(m.t==='ativa'&&AJU.fase==='aguardando'){ AJU.fase='ativa'; ajRender(); }
   else if(m.t==='fim') ajTecFim(typeof m.motivo==='string'&&m.motivo?m.motivo:'A sessão foi encerrada pelo outro lado.'); }
+function ajSairTec(){ if(SESSAO){ ajDesistir(); ajTecFechar(); window.close(); return; } ajTecFechar(); AJU.fase='form'; ajRender(); }
 function ajRenderTecnico(el){ const conf=AJU.resp?esc(AJU.resp.conferencia):'';
+  if(AJU.fase==='ligando'||AJU.fase==='conferindo'){ const lig=AJU.fase==='ligando';
+    el.innerHTML=`<div class="painel aj-passo"><b>${lig?(AJU.alvo?'Conectando ao '+esc(ajFmtId(AJU.alvo))+'…':'Preparando a conexão…'):'Conferindo a senha…'}</b><p class="mut">${lig?'Pedindo a conexão ao outro computador.':'A senha é conferida entre os dois computadores, sem passar pelo servidor.'}</p><p><button class="btn" id="ajSair">Cancelar</button></p></div>`;
+    $('#ajSair').onclick=ajSairTec; return; }
   if(AJU.fase==='form'){ el.innerHTML=`<div class="painel"><div class="aj-passo"><b>1. Cole o convite que a pessoa mandou</b><textarea rows="4" id="ajConvT" placeholder="MPCC…"></textarea></div>
       <div class="aj-passo"><b>2. Digite a senha que ela disse</b><input type="text" id="ajSenhaT" placeholder="XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" style="width:220px;font:600 16px Consolas,monospace;text-transform:uppercase"></div>
       <div class="aj-passo"><button class="btn pri" id="ajGerar">Gerar código de resposta</button> <button class="btn" id="ajSair">Voltar</button></div></div>`;
     $('#ajGerar').onclick=ajTecConectar; $('#ajSair').onclick=()=>{ AJU.modo=null; ajRender(); }; return; }
   if(AJU.fase==='codigo'){ el.innerHTML=`<div class="painel"><div class="aj-passo"><b>3. Mande este código de resposta de volta</b><textarea readonly rows="4">${esc(AJU.resp.codigo)}</textarea><p><button class="btn pri" id="ajCopResp">Copiar código de resposta</button> <button class="btn" id="ajSair">Cancelar</button></p>
       <p class="mut">É este texto inteiro que a pessoa cola no passo 3 do Monitor dela. A conexão começa sozinha depois disso; esta tela muda quando a senha for conferida.</p></div></div>`;
-    $('#ajCopResp').onclick=()=>ajCopiar(AJU.resp.codigo); $('#ajSair').onclick=()=>{ ajTecFechar(); AJU.fase='form'; ajRender(); }; return; }
+    $('#ajCopResp').onclick=()=>ajCopiar(AJU.resp.codigo); $('#ajSair').onclick=ajSairTec; return; }
   if(AJU.fase==='aguardando'){ el.innerHTML=`<div class="painel"><div class="aj-passo"><b>Senha conferida nos dois lados.</b><p class="mut">Aguardando a pessoa permitir o acesso no computador dela.</p></div>
-      <div class="aj-passo"><b>Código de conferência</b><div class="aj-senha">${conf}</div><p class="mut">A pessoa está vendo um código antes de permitir. Tem de ser igual a este; não precisa digitar em lugar nenhum.</p><p><button class="btn" id="ajSair">Cancelar</button></p></div></div>`;
-    $('#ajSair').onclick=()=>{ ajTecFechar(); AJU.fase='form'; ajRender(); }; return; }
-  if(AJU.fase==='ativa'){ el.innerHTML=`<div class="rel-cab"><b>Conectado</b><span class="mut">Clique na tela para o teclado ir para o outro computador.</span><span style="flex:1"></span><button class="btn" id="ajCheia">Tela cheia</button><button class="btn" id="ajArea">Enviar minha área de transferência</button><button class="btn perigo" id="ajSair">Encerrar</button></div>
+      <div class="aj-passo"><b>Código de conferência</b><div class="aj-senha">${conf}</div><p class="mut">A pessoa está vendo um código igual a este antes de clicar em Permitir. Não precisa digitar em lugar nenhum.</p><p><button class="btn" id="ajSair">Cancelar</button></p></div></div>`;
+    $('#ajSair').onclick=ajSairTec; return; }
+  if(AJU.fase==='ativa'){ el.innerHTML=`<div class="rel-cab"><b>Conectado${AJU.alvo?' a '+esc(ajFmtId(AJU.alvo)):''}</b><span class="mut">Clique na tela para o teclado ir para o outro computador.</span><span style="flex:1"></span><button class="btn" id="ajCheia">Tela cheia</button><button class="btn" id="ajArea">Enviar minha área de transferência</button><button class="btn perigo" id="ajSair">Encerrar</button></div>
       <div class="aj-tela" id="ajTela" tabindex="0"><video id="ajVideo" autoplay playsinline muted></video></div>`; ajControle(); return; }
-  el.innerHTML=`<div class="painel aj-passo"><b>Sessão encerrada</b><p>${esc(AJU.msg)}</p><p><button class="btn pri" id="ajSair">Voltar</button></p></div>`; $('#ajSair').onclick=()=>{ AJU.modo=null; AJU.fase='form'; ajRender(); }; }
+  el.innerHTML=`<div class="painel aj-passo"><b>Sessão encerrada</b><p>${esc(AJU.msg)}</p><p><button class="btn pri" id="ajSair">${SESSAO?'Fechar janela':'Voltar'}</button></p></div>`; $('#ajSair').onclick=()=>{ if(SESSAO) return window.close(); AJU.modo=null; AJU.fase='form'; ajRender(); }; }
 function ajControle(){ const t=$('#ajTela'), v=$('#ajVideo'); v.srcObject=AJU.fluxo; const apertadas=new Set(); let ult=0;
   const env=m=>{ try{ if(AJU.fase==='ativa'&&AJU.canal&&AJU.canal.readyState==='open') AJU.canal.send(JSON.stringify(m)); }catch(_){ } };
   const pos=e=>{ const r=v.getBoundingClientRect(), vw=v.videoWidth||16, vh=v.videoHeight||9, k=Math.min(r.width/vw,r.height/vh), w=vw*k, h=vh*k; return {x:(e.clientX-r.left-(r.width-w)/2)/w, y:(e.clientY-r.top-(r.height-h)/2)/h}; };
-  t.onmousemove=e=>{ const n=performance.now(); if(n-ult<33) return; ult=n; env({t:'mouse',a:'move',...pos(e)}); };
+  t.onmousemove=e=>{ const n=performance.now(); if(n-ult<16) return; ult=n; env({t:'mouse',a:'move',...pos(e)}); };
   t.onmousedown=e=>{ t.focus(); e.preventDefault(); env({t:'mouse',a:'baixa',b:e.button,...pos(e)}); };
   t.onmouseup=e=>{ e.preventDefault(); env({t:'mouse',a:'sobe',b:e.button,...pos(e)}); };
   t.onwheel=e=>{ e.preventDefault(); env({t:'mouse',a:'roda',d:-Math.sign(e.deltaY)*120,...pos(e)}); };
@@ -953,7 +1055,7 @@ async function cicloStatus(){ try{ STATUS=await API('status'); avisos(); $('#rod
 function avisos(){ const a=[]; if(!STATUS) return;
   if(!STATUS.admin) a.push(['erro','O serviço não está rodando como administrador — rede por programa e temperatura ficam limitadas.']);
   if(STATUS.admin && CFG.rede_por_programa && !STATUS.rede_ok) a.push(['','A medição de rede por programa não iniciou: '+esc(STATUS.rede_erro||'')]);
-  if(!STATUS.bandeja_online) a.push(['','O ícone do Monitor do PC perto do relógio está fechado — “Mostrar janela”, “Abrir pasta” e “Fechar janela” precisam dele. Abra o Monitor do PC pelo menu Iniciar.']);
+  if(!STATUS.bandeja_online) a.push(['','O ícone do CNT Monitor perto do relógio está fechado — “Mostrar janela”, “Abrir pasta” e “Fechar janela” precisam dele. Abra o CNT Monitor pelo menu Iniciar.']);
   $('#avisos').innerHTML=a.map(([c,t])=>`<div class="aviso ${c}">${t}</div>`).join(''); $('#jogoTag').hidden=!STATUS.jogo_ativo;
   API('capturas?limite=1').then(d=>{ $('#capTag').hidden=!(d.estado&&d.estado.gravando); }).catch(()=>{}); }
 
@@ -1246,7 +1348,7 @@ async function vRelatorio(){ const [a,b]=faixa(); $('#relCorpo').innerHTML='<div
   const r=REL, g=r.geral; if(!g){ $('#relCorpo').innerHTML=`<div class="painel vazio">Sem dados entre ${quando(r.desde)} e ${quando(r.ate)}.</div>`; return; }
   const tile=(t,v,d,c)=>`<div class="painel card"><div class="rot"><span>${t}</span></div><div class="val n ${c||''}" style="font-size:21px">${v}</div><div class="det n">${d||''}</div></div>`;
   const P=r.programas, tot=g.mem_total||1, top=(arr,k,n=5)=>arr.slice().sort((x,y)=>(y[k]||0)-(x[k]||0)).slice(0,n).filter(x=>(x[k]||0)>0);
-  $('#relCorpo').innerHTML=`<div class="so-impressao"><h2>Monitor do PC — relatório</h2></div>
+  $('#relCorpo').innerHTML=`<div class="so-impressao"><h2>CNT Monitor — relatório</h2></div>
   <p class="mut2" style="margin-top:0">Período: <b>${quando(r.desde)}</b> até <b>${quando(r.ate)}</b> · monitorado por ${dur(g.tempo_monitorado)} · gerado ${quando(Date.now()/1000)}</p>
   <div class="grade g6">${tile('Memória média',fP(g.mem_med),`máxima ${fP(g.mem_max)} (${fB(g.mem_usada_max)})`,nivM(g.mem_max))}${tile('CPU média',fP(g.cpu_med),`máxima ${fP(g.cpu_max)}`,nivC(g.cpu_max))}
   ${tile('Temp. CPU máx.',fT(g.temp_cpu_max),g.temp_cpu_med!=null?`média ${fT(g.temp_cpu_med)}`:'',nivT(g.temp_cpu_max))}${tile('Temp. GPU máx.',fT(g.temp_gpu_max),g.temp_gpu_med!=null?`média ${fT(g.temp_gpu_med)}`:'',nivT(g.temp_gpu_max))}
@@ -1281,7 +1383,8 @@ const CFG_DEF=[
   ['Geral',[
     ['intervalo_ms','sel','Velocidade de atualização','Com que frequência os números mudam na tela. 250 ms é o mais rápido; quanto mais rápido, um pouco mais de CPU o monitor usa.',{250:'250 ms (4× por segundo)',500:'500 ms',1000:'1 segundo',2000:'2 segundos',5000:'5 segundos'}],
     ['iniciar_com_windows','sw','Iniciar com o Windows','Mostra o ícone perto do relógio quando o Windows liga. O monitoramento (serviço) roda sempre, mesmo sem o ícone.'],
-    ['abrir_janela_ao_iniciar','sw','Abrir a janela ao ligar o PC','Além do ícone, abre a janela do Monitor do PC quando o Windows liga.'],
+    ['abrir_janela_ao_iniciar','sw','Abrir a janela ao ligar o PC','Além do ícone, abre a janela do CNT Monitor quando o Windows liga.'],
+    ['tela_inicial','sel','Tela inicial','A tela que aparece ao abrir o CNT Monitor.',{ajuda:'Acesso remoto',geral:'Visão geral',programas:'Programas',processos:'Processos',capturas:'Capturas',hardware:'Hardware',rede:'Rede',historico:'Histórico',vps:'Servidores (VPS)',config:'Configurações'}],
     ['tema','sel','Tema','Cores da janela.',{auto:'Igual ao Windows',escuro:'Escuro',claro:'Claro'}],
     ['varias_janelas','sw','Permitir abrir mais de uma janela','Desligado: clicar em “Abrir” de novo só traz a janela que já está aberta para a frente. Ligado: cada clique abre uma janela nova.'],
   ]],
@@ -1330,7 +1433,7 @@ function atuRender(){ const el=$('#atuPainel'); if(!el) return; const s=STATUS||
   if(!ATU.ativo){ el.innerHTML=`<div class="item"><b>Versão instalada: ${esc(CFG_ATU.versao_atual||s.versao||'—')}</b><div class="ctl" style="display:flex;gap:8px"><button class="btn" id="atuVer">Procurar agora</button><button class="btn pri" id="atuInst" ${CFG_ATU.disponivel?'':'disabled'}>${CFG_ATU.disponivel?'Atualizar para '+esc(CFG_ATU.disponivel.versao):'Atualizar'}</button></div><small>${CFG_ATU.erro?esc(CFG_ATU.erro):CFG_ATU.disponivel?'Versão nova disponível.':CFG_ATU.ultima_verificacao?'Última verificação: '+quando(CFG_ATU.ultima_verificacao)+' — você está na versão mais nova.':'Ainda não verificado.'}</small></div>
       <div class="item"><b>Atualizar automaticamente</b><div class="ctl"><label class="sw"><input type="checkbox" data-cfg="atualizacao_auto" ${CFG.atualizacao_auto?'checked':''}><span></span></label></div><small>Procura versão nova no GitHub a cada 10 minutos e instala sozinho (nunca durante o Modo Jogo nem com um pedido de ajuda aberto no Acesso remoto).</small></div>`;
     $('#atuVer').onclick=async()=>{ $('#atuVer').disabled=true; const r=await POST('acao',{tipo:'atualizar_verificar'}).catch(()=>null); if(r) toast(r.msg,!r.ok); CFG_ATU=await API('atualizacao').catch(()=>CFG_ATU); atuRender(); };
-    $('#atuInst').onclick=async()=>{ if(!await confirmar('Atualizar agora?','O Monitor do PC vai baixar a versão nova, conferir a assinatura e instalar. O andamento aparece aqui; no fim, use o botão Recarregar.','Atualizar')) return;
+    $('#atuInst').onclick=async()=>{ if(!await confirmar('Atualizar agora?','O CNT Monitor vai baixar a versão nova, conferir a assinatura e instalar. O andamento aparece aqui; no fim, use o botão Recarregar.','Atualizar')) return;
       const r=await POST('acao',{tipo:'atualizar_instalar'}).catch(()=>null); if(!r||!r.ok){ toast(r?r.msg:'O serviço não respondeu.',1); return; } atuAcompanhar(await API('atualizacao').catch(()=>CFG_ATU)); };
     return; }
   const n=ATU.fase==='pronto'?3:ATU.fase==='erro'?-1:ATU_FASES.indexOf(ATU.fase), v=esc(ATU.alvo||'nova');
@@ -1394,7 +1497,7 @@ async function vJogo(entrando){ try{ JOGO=await API('jogo'); }catch(_){ return; 
   const ag=Date.now()/1000; grFps.def({t0:ag-60,t1:ag,passo:.5,series:[{nome:'FPS',cor:COR(2),grossa:1,area:1,pts:FPS_SERIE}]});
   if(!entrando) return;
   $('#jogoOpcoes').innerHTML=OPC_JOGO.map(([k,t])=>`<label class="chk"><label class="sw"><input type="checkbox" data-jcfg="${k}" ${CFG[k]?'checked':''}><span></span></label>${t}</label>`).join('');
-  const sel=new Set(CFG.jogo_fechar||[]); const progs=(E?.programas||[]).filter(g=>!g.outros&&!g.protegido&&g.nome!=='Monitor do PC').sort((a,b)=>b.mem-a.mem);
+  const sel=new Set(CFG.jogo_fechar||[]); const progs=(E?.programas||[]).filter(g=>!g.outros&&!g.protegido&&g.nome!=='CNT Monitor').sort((a,b)=>b.mem-a.mem);
   const nomes=[...new Set([...progs.map(g=>g.nome),...sel])];
   $('#jogoFechar').innerHTML=nomes.map(n=>{ const g=progs.find(x=>x.nome===n); return `<label class="chk"><input type="checkbox" data-jfechar="${esc(n)}" ${sel.has(n)?'checked':''}>${ico(g?.exe)}<span style="flex:1">${esc(n)}</span><span class="mut n">${g?fB(g.mem):'fechado agora'}</span></label>`; }).join('')||'<div class="vazio">Nenhum programa aberto.</div>';
 }
@@ -1788,7 +1891,7 @@ function htmlComparar(C,isolado){ const {A,B,a,b}=C, ga=a.geral, gb=b.geral;
   const pa=new Map(a.programas.map(p=>[p.nome,p])), pb=new Map(b.programas.map(p=>[p.nome,p])), nomes=[...new Set([...pa.keys(),...pb.keys()])];
   const progs=nomes.map(n=>({n,x:pa.get(n),y:pb.get(n)})).sort((p,q)=>Math.abs((q.x?.mem_med||0)-(q.y?.mem_med||0))-Math.abs((p.x?.mem_med||0)-(p.y?.mem_med||0))).slice(0,25);
   const novos=nomes.filter(n=>pa.has(n)&&!pb.has(n)&&pa.get(n).mem_med>100*MB).slice(0,10);
-  return `<div class="so-impressao"><h2>Monitor do PC — comparação de períodos</h2></div>
+  return `<div class="so-impressao"><h2>CNT Monitor — comparação de períodos</h2></div>
   <div class="painel"><div class="cab"><h2>Resumo</h2><span class="desc">A: ${quando(A[0])} → ${quando(A[1])} · B: ${quando(B[0])} → ${quando(B[1])}</span></div><div class="tw" style="max-height:none"><table class="cmp"><thead><tr><th class="e">Indicador</th><th>${esc(A[2])}</th><th>${esc(B[2])}</th><th>Diferença (A − B)</th></tr></thead><tbody>
   ${L.map(([t,x,y,f],i)=>`<tr><td class="e">${t}</td><td>${x==null?'—':f(x)}</td><td>${y==null?'—':f(y)}</td>${i===11?'<td class="mut">—</td>':delta(x,y,f)}</tr>`).join('')}</tbody></table></div></div>
   <div class="painel secao"><div class="cab"><h2>Programas que mais mudaram</h2><span class="desc">memória média e CPU média</span></div><div class="tw" style="max-height:none"><table class="cmp"><thead><tr><th class="e">Programa</th><th>Memória A</th><th>Memória B</th><th>Diferença</th><th>CPU A</th><th>CPU B</th><th>Diferença</th></tr></thead><tbody>
@@ -1859,9 +1962,9 @@ ul.lista{margin:0;padding:8px 16px 10px 34px}ul.lista li{margin:5px 0}
 @page{size:A4;margin:12mm 11mm 14mm}
 @media print{body{background:#fff;font-size:12px}.folha{box-shadow:none;max-width:none}.capa{padding:22px 26px 18px}.conteudo{padding:16px 2px 10px}.rod{padding:10px 2px}
   .capa h1{font-size:28px}.tile .v{font-size:23px}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}svg{max-height:62mm}}
-</style></head><body><div class="folha"><header class="capa"><div class="marca"><svg width="20" height="20" viewBox="0 0 64 64"><rect x="2" y="2" width="60" height="60" rx="14" fill="#29313b"/><rect x="10" y="26" width="28" height="28" rx="4" fill="#4cc38a"/><rect x="44" y="38" width="10" height="16" rx="4" fill="#e8a33d"/></svg>Monitor do PC</div>
+</style></head><body><div class="folha"><header class="capa"><div class="marca"><svg width="20" height="20" viewBox="0 0 64 64"><rect x="2" y="2" width="60" height="60" rx="14" fill="#29313b"/><rect x="10" y="26" width="28" height="28" rx="4" fill="#4cc38a"/><rect x="44" y="38" width="10" height="16" rx="4" fill="#e8a33d"/></svg>CNT Monitor</div>
 <div><h1>${esc(titulo)}</h1><p>${sub}</p></div><div class="gerado">Gerado em ${new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}<br>versão ${esc(STATUS?.versao||'')}</div></header>
-<main class="conteudo">${corpo}</main><div class="rod">Relatório gerado automaticamente pelo Monitor do PC. Valores de memória e CPU são médias de amostras gravadas a cada poucos segundos.</div></div></body></html>`; }
+<main class="conteudo">${corpo}</main><div class="rod">Relatório gerado automaticamente pelo CNT Monitor. Valores de memória e CPU são médias de amostras gravadas a cada poucos segundos.</div></div></body></html>`; }
 async function baixarHtml(titulo, sub, corpo, arquivo){ const doc=await montarDoc(titulo,sub,corpo);
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([doc],{type:'text/html;charset=utf-8'})); a.download=arquivo; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),5000); toast('Relatório baixado. Abra o arquivo para ver ou imprimir.'); }
 async function imprimirDoc(titulo, sub, corpo){ toast('Preparando o PDF… na janela de impressão escolha “Salvar como PDF”.');
@@ -2121,7 +2224,7 @@ function capOpcoesHtml(){ const c=CFG, sel=(k,op)=>`<select data-cfg="${k}">${Ob
     ${it('Atalhos de teclado ligados',sw('captura_ativa'),'Quem captura é o ícone perto do relógio: ele precisa estar aberto. Se algum atalho usar a tecla Print Screen, o Monitor desliga a opção do Windows que abre a Ferramenta de Captura com essa tecla (só no seu usuário) e devolve quando você tirar o Print Screen dos atalhos ou fechar o ícone.')}
     <div id="cfgCapAtalhos"><div class="vazio">Carregando os atalhos…</div></div></div>
   <h2 class="secao">Onde salvar</h2><div class="painel">
-    ${it('Pasta das capturas',`${txt('captura_pasta','Imagens\\Monitor do PC',280)}<button class="btn" id="capPastaEsc">Escolher pasta…</button><button class="btn" id="capPastaAbrir">Abrir</button>${c.captura_pasta?'<button class="btn" id="capPastaPadrao">Usar a padrão</button>':''}`,'“Escolher pasta…” abre a janela de pastas do Windows. Também dá para colar um caminho completo (ex.: D:\\Prints). Vazio = Imagens\\Monitor do PC.')}
+    ${it('Pasta das capturas',`${txt('captura_pasta','Imagens\\CNT Monitor',280)}<button class="btn" id="capPastaEsc">Escolher pasta…</button><button class="btn" id="capPastaAbrir">Abrir</button>${c.captura_pasta?'<button class="btn" id="capPastaPadrao">Usar a padrão</button>':''}`,'“Escolher pasta…” abre a janela de pastas do Windows. Também dá para colar um caminho completo (ex.: D:\\Prints). Vazio = Imagens\\CNT Monitor.')}
     ${it('Nome do arquivo',txt('captura_nome','%Y-%m-%d_%H-%M-%S',220),'Data e hora: %Y ano, %m mês, %d dia, %H hora, %M minuto, %S segundo. Se o nome já existir, ganha _2, _3…')}
     ${it('Formato',`${sel('captura_formato',{png:'PNG (sem perda)',jpg:'JPG (menor)',webp:'WebP (bem menor)'})} ${num('captura_qualidade',50,100)}<span class="mut2">qualidade JPG/WebP</span>`)}
     ${it('WebP sem perda',sw('captura_webp_sem_perda'),'Ligado: o WebP guarda a imagem exata (como o PNG), mas costuma ficar menor.')}</div>
@@ -2204,7 +2307,7 @@ function renderCapOpcoes(){ const el=$('#capOpcoes'); if(!el) return;
   el.innerHTML=capOpcoesHtml(); carregarCfgCaptura(); renderFluxos(); renderAcoes();
   $('#capPastaEsc').onclick=()=>capPasta('captura_escolher_pasta'); $('#capPastaAbrir').onclick=()=>capPasta('captura_abrir_pasta');
   $('#iaCadastrar').onclick=async()=>{ toast('Digite a chave na janela que abriu.'); await acao({tipo:'captura_tarefa',nome:'ia_chave'}); setTimeout(carregarCfgCaptura,1500); };
-  const p=$('#capPastaPadrao'); if(p) p.onclick=async()=>{ const r=await POST('config',{captura_pasta:''}).catch(()=>null); if(r&&r.valores){ CFG=r.valores; toast('Voltou para Imagens\\Monitor do PC.'); } renderCapOpcoes(); }; }
+  const p=$('#capPastaPadrao'); if(p) p.onclick=async()=>{ const r=await POST('config',{captura_pasta:''}).catch(()=>null); if(r&&r.valores){ CFG=r.valores; toast('Voltou para Imagens\\CNT Monitor.'); } renderCapOpcoes(); }; }
 async function salvarCfgLista(chave, lista, msg){ const r=await POST('config',{[chave]:lista}).catch(()=>null);
   if(!r||!r.valores){ toast('Não consegui salvar.',1); return; } CFG=r.valores; toast(msg||'Salvo.'); if(chave==='captura_fluxos') renderFluxos(); else renderAcoes(); }
 function renderFluxos(){ const el=$('#cfgFluxos'), D=CAP_META||CAPS; if(!el||!D) return; const l=CFG.captura_fluxos||[];
@@ -2286,8 +2389,8 @@ async function carregarCfgCaptura(){ let d; try{ d=await API('capturas?limite=1'
   const sx=$('#sxcuArq'); if(sx) sx.onchange=async ev=>{ ev.stopPropagation(); const f=ev.target.files[0]; if(!f) return; let d; try{ d=JSON.parse(await f.text()); }catch(_){ toast('Esse arquivo não é um .sxcu válido.',1); return; }
     const r=await POST('capturas/sxcu',{sxcu:d}).catch(()=>null); if(!r){ toast('O serviço não respondeu.',1); return; } toast(r.msg,!r.ok); if(r.ok&&r.valores){ CFG=r.valores; renderCapOpcoes(); } }; }
 async function carregarAcesso(){ try{ ACESSO=await API('acesso'); }catch(_){ return; } const a=ACESSO, el=$('#cfgAcesso'); if(!el) return;
-  el.innerHTML=`<div class="item"><b>Permitir acesso pela rede de casa</b><div class="ctl"><label class="sw"><input type="checkbox" data-cfg="acesso_remoto" ${a.ativo?'checked':''} ${a.tem_senha?'':'disabled'}><span></span></label></div><small>Abra o Monitor do PC no navegador do celular (conectado no mesmo Wi-Fi). Pede senha. Só funciona em redes marcadas como “Privada” no Windows — nunca fica aberto na internet.${a.tem_senha?'':' <b>Crie uma senha primeiro.</b>'}</small></div>
-    <div class="item"><b>${a.tem_senha?'Trocar a senha de acesso':'Criar senha de acesso'}</b><div class="ctl"><input type="password" id="acSenha" placeholder="mínimo 6 caracteres" autocomplete="new-password" style="width:190px"><button class="btn" id="acSalvar">Salvar senha</button></div><small>Guardada de forma irreversível (hash); nem o Monitor do PC sabe a senha.</small></div>
+  el.innerHTML=`<div class="item"><b>Permitir acesso pela rede de casa</b><div class="ctl"><label class="sw"><input type="checkbox" data-cfg="acesso_remoto" ${a.ativo?'checked':''} ${a.tem_senha?'':'disabled'}><span></span></label></div><small>Abra o CNT Monitor no navegador do celular (conectado no mesmo Wi-Fi). Pede senha. Só funciona em redes marcadas como “Privada” no Windows — nunca fica aberto na internet.${a.tem_senha?'':' <b>Crie uma senha primeiro.</b>'}</small></div>
+    <div class="item"><b>${a.tem_senha?'Trocar a senha de acesso':'Criar senha de acesso'}</b><div class="ctl"><input type="password" id="acSenha" placeholder="mínimo 6 caracteres" autocomplete="new-password" style="width:190px"><button class="btn" id="acSalvar">Salvar senha</button></div><small>Guardada de forma irreversível (hash); nem o CNT Monitor sabe a senha.</small></div>
     <div class="item"><b>Somente ver</b><div class="ctl"><label class="sw"><input type="checkbox" data-cfg="acesso_somente_ver" ${a.somente_ver?'checked':''}><span></span></label></div><small>Ligado: pelo celular dá para ver tudo, mas não fechar programas nem mudar configurações.</small></div>
     <div class="item"><b>Porta</b><div class="ctl"><input type="number" data-cfg="acesso_porta" value="${a.porta}" min="1024" max="65535" style="width:100px"></div><small></small></div>
     ${a.ativo?`<div class="item"><div>${a.rodando&&a.rodando.erro?`<div class="aviso erro">${esc(a.rodando.erro)}</div>`:''}<b>Endereço para abrir no celular</b><div style="margin-top:6px">${a.urls.map(u=>`<code style="font-size:14px">${esc(u)}</code>`).join('<br>')||'<span class="mut">Nenhuma rede local encontrada.</span>'}</div><small style="display:block;margin-top:6px">Aponte a câmera do celular para o código ao lado.</small></div><div class="ctl">${a.qr?`<div class="qr">${a.qr}</div>`:''}</div></div>`:''}`;
@@ -2301,8 +2404,8 @@ async function carregarAcesso(){ try{ ACESSO=await API('acesso'); }catch(_){ ret
   if(cp) cp.onclick=()=>copiar(a.api_chave); }
 /* =================== início =================== */
 addEventListener('resize',()=>{ if(vista==='geral') vGeral(); gH.forEach(g=>g&&g.desenhar()); grTemp.desenhar(); grRec.desenhar(); });
-(async()=>{ await carregarCfg(); try{ SERIE=await API('serie?seg=900'); ultSeg=SERIE.length?SERIE[SERIE.length-1][0]:0; }catch(_){}
-  ir(location.hash||'geral'); loop(); cicloStatus(); setInterval(cicloStatus,15000);
+(async()=>{ await carregarCfg(); if(SESSAO){ ajSessaoIniciar(); return; } try{ SERIE=await API('serie?seg=900'); ultSeg=SERIE.length?SERIE[SERIE.length-1][0]:0; }catch(_){}
+  ir(location.hash||CFG.tela_inicial||'ajuda'); if(!REMOTO) ajVigiar(); loop(); cicloStatus(); setInterval(cicloStatus,15000);
   API('lentidao?dias=1').then(d=>contLent(d.episodios)).catch(()=>{}); API('vps').then(l=>{ VPS=l; const off=l.filter(v=>v.ativo&&!v.online&&v.erro!=='iniciando').length; $('#contVps').hidden=!off; $('#contVps').textContent=off; }).catch(()=>{});
   setInterval(()=>{ if(vista!=='lentidao') API('lentidao?dias=1').then(d=>contLent(d.episodios)).catch(()=>{}); if(vista==='historico') vHistorico(); if(vista==='lentidao') vLentidao(); if(vista==='hardware') carregarTempHist(); if(vista==='recurso'&&faixaRec.h) carregarHistRec(); },60000); })();
 

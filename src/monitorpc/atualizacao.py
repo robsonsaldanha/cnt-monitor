@@ -16,9 +16,10 @@ import urllib.request
 
 from . import config
 
-REPO = "robsonsaldanha/monitor-pc"
+REPO = "robsonsaldanha/cnt-monitor"
 PASTA = os.path.join(config.BASE, "atualizacao")
 FLAG_REABRIR = os.path.join(config.BASE, "reabrir_icone.flag")
+PREFIXOS = ("CNTMonitor-Setup", "MonitorDoPC-Setup")   # nome atual primeiro; o antigo vale para releases até a 2.6.x
 
 
 def _versao(t):
@@ -49,6 +50,7 @@ def sha256_travado(trava, ao_ler=None):
 
 EM_ANDAMENTO = ("baixando", "conferindo", "instalando")
 VERIFICAR_CADA = 600      # segundos entre as procuras automáticas por versão nova
+REPETIR_FALHA = 6 * 3600  # depois de uma instalação automática que falhou, espera isto para tentar a mesma versão
 
 
 class Atualizador:
@@ -60,7 +62,9 @@ class Atualizador:
         self.situacao = "parado"
         self.pct = 0                      # andamento da etapa atual (baixando / conferindo), 0 a 100
         self.alvo = None                  # versão que está sendo instalada
-        self._etag = None                 # da última resposta do GitHub: "nada mudou" (304) não gasta a cota de consultas
+        # ETag da última resposta: o 304 ("nada mudou") poupa o download, mas sem login ele CONTA na cota
+        # do GitHub (60 consultas por hora por IP público; cada PC faz 6 por hora)
+        self._etag = None
         self._resposta = None
 
     def _etapa(self, situacao):
@@ -88,8 +92,14 @@ class Atualizador:
         except urllib.error.HTTPError as e:
             if e.code == 304 and self._resposta is not None:
                 return self._avaliar(self._resposta)
-            self.erro = ("O repositório do Monitor do PC é privado — o GitHub não deixa baixar sem login. "
-                         "Deixe o repositório público para a atualização automática funcionar.") if e.code == 404 else f"GitHub: {e}"
+            if e.code == 404:
+                self.erro = ("O repositório do CNT Monitor é privado — o GitHub não deixa baixar sem login. "
+                             "Deixe o repositório público para a atualização automática funcionar.")
+            elif e.code in (403, 429):
+                self.erro = ("O GitHub limitou por enquanto as consultas vindas desta rede (60 por hora por endereço de internet). "
+                             "A procura volta sozinha em até uma hora.")
+            else:
+                self.erro = f"GitHub: {e}"
             self.situacao = "erro"
             self.ultima_verificacao = time.time()
             return None
@@ -103,7 +113,8 @@ class Atualizador:
     def _avaliar(self, d):
         self.ultima_verificacao = time.time()
         self.erro = None
-        ativo = next((a for a in d.get("assets", []) if a["name"].startswith("MonitorDoPC-Setup") and a["name"].endswith(".exe")), None)
+        exes = [a for a in d.get("assets", []) if a["name"].endswith(".exe")]
+        ativo = next((a for p in PREFIXOS for a in exes if a["name"].startswith(p)), None)
         sha = re.search(r"SHA256:\s*([0-9a-fA-F]{64})", d.get("body") or "")
         info = {"versao": (d.get("tag_name") or "").lstrip("v"), "nome": d.get("name"), "notas": (d.get("body") or "")[:3000],
                 "url": ativo["browser_download_url"] if ativo else None, "tamanho": ativo["size"] if ativo else 0,
@@ -142,7 +153,7 @@ class Atualizador:
         if not info.get("sha256"):
             return self._falha("O release não traz a assinatura SHA-256; por segurança não vou instalar.")
         os.makedirs(PASTA, exist_ok=True)
-        destino = os.path.join(PASTA, f"MonitorDoPC-Setup-{info['versao']}.exe")
+        destino = os.path.join(PASTA, f"CNTMonitor-Setup-{info['versao']}.exe")
         self.alvo, self.erro = info["versao"], None
         self._etapa("baixando")
         try:
@@ -184,7 +195,7 @@ class Atualizador:
             return self._falha(f"Não consegui iniciar a instalação: {e}")
         finally:
             trava.Close()
-        return True, f"Instalando a versão {info['versao']}. O Monitor do PC reinicia sozinho em alguns segundos."
+        return True, f"Instalando a versão {info['versao']}. O CNT Monitor reinicia sozinho em alguns segundos."
 
     def estado(self):
         return {"versao_atual": config.VERSAO, "disponivel": self.disponivel, "erro": self.erro,

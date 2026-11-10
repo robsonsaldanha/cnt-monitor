@@ -239,7 +239,7 @@ def _pastas_navegador(base_local, tipo_firefox):
 
 
 def _abertos():
-    """Navegadores abertos (ignora a janela do próprio Monitor do PC, que usa o Edge)."""
+    """Navegadores abertos (ignora a janela do próprio CNT Monitor, que usa o Edge)."""
     nomes = set()
     for p in psutil.process_iter(["name"]):
         n = (p.info.get("name") or "").lower()

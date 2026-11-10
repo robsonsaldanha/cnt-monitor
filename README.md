@@ -1,9 +1,9 @@
-# Monitor do PC
+# CNT Monitor
 
 Monitor do computador (Windows 10/11) mais detalhado que o Gerenciador de Tarefas — com otimizações seguras,
 Modo Jogo, regras por programa, acesso pelo celular e monitoramento de servidores (VPS).
 
-**Baixar:** [última versão](https://github.com/robsonsaldanha/monitor-pc/releases/latest) → `MonitorDoPC-Setup-x.y.z.exe`.
+**Baixar:** [última versão](https://github.com/robsonsaldanha/cnt-monitor/releases/latest) → `CNTMonitor-Setup-x.y.z.exe`.
 Depois de instalado, ele se atualiza sozinho (Configurações → Atualizações).
 
 ## O que ele faz
@@ -24,7 +24,7 @@ Depois de instalado, ele se atualiza sozinho (Configurações → Atualizações
 | Histórico / Lentidão / Alertas | 7 dias de histórico (configurável), momentos de lentidão com os culpados e alertas na tela. |
 | Relatório / Comparar períodos | Relatório completo (HTML, PDF, CSV) com recomendações e comparação lado a lado de dois períodos. |
 | Servidores (VPS) | CPU, memória, disco, rede, serviços systemd, containers Docker e sites dos seus servidores Linux via SSH. |
-| Acesso remoto | Pedir ajuda a um técnico ou ajudar alguém: convite, senha aleatória de uso único, código de conferência e aceite de quem está no computador. Conexão direta entre os dois PCs, criptografada de ponta a ponta, sem servidor no meio; faixa vermelha com "Encerrar" durante a sessão. |
+| Acesso remoto | Tela inicial do programa (dá para trocar nas Configurações). Cada PC mostra um ID de 9 números e uma senha temporária, com botões para copiar como texto ou imagem e para trocar ID e senha; o técnico digita os dois e quem está no computador permite. Vários atendimentos ao mesmo tempo, cada um numa janela. A tela e os comandos vão direto de um PC ao outro, criptografados de ponta a ponta; o servidor da CNT só apresenta os dois lados e, quando a ligação direta é impossível, um retransmissor repassa os pacotes sem conseguir lê-los. A senha troca depois de cada acesso e o ID quando o PC reinicia. Sem o servidor, vale o convite manual. Faixa vermelha com "Encerrar" durante a sessão. |
 | Configurações | Mini painel, várias janelas, acesso pelo celular (com QR code), chave da API, backup das configurações. |
 
 ### Segurança
@@ -50,7 +50,13 @@ Depois de instalado, ele se atualiza sozinho (Configurações → Atualizações
   mede a rede por processo via ETW, GPU por contadores, sensores pelo LibreHardwareMonitor, FPS pelo PresentMon.
 - `MonitorPC.exe` — ícone perto do relógio, mini painel, captura de tela e janela (Edge em modo aplicativo).
   A gravação de tela usa o ffmpeg, baixado na primeira gravação para `%LOCALAPPDATA%\MonitorPC\ffmpeg` (SHA-256 conferido).
-- Dados em `C:\ProgramData\MonitorPC` (`historico.db`, `config.json`, `servico.log`).
+- Dados em `C:\ProgramData\MonitorPC` (`historico.db`, `config.json`, `servico.log`). Os nomes internos (serviço
+  `MonitorPC`, pasta de dados, executáveis) continuam os da época em que o programa se chamava Monitor do PC, para
+  as instalações antigas seguirem atualizando.
+- `servidor-vps/` — o que roda em https://monitor.cntoficial.com.br (`/var/www/html_cntmonitor`, clone deste
+  repositório): site com o download, ponto de encontro do acesso por ID (`encontro.js`, Node sem dependências,
+  serviço `cnt-monitor-encontro`) e a configuração do coturn (retransmissor). Atualizar: `git pull` na VPS e
+  `sudo systemctl restart cnt-monitor-encontro`.
 
 ## Gerar o instalador
 

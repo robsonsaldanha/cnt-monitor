@@ -1904,9 +1904,9 @@ def pasta_imagens():
 
 
 def pasta_capturas(c):
-    """Pasta escolhida nas opções (caminho completo) ou Imagens\\Monitor do PC."""
+    """Pasta escolhida nas opções (caminho completo) ou Imagens\\CNT Monitor."""
     pasta = c.get("captura_pasta") or ""
-    return pasta if os.path.isabs(pasta) else os.path.join(pasta_imagens(), "Monitor do PC")
+    return pasta if os.path.isabs(pasta) else os.path.join(pasta_imagens(), "CNT Monitor")
 
 
 def _dialogo(nome, **kw):

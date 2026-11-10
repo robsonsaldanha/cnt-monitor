@@ -28,7 +28,8 @@ import subprocess
 from . import config, sessao
 
 ALFABETO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"   # sem 0/O e 1/I: a senha costuma ser ditada
-TAMANHO_SENHA = 12                              # 12 de 32 símbolos = 60 bits
+TAMANHO_SENHA = 8                               # 8 de 32 símbolos = 40 bits; testar exige uma sessão por tentativa
+                                                # (e o ponto de encontro limita as tentativas por ID)
 VALIDADE_CONVITE = 600                          # segundos para colar a resposta
 ESPERA_CONEXAO = 60                             # da resposta até a prova da senha
 ESPERA_ACEITE = 120
@@ -105,7 +106,7 @@ def _ler(prefixo, codigo, nome):
         raise Erro(f"Esse é o código de conferência (6 números), que só serve para comparar os dois lados. "
                    f"O {nome} é o texto longo que começa com {prefixo}: use o botão Copiar.")
     if txt.startswith(("MPC1", "MPC2")):
-        raise Erro(f"Esse {nome} foi gerado por uma versão antiga do Monitor do PC. "
+        raise Erro(f"Esse {nome} foi gerado por uma versão antiga do CNT Monitor. "
                    "Atualize os dois computadores e gere outro.")
     if txt.startswith(outro):
         raise Erro(f"Esse texto é um {nome_outro}, não um {nome}.")
@@ -191,6 +192,7 @@ class Sessao:
     def __init__(self, agora=time.time):
         self._agora = agora
         self.senha = nova_senha()
+        self.senha_errada = False
         self.estado = "convite"
         self.motivo = ""
         self.conferencia = ""
@@ -217,6 +219,14 @@ class Sessao:
             self.encerrar(limite[1])
         return self.estado
 
+    def definir_senha(self, senha):
+        """Senha escolhida pelo serviço (a do ID, mostrada na tela) no lugar da sorteada aqui."""
+        self._exigir("convite")
+        senha = limpar_senha(senha)
+        if len(senha) != TAMANHO_SENHA:
+            raise Erro("Senha inválida.")
+        self.senha = senha
+
     def _exigir(self, estado):
         if self.conferir_prazo() != estado:
             raise Erro(self.motivo or "Esse convite já foi usado. Gere outro.")
@@ -237,7 +247,8 @@ class Sessao:
         except Erro:
             certo = False
         if not certo:
-            self.encerrar("A senha não conferiu. Por segurança o convite foi cancelado: gere outro.")
+            self.senha_errada = True
+            self.encerrar("A senha não conferiu. Por segurança a conexão foi cancelada.")
             raise Erro(self.motivo)
         self.conferencia = conferencia(sdp_atendido, sdp_tecnico)
         self._passar("aguardando_aceite")
@@ -311,14 +322,20 @@ class Gerente:
         self._respostas = {}      # número da ordem -> erro ("" = deu certo)
         self._seq = 0
 
-    def _linha_de_comando(self, stun):
+    def _linha_de_comando(self, stun, turn=None):
         if self._comando:
             cmd = list(self._comando)
         elif getattr(sys, "frozen", False):
             cmd = [os.path.join(config.pasta_programa(), "remoto", "MonitorPCRemoto.exe")]
         else:
             cmd = [sys.executable, os.path.join(config.pasta_recursos(), "remoto_agente.py")]
-        return cmd if stun else cmd + ["--sem-stun"]
+        if not stun:
+            return cmd + ["--sem-stun"]
+        if isinstance(turn, dict) and turn.get("urls") and turn.get("username") and turn.get("credential"):
+            urls = [u for u in turn["urls"] if isinstance(u, str) and u.startswith("turn:") and " " not in u]
+            if urls:
+                cmd += ["--turn", ",".join(urls), "--turn-usuario", str(turn["username"]), "--turn-senha", str(turn["credential"])]
+        return cmd
 
     def _viva(self):
         return self._proc is not None and self._proc.poll() is None and self._estado.get("estado") != "encerrada"
@@ -349,7 +366,7 @@ class Gerente:
                 if p is not self._proc:
                     return
                 if "estado" in d:
-                    self._estado = {k: d.get(k, "") for k in ("estado", "motivo", "conferencia", "convite", "senha")}
+                    self._estado = {k: d.get(k, "") for k in ("estado", "motivo", "conferencia", "convite", "senha", "senha_errada")}
                 if d.get("id") is not None:
                     self._respostas[d["id"]] = str(d.get("erro") or "")
                 self._cond.notify_all()
@@ -358,14 +375,14 @@ class Gerente:
                 self._estado = {"estado": "encerrada", "motivo": "O acesso remoto parou de funcionar."}
                 self._cond.notify_all()
 
-    def pedir(self, stun=True):
-        """Abre um pedido de ajuda (ou mantém o que já está aberto)."""
+    def pedir(self, stun=True, turn=None):
+        """Abre um pedido de ajuda (ou mantém o que já está aberto). turn: credenciais do retransmissor de reserva."""
         with self._cond:
             if self._viva():
                 return True, ""
             self._matar()
             try:
-                p = self._abrir(self._linha_de_comando(stun))
+                p = self._abrir(self._linha_de_comando(stun, turn))
             except OSError as e:
                 return False, f"Não consegui iniciar o acesso remoto: {e}"
             self._proc, self._estado, self._respostas = p, {"estado": "iniciando"}, {}

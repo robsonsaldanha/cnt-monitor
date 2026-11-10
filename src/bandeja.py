@@ -1,4 +1,4 @@
-"""Ícone do Monitor do PC perto do relógio.
+"""Ícone do CNT Monitor perto do relógio.
 
 Abre a janela do programa, mostra o mini painel flutuante e executa as ações que precisam
 da sessão do usuário (mostrar janela de um programa, abrir pasta, fechar janela, notificações).
@@ -28,7 +28,7 @@ from monitorpc import config  # noqa: E402
 WIN = os.name == "nt"
 PASTA_USUARIO = os.path.join(os.environ.get("LOCALAPPDATA") or os.path.expanduser("~/.local/share"), "MonitorPC")
 ICONE = None
-TITULO_JANELA = "Monitor do PC"
+TITULO_JANELA = "CNT Monitor"
 
 
 def _log():
@@ -230,7 +230,7 @@ def executar(a):
             return True, "Programa aberto."
         return False, "Arquivo não encontrado."
     if tipo == "notificar":
-        notificar(a.get("msg", ""), a.get("titulo", "Monitor do PC"))
+        notificar(a.get("msg", ""), a.get("titulo", "CNT Monitor"))
         return True, "Notificação mostrada."
     if tipo.startswith("captura"):
         return executar_captura(tipo, a)
@@ -290,7 +290,7 @@ AVISOS = None
 EXT_IMAGEM = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp")
 
 
-def notificar_windows(msg, titulo="Monitor do PC"):
+def notificar_windows(msg, titulo="CNT Monitor"):
     if ICONE is not None:
         try:
             ICONE.notify(str(msg)[:250], str(titulo)[:60])
@@ -298,7 +298,7 @@ def notificar_windows(msg, titulo="Monitor do PC"):
             pass
 
 
-def notificar(msg, titulo="Monitor do PC"):
+def notificar(msg, titulo="CNT Monitor"):
     """Aviso próprio do Monitor no canto da tela (o do Windows só se o próprio falhar)."""
     if AVISOS is not None:
         AVISOS.mostrar(titulo, msg)
@@ -660,10 +660,17 @@ class FaixaAjuda:
         threading.Thread(target=self._tk, daemon=True).start()
 
     def _buscar(self):
+        antes = ""
         while True:
             try:
                 d = api_post("api/acao", {"tipo": "ajuda_estado"}).get("dados") or {}
                 self.ativa = d.get("estado") == "ativa"
+                if d.get("estado") == "aguardando_aceite" and antes != "aguardando_aceite":
+                    # o pedido pode chegar com a janela fechada: sem isto ninguém veria o botão Permitir
+                    abrir_janela("ajuda")
+                    notificar("Um técnico quer acessar este computador. Permita ou recuse na janela do CNT Monitor.",
+                              "CNT Monitor — acesso remoto")
+                antes = d.get("estado") or ""
             except Exception:
                 pass        # serviço fora do ar por um instante: mantém o que estava
             time.sleep(1)
@@ -717,7 +724,7 @@ def desenhar(mem, cpu, ok=True, jogo=False):
     from PIL import Image, ImageDraw
     img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    d.rounded_rectangle([2, 2, 62, 62], radius=14, fill=(16, 20, 24, 255))
+    d.rounded_rectangle([2, 2, 62, 62], radius=14, fill=(8, 38, 61, 255))  # azul-marinho da CNT
     if not ok:
         d.line([18, 18, 46, 46], fill=(239, 95, 95, 255), width=7)
         d.line([46, 18, 18, 46], fill=(239, 95, 95, 255), width=7)
@@ -761,12 +768,12 @@ def atualizar_icone():
                         partes.append(f"{e['temp_cpu']:.0f}°C")
                     if ESTADO["jogo"] and ESTADO["fps"]:
                         partes.append(f"{ESTADO['fps']:.0f} FPS")
-                    ICONE.title = ("Monitor do PC — " + ", ".join(partes))[:120]
+                    ICONE.title = ("CNT Monitor — " + ", ".join(partes))[:120]
                 else:
                     if ultimo != "erro":
                         ICONE.icon = desenhar(0, 0, ok=False)
                         ultimo = "erro"
-                    ICONE.title = "Monitor do PC — serviço não está respondendo"
+                    ICONE.title = "CNT Monitor — serviço não está respondendo"
         except Exception:
             pass
         time.sleep(3)
@@ -845,7 +852,7 @@ def rodar_ferramenta(capturador, nome, caminho):
     else:
         ok, msg = cap.ferramenta(nome, caminho)
         if not ok:
-            notificar(msg, "Monitor do PC")
+            notificar(msg, "CNT Monitor")
     for t in threading.enumerate():
         if t is not threading.current_thread() and t.name != "atalhos":
             t.join()
@@ -952,8 +959,8 @@ def main():
         return pystray.MenuItem(nome[:60], abrir)
 
     def sobre(*_):
-        notificar(f"Monitor do PC {config.VERSAO} — monitor do computador, captura de tela e envio. "
-                  "github.com/robsonsaldanha/monitor-pc", "Sobre")
+        notificar(f"CNT Monitor {config.VERSAO} — monitor do computador, captura de tela e envio. "
+                  "github.com/robsonsaldanha/cnt-monitor", "Sobre")
 
     from monitorpc import envio
     menu_capturar = pystray.Menu(
@@ -1053,7 +1060,7 @@ def main():
         pystray.MenuItem("Itens recentes", menu_recentes),
         pystray.MenuItem("Estatísticas…", lambda *_: abrir_janela("capturas/estatisticas")),
         pystray.Menu.SEPARATOR,
-        pystray.MenuItem("Abrir Monitor do PC", lambda *_: abrir_janela(), default=True),
+        pystray.MenuItem("Abrir CNT Monitor", lambda *_: abrir_janela(), default=True),
         pystray.MenuItem("Programas", lambda *_: abrir_janela("programas")),
         pystray.MenuItem(lambda *_: "Desligar Modo Jogo" if ESTADO["jogo"] else "Ligar Modo Jogo", alternar_jogo),
         pystray.MenuItem("Plano de energia", pystray.Menu(lambda: [item_plano(p) for p in ESTADO["planos"]] or
@@ -1070,7 +1077,7 @@ def main():
         pystray.MenuItem("Sobre…", sobre),
         pystray.MenuItem("Fechar ícone (o monitoramento continua)", lambda *_: fechar_icone()),
     )
-    ICONE = pystray.Icon("monitor-pc", desenhar(0, 0), "Monitor do PC", menu)
+    ICONE = pystray.Icon("monitor-pc", desenhar(0, 0), "CNT Monitor", menu)
     ICONE.run()
 
 
