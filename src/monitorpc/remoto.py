@@ -38,6 +38,8 @@ _MAX_CODIGO = 40000
 _MAX_SDP = 60000
 _RE_IMPRESSAO = re.compile(r"^a=fingerprint:sha-256 ([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){31})\s*$", re.M)
 _RE_OUTRA_IMPRESSAO = re.compile(r"^a=fingerprint:(?!sha-256 ).*\r?\n", re.M)
+_RE_CAND_MDNS = re.compile(r"^(a=candidate:\S+ \d+ udp \d+ )[0-9A-Za-z-]+\.local( \d+ typ host[^\r\n]*)\r?\n", re.M | re.I)
+_MAX_ENDERECOS = 6
 PAPEIS = ("tecnico", "atendido")
 # Os códigos só têm letras maiúsculas e números (base32). Com "_", "-" ou "*" no meio, WhatsApp, Telegram e
 # clientes de e-mail tratam trechos como itálico/negrito e somem com os símbolos: o código chegava estragado.
@@ -252,12 +254,43 @@ class Sessao:
 
 
 # ---------------------------------------------------------------- lado do técnico
-def resposta_do_tecnico(senha, sdp_convite, sdp_tecnico):
+def enderecos_locais():
+    """IPv4 das placas de rede ligadas deste PC (rede local, VPN), sem 127.x nem 169.254.x."""
+    import ipaddress
+    import psutil
+    out = []
+    try:
+        ligadas = psutil.net_if_stats()
+        for nome, enderecos in psutil.net_if_addrs().items():
+            if nome in ligadas and not ligadas[nome].isup:
+                continue
+            for e in enderecos:
+                if e.family == 2:
+                    ip = ipaddress.ip_address(e.address)
+                    if not (ip.is_loopback or ip.is_link_local or ip.is_unspecified) and e.address not in out:
+                        out.append(e.address)
+    except Exception:  # noqa: BLE001  (sem a lista, o código sai como o navegador gerou)
+        pass
+    return out[:_MAX_ENDERECOS]
+
+
+def com_enderecos(sdp, ips):
+    """O navegador do técnico esconde o endereço local atrás de um nome "xxxx.local" (mDNS), e o outro
+    computador quase nunca consegue descobrir que endereço é esse: a ligação pela rede local só fechava
+    num sentido. Aqui cada nome é trocado pelos endereços reais deste PC (o navegador não diz qual nome
+    é de qual placa, então vai um candidato por endereço; os que não existirem só não respondem)."""
+    ips = [ip for ip in ips if re.fullmatch(r"\d{1,3}(\.\d{1,3}){3}", ip)][:_MAX_ENDERECOS]
+    if not ips:
+        return sdp
+    return _RE_CAND_MDNS.sub(lambda m: "".join(f"{m.group(1)}{ip}{m.group(2)}\r\n" for ip in ips), sdp)
+
+
+def resposta_do_tecnico(senha, sdp_convite, sdp_tecnico, ips=()):
     """O que o técnico devolve: o código de resposta e a prova de que sabe a senha."""
     if len(limpar_senha(senha)) != TAMANHO_SENHA:
         raise Erro(f"A senha tem {TAMANHO_SENHA} letras e números. Confira com quem pediu ajuda.")
     k = chave(senha, sdp_convite, sdp_tecnico)
-    return {"codigo": resposta(sdp_tecnico), "prova": prova(k, "tecnico"),
+    return {"codigo": resposta(com_enderecos(sdp_tecnico, ips)), "prova": prova(k, "tecnico"),
             "conferencia": conferencia(sdp_convite, sdp_tecnico)}
 
 

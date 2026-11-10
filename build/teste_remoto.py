@@ -316,6 +316,79 @@ def teste_agente_senha_errada():
     asyncio.run(_sessao_real(senha_errada=True))
 
 
+def teste_resposta_leva_os_enderecos_reais_do_tecnico():
+    """O navegador só informa nomes ".local", que o outro PC quase nunca resolve: o código de resposta
+    tem de levar os endereços de verdade, senão a ligação pela rede local só fecha num sentido."""
+    local = ("a=candidate:111 1 udp 2113937151 0f1e2d3c-aaaa-bbbb-cccc-1234567890ab.local 50001 typ host generation 0\r\n"
+             "a=candidate:222 1 udp 2113939711 9f8e7d6c-AAAA-bbbb-cccc-1234567890ab.local 50002 typ host generation 0\r\n")
+    publico = "a=candidate:333 1 udp 1677729535 200.1.2.3 50001 typ srflx raddr 0.0.0.0 rport 0 generation 0\r\n"
+    sdp = T + local + publico + "a=end-of-candidates\r\n"
+    novo = remoto.com_enderecos(sdp, ["192.168.0.7", "10.8.0.2", "não é ip", "fe80::1"])
+    assert ".local" not in novo and publico in novo and novo.endswith("a=end-of-candidates\r\n")
+    for ip in ("192.168.0.7", "10.8.0.2"):
+        for porta in ("50001", "50002"):
+            assert f" {ip} {porta} typ host generation 0\r\n" in novo
+    assert novo.count("a=candidate:") == 5 and "fe80" not in novo and "não é ip" not in novo
+    assert remoto.com_enderecos(sdp, []) == sdp                                  # sem endereços, fica como veio
+    assert remoto.com_enderecos(sdp, ["192.168.0.7"] * 50).count("a=candidate:") <= 1 + 2 * 6
+    r = remoto.resposta_do_tecnico("ABCD-EFGH-JKLM", A, sdp, ["192.168.0.7"])
+    lido = remoto.ler_resposta(r["codigo"])
+    assert " 192.168.0.7 50001 typ host" in lido and ".local" not in lido
+    assert remoto.impressao(lido) == remoto.impressao(sdp)                       # a prova da senha não muda
+    assert r["prova"] == remoto.prova(remoto.chave("ABCD-EFGH-JKLM", A, sdp), "tecnico")
+    for ip in remoto.enderecos_locais():
+        assert not ip.startswith(("127.", "169.254.")) and ip.count(".") == 3
+
+
+def teste_agente_mantem_o_caminho_enquanto_espera_a_resposta():
+    """A resposta do técnico demora minutos; até lá o agente tem de continuar falando com o servidor STUN
+    pelas mesmas portas do convite, senão o roteador esquece o endereço público que está no convite."""
+    import asyncio
+    from aioice import stun
+    import remoto_agente as ra
+
+    async def rodar():
+        pedidos = []
+
+        class Stun(asyncio.DatagramProtocol):
+            def connection_made(self, t):
+                self.t = t
+
+            def datagram_received(self, dados, de):
+                m = stun.parse_message(dados)
+                pedidos.append(de)
+                r = stun.Message(stun.Method.BINDING, stun.Class.RESPONSE, m.transaction_id)
+                r.attributes["XOR-MAPPED-ADDRESS"] = de
+                self.t.sendto(bytes(r), de)
+
+        ip = (remoto.enderecos_locais() or ["127.0.0.1"])[0]
+        t, _ = await asyncio.get_running_loop().create_datagram_endpoint(Stun, local_addr=(ip, 0))
+        estados = []
+        agente = ra.Agente(estados.append, stun=(f"stun:{ip}:{t.get_extra_info('sockname')[1]}",))
+        try:
+            await agente.iniciar()
+            assert estados[-1]["estado"] == "convite"
+            do_convite = set(pedidos)
+            assert do_convite, "o agente não consultou o servidor STUN"
+            pedidos.clear()
+            await _ate(lambda: len(pedidos) >= 3 * len(do_convite), 10)
+            assert set(pedidos) == do_convite, (set(pedidos), do_convite)   # as mesmas portas que estão no convite
+            await agente.encerrar()
+            await asyncio.sleep(0.3)
+            pedidos.clear()
+            await asyncio.sleep(0.5)
+            assert not pedidos                                   # sessão encerrada: para de mandar
+        finally:
+            await agente.encerrar()
+            t.close()
+
+    antes, ra.MANTER_CAMINHO_S = ra.MANTER_CAMINHO_S, 0.1
+    try:
+        asyncio.run(rodar())
+    finally:
+        ra.MANTER_CAMINHO_S = antes
+
+
 def teste_gerente_e_acoes_do_motor():
     """O serviço liga o agente de verdade (outro processo), o lado do técnico usa só as ações do motor."""
     import asyncio

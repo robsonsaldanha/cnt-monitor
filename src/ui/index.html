@@ -867,7 +867,15 @@ async function ajTecConectar(){ const bt=$('#ajGerar'); bt.disabled=true; const 
   const pc=AJU.pc=new RTCPeerConnection({iceServers:[{urls:AJ_STUN}]});
   pc.ontrack=e=>{ AJU.fluxo=(e.streams&&e.streams[0])||new MediaStream([e.track]); const v=$('#ajVideo'); if(v) v.srcObject=AJU.fluxo; };
   pc.ondatachannel=e=>{ const c=AJU.canal=e.channel; const provar=()=>{ if(AJU.resp) c.send(JSON.stringify({t:'prova',mac:AJU.resp.prova})); }; c.onmessage=ajTecMsg; if(c.readyState==='open') provar(); else c.onopen=provar; };
-  pc.onconnectionstatechange=()=>{ if(AJU.pc===pc&&['failed','closed'].includes(pc.connectionState)) ajTecFim('A conexão caiu ou não pôde ser feita. Quando os dois lados estão em 4G (ou em certas redes de empresa), a ligação direta não é possível.'); };
+  // Antes de ligar pela primeira vez o navegador desiste sozinho em ~15 s ("failed"), muito antes de a pessoa colar o código de resposta
+  // do outro lado. Por isso "failed" só encerra depois de já ter ligado; até lá os endereços do convite são tentados de novo a cada 5 s
+  // (com outro rótulo, senão o navegador ignora o endereço repetido), o que também mantém aberto o caminho de volta no roteador e no
+  // firewall. Só valem os endereços da primeira parte do convite: é a ligação que sobra depois de juntar vídeo e controle. Prazo: o do convite (10 min) mais o da conexão.
+  let ligou=false, vez=0; const m1=AJU.oferta.split(/^m=/m)[1]||'', cands=(m1.match(/^a=candidate:[^\r\n]*/gm)||[]).map(l=>l.slice(2)), mid=(m1.match(/^a=mid:([^\r\n]*)/m)||[])[1]||'0';
+  const insistir=setInterval(()=>{ if(AJU.pc!==pc||ligou){ clearInterval(insistir); return; } if(pc.remoteDescription) cands.forEach(c=>pc.addIceCandidate({candidate:c.replace(/^candidate:\S+/,'candidate:'+(++vez)),sdpMid:mid}).catch(()=>{})); },5000);
+  setTimeout(()=>{ if(AJU.pc===pc&&!ligou) ajTecFim('O outro computador não conectou a tempo. Peça um convite novo e tente de novo.'); },720000);
+  pc.onconnectionstatechange=()=>{ if(AJU.pc!==pc) return; const s=pc.connectionState; if(s==='connected') ligou=true;
+    if(s==='closed'||(s==='failed'&&ligou)) ajTecFim('A conexão caiu. Para continuar, peça um convite novo a quem precisa de ajuda.'); };
   try{ await pc.setRemoteDescription({type:'offer',sdp:AJU.oferta}); await pc.setLocalDescription(await pc.createAnswer());
     await new Promise(ok=>{ if(pc.iceGatheringState==='complete') return ok(); pc.onicegatheringstatechange=()=>{ if(pc.iceGatheringState==='complete') ok(); }; setTimeout(ok,6000); });
   }catch(_){ ajTecFechar(); toast('Esse convite não serve. Peça outro a quem precisa de ajuda.',1); bt.disabled=false; return; }
@@ -1320,7 +1328,7 @@ async function atuPasso(){ let d=null; try{ d=await API('atualizacao'); }catch(_
   atuRender(); }
 function atuRender(){ const el=$('#atuPainel'); if(!el) return; const s=STATUS||{};
   if(!ATU.ativo){ el.innerHTML=`<div class="item"><b>Versão instalada: ${esc(CFG_ATU.versao_atual||s.versao||'—')}</b><div class="ctl" style="display:flex;gap:8px"><button class="btn" id="atuVer">Procurar agora</button><button class="btn pri" id="atuInst" ${CFG_ATU.disponivel?'':'disabled'}>${CFG_ATU.disponivel?'Atualizar para '+esc(CFG_ATU.disponivel.versao):'Atualizar'}</button></div><small>${CFG_ATU.erro?esc(CFG_ATU.erro):CFG_ATU.disponivel?'Versão nova disponível.':CFG_ATU.ultima_verificacao?'Última verificação: '+quando(CFG_ATU.ultima_verificacao)+' — você está na versão mais nova.':'Ainda não verificado.'}</small></div>
-      <div class="item"><b>Atualizar automaticamente</b><div class="ctl"><label class="sw"><input type="checkbox" data-cfg="atualizacao_auto" ${CFG.atualizacao_auto?'checked':''}><span></span></label></div><small>Procura versão nova no GitHub a cada 6 horas e instala sozinho (nunca durante o Modo Jogo).</small></div>`;
+      <div class="item"><b>Atualizar automaticamente</b><div class="ctl"><label class="sw"><input type="checkbox" data-cfg="atualizacao_auto" ${CFG.atualizacao_auto?'checked':''}><span></span></label></div><small>Procura versão nova no GitHub a cada 10 minutos e instala sozinho (nunca durante o Modo Jogo nem com um pedido de ajuda aberto no Acesso remoto).</small></div>`;
     $('#atuVer').onclick=async()=>{ $('#atuVer').disabled=true; const r=await POST('acao',{tipo:'atualizar_verificar'}).catch(()=>null); if(r) toast(r.msg,!r.ok); CFG_ATU=await API('atualizacao').catch(()=>CFG_ATU); atuRender(); };
     $('#atuInst').onclick=async()=>{ if(!await confirmar('Atualizar agora?','O Monitor do PC vai baixar a versão nova, conferir a assinatura e instalar. O andamento aparece aqui; no fim, use o botão Recarregar.','Atualizar')) return;
       const r=await POST('acao',{tipo:'atualizar_instalar'}).catch(()=>null); if(!r||!r.ok){ toast(r?r.msg:'O serviço não respondeu.',1); return; } atuAcompanhar(await API('atualizacao').catch(()=>CFG_ATU)); };

@@ -48,6 +48,7 @@ def sha256_travado(trava, ao_ler=None):
 
 
 EM_ANDAMENTO = ("baixando", "conferindo", "instalando")
+VERIFICAR_CADA = 600      # segundos entre as procuras automáticas por versão nova
 
 
 class Atualizador:
@@ -59,6 +60,8 @@ class Atualizador:
         self.situacao = "parado"
         self.pct = 0                      # andamento da etapa atual (baixando / conferindo), 0 a 100
         self.alvo = None                  # versão que está sendo instalada
+        self._etag = None                 # da última resposta do GitHub: "nada mudou" (304) não gasta a cota de consultas
+        self._resposta = None
 
     def _etapa(self, situacao):
         self.situacao, self.pct = situacao, 0
@@ -75,12 +78,16 @@ class Atualizador:
             return self.disponivel
         self.situacao = "verificando"
         try:
-            req = urllib.request.Request(f"https://api.github.com/repos/{REPO}/releases/latest",
-                                         headers={"User-Agent": "MonitorDoPC/" + config.VERSAO,
-                                                  "Accept": "application/vnd.github+json"})
+            cab = {"User-Agent": "MonitorDoPC/" + config.VERSAO, "Accept": "application/vnd.github+json"}
+            if self._etag and self._resposta is not None:
+                cab["If-None-Match"] = self._etag
+            req = urllib.request.Request(f"https://api.github.com/repos/{REPO}/releases/latest", headers=cab)
             with urllib.request.urlopen(req, timeout=20) as r:
                 d = json.loads(r.read())
+                self._etag, self._resposta = r.headers.get("ETag"), d
         except urllib.error.HTTPError as e:
+            if e.code == 304 and self._resposta is not None:
+                return self._avaliar(self._resposta)
             self.erro = ("O repositório do Monitor do PC é privado — o GitHub não deixa baixar sem login. "
                          "Deixe o repositório público para a atualização automática funcionar.") if e.code == 404 else f"GitHub: {e}"
             self.situacao = "erro"
@@ -91,6 +98,9 @@ class Atualizador:
             self.situacao = "erro"
             self.ultima_verificacao = time.time()
             return None
+        return self._avaliar(d)
+
+    def _avaliar(self, d):
         self.ultima_verificacao = time.time()
         self.erro = None
         ativo = next((a for a in d.get("assets", []) if a["name"].startswith("MonitorDoPC-Setup") and a["name"].endswith(".exe")), None)

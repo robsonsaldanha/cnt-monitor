@@ -321,6 +321,37 @@ def teste_atualizacao_mostra_o_andamento():
             os.remove(atualizacao.FLAG_REABRIR)
 
 
+def teste_atualizacao_procura_de_10_em_10_minutos_sem_gastar_a_cota():
+    """A procura é frequente, então manda o ETag: enquanto nada muda o GitHub responde 304, que não conta
+    na cota de 60 consultas por hora, e o resultado continua sendo o da última resposta inteira."""
+    import io
+    assert atualizacao.VERIFICAR_CADA == 600
+    corpo = json.dumps({"tag_name": "v99.0.0", "name": "x", "body": "SHA256: " + "ab" * 32, "html_url": "p",
+                        "assets": [{"name": "MonitorDoPC-Setup-99.0.0.exe", "browser_download_url": "u", "size": 5}]}).encode()
+    pedidos = []
+
+    class Resp(io.BytesIO):
+        headers = {"ETag": '"abc"'}
+
+    def abrir(req, **k):
+        pedidos.append(req.get_header("If-none-match"))
+        if pedidos[-1] == '"abc"':
+            raise atualizacao.urllib.error.HTTPError(req.full_url, 304, "Not Modified", {}, None)
+        return Resp(corpo)
+
+    original = atualizacao.urllib.request.urlopen
+    atualizacao.urllib.request.urlopen = abrir
+    try:
+        a = atualizacao.Atualizador()
+        primeira = a.verificar()
+        assert primeira["versao"] == "99.0.0" and primeira["sha256"] == "ab" * 32
+        a.disponivel, a.erro = None, "velho"
+        assert a.verificar() == primeira and a.erro is None and a.situacao == "nova versão disponível"
+        assert pedidos == [None, '"abc"']
+    finally:
+        atualizacao.urllib.request.urlopen = original
+
+
 if __name__ == "__main__":
     try:
         for nome, f in list(globals().items()):

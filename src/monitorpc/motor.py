@@ -238,9 +238,11 @@ class Motor:
                     self.rede.ok = False
                 self.discos.atualizar_mapa()
                 self._extras_lentos(c)
-                if c["atualizacao_auto"] and time.time() - self._ult_atualizacao > 6 * 3600 and time.time() - self.inicio > 120:
+                if c["atualizacao_auto"] and time.time() - self._ult_atualizacao > atualizacao.VERIFICAR_CADA and time.time() - self.inicio > 120:
                     self._ult_atualizacao = time.time()
-                    if self.atualizador.verificar() and not self.jogo.ativo:
+                    # instalar reinicia o serviço: não no meio de um jogo nem de um acesso remoto (derrubaria a sessão)
+                    ocupado = self.jogo.ativo or self.ajuda.estado().get("estado") not in ("parada", "encerrada")
+                    if self.atualizador.verificar() and not ocupado:
                         self.atualizador.instalar()
             except Exception:
                 self.erros.append(traceback.format_exc())
@@ -330,7 +332,7 @@ class Motor:
                 return {"ok": True, "msg": "", "dados": {"sdp": remoto.ler_convite(a.get("codigo"))}}
             senha, oferta, resp = str(a.get("senha") or ""), str(a.get("oferta") or ""), str(a.get("resposta") or "")
             if tipo == "ajuda_tec_resposta":
-                return {"ok": True, "msg": "", "dados": remoto.resposta_do_tecnico(senha, oferta, resp)}
+                return {"ok": True, "msg": "", "dados": remoto.resposta_do_tecnico(senha, oferta, resp, remoto.enderecos_locais())}
             if tipo == "ajuda_tec_conferir":
                 return {"ok": remoto.conferir_atendido(senha, oferta, resp, a.get("mac")), "msg": ""}
         except remoto.Erro as e:

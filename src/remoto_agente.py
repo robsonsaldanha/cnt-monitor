@@ -27,6 +27,7 @@ WIN = os.name == "nt"
 STUN_PADRAO = ("stun:stun.l.google.com:19302", "stun:stun.cloudflare.com:3478")
 LARGURA_MAX = 1920
 QUADROS_S = 15
+MANTER_CAMINHO_S = 20       # roteadores esquecem um caminho UDP parado em 30 s ou mais
 _MAX_MENSAGEM = 300000
 _MAX_AREA = 100000
 
@@ -258,7 +259,30 @@ class Agente:
         await self.pc.setLocalDescription(await self.pc.createOffer())    # já sai com os endereços (ICE completo)
         self._convite = remoto.convite(self.pc.localDescription.sdp)
         self._vigia = asyncio.ensure_future(self._vigiar())
+        self._caminho = asyncio.ensure_future(self._manter_caminho())
         self._avisar()
+
+    async def _manter_caminho(self):
+        """O convite leva o endereço público que o roteador deu a este PC, mas a resposta do técnico demora
+        minutos e o roteador esquece um caminho parado. Um pedido ao servidor STUN de tempos em tempos,
+        pelas mesmas portas, mantém esse endereço valendo até a resposta chegar."""
+        import socket
+        from aioice import stun
+        try:
+            # antes da resposta o vídeo e o canal de controle ainda têm cada um a sua ligação
+            cons = [t._connection for t in self.pc._RTCPeerConnection__iceTransports]
+            servidor = next((c.stun_server for c in cons if c.stun_server), None)
+            if not servidor:
+                return
+            destino = (await asyncio.get_running_loop().getaddrinfo(
+                *servidor, family=socket.AF_INET, type=socket.SOCK_DGRAM))[0][4]
+            while self.sessao.estado == "convite":
+                await asyncio.sleep(MANTER_CAMINHO_S)
+                for p in [p for c in cons for p in c._protocols]:
+                    if ":" not in p.local_candidate.host:      # só IPv4 passa por tradução de endereço
+                        p.send_stun(stun.Message(stun.Method.BINDING, stun.Class.REQUEST), destino)
+        except Exception as e:  # noqa: BLE001  (é só um reforço: sem ele a sessão segue igual)
+            print("remoto: não consegui manter o caminho aberto:", e, file=sys.stderr)
 
     async def _vigiar(self):
         while self.sessao.conferir_prazo() != "encerrada":
