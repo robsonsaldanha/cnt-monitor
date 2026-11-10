@@ -207,6 +207,49 @@ def teste_pedido_pelo_id():
         p.kill()
 
 
+def teste_id_trocado_vale_na_hora():
+    """Quem digita o ID novo logo depois de "Trocar ID" encontra o computador; o antigo deixa de valer."""
+    p, url = _servidor()
+    e = encontro.Encontro(GerenteFalso(), url=url, arquivo=os.path.join(DADOS, "id4.json"))
+    e.iniciar()
+    try:
+        _ate(lambda: e.situacao == "online")
+        antigo = e.id
+        time.sleep(0.3)                                   # o laço principal já está na espera longa do ID antigo
+        novo = e.trocar_id()
+        assert novo != antigo and e.situacao == "online"
+        assert _req(url, "/conectar", {"id": novo})[0] == 200
+        _ate(lambda: _req(url, "/conectar", {"id": antigo})[0] == 404, 5)
+    finally:
+        e.parar()
+        p.kill()
+
+
+def teste_conexao_cai_para_o_endereco_que_funciona():
+    """Endereço sem saída (IPv6 quebrado) não segura o pedido: passa ao próximo e lembra a família que funcionou."""
+    p, url = _servidor()
+    porta = int(url.split(":")[2].split("/")[0])
+    morto = socket.socket()
+    morto.bind(("127.0.0.1", 0))
+    porta_morta = morto.getsockname()[1]
+    morto.close()
+    original = socket.getaddrinfo
+    socket.getaddrinfo = lambda h, pt, *a, **k: [
+        (socket.AF_INET6, socket.SOCK_STREAM, 6, "", ("::1", porta_morta, 0, 0)),
+        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", porta))]
+    encontro._familia_boa[0] = socket.AF_INET6
+    try:
+        s = encontro._conectar(("servidor.teste", porta), 10)
+        assert s.getpeername()[1] == porta and s.gettimeout() == 10
+        s.close()
+        assert encontro._familia_boa[0] == socket.AF_INET
+        e = encontro.Encontro(GerenteFalso(), url=f"http://servidor.teste:{porta}/api", arquivo=os.path.join(DADOS, "id5.json"))
+        assert e._post("/registrar", {"id": e.id, "chave": e.chave})["ok"]
+    finally:
+        socket.getaddrinfo = original
+        p.kill()
+
+
 def teste_turn_vai_para_o_agente():
     g = remoto.Gerente(comando=["agente"])
     t = {"urls": ["turn:203.0.113.9:3478?transport=udp", "stun:x", "turn:a b"], "username": "1:u", "credential": "c+/="}

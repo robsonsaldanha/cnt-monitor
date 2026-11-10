@@ -964,7 +964,7 @@ async function ajIdConectar(id, senha, srv){ AJU.srv=srv; AJU.alvo=id; document.
   if(!srv) return ajTecFim('O servidor do acesso remoto não está configurado neste computador.');
   const r=await ajEncPost('/conectar',{id}); if(AJU.fase!=='ligando') return;
   if(!r||!r.ok) return ajTecFim((r&&r.erro)||'Não consegui falar com o servidor do acesso remoto. Confira a internet.');
-  const pedido=AJU.pedido=r.pedido, ice=[{urls:AJ_STUN}]; if(r.turn) ice.push(r.turn); const limite=Date.now()+45000;
+  const pedido=AJU.pedido=r.pedido, ice=[{urls:AJ_STUN}]; if(r.turn) ice.push(r.turn); const limite=Date.now()+90000;
   while(AJU.pedido===pedido&&!['ativa','fim'].includes(AJU.fase)){
     const q=await fetch(srv+'/receber?pedido='+encodeURIComponent(pedido)).then(x=>x.json()).catch(()=>null); if(AJU.pedido!==pedido) return;
     if(!q||!Array.isArray(q.msgs)){ if(q&&q.erro&&AJU.fase==='ligando') return ajTecFim(q.erro); if(q&&q.erro) break; await ajEsperar(2000); continue; }

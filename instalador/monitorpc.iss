@@ -37,6 +37,7 @@ Name: "pawnio"; Description: "Instalar o driver PawnIO (necessário para ler a t
 Source: "..\dist\MonitorPC\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion createallsubdirs
 Source: "..\dist\MonitorPCServico\*"; DestDir: "{app}\servico"; Flags: recursesubdirs ignoreversion createallsubdirs
 Source: "..\dist\MonitorPCRemoto\*"; DestDir: "{app}\remoto"; Flags: recursesubdirs ignoreversion createallsubdirs
+Source: "..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 Source: "PawnIO_setup.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall skipifsourcedoesntexist; Tasks: pawnio
 
 [Icons]

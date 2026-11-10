@@ -647,13 +647,18 @@ class MiniPainel:
 
 class FaixaAjuda:
     """Faixa sempre por cima enquanto um técnico está vendo e controlando este computador, com o botão Encerrar.
-    Não dá para esconder: só some quando a sessão acaba."""
+    Não dá para esconder: só some quando a sessão acaba. Também mostra o pedido de acesso (Aceitar/Recusar)
+    na frente de tudo, no mesmo Tk (um Tk por thread)."""
     COR = "#c62828"
 
     def __init__(self):
         self.ativa = False
         self.root = None
         self.visivel = False
+        self.pedido = None          # estado "aguardando_aceite" enquanto a pessoa não responde
+        self.dlg = None
+        self.dlg_visivel = False
+        self._respondeu = 0         # até o serviço confirmar a resposta, o estado antigo não reabre a pergunta
 
     def iniciar(self):
         threading.Thread(target=self._buscar, daemon=True).start()
@@ -665,11 +670,10 @@ class FaixaAjuda:
             try:
                 d = api_post("api/acao", {"tipo": "ajuda_estado"}).get("dados") or {}
                 self.ativa = d.get("estado") == "ativa"
-                if d.get("estado") == "aguardando_aceite" and antes != "aguardando_aceite":
-                    # o pedido pode chegar com a janela fechada: sem isto ninguém veria o botão Permitir
-                    abrir_janela("ajuda")
-                    notificar("Um técnico quer acessar este computador. Permita ou recuse na janela do CNT Monitor.",
-                              "CNT Monitor — acesso remoto")
+                pede = d.get("estado") == "aguardando_aceite" and time.time() - self._respondeu > 5
+                self.pedido = d if pede else None
+                if self.pedido and antes != "aguardando_aceite":
+                    abrir_janela("ajuda")       # a janela vem para a frente na tela do acesso; a pergunta fica por cima
                 antes = d.get("estado") or ""
             except Exception:
                 pass        # serviço fora do ar por um instante: mantém o que estava
@@ -679,8 +683,78 @@ class FaixaAjuda:
         try:
             api_post("api/acao", {"tipo": "ajuda_encerrar"}, timeout=20)
             self.ativa = False
+            self.pedido = None
         except Exception as e:  # noqa: BLE001
             notificar(f"Não consegui encerrar o acesso remoto: {e}")
+
+    def _responder(self, aceitar):
+        self.pedido = None
+        if not aceitar:
+            return self._encerrar()
+        try:
+            r = api_post("api/acao", {"tipo": "ajuda_aceitar"}, timeout=20)
+            if not r.get("ok"):
+                notificar(r.get("msg") or "Não consegui permitir o acesso.", "CNT Monitor — acesso remoto")
+        except Exception as e:  # noqa: BLE001
+            notificar(f"Não consegui permitir o acesso: {e}", "CNT Monitor — acesso remoto")
+
+    def _montar_pedido(self, tk):
+        d = tk.Toplevel(self.root)
+        d.withdraw()
+        d.title("CNT Monitor — pedido de acesso remoto")
+        d.resizable(False, False)
+        d.attributes("-topmost", True)
+        d.configure(bg="#15191e", padx=22, pady=18)
+        f = ("Segoe UI", 10)
+        tk.Label(d, text="Um técnico quer acessar este computador", fg="#ffffff", bg="#15191e",
+                 font=("Segoe UI Semibold", 13)).pack(anchor="w")
+        tk.Label(d, text="Quem conectou informou a senha certa. Se você permitir, ele vê e controla a tela\n"
+                         "até você encerrar. Sem resposta em 2 minutos, o pedido é recusado.",
+                 fg="#b9c2cc", bg="#15191e", font=f, justify="left").pack(anchor="w", pady=(6, 10))
+        tk.Label(d, text="Código de conferência (pergunte se o do técnico é igual):", fg="#b9c2cc", bg="#15191e",
+                 font=f).pack(anchor="w")
+        self.dlg_codigo = tk.Label(d, text="", fg="#f4d79c", bg="#15191e", font=("Consolas", 22, "bold"))
+        self.dlg_codigo.pack(anchor="w", pady=(2, 14))
+        bs = tk.Frame(d, bg="#15191e")
+        bs.pack(anchor="e")
+
+        def botao(texto, cor, aceitar):
+            b = tk.Button(bs, text=texto, fg="#ffffff", bg=cor, activebackground=cor, activeforeground="#ffffff",
+                          relief="flat", font=("Segoe UI Semibold", 10), padx=16, pady=6, cursor="hand2",
+                          command=lambda: self._clicar(aceitar))
+            b.pack(side="left", padx=(8, 0))
+            return b
+
+        botao("Recusar", "#c62828", False)
+        self.dlg_aceitar = botao("Aceitar", "#2e7d32", True)
+        d.protocol("WM_DELETE_WINDOW", lambda: self._clicar(False))     # fechar no X = recusar
+        d.bind("<Escape>", lambda _e: self._clicar(False))
+        self.dlg = d
+
+    def _clicar(self, aceitar):
+        self._respondeu = time.time()
+        self.pedido = None
+        self.dlg.withdraw()
+        self.dlg_visivel = False
+        threading.Thread(target=self._responder, args=(aceitar,), daemon=True).start()
+
+    def _mostrar_pedido(self):
+        d = self.dlg
+        self.dlg_codigo.configure(text=(self.pedido or {}).get("conferencia") or "—")
+        d.update_idletasks()
+        l, t, rt, b = monitores()[0]
+        d.geometry(f"+{l + (rt - l - d.winfo_reqwidth()) // 2}+{t + (b - t - d.winfo_reqheight()) // 3}")
+        d.deiconify()
+        d.attributes("-topmost", True)
+        d.lift()
+        if WIN:
+            try:
+                trazer_para_frente(int(d.wm_frame(), 16))
+            except Exception:  # noqa: BLE001
+                pass
+        d.focus_force()
+        self.dlg_aceitar.focus_set()
+        self.dlg_visivel = True
 
     def _tk(self):
         import tkinter as tk
@@ -696,6 +770,7 @@ class FaixaAjuda:
                      cursor="hand2")
         b.pack(side="left", padx=(0, 10))
         b.bind("<Button-1>", lambda _e: threading.Thread(target=self._encerrar, daemon=True).start())
+        self._montar_pedido(tk)
         root.after(500, self._tick)
         root.mainloop()
 
@@ -714,6 +789,13 @@ class FaixaAjuda:
             elif self.visivel:
                 self.root.withdraw()
                 self.visivel = False
+            if self.pedido and not self.dlg_visivel:
+                self._mostrar_pedido()
+            elif self.pedido:
+                self.dlg.attributes("-topmost", True)    # outra janela "sempre por cima" não a cobre
+            elif self.dlg_visivel:
+                self.dlg.withdraw()                      # respondido na janela do Monitor, venceu ou o técnico desistiu
+                self.dlg_visivel = False
         except Exception as e:  # noqa: BLE001
             print("faixa do acesso remoto:", e)
         self.root.after(500, self._tick)
