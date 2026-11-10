@@ -13,8 +13,10 @@ prova que sabe a senha pela conexão já criptografada, amarrada aos certificado
 import os
 import json
 import time
+import socket
 import secrets
 import threading
+import http.client
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -26,6 +28,58 @@ ARQUIVO = os.path.join(config.BASE, "remoto_id.json")
 ESPERA_RESPOSTA = 60        # do convite entregue até a resposta do técnico chegar
 ERROS_PARA_TROCAR = 3
 _ESPERA_LONGA = 40          # o servidor devolve vazio em 25 s
+CONECTAR = 5                # por endereço: um IPv6 quebrado não segura cada pedido por 20 s ou mais
+_familia_boa = [socket.AF_INET]
+
+
+def _conectar(endereco, timeout=None, source_address=None, **_k):
+    """socket.create_connection com prazo curto por endereço, começando pela família (IPv4/IPv6) que funcionou
+    da última vez. O padrão do Windows tenta cada IPv6 por ~21 s antes de passar ao próximo: numa rede com
+    IPv6 sem saída, cada pedido ao servidor levava mais de 40 s e o pedido de conexão chegava atrasado."""
+    host, porta = endereco
+    infos = socket.getaddrinfo(host, porta, 0, socket.SOCK_STREAM)
+    infos.sort(key=lambda i: i[0] != _familia_boa[0])
+    total = timeout if isinstance(timeout, (int, float)) else None
+    erro = None
+    for fam, tipo, proto, _c, end in infos:
+        s = socket.socket(fam, tipo, proto)
+        try:
+            s.settimeout(min(CONECTAR, total) if total else CONECTAR)
+            if source_address:
+                s.bind(source_address)
+            s.connect(end)
+            s.settimeout(total)
+            _familia_boa[0] = fam
+            return s
+        except OSError as e:
+            erro = e
+            s.close()
+    raise erro or OSError(f"Não encontrei o endereço de {host}.")
+
+
+class _HTTP(http.client.HTTPConnection):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k)
+        self._create_connection = _conectar
+
+
+class _HTTPS(http.client.HTTPSConnection):
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k)
+        self._create_connection = _conectar
+
+
+class _AbrirHTTP(urllib.request.HTTPHandler):
+    def http_open(self, req):
+        return self.do_open(_HTTP, req)
+
+
+class _AbrirHTTPS(urllib.request.HTTPSHandler):
+    def https_open(self, req):
+        return self.do_open(_HTTPS, req, context=self._context)
+
+
+_abrir = urllib.request.build_opener(_AbrirHTTP, _AbrirHTTPS).open
 
 
 def novo_id():
@@ -93,16 +147,25 @@ class Encontro:
             pass                         # sem gravar, o ID só dura até o serviço reiniciar
 
     def trocar_id(self):
+        """O ID novo é registrado aqui mesmo, antes de voltar à tela: se ficasse para o laço principal (que
+        está no meio de uma espera longa), quem digitasse o ID novo logo em seguida ouviria "Não encontrei"."""
         with self._lock:
             antigo = (self.id, self.chave)
             self._gerar_id()
             self.situacao = "conectando"
         try:
-            self._post("/sair", {"id": antigo[0], "chave": antigo[1]}, falha_ok=True)
-        except Exception:  # noqa: BLE001  (sem internet: o servidor esquece o ID antigo sozinho)
+            self._registrar()
+        except Exception:  # noqa: BLE001  (sem internet agora: o laço principal tenta de novo)
             pass
         self._novo.set()
+        threading.Thread(target=self._sair, args=antigo, daemon=True, name="encontro-sair").start()
         return self.id
+
+    def _sair(self, i, c):
+        try:
+            self._post("/sair", {"id": i, "chave": c}, falha_ok=True)
+        except Exception:  # noqa: BLE001  (sem internet: o servidor esquece o ID antigo sozinho)
+            pass
 
     def trocar_senha(self):
         with self._lock:
@@ -121,7 +184,7 @@ class Encontro:
         req = urllib.request.Request(self.url + rota, data=json.dumps(corpo).encode(), method="POST",
                                      headers={"Content-Type": "application/json", "User-Agent": "CNTMonitor/" + config.VERSAO})
         try:
-            with urllib.request.urlopen(req, timeout=15) as r:
+            with _abrir(req, timeout=15) as r:
                 return json.loads(r.read() or b"{}")
         except urllib.error.HTTPError as e:
             try:
@@ -152,7 +215,7 @@ class Encontro:
             q = urllib.parse.urlencode({"id": self.id, "chave": self.chave})
         req = urllib.request.Request(f"{self.url}/esperar?{q}", headers={"User-Agent": "CNTMonitor/" + config.VERSAO})
         try:
-            with urllib.request.urlopen(req, timeout=_ESPERA_LONGA) as r:
+            with _abrir(req, timeout=_ESPERA_LONGA) as r:
                 return json.loads(r.read() or b"{}").get("msgs") or []
         except urllib.error.HTTPError as e:
             raise _Recusa(e.code, str(e)) from None
@@ -169,7 +232,7 @@ class Encontro:
                         if not self._novo.is_set():
                             self.tratar(m)
             except _Recusa as e:
-                if e.codigo == 404:      # o servidor reiniciou e esqueceu o registro: registra de novo na hora
+                if e.codigo == 404:      # o servidor esqueceu o registro (reiniciou, ID trocado): registra de novo na hora
                     continue
                 self._fora(f"O servidor recusou: {e}")
             except Exception as e:  # noqa: BLE001  (sem internet, servidor fora do ar)
