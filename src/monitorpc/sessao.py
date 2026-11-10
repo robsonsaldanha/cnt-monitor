@@ -83,8 +83,8 @@ def em_servico():
     """Verdadeiro quando este processo é o serviço (sessão 0, sem tela)."""
     if not WIN:
         return False
-    import win32process
-    return win32process.ProcessIdToSessionId(os.getpid()) == 0
+    import win32ts
+    return win32ts.ProcessIdToSessionId(os.getpid()) == 0
 
 
 class _Processo:

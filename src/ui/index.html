@@ -649,7 +649,7 @@ addEventListener('pointerup',()=>setTimeout(()=>{ PRESS=false; },120),true);
 addEventListener('pointercancel',()=>{ PRESS=false; },true);
 const ocupado=()=>PRESS && Date.now()-PRESS_T<4000;
 const API = p => fetch('/api/' + p, {cache:'no-store'}).then(r => { if(!r.ok) throw new Error(r.status); return r.json(); });
-const POST = (p,d) => fetch('/api/' + p, {method:'POST', headers:{'X-Token':TOKEN,'Content-Type':'application/json'}, body:JSON.stringify(d||{})}).then(r => r.json());
+const POST = (p,d) => fetch('/api/' + p, {method:'POST', headers:{'X-Token':TOKEN,'Content-Type':'application/json'}, body:JSON.stringify(d||{})}).then(r => r.json()).then(d => { if(d && d.erro && !d.msg){ d.msg = 'Erro: ' + d.erro; d.ok = false; } return d; });   // recusa/falha do serviço vem como {erro}: as telas mostram r.msg
 const nf0 = new Intl.NumberFormat('pt-BR',{maximumFractionDigits:0});
 const nf1 = new Intl.NumberFormat('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
 const nf2 = new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -684,7 +684,7 @@ function ico(exe, cls){ if(!exe || ICO_FALHA.has(exe)) return `<span class="ico 
 function icoFalhou(img){ ICO_FALHA.add(img.dataset.exe); img.outerHTML=`<span class="ico vz ${img.classList.contains('ico-g')?'ico-g':''}" aria-hidden="true">${inicial(img.dataset.exe)}</span>`; }
 
 /* =================== avisos, confirmação e menu =================== */
-function toast(msg, erro){ const t=document.createElement('div'); t.className='toast'+(erro?' erro':''); t.textContent=msg; $('#toasts').appendChild(t); setTimeout(()=>t.remove(), erro?7000:4500); }
+function toast(msg, erro){ const t=document.createElement('div'); t.className='toast'+(erro?' erro':''); t.textContent=msg||(erro?'Algo deu errado e o serviço não disse o motivo. Veja C:\\ProgramData\\MonitorPC\\servico.log.':'Feito.'); $('#toasts').appendChild(t); setTimeout(()=>t.remove(), erro?7000:4500); }
 function confirmar(tit, txt, bt, perigo){ return new Promise(ok=>{ $('#mTit').textContent=tit; $('#mTxt').textContent=txt; const s=$('#mSim'); s.textContent=bt||'Confirmar'; s.className='btn '+(perigo?'perigo':'pri');
   $('#modal').classList.add('on'); const fim=v=>{ $('#modal').classList.remove('on'); s.onclick=null; $('#mNao').onclick=null; ok(v); }; s.onclick=()=>fim(true); $('#mNao').onclick=()=>fim(false); s.focus(); }); }
 let MENU_ABERTO=false;

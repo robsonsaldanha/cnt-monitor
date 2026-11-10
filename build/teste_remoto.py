@@ -446,6 +446,20 @@ def teste_acoes_de_ajuda_so_no_proprio_pc():
         s.shutdown()
 
 
+def teste_chamadas_win32_existem():
+    """O caminho do serviço só roda instalado: confere aqui que cada função Win32 usada existe mesmo no pywin32."""
+    import importlib
+    import re
+    from monitorpc import sessao
+    raiz = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src")
+    for arq in ("monitorpc/sessao.py", "monitorpc/remoto.py", "remoto_agente.py", "servico.py", "bandeja.py"):
+        with open(os.path.join(raiz, arq), encoding="utf-8") as f:
+            usos = set(re.findall(r"\b(win32\w+|pywintypes)\.(\w+)", f.read()))
+        for mod, nome in sorted(usos):
+            assert hasattr(importlib.import_module(mod), nome), f"{arq}: {mod}.{nome} não existe"
+    assert sessao.em_servico() is False          # o teste roda na sessão de um usuário, não na do serviço
+
+
 if __name__ == "__main__":
     try:
         for nome, f in list(globals().items()):

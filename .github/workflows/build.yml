@@ -122,10 +122,12 @@ jobs:
           Get-Process MonitorPC, MonitorPCServico -ErrorAction SilentlyContinue | Format-Table Name, Id, WorkingSet64, CPU
           ./build/teste-acoes.ps1
           if (-not (Test-Path "C:\Program Files\Monitor do PC\remoto\MonitorPCRemoto.exe")) { throw "o agente do acesso remoto não foi instalado" }
-          # informativo: no servidor de build pode não haver ninguém logado na tela, e aí o pedido é recusado
+          # no servidor de build pode não haver ninguém logado na tela: aí o pedido é recusado, mas com o motivo escrito.
+          # Erro sem mensagem (exceção no serviço) reprova a compilação.
           $tok = (Get-Content C:\ProgramData\MonitorPC\token.txt -Raw).Trim()
           foreach ($t in 'ajuda_pedir','ajuda_encerrar') {
-            try { $r = Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:48731/api/acao" -Headers @{ "X-Token" = $tok } -ContentType "application/json" -Body "{`"tipo`":`"$t`"}" -TimeoutSec 60; Write-Host "$t : ok=$($r.ok) msg=$($r.msg) estado=$($r.dados.estado)" } catch { Write-Host "$t falhou: $_" }
+            try { $r = Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:48731/api/acao" -Headers @{ "X-Token" = $tok } -ContentType "application/json" -Body "{`"tipo`":`"$t`"}" -TimeoutSec 60; Write-Host "$t : ok=$($r.ok) msg=$($r.msg) estado=$($r.dados.estado)" } catch { Get-Content C:\ProgramData\MonitorPC\servico.log -ErrorAction SilentlyContinue | Select-Object -Last 30; throw "$t falhou no serviço: $_" }
+            if (-not $r.ok -and -not $r.msg) { throw "$t foi recusado sem dizer o motivo" }
           }
           Copy-Item C:\ProgramData\MonitorPC\servico.log api\ -ErrorAction SilentlyContinue
           Get-Content C:\ProgramData\MonitorPC\servico.log -ErrorAction SilentlyContinue | Select-Object -Last 30
