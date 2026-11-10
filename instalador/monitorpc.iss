@@ -36,6 +36,7 @@ Name: "pawnio"; Description: "Instalar o driver PawnIO (necessário para ler a t
 [Files]
 Source: "..\dist\MonitorPC\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion createallsubdirs
 Source: "..\dist\MonitorPCServico\*"; DestDir: "{app}\servico"; Flags: recursesubdirs ignoreversion createallsubdirs
+Source: "..\dist\MonitorPCRemoto\*"; DestDir: "{app}\remoto"; Flags: recursesubdirs ignoreversion createallsubdirs
 Source: "PawnIO_setup.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall skipifsourcedoesntexist; Tasks: pawnio
 
 [Icons]
@@ -99,5 +100,6 @@ begin
   Exec(ExpandConstant('{sys}\sc.exe'), 'stop MonitorPC', '', SW_HIDE, ewWaitUntilTerminated, R);
   Sleep(3000);
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM MonitorPCServico.exe', '', SW_HIDE, ewWaitUntilTerminated, R);
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM MonitorPCRemoto.exe', '', SW_HIDE, ewWaitUntilTerminated, R);
   Result := '';
 end;

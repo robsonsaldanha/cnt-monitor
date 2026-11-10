@@ -24,6 +24,7 @@ Depois de instalado, ele se atualiza sozinho (Configurações → Atualizações
 | Histórico / Lentidão / Alertas | 7 dias de histórico (configurável), momentos de lentidão com os culpados e alertas na tela. |
 | Relatório / Comparar períodos | Relatório completo (HTML, PDF, CSV) com recomendações e comparação lado a lado de dois períodos. |
 | Servidores (VPS) | CPU, memória, disco, rede, serviços systemd, containers Docker e sites dos seus servidores Linux via SSH. |
+| Acesso remoto | Pedir ajuda a um técnico ou ajudar alguém: convite, senha aleatória de uso único, código de conferência e aceite de quem está no computador. Conexão direta entre os dois PCs, criptografada de ponta a ponta, sem servidor no meio; faixa vermelha com "Encerrar" durante a sessão. |
 | Configurações | Mini painel, várias janelas, acesso pelo celular (com QR code), chave da API, backup das configurações. |
 
 ### Segurança

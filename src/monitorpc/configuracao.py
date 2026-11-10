@@ -186,7 +186,7 @@ def aplicar_inicializacao(c=None):
 PROTEGIDAS = {"acesso_senha", "api_chave"}   # só mudam pelas funções próprias, nunca pelo formulário
 # só mudam no próprio PC: rodam programas, decidem para onde as capturas vão ou usam a chave de IA
 SO_LOCAL = {"captura_acoes", "captura_rodar_acoes", "captura_uploader", "captura_destino", "captura_ia",
-            "captura_ia_provedor", "captura_ia_modelo", "captura_ia_prompt", "captura_fluxos", "captura_pasta", "ventoinhas"}
+            "captura_ia_provedor", "captura_ia_modelo", "captura_ia_prompt", "captura_fluxos", "captura_pasta", "ventoinhas", "ajuda_stun"}
 OCULTO = "••••••"   # no lugar do valor dos cabeçalhos do uploader (podem ter token)
 
 

@@ -17,7 +17,7 @@ from collections import deque, defaultdict
 import psutil
 
 from . import config, configuracao, banco, rede, temperatura, nt, gpu, discos, inicializacao
-from . import alertas, jogo, energia, servicos, atualizacao, sessao, regras, limpeza, vps, captura, ventoinhas
+from . import alertas, jogo, energia, servicos, atualizacao, sessao, regras, limpeza, vps, captura, ventoinhas, remoto
 
 WIN = os.name == "nt"
 NCPU = psutil.cpu_count() or 1
@@ -154,6 +154,7 @@ class Motor:
         self.regras = regras.MotorRegras()
         self.tarefas = limpeza.Tarefas()
         vps.vincular(configuracao.obter("vps"))
+        self.ajuda = remoto.Gerente()
         self.vps = vps.Gerenciador()
         self.vazamentos = []
         self._ult_vaz = 0
@@ -187,12 +188,16 @@ class Motor:
             os.remove(atualizacao.FLAG_REABRIR)
         except OSError:
             pass
+        self._abrir_icone()
+
+    def _abrir_icone(self):
         exe = os.path.join(config.pasta_programa(), "MonitorPC.exe")
         if os.path.exists(exe) and time.time() - self.bandeja_ts > 30:
             sessao.abrir_na_tela_do_usuario(f'"{exe}" --bandeja')
 
     def parar(self):
         self.parar_ev.set()
+        self.ajuda.parar()
         self.vent.liberar()
         self.rede.parar()
 
@@ -300,6 +305,37 @@ class Motor:
             self.vps.sincronizar(configuracao.obter("vps"))
         except Exception:
             pass
+
+    def _acao_ajuda(self, tipo, a):
+        """Acesso remoto (pedir ajuda / ajudar alguém). O servidor só deixa chegar aqui o que vem do próprio PC."""
+        def estado(ok=True, msg=""):
+            return {"ok": ok, "msg": msg, "dados": self.ajuda.estado()}
+        try:
+            if tipo == "ajuda_estado":
+                return estado()
+            if tipo == "ajuda_pedir":
+                return estado(*self.ajuda.pedir(configuracao.obter("ajuda_stun")))
+            if tipo == "ajuda_resposta":
+                return estado(*self.ajuda.ordem("resposta", codigo=str(a.get("codigo") or "")))
+            if tipo == "ajuda_aceitar":
+                r = self.ajuda.ordem("aceitar")
+                if r[0]:
+                    self._abrir_icone()      # a faixa "Acesso remoto ativo" é do ícone: garante que ele está aberto
+                return estado(*r)
+            if tipo == "ajuda_encerrar":
+                self.ajuda.parar()
+                return estado()
+            # lado do técnico: nada fica guardado, cada chamada traz o que precisa
+            if tipo == "ajuda_tec_convite":
+                return {"ok": True, "msg": "", "dados": {"sdp": remoto.ler_convite(a.get("codigo"))}}
+            senha, oferta, resp = str(a.get("senha") or ""), str(a.get("oferta") or ""), str(a.get("resposta") or "")
+            if tipo == "ajuda_tec_resposta":
+                return {"ok": True, "msg": "", "dados": remoto.resposta_do_tecnico(senha, oferta, resp)}
+            if tipo == "ajuda_tec_conferir":
+                return {"ok": remoto.conferir_atendido(senha, oferta, resp, a.get("mac")), "msg": ""}
+        except remoto.Erro as e:
+            return {"ok": False, "msg": str(e)}
+        return {"ok": False, "msg": "Ação desconhecida."}
 
     def remoto_rodando(self):
         s = self.servidores
@@ -1129,6 +1165,8 @@ class Motor:
                 return {"ok": False, "msg": vps.MSG_SEGREDO}
             esperado = antigo["fingerprint"] if mesmo else ""
             return res(self.vps.testar(item, a.get("segredo"), esperado))
+        if isinstance(tipo, str) and tipo.startswith("ajuda_"):
+            return self._acao_ajuda(tipo, a)
         if tipo == "vps_esquecer":
             vid = a.get("id")
             configuracao.salvar({"vps": [dict(v, fingerprint="") if v["id"] == vid else v for v in configuracao.obter("vps")]})

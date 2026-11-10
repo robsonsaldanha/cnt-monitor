@@ -645,6 +645,73 @@ class MiniPainel:
         self.root.after(500, self._tick)
 
 
+class FaixaAjuda:
+    """Faixa sempre por cima enquanto um técnico está vendo e controlando este computador, com o botão Encerrar.
+    Não dá para esconder: só some quando a sessão acaba."""
+    COR = "#c62828"
+
+    def __init__(self):
+        self.ativa = False
+        self.root = None
+        self.visivel = False
+
+    def iniciar(self):
+        threading.Thread(target=self._buscar, daemon=True).start()
+        threading.Thread(target=self._tk, daemon=True).start()
+
+    def _buscar(self):
+        while True:
+            try:
+                d = api_post("api/acao", {"tipo": "ajuda_estado"}).get("dados") or {}
+                self.ativa = d.get("estado") == "ativa"
+            except Exception:
+                pass        # serviço fora do ar por um instante: mantém o que estava
+            time.sleep(1)
+
+    def _encerrar(self):
+        try:
+            api_post("api/acao", {"tipo": "ajuda_encerrar"}, timeout=20)
+            self.ativa = False
+        except Exception as e:  # noqa: BLE001
+            notificar(f"Não consegui encerrar o acesso remoto: {e}")
+
+    def _tk(self):
+        import tkinter as tk
+        root = tk.Tk()
+        self.root = root
+        root.withdraw()
+        root.overrideredirect(True)
+        root.attributes("-topmost", True)
+        root.configure(bg=self.COR)
+        tk.Label(root, text="Acesso remoto ativo: um técnico está vendo e controlando este computador", fg="#ffffff",
+                 bg=self.COR, font=("Segoe UI Semibold", 10), padx=14, pady=7).pack(side="left")
+        b = tk.Label(root, text="Encerrar", fg=self.COR, bg="#ffffff", font=("Segoe UI", 9, "bold"), padx=12, pady=3,
+                     cursor="hand2")
+        b.pack(side="left", padx=(0, 10))
+        b.bind("<Button-1>", lambda _e: threading.Thread(target=self._encerrar, daemon=True).start())
+        root.after(500, self._tick)
+        root.mainloop()
+
+    def _tick(self):
+        try:
+            if self.ativa:
+                r = self.root
+                r.update_idletasks()
+                l, t, rt, _b = monitores()[0]
+                r.geometry(f"+{l + (rt - l - r.winfo_reqwidth()) // 2}+{t}")
+                if not self.visivel:
+                    r.deiconify()
+                    self.visivel = True
+                r.attributes("-topmost", True)
+                r.lift()
+            elif self.visivel:
+                self.root.withdraw()
+                self.visivel = False
+        except Exception as e:  # noqa: BLE001
+            print("faixa do acesso remoto:", e)
+        self.root.after(500, self._tick)
+
+
 # ------------------------------------------------------------------ ícone
 def desenhar(mem, cpu, ok=True, jogo=False):
     from PIL import Image, ImageDraw
@@ -811,6 +878,7 @@ def main():
     for alvo in (loop_fila, loop_janelas, atualizar_icone, loop_extras):
         threading.Thread(target=alvo, daemon=True).start()
     MiniPainel().iniciar()
+    FaixaAjuda().iniciar()
     import pystray
 
     def alternar_jogo(*_):
