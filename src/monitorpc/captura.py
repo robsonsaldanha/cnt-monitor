@@ -1289,26 +1289,59 @@ class _Selecao:
 
 # ================================================================ captura com rolagem
 _MARGEM_ROLAGEM = 24   # px ignorados em cada lado: a barra de rolagem muda a cada passo e quebrava a emenda
+_FAIXAS = 8            # cada linha vira 8 pedaços: um número que muda ao vivo estraga só um pedaço, não a linha
 
 
-def _linhas(img):
-    """Assinatura de cada linha da imagem, sem as bordas laterais."""
-    g = img.convert("L")
+def _linhas(img, x0=None, x1=None):
+    """Assinatura de cada linha da imagem entre as colunas x0 e x1 (padrão: sem as bordas laterais), uma por faixa
+    vertical: cada linha vira uma tupla de _FAIXAS pedaços."""
+    g = img if img.mode == "L" else img.convert("L")
     w = g.width
     m = _MARGEM_ROLAGEM if w > _MARGEM_ROLAGEM * 4 else 0
+    x0 = m if x0 is None else x0
+    x1 = w - m if x1 is None else x1
+    n = _FAIXAS if x1 - x0 >= _FAIXAS * 8 else 1
+    larg = (x1 - x0) // n
+    cortes = [(x0 + k * larg, x1 if k == n - 1 else x0 + (k + 1) * larg) for k in range(n)]
     dados = g.tobytes()
-    return [hash(dados[i * w + m:(i + 1) * w - m]) for i in range(g.height)]
+    return [tuple(hash(dados[i * w + a:i * w + b]) for a, b in cortes) for i in range(g.height)]
 
 
 def _parecidas(a, b):
-    """Fração de linhas iguais na mesma posição."""
-    return sum(1 for x, y in zip(a, b) if x == y) / max(1, len(a))
+    """Fração de pedaços de linha iguais na mesma posição."""
+    n = len(a[0]) if a else 1
+    return sum(1 for x, y in zip(a, b) for p, q in zip(x, y) if p == q) / max(1, len(a) * n)
+
+
+def _colunas_que_rolam(a, b):
+    """Faixa [x0, x1) das colunas que mudaram em mais de ~4% das linhas entre os quadros a e b (tons de cinza).
+    Deixa de fora o que fica parado na tela (barra lateral fixa, margens lisas). None se nada mudou."""
+    from PIL import Image, ImageChops
+    d = ImageChops.difference(a, b).point(lambda v: 255 if v else 0).resize((a.width, 1), Image.BOX)
+    cols = [x for x, v in enumerate(d.tobytes()) if v > 10]
+    return (cols[0], cols[-1] + 1) if cols else None
+
+
+def _acertos(A, B, s, raro):
+    """Com B deslocado s linhas em relação a A: (fração de pedaços iguais, fração entre os pedaços raros de B).
+    Os raros têm conteúdo; os comuns (fundo liso) batem em qualquer posição e não provam nada."""
+    total = iguais = raros = raros_iguais = 0
+    for i in range(len(A) - s):
+        for k, (p, q) in enumerate(zip(A[s + i], B[i])):
+            r = raro(k, q)
+            total += 1
+            raros += r
+            if p == q:
+                iguais += 1
+                raros_iguais += r
+    return iguais / max(1, total), (raros_iguais / raros if raros else 0.0)
 
 
 def _deslocamento(a, b, tolerancia=0.9):
-    """Quantas linhas novas o quadro b trouxe em relação ao a.
-    Devolve (s, topo, base): s = 0 se nada mudou, None se não achou a emenda; topo/base = faixas fixas
-    (cabeçalho e rodapé que não rolam). Aceita algumas linhas diferentes (efeito de "hover", cursor piscando)."""
+    """Quantas linhas novas o quadro b trouxe em relação ao a (assinaturas de _linhas).
+    Devolve (s, topo, base): s = 0 se não rolou, None se não achou a emenda; topo/base = faixas fixas
+    (cabeçalho e rodapé que não rolam). Aceita partes diferentes (hover, cursor piscando, números e gráficos
+    ao vivo): abaixo da `tolerancia`, decide pelo que tem conteúdo, rolando ou parado, se bater na maioria."""
     h = len(a)
     topo = 0
     while topo < h and a[topo] == b[topo]:
@@ -1320,33 +1353,73 @@ def _deslocamento(a, b, tolerancia=0.9):
         base += 1
     A, B = a[topo:h - base], b[topo:h - base]
     m = len(A)
-    # linhas-âncora: as raras (até 3 vezes no quadro; as em branco ficam de fora) votam no deslocamento
+    # pedaços-âncora: os raros (até 3 vezes na mesma faixa; os em branco ficam de fora) votam no deslocamento
     from collections import Counter, defaultdict
-    ca, cb = Counter(A), Counter(B)
+    ca = Counter((k, x) for linha in A for k, x in enumerate(linha))
+    cb = Counter((k, x) for linha in B for k, x in enumerate(linha))
+
+    def raro(k, x):
+        return cb[(k, x)] <= 3
+
     pos_a = defaultdict(list)
-    for i, x in enumerate(A):
-        if ca[x] <= 3:
-            pos_a[x].append(i)
+    for i, linha in enumerate(A):
+        for k, x in enumerate(linha):
+            if ca[(k, x)] <= 3:
+                pos_a[(k, x)].append(i)
     votos = Counter()
-    for j, x in enumerate(B):
-        if cb[x] <= 3:
-            for i in pos_a.get(x, ()):
-                if i > j:
-                    votos[i - j] += 1
+    for j, linha in enumerate(B):
+        for k, x in enumerate(linha):
+            if raro(k, x):
+                for i in pos_a.get((k, x), ()):
+                    if i > j:
+                        votos[i - j] += 1
     minimo = max(8, m // 10)          # parte em comum mínima para confiar na emenda
-    melhor = None
-    for s, _n in votos.most_common(6):
-        sobra = m - s
-        if sobra < minimo:
-            continue
-        taxa = sum(1 for i in range(sobra) if A[s + i] == B[i]) / sobra
-        if taxa >= tolerancia and (melhor is None or taxa > melhor[1]):
-            melhor = (s, taxa)
-    if melhor:
+    candidatos = [(s, *_acertos(A, B, s, raro)) for s, _n in votos.most_common(6) if m - s >= minimo]
+    parado, parado_raros = _acertos(A, B, 0, raro)
+    forte = max(candidatos, key=lambda c: c[1], default=None)
+    if forte and forte[1] >= tolerancia:
+        return forte[0], topo, base
+    if parado >= tolerancia:
+        return 0, topo, base
+    melhor = max(candidatos, key=lambda c: c[2], default=None)
+    if melhor and melhor[2] >= 0.5 and melhor[2] > parado_raros:
         return melhor[0], topo, base
-    if _parecidas(a, b) >= 0.9:
-        return 0, topo, base          # não rolou: só um detalhe mudou (hover, cursor piscando)
+    if parado_raros >= 0.5:
+        return 0, topo, base          # não rolou: só o que é ao vivo mudou
     return None, topo, base
+
+
+def _comparar(a, b):
+    """_deslocamento só nas colunas que rolam. Devolve (s, topo, base, colunas)."""
+    w = a.width
+    m = _MARGEM_ROLAGEM if w > _MARGEM_ROLAGEM * 4 else 0
+    cols = _colunas_que_rolam(a, b) or (0, w)
+    x0, x1 = max(cols[0], m), min(cols[1], w - m)
+    if x1 - x0 < 16:
+        x0, x1 = m, w - m
+    return (*_deslocamento(_linhas(a, x0, x1), _linhas(b, x0, x1)), cols)
+
+
+def _alargar(g, x0, x1, topo, base):
+    """Recorte lateral final: estende [x0, x1) sobre as colunas lisas vizinhas (a margem da página), sem entrar
+    na parte fixa. Diferença de até _MARGEM_ROLAGEM px da borda não recorta (fica como estava)."""
+    y0, y1 = topo, g.height - base
+    if y1 - y0 < 2:
+        return 0, g.width
+
+    def cor(x):
+        lo, hi = g.crop((x, y0, x + 1, y1)).getextrema()
+        return lo if lo == hi else None
+
+    if x0 > 0 and cor(x0 - 1) is not None:
+        c = cor(x0 - 1)
+        while x0 > 0 and cor(x0 - 1) == c:
+            x0 -= 1
+    if x1 < g.width and cor(x1) is not None:
+        c = cor(x1)
+        while x1 < g.width and cor(x1) == c:
+            x1 += 1
+    return (0 if x0 <= _MARGEM_ROLAGEM else x0), (g.width if x1 >= g.width - _MARGEM_ROLAGEM else x1)
 
 
 class _Emenda:
@@ -1380,19 +1453,24 @@ class _Emenda:
             self.pedacos.append(quadro.crop((0, ini, quadro.width, h - base)))
         self.ultimo, self.fim = quadro, h - base
 
-    def imagem(self):
+    def imagem(self, x0=0, x1=None):
+        """A imagem montada, só entre as colunas x0 e x1 (o que fica fixo do lado, como uma barra lateral, sairia
+        repetido a cada pedaço)."""
         from PIL import Image
         partes = list(self.pedacos)
         if self.fim < self.ultimo.height:
             partes.append(self.ultimo.crop((0, self.fim, self.ultimo.width, self.ultimo.height)))
+        w = partes[0].width
+        x1 = w if x1 is None else x1
         if len(partes) == 1:
-            return partes[0]
-        out = Image.new("RGB", (partes[0].width, sum(p.height for p in partes)))
-        y = 0
-        for p in partes:
-            out.paste(p, (0, y))
-            y += p.height
-        return out
+            out = partes[0]
+        else:
+            out = Image.new("RGB", (w, sum(p.height for p in partes)))
+            y = 0
+            for p in partes:
+                out.paste(p, (0, y))
+                y += p.height
+        return out if (x0, x1) == (0, w) else out.crop((x0, 0, x1, out.height))
 
 
 class _PainelRolagem:
@@ -1494,19 +1572,21 @@ def rolagem(bbox, parar=None, max_altura=40000, max_quadros=800):
         painel, esperar, texto = None, time.sleep, (lambda _t: None)
 
     def quadro_estavel():
-        """Espera a rolagem suave terminar: dois quadros seguidos (quase) iguais."""
+        """Espera a rolagem suave terminar: dois quadros seguidos (quase) iguais. Devolve (imagem, tons de cinza)."""
         esperar(0.12)
         img = capturar(bbox)[0]
-        lin = _linhas(img)
+        g = img.convert("L")
+        lin = _linhas(g)
         fim = time.time() + 1.5
         while time.time() < fim:
             esperar(0.08)
             novo = capturar(bbox)[0]
-            nlin = _linhas(novo)
+            ng = novo.convert("L")
+            nlin = _linhas(ng)
             if _parecidas(lin, nlin) >= 0.98:
-                return novo, nlin
-            img, lin = novo, nlin
-        return img, lin
+                return novo, ng
+            img, g, lin = novo, ng, nlin
+        return img, g
 
     def roda(delta):
         _u.mouse_event(0x0800, 0, 0, delta & 0xFFFFFFFF, 0)  # MOUSEEVENTF_WHEEL (negativo = para baixo)
@@ -1520,6 +1600,7 @@ def rolagem(bbox, parar=None, max_altura=40000, max_quadros=800):
         quadro, ant = quadro_estavel()
         emenda, partes = _Emenda(quadro), 1
         passo, parados, falhas = 120, 0, 0
+        faixa = fixas = None     # colunas que rolaram; (topo, base) do primeiro passo, para o recorte lateral
         texto("Rolando…  Esc ou o botão param")
         while partes < max_quadros:
             if parar.is_set() or apertou_esc():
@@ -1531,7 +1612,7 @@ def rolagem(bbox, parar=None, max_altura=40000, max_quadros=800):
                 continue
             roda(-passo)
             novo, lin = quadro_estavel()
-            s, topo, base = _deslocamento(ant, lin)
+            s, topo, base, cols = _comparar(ant, lin)
             if s == 0:
                 if passo < 120:
                     passo = 120   # passo pequeno pode ser ignorado por programas antigos
@@ -1545,12 +1626,14 @@ def rolagem(bbox, parar=None, max_altura=40000, max_quadros=800):
                 falhas += 1
                 roda(passo)
                 _volta, vlin = quadro_estavel()
-                if falhas >= 3 or passo <= 30 or _deslocamento(ant, vlin)[0] != 0:
+                if falhas >= 3 or passo <= 30 or _comparar(ant, vlin)[0] != 0:
                     motivo = "emenda"
                     break
                 passo = max(30, passo // 2)
                 continue
             parados = falhas = 0
+            faixa = cols if faixa is None else (min(faixa[0], cols[0]), max(faixa[1], cols[1]))
+            fixas = fixas or (topo, base)
             emenda.somar(novo, s, base)
             partes, ant = partes + 1, lin
             altura = emenda.altura
@@ -1563,6 +1646,9 @@ def rolagem(bbox, parar=None, max_altura=40000, max_quadros=800):
             if altura >= max_altura:
                 motivo = "limite"
                 break
+        if faixa:
+            g0 = quadro.convert("L")
+            return emenda.imagem(*_alargar(g0, faixa[0], faixa[1], *fixas)), motivo
         return emenda.imagem(), motivo
     finally:
         if painel:

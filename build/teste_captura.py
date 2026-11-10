@@ -28,11 +28,14 @@ def teste_atalhos():
 
 
 def teste_rolagem():
-    a = ["H1", "H2"] + [f"L{i}" for i in range(20)] + ["F"]
-    b = ["H1", "H2"] + [f"L{i}" for i in range(5, 25)] + ["F"]
+    def linhas(nomes):
+        return [(x,) for x in nomes]   # cada linha é uma tupla de pedaços, como em _linhas
+
+    a = linhas(["H1", "H2"] + [f"L{i}" for i in range(20)] + ["F"])
+    b = linhas(["H1", "H2"] + [f"L{i}" for i in range(5, 25)] + ["F"])
     assert captura._deslocamento(a, b) == (5, 2, 1)   # 5 linhas novas, cabeçalho de 2 e rodapé de 1 fixos
     assert captura._deslocamento(a, a) == (0, 0, 0)   # nada mudou: fim da página
-    c = ["H1", "H2"] + [f"X{i}" for i in range(20)] + ["F"]
+    c = linhas(["H1", "H2"] + [f"X{i}" for i in range(20)] + ["F"])
     assert captura._deslocamento(a, c)[0] is None     # sem emenda possível
 
 
@@ -127,6 +130,50 @@ def teste_rolagem_cabecalho_fixo():
     corte = (0, 0, 400 - captura._MARGEM_ROLAGEM, 500)
     assert final.size == (400, 500), final.size
     assert final.crop(corte).tobytes() == esperado.crop(corte).tobytes()
+
+
+def teste_rolagem_lateral_fixa_e_ao_vivo():
+    """Tela do próprio Monitor: barra lateral parada e números que mudam a cada atualização (antes subia, descia e
+    parava no 1º passo). A barra lateral sai da imagem final em vez de repetir a cada pedaço."""
+    import random
+    from PIL import Image, ImageDraw
+    pag = _pagina(1200, 400)
+    ImageDraw.Draw(pag).rectangle((80, 0, 95, 1199), fill="white")      # margem lisa da página
+    lateral = Image.new("RGB", (81, 300), (30, 30, 40))
+    dl = ImageDraw.Draw(lateral)
+    dl.line((80, 0, 80, 299), fill=(90, 90, 100))                        # borda da barra lateral
+    for y in range(10, 290, 24):
+        dl.rectangle((10, y, 60, y + 8), fill=(200, 200, 220))           # itens do menu
+    rnd = random.Random(3)
+
+    def quadro(topo_q):
+        q = _quadro(pag, topo_q, 300, topo_q // 5)
+        d = ImageDraw.Draw(q)
+        for y in range(0, 1200, 60):                                     # valores ao vivo, presos à página
+            if topo_q <= y < topo_q + 294:
+                d.rectangle((120, y - topo_q, 120 + rnd.randrange(20, 100), y - topo_q + 5),
+                            fill=(rnd.randrange(255), 50, 50))
+        q.paste(lateral, (0, 0))
+        return q
+
+    q0 = quadro(0)
+    emenda, ant, faixa, fixas = captura._Emenda(q0), q0.convert("L"), None, None
+    for topo_q in range(100, 1000, 100):
+        q = quadro(topo_q)
+        s, topo, base, cols = captura._comparar(ant, q.convert("L"))
+        assert s == 100, (topo_q, s)
+        faixa = cols if faixa is None else (min(faixa[0], cols[0]), max(faixa[1], cols[1]))
+        fixas = fixas or (topo, base)
+        emenda.somar(q, s, base)
+        ant = q.convert("L")
+    assert captura._comparar(ant, quadro(900).convert("L"))[0] == 0     # fim da página: só os valores mudaram
+    assert captura._comparar(q0.convert("L"), quadro(600).convert("L"))[0] is None   # rolou além da área
+    x0, x1 = captura._alargar(q0.convert("L"), faixa[0], faixa[1], *fixas)
+    assert (x0, x1) == (81, 400), (x0, x1)
+    final = emenda.imagem(x0, x1)
+    assert final.size == (319, 1200), final.size
+    corte = (240, 0, 400 - captura._MARGEM_ROLAGEM, 1200)                # fora dos valores ao vivo
+    assert final.crop((corte[0] - 81, 0, corte[2] - 81, 1200)).tobytes() == pag.crop(corte).tobytes()
 
 
 def teste_anotacoes():
