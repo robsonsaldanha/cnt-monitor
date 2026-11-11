@@ -207,6 +207,7 @@ class Motor:
         self.ajuda.parar()
         self.vent.liberar()
         self.rede.parar()
+        self.jogo.fps.parar()
 
     def _loop_rapido(self):
         while not self.parar_ev.is_set():
@@ -244,6 +245,7 @@ class Motor:
                     self.rede.parar()
                     self.rede.ok = False
                 self.discos.atualizar_mapa()
+                self.jogo.ajustar_fps(c)
                 self._extras_lentos(c)
                 if c["atualizacao_auto"] and time.time() - self._ult_atualizacao > atualizacao.VERIFICAR_CADA and time.time() - self.inicio > 120:
                     self._ult_atualizacao = time.time()

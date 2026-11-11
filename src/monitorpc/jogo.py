@@ -72,6 +72,7 @@ class FPS:
         self.lock = threading.Lock()
         self.quadros = defaultdict(deque)   # pid -> deque[(t, ms)]
         self.nomes = {}
+        self.ult_inicio = 0.0
 
     def exe(self):
         p = os.path.join(config.pasta_recursos(), "presentmon", "PresentMon.exe")
@@ -84,6 +85,7 @@ class FPS:
         if not exe:
             self.erro = "PresentMon não está no pacote."
             return False
+        self.ult_inicio = time.time()
         try:
             self.proc = subprocess.Popen([exe, "--output_stdout", "--stop_existing_session", "--session_name",
                                           "MonitorPC_FPS", "--v1_metrics", "--no_console_stats"],
@@ -240,6 +242,15 @@ class ModoJogo:
         self._salvar()
         return {"ok": True, "msg": "Modo Jogo ligado. " + "; ".join(self.log)}
 
+    def ajustar_fps(self, c):
+        """Liga o PresentMon quando o Modo Jogo ou o mini painel precisam do FPS; desliga quando ninguém precisa."""
+        quer = (self.ativo and c.get("jogo_fps")) or (c.get("mini_ativo") and "fps" in (c.get("mini_itens") or []))
+        if quer and not self.fps.rodando:
+            if time.time() - self.fps.ult_inicio > 30:   # se o PresentMon cai, não relança a cada 2 s
+                self.fps.iniciar()
+        elif not quer and self.fps.rodando:
+            self.fps.parar()
+
     def _forcar(self, nome):
         """Se o programa não fechou pelo X em alguns segundos, encerra."""
         with self.m.lock:
@@ -291,7 +302,6 @@ class ModoJogo:
                 except Exception:
                     pass
         self.prioridades = {}
-        self.fps.parar()
         if reabrir and d.get("fechados"):
             for f in d["fechados"]:
                 if f.get("exe") and f["nome"] != "WSL (Linux)":
