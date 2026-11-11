@@ -73,16 +73,18 @@ Depois de instalado, ele se atualiza sozinho (Configurações → Atualizações
 ### Acesso remoto
 
 - Tela inicial do programa (dá para trocar nas Configurações). Cada PC mostra um **ID de 9 números** e uma
-  **senha temporária**, com botões para copiar como texto ou imagem e para trocar ID e senha (o ID novo vale na hora).
+  **senha temporária**, com botões para copiar como texto (o principal) ou como imagem.
 - O técnico digita os dois e quem está no computador recebe um **pop-up na frente das outras janelas** para
   **Aceitar** ou **Recusar**, com um código de conferência.
 - Vários atendimentos ao mesmo tempo, cada um numa janela que abre ocupando a tela. A tela remota fica embaixo de uma
-  **barra própria** (nada por cima dela): ID e tempo, monitores, layout, Ajustar/Tamanho real, Tela cheia, Atalhos,
+  **barra própria** (nada por cima dela): ID e tempo, monitores, layout, Ajustar/Tamanho real, Tela cheia, Opções,
   Área de transferência, Arquivos e Encerrar.
 - **Vários monitores:** lado a lado (como estão de verdade), um ou outro (botões 1 · 2) ou **janelas separadas**, uma
   por monitor, para arrastar cada uma para um monitor do técnico. O padrão fica em Configurações → Acesso remoto.
-- **Atalhos** para o Windows do outro lado (Ctrl+Alt+Del, Ctrl+Shift+Esc, Win, Win+R, Win+E, Win+D, Win+L,
-  Win+Shift+S, Alt+Tab, Alt+F4, Print Screen). Em tela cheia o teclado inteiro vai direto.
+- **Atalhos do Windows** (toggle em Opções; padrão em Configurações): ligado, com uma tela do acesso na frente, Win,
+  Win+R, Alt+Tab, Alt+F4, Ctrl+Esc, Ctrl+Shift+Esc, Print Screen e Ctrl+W/T/N vão só para o outro PC; em qualquer
+  outra janela do técnico ficam no PC dele. Desligado, ficam sempre no PC do técnico. Quem faz isso é o ícone da
+  bandeja do técnico (gancho de teclado só enquanto a sessão está na frente). Ctrl+Alt+Del vai pelo botão em Opções.
 - **Área de transferência compartilhada** (texto, imagem e arquivos) nos dois sentidos, num só, ou desligada. Quem é
   atendido pode proibir o técnico de ler a área de transferência dele (Configurações).
 - **Arquivos** pela própria conexão criptografada: enviar (escolher, arrastar ou Ctrl+V), buscar e baixar do outro PC
@@ -91,7 +93,7 @@ Depois de instalado, ele se atualiza sozinho (Configurações → Atualizações
   menu do ícone mostra **“Encerrar conexão do técnico”**.
 - A tela e os comandos vão direto de um PC ao outro, **criptografados de ponta a ponta**; o servidor da CNT só
   apresenta os dois lados e, quando a ligação direta é impossível, um retransmissor repassa os pacotes sem conseguir lê-los.
-- A senha troca depois de cada acesso e o ID quando o PC reinicia. Sem o servidor, vale o convite manual.
+- A senha troca depois de cada acesso e o ID quando o PC reinicia.
 
 ### Servidores (VPS)
 

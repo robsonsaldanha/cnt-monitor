@@ -819,6 +819,46 @@ def teste_chamadas_win32_existem():
     assert sessao.em_servico() is False          # o teste roda na sessão de um usuário, não na do serviço
 
 
+def teste_atalhos_do_windows_so_na_sessao():
+    """Win, Alt+Tab, Alt+F4... viram F13..F22 só com a sessão (título marcado) na frente; a página desfaz a troca."""
+    import re
+    import ctypes
+    import remoto_agente
+    from monitorpc import teclado_remoto as K
+    assert K.titulo_da_sessao("CNT Monitor — 123 456 789" + K.MARCA)
+    assert K.titulo_da_sessao("CNT Monitor — 123 456 789 · monitor 2" + K.MARCA)
+    assert not K.titulo_da_sessao("CNT Monitor — 123 456 789")          # toggle desligado
+    assert not K.titulo_da_sessao("Sem título - Bloco de Notas")          # outro programa na frente
+    assert not K.titulo_da_sessao("Outro site" + K.MARCA) and not K.titulo_da_sessao(None)
+
+    tr = {}
+    assert K.decidir(K.VK_LWIN, True, False, False, tr) == K.VK_F13          # Win sozinho
+    assert K.decidir(K.VK_LWIN, True, False, False, tr) == K.VK_F13          # repetição
+    assert K.decidir(0x52, True, False, False, tr) is None                   # o R de Win+R passa normal
+    assert K.decidir(K.VK_LWIN, False, False, False, tr) == K.VK_F13 and tr == {}
+    assert K.decidir(K.VK_TAB, True, False, False, tr) is None               # Tab sozinho: digitação normal
+    assert K.decidir(K.VK_TAB, True, True, False, tr) == K.VK_F13 + 2        # Alt+Tab
+    assert K.decidir(K.VK_TAB, False, False, False, tr) == K.VK_F13 + 2      # Alt solto antes do Tab: sobe trocada
+    assert K.decidir(K.VK_F4, True, True, False, tr) == K.VK_F13 + 4 and K.decidir(K.VK_F4, False, True, False, tr)
+    assert K.decidir(K.VK_ESC, True, False, True, tr) == K.VK_F13 + 3        # Ctrl+Esc / Ctrl+Shift+Esc
+    K.decidir(K.VK_ESC, False, False, True, tr)
+    assert K.decidir(K.VK_ESPACO, True, False, True, tr) is None             # Ctrl+Espaço não é do Windows
+    assert K.decidir(0x57, True, False, True, tr) == K.VK_F13 + 7            # Ctrl+W não fecha a janela da sessão
+    K.decidir(0x57, False, False, True, tr)
+    assert K.decidir(0x41, True, False, True, tr) is None and tr == {}       # Ctrl+A passa normal (a página manda)
+
+    # a tabela da página (F13.. -> tecla verdadeira) é a mesma do gancho, e o agente conhece cada tecla
+    html = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src", "ui", "index.html"), encoding="utf-8").read()
+    js = dict(re.findall(r"(F\d+):'(\w+)'", re.search(r"const RS_FTECLA=\{([^}]*)\}", html).group(1)))
+    vk_js = {"MetaLeft": 0x5B, "MetaRight": 0x5C, "Tab": 0x09, "Escape": 0x1B, "F4": 0x73, "Space": 0x20,
+             "PrintScreen": 0x2C, "KeyW": 0x57, "KeyT": 0x54, "KeyN": 0x4E}
+    assert {f"F{sub - K.VK_F13 + 13}": vk for vk, (sub, _q) in K.TROCAS.items()} == {f: vk_js[c] for f, c in js.items()}
+    assert all(c in remoto_agente.SCAN or c in remoto_agente.SCAN_E0 for c in js.values())
+    u = ctypes.WinDLL("user32")
+    for nome in ("SetWindowsHookExW", "UnhookWindowsHookEx", "CallNextHookEx", "SetTimer", "GetForegroundWindow",
+                 "GetWindowTextW", "GetAsyncKeyState", "SendInput", "GetMessageW"):
+        assert hasattr(u, nome), nome
+
 if __name__ == "__main__":
     try:
         for nome, f in list(globals().items()):

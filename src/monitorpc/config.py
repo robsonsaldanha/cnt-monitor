@@ -2,7 +2,7 @@
 import os
 import sys
 
-VERSAO = "2.9.1"
+VERSAO = "2.9.2"
 WIN = os.name == "nt"
 
 if os.environ.get("MONITORPC_DADOS"):
@@ -36,6 +36,7 @@ PADRAO = {
     # acesso remoto: como o técnico vê vários monitores e a área de transferência compartilhada
     "remoto_layout": "lado",          # lado a lado | um (um ou outro) | janelas (uma janela por monitor)
     "remoto_area": "ambos",           # modo padrão quando este PC é o do técnico (remoto.MODOS_AREA)
+    "remoto_atalhos": True,           # técnico: Win, Alt+Tab etc. vão para o outro PC com a sessão na frente
     "remoto_permitir_ler_area": True,  # quando este PC é atendido: o técnico pode ler a área de transferência
     "rede_por_programa": True,
     "dns_reverso": True,

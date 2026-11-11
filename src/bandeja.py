@@ -1009,6 +1009,8 @@ def main():
     if WIN:
         CAP = capturador.Capturador(api_post, cfg, notificar, abrir_janela, esconder_janela, PASTA_USUARIO, AVISOS)
         threading.Thread(target=loop_captura, daemon=True).start()
+        from monitorpc import teclado_remoto
+        teclado_remoto.Gancho().iniciar()   # atalhos do Windows para a janela da sessão do técnico
     for alvo in (loop_fila, loop_janelas, atualizar_icone, loop_extras):
         threading.Thread(target=alvo, daemon=True).start()
     MiniPainel().iniciar()

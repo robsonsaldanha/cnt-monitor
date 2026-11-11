@@ -894,35 +894,26 @@ async function vAjuda(){ if(REMOTO){ $('#ajCorpo').innerHTML='<div class="vazio"
   const r=await ajAcao('ajuda_estado'); if(r.ok&&r.dados){ if(r.dados.meu) AJU.meu=r.dados.meu; if(!AJU.modo&&AJ_ATIVOS.includes(r.dados.estado)){ AJU.modo='pedir'; AJU.est=r.dados; } }
   ajRender(); }
 function ajSitTexto(m){ if(!m) return ['','Carregando…']; if(m.situacao==='online') return ['ok','Pronto para receber acesso.'];
-  if(m.situacao==='fora') return ['fora',(m.msg||'Sem conexão com o servidor do acesso remoto.')+' Tentando de novo sozinho; o convite manual continua funcionando.'];
+  if(m.situacao==='fora') return ['fora',(m.msg||'Sem conexão com o servidor do acesso remoto.')+' Tentando de novo sozinho.'];
   return ['','Conectando ao servidor do acesso remoto…']; }
 function ajMeuAtualizar(){ const m=AJU.meu; if(!m||!$('#ajMeuId')) return; $('#ajMeuId').textContent=m.id||'…'; $('#ajMeuSenha').textContent=m.senha||'…';
   const [c,t]=ajSitTexto(m), s=$('#ajSit'); s.className='aj-sit '+c; s.textContent=t; }
 function ajRender(){ const el=$('#ajCorpo'); ajTag(); if(AJU.modo==='pedir') return ajRenderPedir(el); if(AJU.modo==='tecnico') return ajRenderTecnico(el);
-  if(AJU.modo==='manual'){ el.innerHTML=`<div class="grade" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
-    <div class="painel aj-passo"><b>Preciso de ajuda</b><p class="mut2" style="margin:0 0 12px">Gera um convite e uma senha para você passar a um técnico. Ele só entra depois que você permitir, e você encerra quando quiser.</p><button class="btn pri" id="ajPedir">Pedir ajuda com convite</button></div>
-    <div class="painel aj-passo"><b>Vou ajudar alguém</b><p class="mut2" style="margin:0 0 12px">Cole o convite que a pessoa mandou e a senha que ela disse. Você vê e controla o computador dela enquanto ela deixar.</p><button class="btn" id="ajAjudar">Ajudar com convite</button></div></div>
-    <p class="mut" style="margin-top:12px">O convite manual não usa o servidor do acesso remoto: serve quando ele está fora do ar. <button class="btn" id="ajVoltarId">Voltar para ID e senha</button></p>`;
-    $('#ajPedir').onclick=async()=>{ $('#ajPedir').disabled=true; const r=await ajAcao('ajuda_pedir'); if(!r.ok){ toast(r.msg,1); $('#ajPedir').disabled=false; return; } AJU.modo='pedir'; AJU.manual=true; AJU.est=r.dados; ajRender(); };
-    $('#ajAjudar').onclick=()=>{ AJU.modo='tecnico'; AJU.fase='form'; ajRender(); }; $('#ajVoltarId').onclick=()=>{ AJU.modo=null; ajRender(); }; return; }
   el.innerHTML=`<div class="grade aj-home">
     <div class="painel aj-meu"><b>Este computador</b><p class="mut2">Passe o ID e a senha para quem vai ajudar você. O acesso só começa depois que você permitir, e você encerra quando quiser.</p>
       <div class="aj-cred"><div><small>ID</small><div class="aj-num" id="ajMeuId">…</div></div><div><small>Senha</small><div class="aj-num" id="ajMeuSenha">…</div></div></div>
       <p class="aj-sit" id="ajSit" role="status"></p>
-      <div class="aj-bts"><button class="btn pri" id="ajCopImg">Copiar como imagem</button><button class="btn" id="ajCopTxt">Copiar como texto</button><button class="btn" id="ajTrocaId">Trocar ID</button><button class="btn" id="ajTrocaSenha">Trocar senha</button></div>
+      <div class="aj-bts"><button class="btn pri" id="ajCopTxt">Copiar como texto</button><button class="btn" id="ajCopImg">Copiar como imagem</button></div>
       <p class="mut">A senha muda sozinha depois de cada acesso, e o ID quando o computador reinicia.</p></div>
     <div class="painel aj-outro"><b>Acessar outro computador</b><p class="mut2">Digite o ID e a senha que a pessoa passou. Cada acesso abre numa janela própria: dá para atender vários computadores ao mesmo tempo.</p>
       <label class="aj-campo">ID<input id="ajIdT" inputmode="numeric" placeholder="000 000 000" autocomplete="off" maxlength="13"></label>
       <label class="aj-campo">Senha<input id="ajSenhaId" placeholder="XXXX-XXXX" autocomplete="off" spellcheck="false" maxlength="12"></label>
       <button class="btn pri" id="ajConectarId">Conectar</button></div></div>
-    <p class="mut" style="margin-top:12px">Os dois computadores se acham pelo servidor da CNT, que só apresenta um ao outro: a tela e os comandos vão direto de um ao outro, criptografados, e a senha nunca passa por ele. <button class="btn" id="ajManual">Usar convite manual</button></p>
+    <p class="mut" style="margin-top:12px">Os dois computadores se acham pelo servidor da CNT, que só apresenta um ao outro: a tela e os comandos vão direto de um ao outro, criptografados, e a senha nunca passa por ele.</p>
     <div class="aj-arq" id="ajArq"></div>`;
   ajMeuAtualizar(); ajArquivos();
   $('#ajCopTxt').onclick=()=>{ if(AJU.meu) ajCopiar(AJU.meu.texto); };
   $('#ajCopImg').onclick=ajCopiarImagem;
-  $('#ajTrocaId').onclick=async()=>{ if(!await confirmar('Trocar o ID?','Quem tem o ID antigo não consegue mais conectar a este computador.','Trocar')) return; const r=await ajAcao('ajuda_trocar_id'); if(r.ok&&r.dados){ AJU.meu=r.dados.meu; ajMeuAtualizar(); toast('ID trocado.'); } else toast(r.msg,1); };
-  $('#ajTrocaSenha').onclick=async()=>{ const r=await ajAcao('ajuda_trocar_senha'); if(r.ok&&r.dados){ AJU.meu=r.dados.meu; ajMeuAtualizar(); toast('Senha trocada.'); } else toast(r.msg,1); };
-  $('#ajManual').onclick=()=>{ AJU.modo='manual'; ajRender(); };
   const id=$('#ajIdT'), sn=$('#ajSenhaId'), go=()=>ajAbrirSessao(id.value, sn.value);
   id.oninput=()=>{ const d=id.value.replace(/\D/g,'').slice(0,9); id.value=d.replace(/(\d{3})(?=\d)/g,'$1 '); };
   sn.oninput=()=>{ const d=sn.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8); sn.value=d.length>4?d.slice(0,4)+'-'+d.slice(4):d; };
@@ -951,28 +942,23 @@ addEventListener('message',e=>{ if(e.origin!==location.origin||e.data!=='sessao-
 const AJ_ATIVOS=['convite','conectando','aguardando_aceite','ativa'];
 function ajVigiar(){ clearInterval(AJU.timer); AJU.timer=setInterval(async()=>{
   const r=await ajAcao('ajuda_estado'); if(!r.ok||!r.dados) return; const d=r.dados; if(d.meu) AJU.meu=d.meu;
-  if(AJ_ATIVOS.includes(d.estado)&&AJU.modo!=='pedir'&&AJU.modo!=='tecnico'){ AJU.modo='pedir'; AJU.manual=false; AJU.foiAtiva=false; }
+  if(AJ_ATIVOS.includes(d.estado)&&AJU.modo!=='pedir'&&AJU.modo!=='tecnico'){ AJU.modo='pedir'; AJU.foiAtiva=false; }
   if(AJU.modo!=='pedir'){ if(vista==='ajuda'&&!AJU.modo) ajMeuAtualizar(); return; }
   if(d.estado==='ativa') AJU.foiAtiva=true;
   // pelo ID, tentativa que não chegou a abrir (senha errada, recusa, técnico desistiu) volta sozinha para o ID e a senha
-  if(!AJU.manual&&['encerrada','parada'].includes(d.estado)&&!AJU.foiAtiva){ AJU.modo=null; AJU.est=null; if(d.motivo) toast('Acesso remoto: '+d.motivo,1); if(vista==='ajuda') ajRender(); return; }
+  if(['encerrada','parada'].includes(d.estado)&&!AJU.foiAtiva){ AJU.modo=null; AJU.est=null; if(d.motivo) toast('Acesso remoto: '+d.motivo,1); if(vista==='ajuda') ajRender(); return; }
   AJU.est=d; if(JSON.stringify(d)!==AJU.visto){ ajTag(); if(vista==='ajuda') ajRender(); if(d.estado==='aguardando_aceite'&&vista!=='ajuda') ir('ajuda'); } },1000); }
 function ajRenderPedir(el){ const e=AJU.est||{estado:'iniciando'}; AJU.visto=JSON.stringify(e); let h='';
-  if(e.estado==='convite'&&AJU.manual) h=`<div class="painel"><div class="aj-passo"><b>1. Mande este convite ao técnico</b><textarea readonly rows="4" id="ajConv">${esc(e.convite)}</textarea><p><button class="btn pri" id="ajCopConv">Copiar convite</button> <span class="mut">Pode ir por WhatsApp ou e-mail (só tem letras e números). Vale 10 minutos e uma vez só.</span></p></div>
-    <div class="aj-passo"><b>2. Diga esta senha ao técnico por outro meio (telefone, por exemplo)</b><div class="aj-senha">${esc(e.senha)}</div><p class="mut">Não mande a senha na mesma conversa do convite: é ela que garante que quem conecta é o técnico que você chamou.</p></div>
-    <div class="aj-passo"><b>3. Cole aqui o código de resposta que o técnico devolver</b><textarea rows="4" id="ajResp" placeholder="MPCR…"></textarea><p><button class="btn pri" id="ajConectar">Conectar</button> <button class="btn" id="ajCancelar">Cancelar pedido</button> <span class="mut">É um texto longo que começa com MPCR, parecido com o convite.</span></p></div></div>`;
-  else if(['convite','conectando','iniciando'].includes(e.estado)) h=`<div class="painel aj-passo"><b>Um técnico está se conectando…</b><p class="mut">Leva alguns segundos. Ele só vê e controla este computador depois que você permitir.</p><p><button class="btn" id="ajCancelar">Recusar</button></p></div>`;
+  if(['convite','conectando','iniciando'].includes(e.estado)) h=`<div class="painel aj-passo"><b>Um técnico está se conectando…</b><p class="mut">Leva alguns segundos. Ele só vê e controla este computador depois que você permitir.</p><p><button class="btn" id="ajCancelar">Recusar</button></p></div>`;
   else if(e.estado==='aguardando_aceite') h=`<div class="painel aj-passo"><b>Permitir que o técnico veja e controle este computador?</b><p>Quem conectou informou a senha certa. Código de conferência: <span class="aj-senha">${esc(e.conferencia)}</span></p><p class="mut">Se quiser ter certeza de que é o seu técnico, pergunte se o código dele é igual. Até você permitir, ele não vê nada.</p><p><button class="btn pri" id="ajPermitir">Permitir acesso</button> <button class="btn perigo" id="ajCancelar">Recusar</button></p></div>`;
   else if(e.estado==='ativa') h=`<div class="aj-vivo"><div><b>Este computador está sendo visto e controlado pelo técnico.</b><br><span class="mut2">Você pode encerrar a qualquer momento. A sessão acaba sozinha em 4 horas.</span></div><button class="btn perigo" id="ajCancelar">Encerrar agora</button></div>`;
   else h=`<div class="painel aj-passo"><b>Sessão encerrada</b><p>${esc(e.motivo||'O acesso remoto foi encerrado.')}</p><p><button class="btn pri" id="ajNovo">Voltar</button></p></div>`;
   el.innerHTML=h; const b=id=>$('#'+id);
-  if(b('ajCopConv')) b('ajCopConv').onclick=()=>ajCopiar(e.convite);
-  if(b('ajConectar')) b('ajConectar').onclick=async()=>{ b('ajConectar').disabled=true; const r=await ajAcao('ajuda_resposta',{codigo:b('ajResp').value}); if(!r.ok) toast(r.msg,1); if(r.dados) AJU.est=r.dados; if(r.ok||(r.dados&&r.dados.estado!=='convite')) ajRender(); else b('ajConectar').disabled=false; };
   if(b('ajPermitir')) b('ajPermitir').onclick=async()=>{ const r=await ajAcao('ajuda_aceitar'); if(!r.ok) toast(r.msg,1); if(r.dados) AJU.est=r.dados; ajRender(); };
   if(b('ajCancelar')) b('ajCancelar').onclick=async()=>{ const r=await ajAcao('ajuda_encerrar'); if(r.dados) AJU.est=r.dados; ajRender(); };
-  if(b('ajNovo')) b('ajNovo').onclick=()=>{ AJU.modo=null; AJU.est=null; AJU.manual=false; AJU.foiAtiva=false; ajRender(); }; }
+  if(b('ajNovo')) b('ajNovo').onclick=()=>{ AJU.modo=null; AJU.est=null; AJU.foiAtiva=false; ajRender(); }; }
 function ajTecFechar(){ const pc=AJU.pc, c=AJU.canal; AJU.pc=AJU.canal=AJU.fluxo=null; AJU.trilhas={}; AJU.senha=''; if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
-  if(RS){ clearInterval(RS.timer); rsFecharJanelas(); for(const ok of RS.espera.values()) ok(null); RS=null; } document.body.classList.remove('rs-ativo');
+  if(RS){ clearInterval(RS.timer); rsFecharJanelas(); for(const ok of RS.espera.values()) ok(null); RS=null; } document.body.classList.remove('rs-ativo'); document.title=document.title.replace(RS_MARCA,'');
   try{ if(c&&c.readyState==='open') c.send(JSON.stringify({t:'fim'})); }catch(_){ } if(pc) setTimeout(()=>pc.close(),150); }
 function ajTecFim(motivo){ if(AJU.modo!=='tecnico'||AJU.fase==='fim') return; ajTecFechar(); AJU.fase='fim'; AJU.msg=motivo; ajRender(); }
 function ajPreferirH264(pc){ // H.264: o navegador decodifica pela placa de vídeo e o outro lado comprime mais rápido que o VP8
@@ -1002,12 +988,10 @@ async function ajTecIniciar(codigo, senha, ice){ const r=await ajAcao('ajuda_tec
   AJU.sdp=pc.localDescription.sdp; if(!/^a=candidate:/m.test(AJU.sdp)){ ajTecFechar(); return 'Este navegador ou esta rede não permite conexões diretas (nenhum endereço foi encontrado). Abra o CNT Monitor pelo Edge ou Chrome e confira o firewall.'; }
   const q=await ajAcao('ajuda_tec_resposta',{senha,oferta:AJU.oferta,resposta:AJU.sdp}); if(!q.ok){ ajTecFechar(); return q.msg||'Não consegui responder ao convite.'; }
   AJU.resp=q.dados; return ''; }
-async function ajTecConectar(){ const bt=$('#ajGerar'); bt.disabled=true; const erro=await ajTecIniciar($('#ajConvT').value,$('#ajSenhaT').value,[{urls:AJ_STUN}]);
-  if(erro){ toast(erro,1); bt.disabled=false; return; } AJU.fase='codigo'; ajRender(); }
 const ajFmtId=i=>String(i||'').replace(/(\d{3})(?=\d)/g,'$1 ');
 const ajEsperar=ms=>new Promise(ok=>setTimeout(ok,ms));
 function ajEncPost(rota,corpo){ return fetch(AJU.srv+rota,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(corpo)}).then(x=>x.json()).catch(()=>null); }
-// Acesso pelo ID: o servidor da CNT entrega o convite do outro PC e leva a nossa resposta; o resto é igual ao convite manual.
+// Acesso pelo ID: o servidor da CNT entrega o convite do outro PC e leva a nossa resposta.
 async function ajIdConectar(id, senha, srv){ AJU.srv=srv; AJU.alvo=id; document.title='CNT Monitor — '+ajFmtId(id); AJU.fase='ligando'; ajRender();
   if(!srv) return ajTecFim('O servidor do acesso remoto não está configurado neste computador.');
   const r=await ajEncPost('/conectar',{id}); if(AJU.fase!=='ligando') return;
@@ -1029,26 +1013,19 @@ function ajSessaoIniciar(){ document.body.classList.add('so-sessao'); for(const 
   addEventListener('pagehide',()=>{ ajDesistir(); ajTecFechar(); });
   if(window.opener) window.opener.postMessage('sessao-pronta',location.origin); else ajTecFim('Abra o acesso pela tela de Acesso remoto do CNT Monitor.'); }
 async function ajTecMsg(ev){ let m; try{ m=JSON.parse(ev.data); }catch(_){ return; } if(!m||typeof m!=='object') return;
-  if(m.t==='prova'&&(AJU.fase==='codigo'||AJU.fase==='conferindo')){ const r=await ajAcao('ajuda_tec_conferir',{senha:AJU.senha,oferta:AJU.oferta,resposta:AJU.sdp,mac:m.mac}); AJU.senha='';
-    if(!r.ok){ ajTecFim('O outro computador não provou que conhece a senha, então a conexão foi encerrada. Pode haver alguém no meio do caminho: peça um convite novo.'); return; }
+  if(m.t==='prova'&&AJU.fase==='conferindo'){ const r=await ajAcao('ajuda_tec_conferir',{senha:AJU.senha,oferta:AJU.oferta,resposta:AJU.sdp,mac:m.mac}); AJU.senha='';
+    if(!r.ok){ ajTecFim('O outro computador não provou que conhece a senha, então a conexão foi encerrada. Pode haver alguém no meio do caminho: peça uma senha nova e conecte de novo.'); return; }
     AJU.fase='aguardando'; ajRender(); }
   else if(m.t==='ativa'&&AJU.fase==='aguardando') rsAtivar(m);
   else if(m.t==='area'&&typeof m.texto==='string'&&RS) rsAreaChegou(m.texto);
   else if(m.t==='area_teto'&&RS){ RS.lerTeto=m.ler_area!==false; rsBarra(); }
   else if(m.t==='aviso'&&typeof m.msg==='string') toast(m.msg,1);
   else if(m.t==='fim') ajTecFim(typeof m.motivo==='string'&&m.motivo?m.motivo:'A sessão foi encerrada pelo outro lado.'); }
-function ajSairTec(){ if(SESSAO){ ajDesistir(); ajTecFechar(); window.close(); return; } ajTecFechar(); AJU.fase='form'; ajRender(); }
+function ajSairTec(){ if(SESSAO){ ajDesistir(); ajTecFechar(); window.close(); return; } ajTecFechar(); AJU.modo=null; ajRender(); }
 function ajRenderTecnico(el){ const conf=AJU.resp?esc(AJU.resp.conferencia):'';
   if(AJU.fase==='ligando'||AJU.fase==='conferindo'){ const lig=AJU.fase==='ligando';
     el.innerHTML=`<div class="painel aj-passo"><b>${lig?(AJU.alvo?'Conectando ao '+esc(ajFmtId(AJU.alvo))+'…':'Preparando a conexão…'):'Conferindo a senha…'}</b><p class="mut">${lig?'Pedindo a conexão ao outro computador.':'A senha é conferida entre os dois computadores, sem passar pelo servidor.'}</p><p><button class="btn" id="ajSair">Cancelar</button></p></div>`;
     $('#ajSair').onclick=ajSairTec; return; }
-  if(AJU.fase==='form'){ el.innerHTML=`<div class="painel"><div class="aj-passo"><b>1. Cole o convite que a pessoa mandou</b><textarea rows="4" id="ajConvT" placeholder="MPCC…"></textarea></div>
-      <div class="aj-passo"><b>2. Digite a senha que ela disse</b><input type="text" id="ajSenhaT" placeholder="XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" style="width:220px;font:600 16px Consolas,monospace;text-transform:uppercase"></div>
-      <div class="aj-passo"><button class="btn pri" id="ajGerar">Gerar código de resposta</button> <button class="btn" id="ajSair">Voltar</button></div></div>`;
-    $('#ajGerar').onclick=ajTecConectar; $('#ajSair').onclick=()=>{ AJU.modo=null; ajRender(); }; return; }
-  if(AJU.fase==='codigo'){ el.innerHTML=`<div class="painel"><div class="aj-passo"><b>3. Mande este código de resposta de volta</b><textarea readonly rows="4">${esc(AJU.resp.codigo)}</textarea><p><button class="btn pri" id="ajCopResp">Copiar código de resposta</button> <button class="btn" id="ajSair">Cancelar</button></p>
-      <p class="mut">É este texto inteiro que a pessoa cola no passo 3 do Monitor dela. A conexão começa sozinha depois disso; esta tela muda quando a senha for conferida.</p></div></div>`;
-    $('#ajCopResp').onclick=()=>ajCopiar(AJU.resp.codigo); $('#ajSair').onclick=ajSairTec; return; }
   if(AJU.fase==='aguardando'){ el.innerHTML=`<div class="painel"><div class="aj-passo"><b>Senha conferida nos dois lados.</b><p class="mut">Aguardando a pessoa permitir o acesso no computador dela.</p></div>
       <div class="aj-passo"><b>Código de conferência</b><div class="aj-senha">${conf}</div><p class="mut">A pessoa está vendo um código igual a este antes de clicar em Permitir. Não precisa digitar em lugar nenhum.</p><p><button class="btn" id="ajSair">Cancelar</button></p></div></div>`;
     $('#ajSair').onclick=ajSairTec; return; }
@@ -1057,7 +1034,11 @@ function ajRenderTecnico(el){ const conf=AJU.resp?esc(AJU.resp.conferencia):'';
 
 /* --- sessão do técnico: moldura com barra (como a do AnyDesk), vários monitores, atalhos, área de transferência e arquivos.
    Nada fica por cima da tela remota: a barra é uma faixa própria em cima e o painel de arquivos encolhe a área do vídeo. --- */
-const RS_ATALHOS=[['ctrl_alt_del','Ctrl+Alt+Del'],['ctrl_shift_esc','Ctrl+Shift+Esc (Gerenciador de Tarefas)'],['win','Win (menu Iniciar)'],['win_r','Win+R (Executar)'],['win_e','Win+E (Explorador de Arquivos)'],['win_d','Win+D (mostrar a área de trabalho)'],['win_l','Win+L (bloquear)'],['win_shift_s','Win+Shift+S (recorte de tela)'],['alt_tab','Alt+Tab'],['alt_f4','Alt+F4'],['print','Print Screen']];
+// Atalhos do Windows: com o toggle ligado, a janela da sessão leva RS_MARCA no fim do título e o ícone da bandeja deste PC
+// (monitorpc/teclado_remoto.py) troca Win, Alt+Tab, Alt+F4, Ctrl+Esc, Print Screen e Ctrl+W/T/N por F13..F22 enquanto ela
+// está na frente. Aqui elas voltam a ser a tecla verdadeira. Em qualquer outra janela, as teclas ficam neste computador.
+const RS_MARCA='⁣';
+const RS_FTECLA={F13:'MetaLeft',F14:'MetaRight',F15:'Tab',F16:'Escape',F17:'F4',F18:'Space',F19:'PrintScreen',F20:'KeyW',F21:'KeyT',F22:'KeyN'};
 const RS_AREA={ambos:'Nos dois sentidos',para_atendido:'Só daqui para lá',para_tecnico:'Só de lá para cá',desligada:'Desligada'};
 const RS_LAYOUT={lado:'Lado a lado',um:'Um ou outro',janelas:'Janelas separadas'};
 let RS=null;
@@ -1085,7 +1066,8 @@ function rsStream(m){ const t=AJU.trilhas||{}; return (m.mid!=null&&t[m.mid])||O
 function rsAtivar(m){ const lista=Array.isArray(m.monitores)&&m.monitores.length?m.monitores.slice(0,4):[{}];
   RS={mons:lista.map((x,i)=>({i, n:+x.n||i+1, x:+x.x||0, y:+x.y||0, w:+x.w||0, h:+x.h||0, mid:x.mid==null?null:String(x.mid)})), layout:CFG.remoto_layout||'lado', sel:0, ajuste:true,
     area:CFG.remoto_area||'ambos', lerTeto:m.ler_area!==false, inicio:Date.now(), janelas:new Map(), dados:null, prox:1, transf:new Map(), espera:new Map(), copiados:[],
-    ultArea:'', ultAreaImg:'', pendente:null, pasta:'', lista:null, painel:false, colando:null, teclas:new Set(), timer:null, ultV:null, nota:null};
+    ultArea:'', ultAreaImg:'', pendente:null, pasta:'', lista:null, painel:false, colando:null, teclas:new Set(), timer:null, ultV:null, nota:null, atalhos:CFG.remoto_atalhos!==false};
+  rsTitulos();
   try{ const c=RS.dados=AJU.pc.createDataChannel('dados'); c.binaryType='arraybuffer'; c.bufferedAmountLowThreshold=MB; c.onmessage=rsDados; }catch(_){ }
   rsEnv({t:'ola',tecnico:AJU.tecId||''}); rsEnv({t:'area_modo',modo:RS.area});
   AJU.fase='ativa'; ajRender(); }
@@ -1100,8 +1082,8 @@ function rsBarra(){ const b=$('#rsBarra'); if(!b||!RS) return; const varios=RS.m
   b.innerHTML=`<div class="rs-id"><span class="rs-ponto"></span><b>${esc(AJU.alvo?ajFmtId(AJU.alvo):'Sessão remota')}</b><span id="rsTempo">${rsDur(Date.now()-RS.inicio)}</span></div>
     ${varios?`<div class="rs-grupo" role="group" aria-label="Monitores">${RS.mons.map(m=>`<button class="rs-bt${rsMostrando(m.i)?' on':''}" data-mon="${m.i}" title="Monitor ${m.n}${m.w?' · '+m.w+'×'+m.h:''}">${m.n}</button>`).join('')}</div><button class="rs-bt" data-menu="layout">${RS_LAYOUT[RS.layout]} ▾</button>`:''}
     <button class="rs-bt" id="rsAjuste" title="Ajustar: reduz a tela do outro computador até caber (nunca amplia). Tamanho real: um pixel lá é um pixel aqui, com rolagem.">${RS.ajuste?'Ajustar à janela':'Tamanho real'}</button>
-    <button class="rs-bt" id="rsCheia" title="Em tela cheia, Win, Alt+Tab e os outros atalhos vão direto para o outro computador. Segure Esc para sair.">Tela cheia</button><span class="rs-sep"></span>
-    <button class="rs-bt" data-menu="atalhos">Atalhos ▾</button><button class="rs-bt" data-menu="area">Área de transferência: ${esc(RS_AREA[RS.area])} ▾</button>
+    <button class="rs-bt" id="rsCheia" title="Segure Esc para sair da tela cheia.">Tela cheia</button><span class="rs-sep"></span>
+    <button class="rs-bt" data-menu="opcoes" title="Atalhos do Windows: ${RS.atalhos?'vão para o outro computador':'ficam neste computador'}">Opções${RS.atalhos?' · Atalhos lá':''} ▾</button><button class="rs-bt" data-menu="area">Área de transferência: ${esc(RS_AREA[RS.area])} ▾</button>
     <button class="rs-bt${RS.painel?' on':''}" id="rsArqBt">Arquivos${RS.copiados.length?` <span class="rs-cont">${RS.copiados.length}</span>`:''}</button>
     <span class="rs-nota" id="rsNota" role="status"></span><span style="flex:1"></span><button class="rs-bt perigo" id="rsSair">Encerrar</button>`;
   b.onclick=e=>{ const x=e.target.closest('button'); if(!x||!RS) return;
@@ -1136,7 +1118,13 @@ function rsVer(){ if(!RS) return; const v=new Set(RS.layout==='lado'?RS.mons.map
   for(const [i,j] of RS.janelas) if(j.palco&&!j.w.closed&&!j.w.document.hidden) v.add(i);
   rsEnv({t:'ver',m:[...v]}); }
 function rsTelaCheia(palco){ const kb=palco.ownerDocument.defaultView.navigator.keyboard;
-  palco.requestFullscreen().then(()=>{ palco.focus(); if(kb&&kb.lock) kb.lock().catch(()=>{}); }).catch(()=>{}); }
+  palco.requestFullscreen().then(()=>{ palco.focus(); if(RS&&RS.atalhos&&kb&&kb.lock) kb.lock().catch(()=>{}); }).catch(()=>{}); }
+function rsTitulo(i){ return 'CNT Monitor — '+(AJU.alvo?ajFmtId(AJU.alvo):'Sessão remota')+(i==null?'':' · monitor '+RS.mons[i].n)+(RS&&RS.atalhos?RS_MARCA:''); }
+function rsTitulos(){ if(!RS) return; document.title=rsTitulo(null);
+  for(const [i,j] of RS.janelas){ try{ if(j.palco&&!j.w.closed) j.w.document.title=rsTitulo(i); }catch(_){ } } }
+function rsAlternarAtalhos(){ RS.atalhos=!RS.atalhos; rsTitulos(); rsBarra();
+  if(!RS.atalhos) for(const w of [window,...[...RS.janelas.values()].map(j=>j.w)]){ try{ const kb=w.navigator.keyboard; if(kb&&kb.unlock) kb.unlock(); }catch(_){ } }
+  rsNota(RS.atalhos?'Atalhos do Windows vão para o outro computador':'Atalhos do Windows ficam neste computador'); }
 // mouse, teclado, colar e arrastar arquivos: o mesmo para a janela principal e para as janelas de cada monitor
 function rsLigar(palco){ let ult=0;
   const pos=(e,v)=>{ const r=v.getBoundingClientRect(); return {m:+v.dataset.m, x:(e.clientX-r.left)/r.width, y:(e.clientY-r.top)/r.height}; };
@@ -1149,8 +1137,8 @@ function rsLigar(palco){ let ult=0;
   palco.onkeydown=e=>{ if(!RS) return;
     // Ctrl+V: deixa o navegador disparar "colar" para levar antes o que está copiado aqui (texto, imagem ou arquivos)
     if((e.ctrlKey||e.metaKey)&&e.code==='KeyV'&&rsPode('para_atendido')){ if(!RS.colando) RS.colando=setTimeout(()=>{ if(!RS) return; RS.colando=null; rsEnv({t:'atalho',n:'colar'}); },700); return; }
-    e.preventDefault(); RS.teclas.add(e.code); rsEnv({t:'tecla',a:'baixa',c:e.code}); };
-  palco.onkeyup=e=>{ if(!RS) return; e.preventDefault(); if(!RS.teclas.has(e.code)) return; RS.teclas.delete(e.code); rsEnv({t:'tecla',a:'sobe',c:e.code}); };
+    const c=(RS.atalhos&&(RS_FTECLA[e.code]||RS_FTECLA[e.key]))||e.code; e.preventDefault(); RS.teclas.add(c); rsEnv({t:'tecla',a:'baixa',c}); };
+  palco.onkeyup=e=>{ if(!RS) return; e.preventDefault(); const c=(RS.atalhos&&(RS_FTECLA[e.code]||RS_FTECLA[e.key]))||e.code; if(!RS.teclas.has(c)) return; RS.teclas.delete(c); rsEnv({t:'tecla',a:'sobe',c}); };
   palco.onblur=()=>{ if(!RS) return; for(const c of RS.teclas) rsEnv({t:'tecla',a:'sobe',c}); RS.teclas.clear(); };
   palco.addEventListener('paste',e=>{ if(!RS||!RS.colando) return; e.preventDefault(); clearTimeout(RS.colando); RS.colando=null; rsColar(e.clipboardData); });
   palco.ondragover=e=>{ if(e.dataTransfer&&[...e.dataTransfer.types].includes('Files')){ e.preventDefault(); palco.classList.add('rs-solta'); } };
@@ -1176,13 +1164,14 @@ function rsPorNaArea(p){ if(!RS) return; if(!document.hasFocus()){ RS.pendente=p
     try{ const it=(await navigator.clipboard.read())[0], tp=it.types.find(x=>x.startsWith('image/')); if(tp) RS.ultAreaImg='i:'+(await it.getType(tp)).size; }catch(_){ } },()=>{ RS.pendente=p; }); }
 function rsAreaChegou(texto){ if(!rsPode('para_tecnico')) return; RS.ultArea='t:'+texto; rsPorNaArea({texto}); }
 function rsMenu(qual, bt){ const mn=$('#rsMenu'); if(!mn.hidden&&mn.dataset.q===qual){ mn.hidden=true; return; } mn.dataset.q=qual; let h='';
-  if(qual==='atalhos') h=RS_ATALHOS.map(([n,r])=>`<button data-at="${n}">${esc(r)}</button>`).join('')+'<p class="mut">Em tela cheia, Win, Alt+Tab e os outros atalhos vão direto para o outro computador.</p>';
+  if(qual==='opcoes') h=`<button data-op="atalhos" role="switch" aria-checked="${RS.atalhos}" class="${RS.atalhos?'on':''}">Atalhos do Windows no outro computador: <b>${RS.atalhos?'ligado':'desligado'}</b></button><p class="mut">Ligado: com uma tela deste acesso na frente, Win, Alt+Tab, Alt+F4, Ctrl+Esc, Ctrl+Shift+Esc, Print Screen e os outros atalhos vão só para o outro computador. Clicou em outro programa daqui (Bloco de Notas, por exemplo): os atalhos voltam a ser deste computador. Desligado: ficam sempre neste computador. Precisa do ícone do CNT Monitor aberto perto do relógio. O padrão fica em Configurações → Acesso remoto.</p><hr><button data-at="ctrl_alt_del">Enviar Ctrl+Alt+Del</button><p class="mut">O Windows não deixa nenhum programa pegar Ctrl+Alt+Del do teclado: ela sempre abre a tela deste computador. Para mandar ao outro, use este botão.</p>`;
   if(qual==='layout') h=Object.entries(RS_LAYOUT).map(([k,r])=>`<button data-lay="${k}" class="${RS.layout===k?'on':''}">${esc(r)}</button>`).join('')+'<p class="mut">O padrão fica em Configurações → Acesso remoto.</p>';
   if(qual==='area') h=Object.entries(RS_AREA).map(([k,r])=>`<button data-area="${k}" class="${RS.area===k?'on':''}">${esc(r)}${!RS.lerTeto&&(k==='ambos'||k==='para_tecnico')?' <small>(lá para cá bloqueado por quem você atende)</small>':''}</button>`).join('')
     +`<hr><button data-acao="enviar">Enviar minha área de transferência agora</button><p class="mut">Texto e imagem vão sozinhos quando um dos lados copia. Arquivos: copie no Explorer e aperte Ctrl+V na tela remota; os copiados lá aparecem em Arquivos.${RS.semPermLer?' O navegador ainda não deixou ler a sua área de transferência: aceite o pedido dele.':''}</p>`;
   mn.innerHTML=h; const r=bt.getBoundingClientRect(); mn.style.left=Math.max(4,Math.min(r.left,innerWidth-344))+'px'; mn.style.top=r.bottom+4+'px'; mn.hidden=false;
   mn.onclick=e=>{ const x=e.target.closest('button'); if(!x||!RS) return; mn.hidden=true;
     if(x.dataset.at) rsEnv({t:'atalho',n:x.dataset.at});
+    if(x.dataset.op==='atalhos') rsAlternarAtalhos();
     if(x.dataset.lay){ RS.layout=x.dataset.lay; rsMontar(); }
     if(x.dataset.area){ RS.area=x.dataset.area; rsEnv({t:'area_modo',modo:RS.area}); rsBarra(); }
     if(x.dataset.acao==='enviar'){ RS.ultArea=RS.ultAreaImg=''; rsFoco(); }
@@ -1192,7 +1181,7 @@ function rsAbrirJanela(i){ const m=RS.mons[i], w=window.open('/#tela','cnt-tela-
   if(!w) return toast('O navegador bloqueou a janela do monitor '+m.n+'. Permita janelas pop-up para o CNT Monitor.',1);
   RS.janelas.set(i,{w,palco:null}); }
 window.rsTelaPronta=w=>{ const par=RS&&[...RS.janelas].find(([,j])=>j.w===w); if(!par) return w.close(); const [i,j]=par, m=RS.mons[i], d=w.document;
-  d.title='CNT Monitor — '+(AJU.alvo?ajFmtId(AJU.alvo)+' · ':'')+'monitor '+m.n; d.body.classList.add('so-tela');
+  d.title=rsTitulo(i); d.body.classList.add('so-tela');
   const raiz=d.createElement('div'); raiz.className='rs rs-filha';
   raiz.innerHTML=`<div class="rs-barra"><div class="rs-id"><span class="rs-ponto"></span><b>Monitor ${m.n}</b><span>${esc(AJU.alvo?ajFmtId(AJU.alvo):'')}</span></div><button class="rs-bt" data-a="ajuste">${RS.ajuste?'Ajustar à janela':'Tamanho real'}</button><button class="rs-bt" data-a="cheia">Tela cheia</button><span style="flex:1"></span><span class="rs-nota">Arraste esta janela para outro monitor. Fechar esta janela não encerra a sessão.</span></div><div class="rs-corpo"><div class="rs-palco" tabindex="0" aria-label="Monitor ${m.n} do outro computador"><div class="rs-mapa"></div></div></div>`;
   d.body.appendChild(raiz); const palco=raiz.querySelector('.rs-palco'); j.palco=palco; rsLigar(palco); rsPreencher(palco,[i]);
@@ -1650,6 +1639,7 @@ const CFG_DEF=[
   ['Acesso remoto',[
     ['remoto_layout','sel','Layout padrão com vários monitores','Como aparece o computador acessado quando ele tem mais de um monitor. Dá para trocar durante a sessão, pela barra.',{lado:'Lado a lado (como estão de verdade)',um:'Um ou outro (botões 1 · 2 na barra)',janelas:'Janelas separadas (uma por monitor)'}],
     ['remoto_area','sel','Área de transferência compartilhada','Quando você acessa outro computador: o que um lado copia, o outro pode colar. Dá para trocar durante a sessão.',{ambos:'Nos dois sentidos',para_atendido:'Só daqui para o computador acessado',para_tecnico:'Só do computador acessado para cá',desligada:'Desligada'}],
+    ['remoto_atalhos','sw','Atalhos do Windows no computador acessado','Quando você acessa outro computador: com a tela dele na frente, Win, Alt+Tab, Alt+F4, Ctrl+Esc e Print Screen vão para lá; em qualquer outra janela, ficam aqui. Dá para trocar durante a sessão, em Opções. Precisa do ícone do CNT Monitor aberto perto do relógio.'],
     ['remoto_permitir_ler_area','sw','Permitir que o técnico leia a minha área de transferência','Quando alguém acessa este computador. Desligado, nada do que você copia vai para o técnico (senhas, por exemplo), mesmo que ele escolha “nos dois sentidos”.'],
   ]],
   ['Rede',[
