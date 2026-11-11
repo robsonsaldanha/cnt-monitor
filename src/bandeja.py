@@ -543,6 +543,37 @@ class MiniPainel:
         except Exception as e:  # noqa: BLE001
             print("mini painel (atravessar):", e)
 
+    def _por_cima(self):
+        """Reafirma "sempre por cima" direto no Windows a cada passo: o -topmost do Tk não repete o pedido quando a
+        janela já está marcada, e um jogo sem borda que também se põe por cima passava à frente e cobria o painel."""
+        if not WIN:
+            return
+        try:
+            u = ctypes.windll.user32
+            hwnd = u.GetParent(self.root.winfo_id()) or self.root.winfo_id()
+            # HWND_TOPMOST; SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE | SWP_NOOWNERZORDER (não tira o foco do jogo)
+            u.SetWindowPos(ctypes.c_void_p(hwnd), ctypes.c_void_p(-1), 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010 | 0x0200)
+        except Exception as e:  # noqa: BLE001
+            print("mini painel (por cima):", e)
+
+    def _tela_cheia_exclusiva(self):
+        """Em tela cheia exclusiva o jogo toma a tela e nenhuma janela aparece por cima (os overlays que conseguem se
+        injetam no jogo, o que o anti-cheat pune). Avisa uma vez, depois que o jogo sai desse modo, o que mudar nele."""
+        if not WIN or getattr(self, "_avisou_exclusiva", False):
+            return
+        estado = ctypes.c_int(0)
+        try:
+            ctypes.windll.shell32.SHQueryUserNotificationState(ctypes.byref(estado))
+        except Exception:  # noqa: BLE001
+            return
+        if estado.value == 3:                     # QUNS_RUNNING_D3D_FULL_SCREEN
+            self._viu_exclusiva = True
+        elif getattr(self, "_viu_exclusiva", False):
+            self._avisou_exclusiva = True
+            notificar("O jogo estava em tela cheia exclusiva, e nesse modo nenhuma janela aparece por cima dele. "
+                      "Para ver o mini painel, mude o modo de vídeo do jogo para \"Tela cheia em janela\" (sem borda).",
+                      "Mini painel")
+
     def _montar(self, c):
         import tkinter as tk
         for w in self.frame.winfo_children():
@@ -640,6 +671,8 @@ class MiniPainel:
                     self._posicionar(c)
                 self.root.attributes("-topmost", True)
                 self._atravessar()
+                self._por_cima()
+                self._tela_cheia_exclusiva()
         except Exception as e:  # noqa: BLE001
             print("mini painel:", e)
         self.root.after(500, self._tick)
