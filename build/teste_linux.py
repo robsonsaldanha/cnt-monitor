@@ -148,6 +148,27 @@ def teste_sensores_hwmon_de_mentira_e_ventoinha():
     assert open(os.path.join(p, "pwm2_enable")).read() == "5", "volta ao modo automático original do chip"
 
 
+def teste_pacote_conta_uma_vez_so_na_placa_com_ip():
+    """Bridge, bonding e a placa acelerada das nuvens mostram o mesmo pacote de novo na interface sem IP."""
+    import collections
+    import psutil
+    E = collections.namedtuple("E", "family address")
+    S = collections.namedtuple("S", "flags")
+    placas = {"eth0": [E(socket.AF_INET, "10.1.0.4")], "enP30832s1": [E(getattr(socket, "AF_PACKET", 17), "00:0d:3a")],
+              "lo": [E(socket.AF_INET, "127.0.0.1")], "wg0": [E(socket.AF_INET6, "fd00::2")]}
+    antigos = psutil.net_if_addrs, psutil.net_if_stats
+    psutil.net_if_addrs = lambda: placas
+    psutil.net_if_stats = lambda: {"lo": S("up,loopback")}
+    try:
+        p = LR.Placas()
+        assert p.conta("eth0") and p.conta("wg0") and not p.conta("enP30832s1") and not p.conta("lo")
+        placas["wlan0"] = [E(socket.AF_INET, "192.168.0.9")]
+        p._ult -= 3                               # placa nova (Wi-Fi conectou) entra em segundos
+        assert p.conta("wlan0")
+    finally:
+        psutil.net_if_addrs, psutil.net_if_stats = antigos
+
+
 def teste_portas_pid_e_captura_por_programa():
     if not ROOT:
         return print("  (pulado: precisa de Linux e root)")

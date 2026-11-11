@@ -104,11 +104,27 @@ def _socket_pacotes():
     return s
 
 
-def _loopback():
-    try:
-        return {n for n, st in psutil.net_if_stats().items() if "loopback" in getattr(st, "flags", "") or n == "lo"}
-    except Exception:  # noqa: BLE001
-        return {"lo"}
+class Placas:
+    """Placas que contam: as que têm endereço IP (fora a de loopback). O mesmo pacote passa por mais de uma
+    interface quando há bridge, bonding ou a placa "acelerada" das nuvens (Azure, AWS): a escrava, sem IP, mostraria
+    de novo o que a placa com IP já mostrou. Numa VPN o túnel e a placa física têm IP, mas carregam pacotes
+    diferentes (o da placa é o do programa da VPN), então nada é contado duas vezes."""
+
+    def __init__(self):
+        self._com_ip, self._ult = set(), 0.0
+
+    def conta(self, nome):
+        agora = time.monotonic()
+        if agora - self._ult > 30 or (nome not in self._com_ip and agora - self._ult > 2):
+            try:
+                stats = psutil.net_if_stats()
+                self._com_ip = {n for n, lst in psutil.net_if_addrs().items()
+                                if n != "lo" and "loopback" not in getattr(stats.get(n), "flags", "")
+                                and any(a.family in (socket.AF_INET, socket.AF_INET6) for a in lst)}
+            except Exception:  # noqa: BLE001
+                pass
+            self._ult = agora
+        return nome in self._com_ip
 
 
 class MonitorRede:
@@ -128,7 +144,7 @@ class MonitorRede:
         self._th = None
         self._portas = PortasPid()
         self._sock = None
-        self._lo = set()
+        self._placas = Placas()
 
     def _ips_locais(self):
         if time.time() - self._ult_locais > 60:
@@ -152,7 +168,6 @@ class MonitorRede:
         except OSError as e:
             self.erro = f"Não consegui ler os pacotes de rede: {e}"
             return False
-        self._lo = _loopback()
         self._th = threading.Thread(target=self._loop, name="rede-pacotes", daemon=True)
         self.ok = True
         self.erro = None
@@ -170,7 +185,7 @@ class MonitorRede:
                 except socket.timeout:
                     self._portas.manter()
                     continue
-                if end[0] in self._lo or end[2] not in (PACOTE_HOST, PACOTE_SAINDO):
+                if end[2] not in (PACOTE_HOST, PACOTE_SAINDO) or not self._placas.conta(end[0]):
                     continue
                 self._pacote(bytes(vista[:min(n, CAB)]), end[2] == PACOTE_SAINDO, time.monotonic_ns())
         except OSError as e:
@@ -275,7 +290,7 @@ class CapturaUDP:
 
     def _ler(self):
         from ..rede_programa import analisar_ipv4
-        s, lo = self._sock, _loopback()
+        s, placas = self._sock, Placas()
         while self.ok:
             try:
                 p, end = s.recvfrom(256)
@@ -283,7 +298,7 @@ class CapturaUDP:
                 continue
             except OSError:
                 break
-            if end[2] != PACOTE_HOST or end[0] in lo:
+            if end[2] != PACOTE_HOST or not placas.conta(end[0]):
                 continue
             pacote = analisar_ipv4(p)
             if pacote:
