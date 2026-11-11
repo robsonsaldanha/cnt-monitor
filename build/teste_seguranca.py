@@ -326,8 +326,12 @@ def teste_atualizacao_procura_de_10_em_10_minutos():
     resultado continua sendo o da última resposta inteira. Cota esgotada (403/429) vira um aviso que explica."""
     import io
     assert atualizacao.VERIFICAR_CADA == 600
-    corpo = json.dumps({"tag_name": "v99.0.0", "name": "x", "body": "SHA256: " + "ab" * 32, "html_url": "p",
-                        "assets": [{"name": "MonitorDoPC-Setup-99.0.0.exe", "browser_download_url": "u", "size": 5}]}).encode()
+    # como a release de verdade: os dois arquivos, e a linha "SHA256:" do .exe antes da do .deb
+    corpo = json.dumps({"tag_name": "v99.0.0", "name": "x", "html_url": "p",
+                        "body": "SHA256: " + "ab" * 32 + "\nSHA256 (deb): " + "cd" * 32,
+                        "assets": [{"name": "MonitorDoPC-Setup-99.0.0.exe", "browser_download_url": "u", "size": 5},
+                                   {"name": "cnt-monitor_99.0.0_amd64.deb", "browser_download_url": "d", "size": 6}]}).encode()
+    meu_sha, minha_url = ("ab" * 32, "u") if os.name == "nt" else ("cd" * 32, "d")
     pedidos = []
 
     class Resp(io.BytesIO):
@@ -344,7 +348,7 @@ def teste_atualizacao_procura_de_10_em_10_minutos():
     try:
         a = atualizacao.Atualizador()
         primeira = a.verificar()
-        assert primeira["versao"] == "99.0.0" and primeira["sha256"] == "ab" * 32
+        assert primeira["versao"] == "99.0.0" and primeira["sha256"] == meu_sha and primeira["url"] == minha_url, primeira
         a.disponivel, a.erro = None, "velho"
         assert a.verificar() == primeira and a.erro is None and a.situacao == "nova versão disponível"
         assert pedidos == [None, '"abc"']
@@ -409,6 +413,13 @@ def teste_atualizacao_acha_o_instalador_pelo_nome_novo_e_antigo():
     assert atualizacao.REPO == "robsonsaldanha/cnt-monitor"
     base = {"tag_name": "v99.0.0", "body": "SHA256: " + "ab" * 32}
     a = atualizacao.Atualizador()
+    if os.name != "nt":         # Linux: só o .deb, pelo nome exato
+        b = {"tag_name": "v99.0.0", "body": "SHA256: " + "ab" * 32 + "\nSHA256 (deb): " + "cd" * 32}
+        deb = {"name": "cnt-monitor_99.0.0_amd64.deb", "browser_download_url": "deb", "size": 1}
+        assert a._avaliar({**b, "assets": [deb]})["url"] == "deb"
+        assert a._avaliar({**b, "assets": [dict(deb, name="cnt-monitor_99.0.0_arm64.deb")]}) is None
+        assert a._avaliar({"tag_name": "v99.0.0", "body": "SHA256: " + "ab" * 32, "assets": [deb]})["sha256"] is None
+        return
     dois = [{"name": "MonitorDoPC-Setup-99.0.0.exe", "browser_download_url": "antigo", "size": 1},
             {"name": "CNTMonitor-Setup-99.0.0.exe", "browser_download_url": "novo", "size": 1}]
     assert a._avaliar({**base, "assets": dois})["url"] == "novo"
