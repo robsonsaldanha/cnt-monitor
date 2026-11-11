@@ -11,3 +11,6 @@ api/
 *.log
 teste-console.json
 geoip/
+dist-linux/
+build/pyi-linux/
+pacote/

@@ -52,7 +52,7 @@ segundos Unix (UTC) para datas.
 | `/api/v1/energia` | plano e ajustes de energia |
 | `/api/v1/jogo` | estado do Modo Jogo e FPS |
 | `/api/v1/vps` | servidores cadastrados e últimas leituras (sem senhas) |
-| `/api/v1/status` | versão, saúde da coleta, sensores, banco |
+| `/api/v1/status` | versão, sistema (`"windows"` ou `"linux"`), saúde da coleta, sensores, banco |
 
 Fora da v1 (usados pela janela do programa, podem mudar entre versões), também só leitura e só neste PC:
 

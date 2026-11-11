@@ -2,15 +2,25 @@
 import os
 import sys
 
-VERSAO = "2.9.2"
+VERSAO = "3.0.0"
 WIN = os.name == "nt"
+
+# Linux: o serviço (root) e o ícone de cada usuário leem a mesma pasta, como o ProgramData do Windows.
+# Rodando do código-fonte sem instalar (e sem root), fica na pasta do usuário.
+BASE_LINUX = "/var/lib/cnt-monitor"
 
 if os.environ.get("MONITORPC_DADOS"):
     BASE = os.environ["MONITORPC_DADOS"]
 elif WIN:
     BASE = os.path.join(os.environ.get("ProgramData", r"C:\ProgramData"), "MonitorPC")
+elif os.path.isdir(BASE_LINUX) or os.geteuid() == 0:
+    BASE = BASE_LINUX
 else:
     BASE = os.path.expanduser("~/.local/share/MonitorPC")
+
+# executáveis instalados (pasta_programa): o ícone na raiz, o serviço em servico/ e o agente em remoto/
+EXE_ICONE = "MonitorPC.exe" if WIN else "cnt-monitor"
+EXE_REMOTO = os.path.join("remoto", "MonitorPCRemoto.exe" if WIN else "cnt-monitor-remoto")
 
 DB = os.path.join(BASE, "historico.db")
 LOG = os.path.join(BASE, "servico.log")

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=CNT Monitor
+GenericName=Monitor do computador
+Comment=Monitor do computador, rede por programa e acesso remoto
+Exec=/opt/cnt-monitor/cnt-monitor
+Icon=cnt-monitor
+Terminal=false
+Categories=System;Monitor;Network;RemoteAccess;
+Keywords=monitor;cpu;memória;rede;acesso remoto;suporte;
+StartupNotify=false

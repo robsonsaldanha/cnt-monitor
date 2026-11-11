@@ -1,13 +1,19 @@
 # CNT Monitor
 
-Monitor do computador para Windows 10/11, mais detalhado que o Gerenciador de Tarefas, com otimizações seguras,
+Monitor do computador para **Windows 10/11 e Linux** (Ubuntu, Debian e Mint), mais detalhado que o Gerenciador de Tarefas, com otimizações seguras,
 Modo Jogo, regras por programa, controle de ventoinhas, captura e gravação de tela no nível do ShareX, acesso
 remoto por ID e senha, acesso pelo celular e monitoramento de servidores (VPS).
 
 **Software livre e 100% gratuito**, sob a licença [GNU GPL v3](LICENSE): sem anúncios, sem conta, sem versão paga.
 Você pode usar, estudar, modificar e redistribuir, desde que as versões redistribuídas continuem livres sob a mesma licença.
 
-**Baixar:** [última versão](https://github.com/robsonsaldanha/cnt-monitor/releases/latest) → `CNTMonitor-Setup-x.y.z.exe`.
+**Baixar:** https://monitor.cntoficial.com.br/baixar (entrega o arquivo do seu sistema) ou a
+[última versão](https://github.com/robsonsaldanha/cnt-monitor/releases/latest):
+
+- **Windows:** `CNTMonitor-Setup-x.y.z.exe`.
+- **Linux** (Ubuntu 22.04+, Debian 12+, Mint 21+, 64 bits): `cnt-monitor_x.y.z_amd64.deb`, instalado com
+  `sudo apt install ./cnt-monitor_x.y.z_amd64.deb`. Funciona em X11 e em Wayland.
+
 Depois de instalado, ele se atualiza sozinho (Configurações → Atualizações).
 
 ## Funcionalidades
@@ -95,6 +101,32 @@ Depois de instalado, ele se atualiza sozinho (Configurações → Atualizações
   apresenta os dois lados e, quando a ligação direta é impossível, um retransmissor repassa os pacotes sem conseguir lê-los.
 - A senha troca depois de cada acesso e o ID quando o PC reinicia.
 
+### Linux
+
+O mesmo programa e a mesma interface, com as partes do sistema trocadas pelas do Linux:
+
+| Recurso | No Linux |
+|---|---|
+| Serviço | unidade systemd `cnt-monitor` (root); dados em `/var/lib/cnt-monitor` |
+| Rede por programa e chamadas (RTP) | captura `AF_PACKET` + tabela de sockets do kernel; ping ICMP próprio (traceroute e MTU), RTT e retransmissões pelo `ss`, contadores de `/proc/net/snmp`, Wi-Fi pelo `iw`, DNS pelo `resolvectl` |
+| Sensores e ventoinhas | `/sys/class/hwmon` (o que o lm-sensors mostra), bateria e `nvidia-smi`; ventoinhas pelos canais `pwm` que o chip libera (em muitos notebooks só leitura) |
+| GPU | `/sys/class/drm` (AMD, Intel) e `nvidia-smi`; uso por processo pelo `fdinfo` |
+| Energia | perfis do power-profiles-daemon (economia, equilibrado, desempenho) ou o governor da CPU; brilho pelo `/sys/class/backlight` |
+| Inicialização | autostart do XDG (`/etc/xdg/autostart` e `~/.config/autostart`) |
+| Serviços | `systemctl` (os essenciais ficam protegidos) |
+| Otimizar | `/tmp`, `~/.cache`, miniaturas, lixeira, relatórios de erro, pacotes do apt, journal antigo, `fstrim` e `apt autoremove` |
+| Modo Jogo | perfil de desempenho, prioridade (`nice`) e fechar programas; FPS só no Windows (no Linux use o MangoHud) |
+| Ícone e janela | ícone na bandeja (no GNOME, com a extensão AppIndicator, que já vem no Ubuntu); janela no Chrome/Chromium/Edge em modo aplicativo ou no navegador padrão |
+| Acesso remoto (atendido) | **X11:** tela pelo XRandR + XShm e mouse/teclado pelo XTest. **Wayland:** portal RemoteDesktop/ScreenCast + PipeWire; o próprio sistema pergunta, a cada sessão, quais telas compartilhar. Área de transferência pelo `xclip` / `wl-clipboard` |
+| Acesso remoto (técnico) | igual ao Windows; os atalhos (Super, Alt+Tab…) vão para o outro PC pelo X11 com a sessão na frente, ou em tela cheia em qualquer sessão |
+
+Windows acessa Linux e Linux acessa Windows: o protocolo é o mesmo.
+
+**Limites do Linux (regras do próprio sistema):** no Wayland a pessoa atendida autoriza o compartilhamento a cada
+sessão e a tela de login e a de bloqueio não podem ser vistas nem controladas; o pedido de senha de administrador
+(polkit) aparece para o técnico, mas quem digita é a pessoa; Ctrl+Alt+Del não tem a tela segura do Windows (vai como
+teclas). A captura e gravação de tela no estilo ShareX, o mini painel e o FPS ainda são só do Windows.
+
 ### Servidores (VPS)
 
 CPU, memória, disco, rede, serviços systemd, containers Docker e sites dos seus servidores Linux via SSH, com
@@ -112,6 +144,7 @@ histórico, processos, serviços e alertas (ex.: disco cheio). A identidade do s
 - O acesso pelo celular é opcional, exige senha (guardada como hash), libera a porta só na rede **privada** do firewall
   e pode ficar em “somente ver”. Pelo celular não dá para mudar ventoinhas, captura, ações externas, IA nem fluxos.
 - Senhas e chaves de VPS e a chave da IA ficam criptografadas com o DPAPI do Windows, fora do `config.json` e fora do backup.
+  No Linux, que não tem DPAPI, ficam em arquivos só do dono (0600: o root para as de VPS, o usuário para a da IA).
 - A captura de tela roda no ícone perto do relógio, com as permissões do usuário: o serviço nunca lê os arquivos de
   captura do disco (o editor recebe a imagem pelo ícone). Os atalhos com Print Screen desligam só para o seu usuário a opção
   do Windows que abre a Ferramenta de Captura, e ela volta quando o Print Screen sai dos atalhos ou o ícone é fechado.
@@ -135,11 +168,19 @@ histórico, processos, serviços e alertas (ex.: disco cheio). A identidade do s
   e a configuração do coturn (retransmissor). Atualizar: `git pull` na VPS e
   `sudo systemctl restart cnt-monitor-encontro`; a porta 48790/udp precisa estar liberada no firewall da VPS.
 
+No Linux: `/opt/cnt-monitor/servico/cnt-monitor-servico` (serviço `cnt-monitor`), `/opt/cnt-monitor/cnt-monitor`
+(ícone e janela), `/opt/cnt-monitor/remoto/` (agente) e o código específico em `src/monitorpc/linux/`: cada módulo
+preso ao Windows importa, no fim, as mesmas funções e classes da versão Linux, então o motor, a API e a
+interface são os mesmos nos dois sistemas.
+
 ## Gerar o instalador e testar
 
-O GitHub Actions (`.github/workflows/build.yml`) gera o instalador num Windows e testa serviço, API, ações,
-instalação e desinstalação em cada push e PR. Uma tag `v{versão}` (ou rodar manualmente com `workflow_dispatch`)
-publica a release com o SHA-256 usado pela atualização automática.
+O GitHub Actions (`.github/workflows/build.yml`) gera o instalador num Windows e o `.deb` num Ubuntu 22.04, e testa
+serviço, API, ações, instalação e desinstalação nos dois em cada push e PR. Uma tag `v{versão}` (ou rodar
+manualmente com `workflow_dispatch`) publica a release com os dois arquivos e o SHA-256 de cada um, usados pela
+atualização automática (`SHA256:` do `.exe` e `SHA256 (deb):` do `.deb`).
+
+O `.deb` sai de `instalador/linux/montar-deb.sh` (num Linux com `build/requirements-linux.txt` instalado).
 
 Para testar a interface fora do Windows: `python dev/demo.py` e abra http://127.0.0.1:48731/
 
@@ -151,6 +192,8 @@ Testes automáticos (rodam sem tocar na tela):
 - `python build/teste_remoto.py` e `python build/teste_seguranca.py`: acesso remoto e regras de segurança.
 - `python build/teste_rede.py` e `python build/teste_rede_programa.py`: estatísticas de rede, RTP, sondas TCP/UDP,
   monitoramento por programa e o `.log`.
+- `python build/teste_linux.py`: partes do Linux (leitores de `/proc`, `ss`, `iw`, systemd e autostart; como root,
+  captura de pacotes e ping; com Xvfb e xclip, tela, mouse, teclado e área de transferência do acesso remoto).
 
 ## Contribuir
 
@@ -166,6 +209,6 @@ License, publicada pela Free Software Foundation, na versão 3 da licença ou (a
 Ele é distribuído na esperança de ser útil, mas **sem nenhuma garantia**; veja o arquivo [LICENSE](LICENSE).
 
 Componentes de terceiros mantêm as próprias licenças: LibreHardwareMonitor (MPL-2.0), PawnIO, PresentMon (MIT),
-ffmpeg (baixado à parte, GPL), aiortc e PyAV (BSD), paramiko e pystray (LGPL), Pillow, psutil, pywin32, qrcode,
+ffmpeg (baixado à parte, GPL), aiortc e PyAV (BSD), paramiko e pystray (LGPL), python-xlib (LGPL), mss (MIT), jeepney (MIT), Pillow, psutil, pywin32, qrcode,
 zxing-cpp (Apache-2.0), maxminddb (Apache-2.0), a base de países e operadoras [IP Geolocation by DB-IP](https://db-ip.com)
 (CC BY 4.0, embutida e consultada no próprio PC) e a fonte Barlow ([SIL OFL 1.1](src/ui/fontes/OFL-LICENSE.txt)).

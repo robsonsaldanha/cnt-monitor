@@ -26,6 +26,8 @@ def _arq_chave(pasta, provedor):
 
 
 def _dpapi(dados, cifrar):
+    if os.name != "nt":
+        return dados        # Linux: sem DPAPI, a proteção é o arquivo só para o dono (0600, na pasta do usuário)
     import ctypes
     from ctypes import wintypes as wt
 
@@ -52,7 +54,7 @@ def guardar_chave(pasta, provedor, chave):
         except OSError:
             pass
         return
-    with open(arq, "wb") as f:
+    with open(os.open(arq, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "wb") as f:
         f.write(_dpapi(chave.strip().encode("utf-8"), True))
 
 

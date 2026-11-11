@@ -1,0 +1,17 @@
+[Unit]
+Description=CNT Monitor (monitor do computador e acesso remoto)
+Documentation=https://monitor.cntoficial.com.br
+After=network-online.target systemd-logind.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/cnt-monitor/servico/cnt-monitor-servico
+Restart=on-failure
+RestartSec=5
+# o motor para o que estava fazendo (ventoinhas voltam ao automático, sessão remota é encerrada) antes de sair
+TimeoutStopSec=20
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target

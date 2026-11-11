@@ -759,3 +759,7 @@ def texto_log(d):
             outros = "; ".join(f"{k}={v}" for k, v in (conc.get(int(l[0])) or {}).items())
             ls.append("\t".join((p, _hora(l[0]), *(_fmt(x) for x in l[1:]), outros)))
     return "\n".join(ls) + "\n"
+
+
+if not WIN:     # Linux: AF_PACKET no lugar do SIO_RCVALL
+    from .linux.rede import CapturaUDP  # noqa: E402,F401,F811

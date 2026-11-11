@@ -49,6 +49,9 @@ jobs:
       - name: Testes do acesso por ID (ponto de encontro em Node)
         run: python build/teste_encontro.py
 
+      - name: Testes dos leitores do Linux (os que rodam em qualquer sistema)
+        run: python build/teste_linux.py
+
       - name: LibreHardwareMonitor (sensores)
         shell: pwsh
         run: ./build/baixar-lhm.ps1
@@ -197,24 +200,136 @@ jobs:
             setup.log
             console*.log
 
-      - name: Versão
-        id: versao
-        shell: pwsh
+  linux:
+    # Ubuntu 22.04: o programa empacotado usa a glibc de onde foi gerado (2.35) e roda dali para cima
+    # (Ubuntu 22.04+, Debian 12+, Mint 21+)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Pacotes do sistema (tela virtual, área de transferência, testes)
         run: |
-          $v = (Select-String -Path src/monitorpc/config.py -Pattern 'VERSAO = "(.+)"').Matches[0].Groups[1].Value
-          "v=$v" >> $env:GITHUB_OUTPUT
-          $h = (Get-FileHash (Get-ChildItem saida\CNTMonitor-Setup-*.exe)[0].FullName -Algorithm SHA256).Hash.ToLower()
-          "sha=$h" >> $env:GITHUB_OUTPUT
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb xclip openbox x11-utils python3-tk iproute2
+
+      - name: Dependências Python
+        run: python -m pip install --disable-pip-version-check -r build/requirements-linux.txt
+
+      - name: Testes das partes Linux (como root, para a captura de pacotes e o ping ICMP)
+        run: sudo -E env "PATH=$PATH" python build/teste_linux.py
+
+      - name: Testes de rede, rede por programa, segurança, ventoinhas e FPS
+        run: for t in rede rede_programa seguranca ventoinhas jogo; do python build/teste_$t.py || exit 1; done
+
+      - name: Testes do acesso remoto (numa tela virtual X11)
+        run: xvfb-run -a -s "-screen 0 1600x900x24" python build/teste_remoto.py
+
+      - name: Testes do acesso por ID (ponto de encontro em Node)
+        run: python build/teste_encontro.py
+
+      - name: País e operadora dos IPs (DB-IP Lite, CC BY 4.0)
+        run: |
+          mkdir -p geoip
+          for tipo in country asn; do
+            ok=0
+            for m in 0 1; do
+              mes=$(date -d "$(date +%Y-%m-15) -$m month" +%Y-%m)
+              if curl -sfL "https://download.db-ip.com/free/dbip-$tipo-lite-$mes.mmdb.gz" -o "geoip/$tipo.gz"; then ok=1; break; fi
+              echo "dbip-$tipo-lite-$mes indisponível"
+            done
+            [ "$ok" = 1 ] || { echo "Não consegui baixar a base DB-IP ($tipo)"; exit 1; }
+            gunzip -c "geoip/$tipo.gz" > "geoip/dbip-$tipo-lite.mmdb" && rm "geoip/$tipo.gz"
+          done
+          ls -la geoip
+
+      - name: Gerar o pacote .deb
+        run: bash instalador/linux/montar-deb.sh
+
+      - name: Teste do agente do acesso remoto empacotado
+        run: xvfb-run -a python build/teste_agente_exe.py dist-linux/cnt-monitor-remoto/cnt-monitor-remoto
+
+      - name: Instalar o .deb, rodar como serviço e consultar a API
+        run: |
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ./saida/cnt-monitor_*_amd64.deb
+          sleep 20
+          systemctl is-active cnt-monitor
+          systemctl is-enabled cnt-monitor
+          curl -sf http://127.0.0.1:48731/api/v1/status | python3 -c "import json,sys; d=json.load(sys.stdin)['dados']; print(d); assert d['sistema']=='linux' and d['admin'] and d['rede_ok'] and not d['erros'], d"
+          curl -sf -o /dev/null -w "página: %{http_code}\n" http://127.0.0.1:48731/
+          TOK=$(sudo cat /var/lib/cnt-monitor/token.txt)
+          for e in energia servicos inicializacao processos rede hardware; do
+            curl -sf -H "X-Token: $TOK" "http://127.0.0.1:48731/api/$e" -o /dev/null || { echo "falhou $e"; exit 1; }
+          done
+          # no servidor de build não há ninguém na tela: o pedido é recusado, mas com o motivo escrito
+          for t in ajuda_pedir ajuda_encerrar; do
+            r=$(curl -s -X POST -H "X-Token: $TOK" -H "Content-Type: application/json" -d "{\"tipo\":\"$t\"}" http://127.0.0.1:48731/api/acao)
+            echo "$t: $r"
+            echo "$r" | python3 -c "import json,sys; r=json.load(sys.stdin); assert r['ok'] or r['msg'], r"
+          done
+          sudo tail -20 /var/lib/cnt-monitor/servico.log
+
+      - name: Desinstalar
+        run: |
+          sudo apt-get remove -y cnt-monitor
+          if systemctl is-active --quiet cnt-monitor; then echo "o serviço continuou rodando"; exit 1; fi
+          test ! -e /opt/cnt-monitor/servico || { echo "não removeu os arquivos"; exit 1; }
+          echo "desinstalação OK"
+
+      - name: Guardar o pacote
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cnt-monitor-linux
+          path: saida/*.deb
+
+  release:
+    needs: [windows, linux]
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: monitor-do-pc
+          path: artefatos/windows
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: cnt-monitor-linux
+          path: artefatos/linux
+
+      - name: Versão e SHA-256
+        id: versao
+        run: |
+          v=$(sed -n 's/^VERSAO = "\(.*\)"/\1/p' src/monitorpc/config.py)
+          mkdir -p saida
+          find artefatos -name "*.exe" -exec cp {} saida/ \;
+          find artefatos -name "*.deb" -exec cp {} saida/ \;
+          ls -la saida
+          echo "v=$v" >> "$GITHUB_OUTPUT"
+          echo "sha=$(sha256sum "saida/CNTMonitor-Setup-$v.exe" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          echo "deb=$(sha256sum "saida/cnt-monitor_${v}_amd64.deb" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
       - name: Publicar release
-        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.versao.outputs.v }}
           name: CNT Monitor ${{ steps.versao.outputs.v }}
           target_commitish: ${{ github.sha }}
+          # a primeira linha "SHA256:" é a do instalador do Windows (as versões antigas leem só ela)
           body: |
-            Baixe o **CNTMonitor-Setup-${{ steps.versao.outputs.v }}.exe**, dê dois cliques e siga o instalador (pede permissão de administrador). O MonitorDoPC-Setup é o mesmo arquivo, mantido para a atualização automática das versões antigas.
+            **Windows:** baixe o **CNTMonitor-Setup-${{ steps.versao.outputs.v }}.exe**, dê dois cliques e siga o instalador (pede permissão de administrador). O MonitorDoPC-Setup é o mesmo arquivo, mantido para a atualização automática das versões antigas.
+
+            **Linux (Ubuntu 22.04+, Debian 12+, Mint 21+):** baixe o **cnt-monitor_${{ steps.versao.outputs.v }}_amd64.deb** e instale com `sudo apt install ./cnt-monitor_${{ steps.versao.outputs.v }}_amd64.deb` (ou dois cliques, na Central de Programas).
 
             SHA256: ${{ steps.versao.outputs.sha }}
-          files: saida/*.exe
+            SHA256 (deb): ${{ steps.versao.outputs.deb }}
+          files: |
+            saida/*.exe
+            saida/*.deb

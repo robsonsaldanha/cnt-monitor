@@ -583,3 +583,7 @@ def estatisticas_serie(serie, agora):
     pico = max(bps) if bps else 0
     return {"pico": pico, "sustentado": round(sust), "burst": round(pico / sust, 1) if sust else None,
             "pps": round(sum(pps) / 60, 1) if pps else 0, "pps_pico": max(pps) if pps else 0}
+
+
+if not WIN:     # Linux: captura AF_PACKET + tabela de sockets do kernel no lugar do ETW
+    from .linux.rede import MonitorRede, FREQ  # noqa: E402,F401,F811

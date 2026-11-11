@@ -1,0 +1,13 @@
+#!/bin/sh
+# Antes de remover ou trocar os arquivos: para o serviço e fecha o ícone (que roda direto de /opt/cnt-monitor).
+set -e
+
+if [ -d /run/systemd/system ]; then
+    systemctl stop cnt-monitor.service >/dev/null 2>&1 || true
+    if [ "$1" = "remove" ]; then
+        systemctl disable cnt-monitor.service >/dev/null 2>&1 || true
+    fi
+fi
+pkill -f '^/opt/cnt-monitor/cnt-monitor( |$)' >/dev/null 2>&1 || true
+pkill -f '^/opt/cnt-monitor/remoto/cnt-monitor-remoto' >/dev/null 2>&1 || true
+exit 0

@@ -43,7 +43,7 @@ def _contadores_memoria():
 def limpar_cache_memoria():
     """Esvazia a lista de espera (memória em cache) — o que ferramentas como o RAMMap fazem."""
     if not WIN:
-        return False, "Só no Windows."
+        return _limpar_cache_linux()
     import ctypes
     import win32api
     import win32security
@@ -62,6 +62,23 @@ def limpar_cache_memoria():
     depois = _contadores_memoria()
     liberado = max(0, depois.get("livre", 0) - antes.get("livre", 0))
     return True, {"liberado": liberado, "antes": antes, "depois": depois}
+
+
+def _limpar_cache_linux():
+    """Linux: grava os dados pendentes e pede ao kernel para soltar o cache de arquivos (drop_caches = 1)."""
+    import psutil
+    antes = psutil.virtual_memory()
+    try:
+        os.sync()
+        with open("/proc/sys/vm/drop_caches", "w") as f:
+            f.write("1")
+    except OSError as e:
+        return False, f"Sem permissão: {e.strerror or e}"
+    time.sleep(0.5)
+    depois = psutil.virtual_memory()
+    cache = lambda m: getattr(m, "cached", 0) + getattr(m, "buffers", 0)  # noqa: E731
+    return True, {"liberado": max(0, depois.free - antes.free), "antes": {"livre": antes.free, "cache": cache(antes)},
+                  "depois": {"livre": depois.free, "cache": cache(depois)}}
 
 
 # ---------------------------------------------------------------- FPS (PresentMon)
@@ -83,7 +100,7 @@ class FPS:
             return True
         exe = self.exe()
         if not exe:
-            self.erro = "PresentMon não está no pacote."
+            self.erro = "PresentMon não está no pacote." if WIN else "A medição de FPS do CNT Monitor é só do Windows (no Linux, use o MangoHud no jogo)."
             return False
         self.ult_inicio = time.time()
         try:
@@ -211,12 +228,12 @@ class ModoJogo:
                 if ok:
                     self.desfazer["plano"] = atual["guid"]
                     self.log.append(f'Plano de energia: {atual["nome"]} → alto desempenho')
-        if c.get("jogo_modo_windows"):
+        if c.get("jogo_modo_windows") and WIN:
             antes = sessao.ler_usuario(energia.GAMEBAR, "AutoGameModeEnabled", 1)
             energia.mudar_windows("modo_jogo", True)
             self.desfazer["modo_windows"] = antes
             self.log.append("Modo de Jogo do Windows ligado")
-        if c.get("jogo_silenciar"):
+        if c.get("jogo_silenciar") and WIN:
             antes = sessao.ler_usuario(energia.NOTIF, "ToastEnabled", 1)
             energia.mudar_windows("notificacoes", False)
             self.desfazer["notificacoes"] = antes
@@ -277,7 +294,7 @@ class ModoJogo:
             try:
                 pr = psutil.Process(p)
                 self.prioridades[p] = pr.nice()
-                pr.nice(psutil.HIGH_PRIORITY_CLASS)
+                pr.nice(psutil.HIGH_PRIORITY_CLASS if WIN else -10)     # Linux: nice -10 (o serviço é root)
             except Exception:
                 self.prioridades[p] = None
 

@@ -380,6 +380,9 @@ def contadores():
                 if func(st, fam) == 0:
                     for k, v in zip(campos, st):
                         out[nome][k] = out[nome].get(k, 0) + v
+    else:
+        from .linux.rede import contadores_sistema
+        out.update(contadores_sistema())
     placas = {}
     try:
         io_ = psutil.net_io_counters(pernic=True)
@@ -1193,3 +1196,7 @@ def _eh_internet(ip):
         return ipaddress.ip_address(ip).is_global
     except ValueError:
         return False
+
+
+if not WIN:     # Linux: socket ICMP próprio, ss, /proc/net/snmp, iw e resolvectl
+    from .linux.rede import ping, tcp_estats, wifi, servidores_dns  # noqa: E402,F401,F811

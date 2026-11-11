@@ -156,17 +156,37 @@ def salvar(novos):
 
 
 def _exe_bandeja():
-    return os.path.join(config.pasta_programa(), "MonitorPC.exe")
+    return os.path.join(config.pasta_programa(), config.EXE_ICONE)
+
+
+AUTOSTART_LINUX = "/etc/xdg/autostart/cnt-monitor.desktop"
+
+
+def _inicializacao_linux(c, exe):
+    """Linux: o ícone abre ao entrar na sessão de qualquer usuário (autostart do XDG, GNOME/KDE/Cinnamon/XFCE)."""
+    try:
+        if not c["iniciar_com_windows"]:
+            if os.path.exists(AUTOSTART_LINUX):
+                os.remove(AUTOSTART_LINUX)
+            return
+        args = "" if c["abrir_janela_ao_iniciar"] else " --bandeja"
+        texto = ("[Desktop Entry]\nType=Application\nName=CNT Monitor\nComment=Monitor do computador e acesso remoto\n"
+                 f"Exec={exe}{args}\nIcon=cnt-monitor\nTerminal=false\nX-GNOME-Autostart-enabled=true\n")
+        os.makedirs(os.path.dirname(AUTOSTART_LINUX), exist_ok=True)
+        with open(AUTOSTART_LINUX, "w", encoding="utf-8") as f:
+            f.write(texto)
+    except OSError as e:
+        print("Não consegui alterar a inicialização:", e)
 
 
 def aplicar_inicializacao(c=None):
     """Liga/desliga o ícone ao iniciar o Windows (HKLM\\...\\Run, vale para todos os usuários)."""
-    if not WIN:
-        return
     c = c or obter()
     exe = _exe_bandeja()
     if not os.path.exists(exe):
         return
+    if not WIN:
+        return _inicializacao_linux(c, exe)
     import winreg
     try:
         with winreg.CreateKeyEx(winreg.HKEY_LOCAL_MACHINE, CHAVE_RUN, 0,

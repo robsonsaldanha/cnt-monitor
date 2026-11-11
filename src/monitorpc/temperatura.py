@@ -261,3 +261,9 @@ class Sensores:
         with self.lock:
             return {"sensores": list(self.lista), "fontes": self.fontes, "avisos": self.avisos[-5:],
                     "pawnio": self.pawnio, "resumo": self.resumo()}
+
+
+SensoresWindows = Sensores      # a versão Linux reaproveita o resumo e o estado desta
+
+if not WIN:     # Linux: /sys/class/hwmon, bateria e nvidia-smi no lugar do LibreHardwareMonitor
+    from .linux.sensores import Sensores  # noqa: E402,F401,F811

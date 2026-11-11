@@ -94,7 +94,8 @@ def listar_janelas():
     """{pid: [(hwnd, titulo, minimizada, area)]} das janelas de programa (as que aparecem na barra de tarefas)."""
     out = defaultdict(list)
     if not WIN:
-        return out
+        from monitorpc.linux import janelas
+        return janelas.listar_janelas()
 
     def cb(h, _l):
         try:
@@ -124,6 +125,9 @@ def listar_janelas():
 
 
 def trazer_para_frente(h):
+    if not WIN:
+        from monitorpc.linux import janelas
+        return janelas.trazer_para_frente(h)
     if user32.IsIconic(h):
         user32.ShowWindow(h, 9)  # SW_RESTORE
     else:
@@ -136,7 +140,11 @@ def trazer_para_frente(h):
 
 # ------------------------------------------------------------------ janela do monitor
 def navegador():
-    if not WIN:
+    if not WIN:     # Linux: o navegador em modo aplicativo (janela própria, sem abas nem barra de endereço)
+        for nome in ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "microsoft-edge",
+                     "microsoft-edge-stable", "brave-browser", "vivaldi-stable"):
+            if shutil.which(nome):
+                return shutil.which(nome)
         return None
     for c in (
         os.path.join(os.environ.get("ProgramFiles(x86)", ""), "Microsoft", "Edge", "Application", "msedge.exe"),
@@ -159,7 +167,7 @@ def janela_existente():
 
 def abrir_janela(aba=""):
     """Abre a janela do Monitor. Se só pode haver uma (Configurações), traz a que já está aberta."""
-    if WIN and not cfg().get("varias_janelas", False):
+    if not cfg().get("varias_janelas", False):
         h = janela_existente()
         if h:
             trazer_para_frente(h)
@@ -181,10 +189,58 @@ def abrir_janela(aba=""):
 
 
 # ------------------------------------------------------------------ ações vindas do serviço
+def abrir_caminho(c):
+    """Abre um arquivo ou pasta com o programa padrão (Windows: Explorer; Linux: xdg-open)."""
+    if WIN:
+        return os.startfile(c)
+    subprocess.Popen(["xdg-open", c], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+    return True
+
+
+def executar_linux(tipo, a):
+    """As mesmas ações do Windows, no Linux (janelas pelo X11; arquivos pelo xdg-open)."""
+    from monitorpc.linux import janelas
+    if tipo == "mostrar":
+        js = listar_janelas()
+        cands = sorted([j for p in a.get("pids", []) for j in js.get(p, [])], key=lambda j: (j[2], -j[3]))
+        if cands:
+            janelas.trazer_para_frente(cands[0][0])
+            return True, f'Janela "{cands[0][1][:60]}" aberta.'
+        return False, "Esse programa não tem janela para mostrar (ou está numa janela que o Wayland não deixa ver)."
+    if tipo == "fechar_janelas":
+        js = listar_janelas()
+        n = 0
+        for p in a.get("pids", []):
+            for wid, _t, _m, _a in js.get(p, []):
+                janelas.fechar(wid)
+                n += 1
+        if n:
+            return True, f"Pedi para fechar {n} janela(s). Se o programa perguntar algo (salvar?), responda na janela dele."
+        return False, "Nenhuma janela aberta para fechar. Use “Forçar encerramento” se quiser encerrar mesmo assim."
+    if tipo == "pasta":
+        c = a.get("caminho", "")
+        pasta = c if os.path.isdir(c) else os.path.dirname(c)
+        if os.path.isdir(pasta):
+            abrir_caminho(pasta)
+            return True, "Pasta aberta."
+        return False, "Essa pasta não existe mais."
+    if tipo == "abrir_exe":
+        c = a.get("caminho", "")
+        if os.path.exists(c):
+            subprocess.Popen([c], cwd=os.path.dirname(c) or None, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                             start_new_session=True)
+            return True, "Programa aberto."
+        return False, "Arquivo não encontrado."
+    if tipo == "notificar":
+        notificar(a.get("msg", ""), a.get("titulo", "CNT Monitor"))
+        return True, "Notificação mostrada."
+    return False, "Essa ação ainda não existe no Linux."
+
+
 def executar(a):
     tipo = a.get("tipo")
     if not WIN:
-        return False, "Só no Windows"
+        return executar_linux(tipo, a)
     if tipo == "mostrar":
         js = listar_janelas()
         cands = [j for p in a.get("pids", []) for j in js.get(p, [])]
@@ -268,7 +324,10 @@ def loop_janelas():
         try:
             js = listar_janelas()
             frente = None
-            if WIN:
+            if not WIN:
+                from monitorpc.linux import janelas
+                frente = janelas.pid_da_frente()
+            else:
                 h = user32.GetForegroundWindow()
                 if h:
                     pid = wt.DWORD(0)
@@ -291,6 +350,13 @@ EXT_IMAGEM = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp")
 
 
 def notificar_windows(msg, titulo="CNT Monitor"):
+    if not WIN and shutil.which("notify-send"):       # Linux: notificação do próprio ambiente (GNOME, KDE...)
+        try:
+            subprocess.Popen(["notify-send", "-a", "CNT Monitor", "-i", "cnt-monitor", str(titulo)[:60], str(msg)[:250]],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return
+        except OSError:
+            pass
     if ICONE is not None:
         try:
             ICONE.notify(str(msg)[:250], str(titulo)[:60])
@@ -449,7 +515,8 @@ def _fmt_taxa(b):
 def monitores():
     """Retângulos de trabalho (sem a barra de tarefas) de cada monitor: principal primeiro, depois da esquerda para a direita."""
     if not WIN:
-        return [(0, 0, 1920, 1040, 0, 0, 1920, 1080)]
+        from monitorpc.linux import janelas
+        return janelas.monitores()
     out = []
 
     class RECT(ctypes.Structure):
@@ -947,8 +1014,16 @@ def loop_extras():
 
 
 def instancia_unica():
-    if not WIN:
-        return True
+    if not WIN:     # Linux: trava num arquivo da pasta do usuário (some sozinha quando o processo acaba)
+        import fcntl
+        os.makedirs(PASTA_USUARIO, exist_ok=True)
+        global _TRAVA
+        _TRAVA = open(os.path.join(PASTA_USUARIO, "bandeja.trava"), "w")
+        try:
+            fcntl.flock(_TRAVA, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return True
+        except OSError:
+            return False
     ctypes.windll.kernel32.CreateMutexW(None, False, "Local\\MonitorPC-Bandeja")
     return ctypes.windll.kernel32.GetLastError() != 183
 
@@ -1009,8 +1084,8 @@ def main():
     if WIN:
         CAP = capturador.Capturador(api_post, cfg, notificar, abrir_janela, esconder_janela, PASTA_USUARIO, AVISOS)
         threading.Thread(target=loop_captura, daemon=True).start()
-        from monitorpc import teclado_remoto
-        teclado_remoto.Gancho().iniciar()   # atalhos do Windows para a janela da sessão do técnico
+    from monitorpc import teclado_remoto
+    teclado_remoto.Gancho().iniciar()   # atalhos do Windows para a janela da sessão do técnico (Linux: só no X11)
     for alvo in (loop_fila, loop_janelas, atualizar_icone, loop_extras):
         threading.Thread(target=alvo, daemon=True).start()
     MiniPainel().iniciar()
@@ -1084,7 +1159,7 @@ def main():
                 captura.copiar_texto(x["url"])
                 notificar(f"Link copiado: {x['url']}", "Itens recentes")
             elif os.path.isfile(x["caminho"]):
-                os.startfile(x["caminho"])
+                abrir_caminho(x["caminho"])
         return pystray.MenuItem(nome[:60], abrir)
 
     def sobre(*_):
@@ -1202,8 +1277,8 @@ def main():
         pystray.MenuItem("Depuração", pystray.Menu(
             pystray.MenuItem("Abrir o registro do ícone (bandeja.log)",
                              lambda *_: os.path.isfile(os.path.join(PASTA_USUARIO, "bandeja.log")) and
-                             os.startfile(os.path.join(PASTA_USUARIO, "bandeja.log"))),
-            pystray.MenuItem("Abrir a pasta de dados do ícone", lambda *_: os.startfile(PASTA_USUARIO)))),
+                             abrir_caminho(os.path.join(PASTA_USUARIO, "bandeja.log"))),
+            pystray.MenuItem("Abrir a pasta de dados do ícone", lambda *_: abrir_caminho(PASTA_USUARIO)))),
         pystray.MenuItem("Sobre…", sobre),
         pystray.MenuItem("Fechar ícone (o monitoramento continua)", lambda *_: fechar_icone()),
     )

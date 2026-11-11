@@ -84,11 +84,21 @@ setInterval(() => {
 // sem ela, o arquivo da release no GitHub.
 const REPO = 'robsonsaldanha/cnt-monitor';
 const DOWNLOADS = process.env.DOWNLOADS || '/var/www/cntmonitor_downloads';
-let instalador = { url: `https://github.com/${REPO}/releases/latest`, em: 0 };
-function instaladorLocal() {
+// Windows: CNTMonitor-Setup-<versão>.exe. Linux: cnt-monitor_<versão>_amd64.deb (no ultima.json, em "linux").
+const PADRAO = { windows: /^CNTMonitor-Setup-[\d.]+\.exe$/, linux: /^cnt-monitor_[\d.]+_amd64\.deb$/ };
+const RELEASES = `https://github.com/${REPO}/releases/latest`;
+let instalador = { url: { windows: RELEASES, linux: RELEASES }, em: 0 };
+function sistemaDe(req, url) {
+  const pedido = url.searchParams.get('so');
+  if (pedido === 'linux' || pedido === 'windows') return pedido;
+  const ua = String(req.headers['user-agent'] || '');
+  return /Linux|X11|Ubuntu|Debian/i.test(ua) && !/Android|CrOS/i.test(ua) ? 'linux' : 'windows';
+}
+function instaladorLocal(so) {
   try {
     const u = JSON.parse(fs.readFileSync(path.join(DOWNLOADS, 'ultima.json'), 'utf8'));
-    if (/^CNTMonitor-Setup-[\d.]+\.exe$/.test(u.arquivo) && fs.existsSync(path.join(DOWNLOADS, u.arquivo))) return '/download/' + u.arquivo;
+    const nome = so === 'linux' ? (u.linux || {}).arquivo : u.arquivo;
+    if (PADRAO[so].test(nome) && fs.existsSync(path.join(DOWNLOADS, nome))) return '/download/' + nome;
   } catch (_) { }
   return null;
 }
@@ -97,7 +107,12 @@ function atualizarInstalador() {
   instalador.em = Date.now();
   https.get(`https://api.github.com/repos/${REPO}/releases/latest`, { headers: { 'User-Agent': 'cnt-monitor-site', Accept: 'application/vnd.github+json' } }, r => {
     let t = ''; r.setEncoding('utf8'); r.on('data', x => { if (t.length < 2e6) t += x; });
-    r.on('end', () => { try { const a = (JSON.parse(t).assets || []).find(x => /^CNTMonitor-Setup-.*\.exe$/.test(x.name)); if (a) instalador.url = a.browser_download_url; } catch (_) { } });
+    r.on('end', () => {
+      try {
+        const lista = JSON.parse(t).assets || [];
+        for (const so of ['windows', 'linux']) { const a = lista.find(x => PADRAO[so].test(x.name)); if (a) instalador.url[so] = a.browser_download_url; }
+      } catch (_) { }
+    });
   }).on('error', () => { });
 }
 
@@ -134,9 +149,10 @@ async function tratar(req, res) {
   if (req.method === 'OPTIONS') return responder(res, 204, {});
   if (rota === '/saude') return responder(res, 200, { ok: true, pcs: pcs.size, pedidos: pedidos.size });
   if (url.pathname === '/baixar') {
-    const local = instaladorLocal();
+    const so = sistemaDe(req, url);
+    const local = instaladorLocal(so);
     if (!local) atualizarInstalador();
-    res.writeHead(302, { Location: local || instalador.url, 'Cache-Control': 'no-store' });
+    res.writeHead(302, { Location: local || instalador.url[so], 'Cache-Control': 'no-store', Vary: 'User-Agent' });
     return res.end();
   }
   if (!passou(ip, 'outro')) return erro(res, 429, 'Muitas requisições. Espere um minuto.');

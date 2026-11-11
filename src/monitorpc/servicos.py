@@ -103,3 +103,7 @@ def acao(nome, oque, inicio=None):
     with _lock:
         _cache["t"] = 0
     return True, msg
+
+
+if not WIN:     # Linux: systemctl
+    from .linux.servicos import listar, acao, protecao  # noqa: E402,F401,F811

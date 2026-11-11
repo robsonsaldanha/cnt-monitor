@@ -20,6 +20,10 @@ REPO = "robsonsaldanha/cnt-monitor"
 PASTA = os.path.join(config.BASE, "atualizacao")
 FLAG_REABRIR = os.path.join(config.BASE, "reabrir_icone.flag")
 PREFIXOS = ("CNTMonitor-Setup", "MonitorDoPC-Setup")   # nome atual primeiro; o antigo vale para releases até a 2.6.x
+WIN = os.name == "nt"
+# Linux: o pacote cnt-monitor_<versão>_amd64.deb e a linha "SHA256 (deb): ..." nas notas do release (a primeira
+# linha "SHA256:" continua sendo a do instalador do Windows, que as versões antigas leem)
+RE_SHA = re.compile(r"SHA256:\s*([0-9a-fA-F]{64})" if WIN else r"SHA256 \(deb\):\s*([0-9a-fA-F]{64})")
 
 
 def _versao(t):
@@ -113,9 +117,12 @@ class Atualizador:
     def _avaliar(self, d):
         self.ultima_verificacao = time.time()
         self.erro = None
-        exes = [a for a in d.get("assets", []) if a["name"].endswith(".exe")]
-        ativo = next((a for p in PREFIXOS for a in exes if a["name"].startswith(p)), None)
-        sha = re.search(r"SHA256:\s*([0-9a-fA-F]{64})", d.get("body") or "")
+        if WIN:
+            exes = [a for a in d.get("assets", []) if a["name"].endswith(".exe")]
+            ativo = next((a for p in PREFIXOS for a in exes if a["name"].startswith(p)), None)
+        else:
+            ativo = next((a for a in d.get("assets", []) if re.fullmatch(r"cnt-monitor_[\d.]+_amd64\.deb", a["name"])), None)
+        sha = RE_SHA.search(d.get("body") or "")
         info = {"versao": (d.get("tag_name") or "").lstrip("v"), "nome": d.get("name"), "notas": (d.get("body") or "")[:3000],
                 "url": ativo["browser_download_url"] if ativo else None, "tamanho": ativo["size"] if ativo else 0,
                 "sha256": sha.group(1).lower() if sha else None, "pagina": d.get("html_url")}
@@ -153,7 +160,7 @@ class Atualizador:
         if not info.get("sha256"):
             return self._falha("O release não traz a assinatura SHA-256; por segurança não vou instalar.")
         os.makedirs(PASTA, exist_ok=True)
-        destino = os.path.join(PASTA, f"CNTMonitor-Setup-{info['versao']}.exe")
+        destino = os.path.join(PASTA, f"CNTMonitor-Setup-{info['versao']}.exe" if WIN else f"cnt-monitor_{info['versao']}_amd64.deb")
         self.alvo, self.erro = info["versao"], None
         self._etapa("baixando")
         try:
@@ -172,6 +179,8 @@ class Atualizador:
                     self._andou(feito, total)
         except Exception as e:  # noqa: BLE001
             return self._falha(f"Não consegui baixar: {e}")
+        if not WIN:
+            return self._instalar_deb(destino, info)
         # confere o que ficou no disco e roda o instalador com o arquivo travado: entre a conferência e a
         # execução ninguém consegue trocar o conteúdo (o serviço roda como SYSTEM)
         self._etapa("conferindo")
@@ -195,6 +204,31 @@ class Atualizador:
             return self._falha(f"Não consegui iniciar a instalação: {e}")
         finally:
             trava.Close()
+        return True, f"Instalando a versão {info['versao']}. O CNT Monitor reinicia sozinho em alguns segundos."
+
+    def _instalar_deb(self, destino, info):
+        """Linux: a pasta de atualização é do root e ninguém mais grava nela, então confere e instala. O apt roda
+        numa unidade própria do systemd: o pacote reinicia este serviço, e a instalação não pode morrer junto."""
+        self._etapa("conferindo")
+        h, tamanho, lidos = hashlib.sha256(), os.path.getsize(destino), 0
+        with open(destino, "rb") as f:
+            for bloco in iter(lambda: f.read(1 << 16), b""):
+                h.update(bloco)
+                lidos += len(bloco)
+                self._andou(lidos, tamanho)
+        if h.hexdigest() != info["sha256"]:
+            os.remove(destino)
+            return self._falha("O arquivo baixado não confere com a assinatura SHA-256. Atualização cancelada.")
+        with open(FLAG_REABRIR, "w") as f:
+            f.write(info["versao"])
+        self._etapa("instalando")
+        cmd = ["apt-get", "install", "-y", "--allow-downgrades", destino]
+        try:
+            subprocess.Popen(["systemd-run", "--unit", f"cnt-monitor-atualizar-{int(time.time())}", "--collect",
+                              "--setenv=DEBIAN_FRONTEND=noninteractive", *cmd],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        except OSError as e:
+            return self._falha(f"Não consegui iniciar a instalação: {e}")
         return True, f"Instalando a versão {info['versao']}. O CNT Monitor reinicia sozinho em alguns segundos."
 
     def estado(self):

@@ -179,3 +179,7 @@ def abrir_como_sistema(comando):
         raise
     except Exception as e:  # noqa: BLE001
         raise OSError(f"Não consegui abrir o acesso remoto na tela do usuário: {e}") from None
+
+
+if not WIN:     # Linux: loginctl e a sessão gráfica (X11 ou Wayland) de quem está usando o PC
+    from .linux.sessao import abrir_na_tela_do_usuario, em_servico, abrir_como_sistema, sessao_grafica  # noqa: E402,F401

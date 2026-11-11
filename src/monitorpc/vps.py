@@ -53,7 +53,8 @@ def _ler_segredos():
 
 def _gravar_segredos(d):
     os.makedirs(config.BASE, exist_ok=True)
-    with open(config.SEGREDOS + ".tmp", "wb") as f:
+    # Linux não tem DPAPI: o arquivo fica só para o root (o serviço), como a chave SSH de um servidor
+    with open(os.open(config.SEGREDOS + ".tmp", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "wb") as f:
         f.write(_cifrar(json.dumps(d).encode("utf-8")))
     os.replace(config.SEGREDOS + ".tmp", config.SEGREDOS)
 

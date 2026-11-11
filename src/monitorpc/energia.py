@@ -272,3 +272,9 @@ def garantir_alto_desempenho():
 
 def _json(x):
     return json.dumps(x, ensure_ascii=False)
+
+
+if not WIN:     # Linux: power-profiles-daemon (ou governor da CPU) e /sys/class/backlight
+    from .linux.energia import (planos, plano_ativo, ativar_plano, criar_plano, ajustes, mudar_ajuste,  # noqa: E402,F401,F811
+                                modo_energia, mudar_modo_energia, ajustes_windows, mudar_windows, brilho, mudar_brilho,
+                                estado, garantir_alto_desempenho, ALTO_DESEMPENHO, DESEMPENHO_MAXIMO, MODOS)

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Copia para a VPS o instalador da release mais nova do CNT Monitor, para o site entregar o download daqui.
+"""Copia para a VPS os instaladores da release mais nova do CNT Monitor, para o site entregar o download daqui.
 
-Roda pelo cnt-monitor-baixar.timer. Baixa CNTMonitor-Setup-<versão>.exe da última release do GitHub, confere o
-SHA-256 que o GitHub publica para o arquivo e só então o põe na pasta (troca atômica). Depois grava ultima.json,
-que o encontro.js lê para redirecionar /baixar. Mantém as 3 versões mais novas.
+Roda pelo cnt-monitor-baixar.timer. Baixa da última release do GitHub o CNTMonitor-Setup-<versão>.exe (Windows) e,
+se existir, o cnt-monitor_<versão>_amd64.deb (Linux); confere o SHA-256 que o GitHub publica para cada arquivo e
+só então o põe na pasta (troca atômica). Depois grava ultima.json ({"arquivo": .exe, "linux": {"arquivo": .deb}}),
+que o encontro.js lê para redirecionar /baixar. Mantém as 3 versões mais novas de cada um.
 
 Variável: DOWNLOADS (padrão /var/www/cntmonitor_downloads).
 """
@@ -18,21 +19,30 @@ REPO = "robsonsaldanha/cnt-monitor"
 PASTA = os.environ.get("DOWNLOADS", "/var/www/cntmonitor_downloads")
 MANTER = 3
 RE_NOME = re.compile(r"^CNTMonitor-Setup-(\d+(?:\.\d+)*)\.exe$")
+RE_DEB = re.compile(r"^cnt-monitor_(\d+(?:\.\d+)*)_amd64\.deb$")
 CABECALHO = {"User-Agent": "cnt-monitor-site", "Accept": "application/vnd.github+json"}
 
 
-def ultima_release():
-    req = urllib.request.Request(f"https://api.github.com/repos/{REPO}/releases/latest", headers=CABECALHO)
-    with urllib.request.urlopen(req, timeout=30) as r:
-        rel = json.load(r)
+def _arquivo(rel, padrao):
     for a in rel.get("assets", []):
-        m = RE_NOME.match(a.get("name", ""))
+        m = padrao.match(a.get("name", ""))
         if m:
             digest = a.get("digest") or ""
             if not digest.startswith("sha256:"):
                 raise SystemExit(f"{a['name']}: o GitHub não informou o SHA-256; não dá para conferir")
             return m.group(1), a["name"], a["browser_download_url"], int(a["size"]), digest[7:].lower()
-    raise SystemExit(f"release {rel.get('tag_name')} sem CNTMonitor-Setup-*.exe")
+    return None
+
+
+def ultima_release():
+    """(dados do .exe, dados do .deb ou None) da última release."""
+    req = urllib.request.Request(f"https://api.github.com/repos/{REPO}/releases/latest", headers=CABECALHO)
+    with urllib.request.urlopen(req, timeout=30) as r:
+        rel = json.load(r)
+    exe = _arquivo(rel, RE_NOME)
+    if not exe:
+        raise SystemExit(f"release {rel.get('tag_name')} sem CNTMonitor-Setup-*.exe")
+    return exe, _arquivo(rel, RE_DEB)
 
 
 def baixar(url, destino, tamanho, sha):
@@ -66,28 +76,40 @@ def sha256_de(caminho):
 
 
 def versao(nome):
-    return tuple(int(x) for x in RE_NOME.match(nome).group(1).split("."))
+    m = RE_NOME.match(nome) or RE_DEB.match(nome)
+    return tuple(int(x) for x in m.group(1).split("."))
 
 
-def main():
-    os.makedirs(PASTA, exist_ok=True)
-    ver, nome, url, tamanho, sha = ultima_release()
+def garantir(item):
+    """Baixa (se ainda não está aqui, inteiro e conferido) e devolve as informações para o ultima.json."""
+    ver, nome, url, tamanho, sha = item
     destino = os.path.join(PASTA, nome)
     if not (os.path.exists(destino) and os.path.getsize(destino) == tamanho and sha256_de(destino) == sha):
         baixar(url, destino, tamanho, sha)
         print(f"baixado {nome} ({tamanho} bytes, sha256 conferido)")
-    info = {"versao": ver, "arquivo": nome, "tamanho": tamanho, "sha256": sha}
+    return {"versao": ver, "arquivo": nome, "tamanho": tamanho, "sha256": sha}
+
+
+def main():
+    os.makedirs(PASTA, exist_ok=True)
+    exe, deb = ultima_release()
+    info = garantir(exe)
+    atuais = {info["arquivo"]}
+    if deb:
+        info["linux"] = garantir(deb)
+        atuais.add(info["linux"]["arquivo"])
     tmp = os.path.join(PASTA, "ultima.json.tmp")
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(info, f)
     os.chmod(tmp, 0o644)
     os.replace(tmp, os.path.join(PASTA, "ultima.json"))
-    antigos = sorted((x for x in os.listdir(PASTA) if RE_NOME.match(x)), key=versao, reverse=True)[MANTER:]
-    for x in antigos:
-        if x != nome:
-            os.remove(os.path.join(PASTA, x))
-            print(f"removido {x}")
-    print(f"atual: {nome}")
+    for padrao in (RE_NOME, RE_DEB):
+        antigos = sorted((x for x in os.listdir(PASTA) if padrao.match(x)), key=versao, reverse=True)[MANTER:]
+        for x in antigos:
+            if x not in atuais:
+                os.remove(os.path.join(PASTA, x))
+                print(f"removido {x}")
+    print("atual: " + ", ".join(sorted(atuais)))
 
 
 if __name__ == "__main__":

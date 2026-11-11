@@ -205,3 +205,7 @@ class MonitorGPU:
 
 def _norm(s):
     return re.sub(r"[^a-z0-9]", "", (s or "").lower().replace("(r)", "").replace("(tm)", ""))
+
+
+if not WIN:     # Linux: /sys/class/drm, fdinfo dos processos e nvidia-smi
+    from .linux.gpu import MonitorGPU  # noqa: E402,F401,F811

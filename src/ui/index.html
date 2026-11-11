@@ -395,6 +395,8 @@ input.atalho{width:170px;text-align:center;cursor:pointer}
   .painel{break-inside:avoid} .so-impressao{display:block}
   section{display:none!important} section.imprimir{display:block!important}
 }
+body[data-so="linux"] .so-win{display:none!important}
+body:not([data-so="linux"]) .so-lin{display:none!important}
 </style>
 </head>
 <body>
@@ -411,7 +413,7 @@ input.atalho{width:170px;text-align:center;cursor:pointer}
   <button data-v="hardware"><svg viewBox="0 0 24 24"><path d="M10 14V5a2 2 0 1 1 4 0v9a4 4 0 1 1-4 0z"/></svg>Temperatura e hardware</button>
   <button data-v="ventoinhas"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1.8"/><path d="M12 10.2C12 6 10 3 8 3.5c-2 .6-1 4.5 2.4 6M13.8 12c4.200 0 7.200 2 6.700 4-.6 2-4.500 1-6-2.400M12 13.800C12 18 14 21 16 20.500c2-.6 1-4.500-2.400-6M10.200 12C6 12 3 10 3.500 8c.6-2 4.500-1 6 2.400"/></svg>Ventoinhas</button>
   <div class="grp">Ferramentas</div>
-  <button data-v="capturas"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Captura de tela<span class="cont" id="capTag" hidden style="background:var(--perigo)">REC</span></button>
+  <button data-v="capturas" class="so-win"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Captura de tela<span class="cont" id="capTag" hidden style="background:var(--perigo)">REC</span></button>
   <button data-v="jogo"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 10.5v4M5 12.5h4M15.5 11.5h.01M18 13.5h.01"/></svg>Modo Jogo<span class="cont" id="jogoTag" hidden style="background:var(--ok)">ON</span></button>
   <button data-v="otimizar"><svg viewBox="0 0 24 24"><path d="M4 20l7-7M14 4l6 6-8 8-6-6z"/><path d="M15 3l1-1M21 9l1-1"/></svg>Otimizar</button>
   <button data-v="regras"><svg viewBox="0 0 24 24"><path d="M4 6h10M4 12h7M4 18h10"/><circle cx="18" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Regras por programa</button>
@@ -612,8 +614,8 @@ input.atalho{width:170px;text-align:center;cursor:pointer}
   </div>
   <div class="grade g2 secao lado2">
     <div class="painel"><div class="cab"><h2>Manutenção do Windows</h2><span class="desc">ferramentas do próprio Windows</span></div>
-      <div class="lim"><span></span><div><b>Otimizar unidades</b></div><button class="btn" data-tarefa="otimizar">Executar</button><small>Faz o TRIM nos SSDs e desfragmenta HDs (o mesmo que “Desfragmentar e otimizar unidades”). Seguro e pode ser feito com o PC em uso.</small></div>
-      <div class="lim"><span></span><div><b>Limpar componentes antigos do Windows</b></div><button class="btn" data-tarefa="componentes">Executar</button><small>Remove versões antigas de atualizações que o Windows já substituiu (DISM StartComponentCleanup). Não desinstala atualizações atuais. Pode levar de 5 a 20 minutos.</small></div>
+      <div class="lim"><span></span><div><b>Otimizar unidades</b></div><button class="btn" data-tarefa="otimizar">Executar</button><small class="so-win">Faz o TRIM nos SSDs e desfragmenta HDs (o mesmo que “Desfragmentar e otimizar unidades”). Seguro e pode ser feito com o PC em uso.</small><small class="so-lin">Faz o TRIM em todos os SSDs montados (fstrim). Seguro e pode ser feito com o PC em uso.</small></div>
+      <div class="lim"><span></span><div><b class="so-win">Limpar componentes antigos do Windows</b><b class="so-lin">Remover pacotes que ninguém usa</b></div><button class="btn" data-tarefa="componentes">Executar</button><small class="so-win">Remove versões antigas de atualizações que o Windows já substituiu (DISM StartComponentCleanup). Não desinstala atualizações atuais. Pode levar de 5 a 20 minutos.</small><small class="so-lin">Remove bibliotecas e kernels antigos que o sistema instalou como dependência e nada mais usa (apt autoremove). Não remove programas que você instalou.</small></div>
       <div id="tarefaEstado" class="pad mut2" style="font-size:13px"></div></div>
     <div class="painel"><div class="cab"><h2>Possível vazamento de memória</h2><span class="desc">memória que cresce sem parar nas últimas horas</span></div><div id="otVaz"><div class="vazio">Carregando…</div></div></div>
   </div>
@@ -781,8 +783,8 @@ function menuPrograma(e, g){ if(!g||g.outros) return;
     {t:'Copiar caminho', ic:'copiar', des:!g.exe, f:()=>copiar(g.exe)},
     {t:'Pesquisar na internet', ic:'web', f:()=>pesquisar(`${exeNome(g.exe)||g.nome} o que é`)},
     '-',
-    {t:'Fechar programa (como clicar no X)', ic:'fechar', des:prot, mot:prot?'do Windows':'', f:async()=>{ if(CFG.confirmar_encerrar && !await confirmar(`Fechar ${g.nome}?`,'Vou pedir para todas as janelas desse programa fecharem, como se você clicasse no X. Se tiver algo sem salvar, o programa deve perguntar.','Fechar')) return; acao({tipo:'fechar_janelas',programa:g.nome}); }},
-    {t:'Forçar encerramento do programa', ic:'matar', perigo:1, des:prot||!perm, mot:prot?'do Windows':!perm?'desligado':'', f:async()=>{ if(CFG.confirmar_encerrar && !await confirmar(`Forçar o encerramento de ${g.nome}?`,`Os ${g.nproc} processos desse programa serão encerrados na hora. O que não estiver salvo será perdido. Processos do Windows nunca são encerrados.`,'Forçar encerramento',1)) return; acao({tipo:'forcar_programa',programa:g.nome}); }},
+    {t:'Fechar programa (como clicar no X)', ic:'fechar', des:prot, mot:prot?'do '+SO:'', f:async()=>{ if(CFG.confirmar_encerrar && !await confirmar(`Fechar ${g.nome}?`,'Vou pedir para todas as janelas desse programa fecharem, como se você clicasse no X. Se tiver algo sem salvar, o programa deve perguntar.','Fechar')) return; acao({tipo:'fechar_janelas',programa:g.nome}); }},
+    {t:'Forçar encerramento do programa', ic:'matar', perigo:1, des:prot||!perm, mot:prot?'do '+SO:!perm?'desligado':'', f:async()=>{ if(CFG.confirmar_encerrar && !await confirmar(`Forçar o encerramento de ${g.nome}?`,`Os ${g.nproc} processos desse programa serão encerrados na hora. O que não estiver salvo será perdido. Processos do Windows nunca são encerrados.`,'Forçar encerramento',1)) return; acao({tipo:'forcar_programa',programa:g.nome}); }},
   ]); }
 function menuProcesso(e, p){ if(!p) return; const prot=p.protegido, perm=CFG.permitir_encerrar;
   abrirMenu(e, `${p.nome} · PID ${p.pid}`, [
@@ -794,9 +796,9 @@ function menuProcesso(e, p){ if(!p) return; const prot=p.protegido, perm=CFG.per
     {t:'Copiar PID', ic:'copiar', f:()=>copiar(String(p.pid))},
     {t:'Pesquisar na internet', ic:'web', f:()=>pesquisar(`${p.nome} o que é`)},
     '-',
-    {t:'Fechar janela (como clicar no X)', ic:'fechar', des:!!prot, mot:prot?'do Windows':'', f:()=>acao({tipo:'fechar_janelas',pid:p.pid,inicio:p.inicio})},
-    {t:'Encerrar processo', ic:'matar', perigo:1, des:!!prot||!perm, mot:prot?'do Windows':!perm?'desligado':'', f:async()=>{ if(CFG.confirmar_encerrar && !await confirmar(`Encerrar ${p.nome} (PID ${p.pid})?`,'O processo será encerrado na hora. O que não estiver salvo nele será perdido.','Encerrar',1)) return; acao({tipo:'encerrar',pid:p.pid,inicio:p.inicio}); }},
-    {t:'Encerrar árvore de processos', ic:'arvore', perigo:1, des:!!prot||!perm, mot:prot?'do Windows':'', f:async()=>{ if(CFG.confirmar_encerrar && !await confirmar(`Encerrar ${p.nome} e tudo o que ele abriu?`,'Esse processo e todos os subprocessos dele serão encerrados na hora. Processos do Windows nunca são encerrados.','Encerrar árvore',1)) return; acao({tipo:'encerrar_arvore',pid:p.pid,inicio:p.inicio}); }},
+    {t:'Fechar janela (como clicar no X)', ic:'fechar', des:!!prot, mot:prot?'do '+SO:'', f:()=>acao({tipo:'fechar_janelas',pid:p.pid,inicio:p.inicio})},
+    {t:'Encerrar processo', ic:'matar', perigo:1, des:!!prot||!perm, mot:prot?'do '+SO:!perm?'desligado':'', f:async()=>{ if(CFG.confirmar_encerrar && !await confirmar(`Encerrar ${p.nome} (PID ${p.pid})?`,'O processo será encerrado na hora. O que não estiver salvo nele será perdido.','Encerrar',1)) return; acao({tipo:'encerrar',pid:p.pid,inicio:p.inicio}); }},
+    {t:'Encerrar árvore de processos', ic:'arvore', perigo:1, des:!!prot||!perm, mot:prot?'do '+SO:'', f:async()=>{ if(CFG.confirmar_encerrar && !await confirmar(`Encerrar ${p.nome} e tudo o que ele abriu?`,'Esse processo e todos os subprocessos dele serão encerrados na hora. Processos do Windows nunca são encerrados.','Encerrar árvore',1)) return; acao({tipo:'encerrar_arvore',pid:p.pid,inicio:p.inicio}); }},
   ]); }
 
 /* =================== tabelas ordenáveis =================== */
@@ -1260,7 +1262,7 @@ function rsArqRender(){ const a=$('#rsArq'); if(!a||a.hidden||!RS) return; const
   $('#rsArqIn').onchange=e=>{ [...e.target.files].forEach(f=>rsEnviar(f,f.name)); e.target.value=''; }; }
 
 /* =================== ciclo ao vivo =================== */
-let E=null, PROCS=[], STATUS=null, SERIE=[], ultSeg=0, contRede=0, contHw=0, NAV_TS=0;
+let E=null, PROCS=[], STATUS=null, SO='Windows', SERIE=[], ultSeg=0, contRede=0, contHw=0, NAV_TS=0;
 function pontoSerie(e){ return [Math.floor(e.ts), e.cpu, e.mem_pct, e.ler, e.gravar, e.env, e.rec, e.temp_cpu, e.temp_gpu, e.uso_gpu,
   Object.fromEntries((e.discos||[]).map(d=>[d.id,[d.ler,d.gravar,d.ativo]])), Object.fromEntries((e.gpus||[]).map(g=>[g.id,[g.uso,g.mem_ded_usada]])), e.disco_ativo]; }
 async function ciclo(){
@@ -1291,11 +1293,16 @@ function entrar(){ fecharMenu();
   if(vista==='jogo') vJogo(true); if(vista==='energia') vEnergia(); if(vista==='servicos') vServicos(); if(vista==='alertas') vAlertas();
   if(vista==='otimizar') vOtimizar(); if(vista==='regras') vRegras(); if(vista==='vps') vVps(true); if(vista==='ajuda') vAjuda(); if(vista==='comparar') vComparar();
   if(vista==='capturas'){ abaCaptura(CAP_ABA); vCapturas(true); } if(vista==='editor') vEditor(); }
-async function cicloStatus(){ try{ STATUS=await API('status'); avisos(); $('#rodInfo').innerHTML=`v${esc(STATUS.versao)} · histórico de ${STATUS.banco.desde?dur(Date.now()/1000-STATUS.banco.desde):'0 min'}<br>${fB(STATUS.banco.tamanho)} em disco`; }catch(_){} }
+async function cicloStatus(){ try{ STATUS=await API('status'); definirSO(); avisos(); $('#rodInfo').innerHTML=`v${esc(STATUS.versao)} · histórico de ${STATUS.banco.desde?dur(Date.now()/1000-STATUS.banco.desde):'0 min'}<br>${fB(STATUS.banco.tamanho)} em disco`; }catch(_){} }
+// Linux: os textos que falam deste computador dizem "Linux" e o que não existe lá (Captura de tela, ajustes e modo
+// de energia do Windows) some. O que fala do outro computador da sessão remota continua como está.
+function definirSO(){ if(!STATUS||STATUS.sistema!=='linux'||SO==='Linux') return; SO='Linux'; document.body.dataset.so='linux';
+  const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT), ns=[]; while(w.nextNode()) if(w.currentNode.nodeValue.includes('Windows')) ns.push(w.currentNode);
+  ns.forEach(n=>{ n.nodeValue=n.nodeValue.replace(/Windows/g,'Linux'); }); if(vista==='capturas') location.hash='#geral'; }
 function avisos(){ const a=[]; if(!STATUS) return;
   if(!STATUS.admin) a.push(['erro','O serviço não está rodando como administrador — rede por programa e temperatura ficam limitadas.']);
   if(STATUS.admin && CFG.rede_por_programa && !STATUS.rede_ok) a.push(['','A medição de rede por programa não iniciou: '+esc(STATUS.rede_erro||'')]);
-  if(!STATUS.bandeja_online) a.push(['','O ícone do CNT Monitor perto do relógio está fechado — “Mostrar janela”, “Abrir pasta” e “Fechar janela” precisam dele. Abra o CNT Monitor pelo menu Iniciar.']);
+  if(!STATUS.bandeja_online) a.push(['','O ícone do CNT Monitor perto do relógio está fechado — “Mostrar janela”, “Abrir pasta” e “Fechar janela” precisam dele. Abra o CNT Monitor pelo menu '+(SO==='Linux'?'de aplicativos':'Iniciar')+'.']);
   $('#avisos').innerHTML=a.map(([c,t])=>`<div class="aviso ${c}">${t}</div>`).join(''); $('#jogoTag').hidden=!STATUS.jogo_ativo;
   API('capturas?limite=1').then(d=>{ $('#capTag').hidden=!(d.estado&&d.estado.gravando); }).catch(()=>{}); }
 
@@ -1345,7 +1352,7 @@ function vRecurso(entrando){ const R=REC[recurso]; if(!R){ ir('geral'); return; 
   if(entrando||recAtual!==recurso){ recAtual=recurso; $('#rTit').textContent=R.t; $('#rTopProgT').textContent=`Programas que mais usam ${R.col.toLowerCase()}`; $('#rTopProcT').textContent=`Processos que mais usam ${R.col.toLowerCase()}`;
     $('#rCards').innerHTML=''; $('#rExtra').innerHTML='';
     const cMem=()=>({k:'mem',t:'Memória',f:r=>fB(r.mem)});
-    const colsP=[{k:'nome',t:'Programa',e:1,texto:1,f:r=>`${ico(r.exe)}<span class="nm">${esc(r.nome)}</span>${r.protegido?ESCUDO('Windows'):''}`},{k:'met',t:R.col,v:R.met,f:R.fmt},cMem(),{k:'cpu',t:'CPU',f:r=>fP(r.cpu)},{k:'nproc',t:'Proc.'}];
+    const colsP=[{k:'nome',t:'Programa',e:1,texto:1,f:r=>`${ico(r.exe)}<span class="nm">${esc(r.nome)}</span>${r.protegido?ESCUDO(SO):''}`},{k:'met',t:R.col,v:R.met,f:R.fmt},cMem(),{k:'cpu',t:'CPU',f:r=>fP(r.cpu)},{k:'nproc',t:'Proc.'}];
     if(recurso==='disco') colsP.splice(2,0,{k:'ler',t:'Ler',f:r=>fR(r.ler)},{k:'gravar',t:'Gravar',f:r=>fR(r.gravar)});
     if(recurso==='rede') colsP.splice(2,0,{k:'env',t:'↑',f:r=>fN(r.env)},{k:'rec',t:'↓',f:r=>fN(r.rec)},{k:'nconn',t:'Con.'});
     if(recurso==='gpu') colsP.splice(2,0,{k:'gpu_mem',t:'Mem. de vídeo',f:r=>fB(r.gpu_mem)});
@@ -1468,7 +1475,7 @@ const tIni=Tabela($('#tIni'),[
   {k:'origem',t:'Onde está',e:1,texto:1},{k:'escopo',t:'Para quem',e:1,texto:1},
   {k:'comando',t:'Comando',e:1,texto:1,f:r=>`<code style="font-size:11px">${esc(r.comando)}</code>`},
 ],{ordem:'nome',desc:false,clique:r=>{ if(r.programa) abrirPrograma(r.programa); },menu:(e,r)=>abrirMenu(e,r.nome,[
-  {t:r.ativo?'Desativar (não iniciar com o Windows)':'Ativar (iniciar com o Windows)', ic:'liga', f:()=>alternarIni(r.id,!r.ativo)},
+  {t:r.ativo?'Desativar (não iniciar com o '+SO+')':'Ativar (iniciar com o '+SO+')', ic:'liga', f:()=>alternarIni(r.id,!r.ativo)},
   {t:'Abrir local do arquivo', ic:'pasta', des:!r.existe, f:()=>acao({tipo:'pasta',caminho:r.exe})},
   {t:'Ver programa aberto', ic:'prog', des:!r.programa, f:()=>abrirPrograma(r.programa)},
   {t:'Copiar comando', ic:'copiar', f:()=>copiar(r.comando)},
@@ -1764,11 +1771,11 @@ let EN=null;
 const fmtMin=v=>v===0?'Nunca':v<60?v+' min':(v/60)+' h';
 async function vEnergia(){ try{ EN=await API('energia'); }catch(_){ $('#enCorpo').innerHTML='<div class="vazio">Não consegui ler as configurações de energia.</div>'; return; } const e=EN;
   let h=`<h2 style="margin-bottom:8px">Plano de energia</h2><div class="planos">${e.planos.map(p=>`<button class="plano ${p.ativo?'on':''}" data-plano="${p.guid}"><b>${esc(p.nome)}${p.ativo?' ✓':''}</b><span>${p.ativo?'em uso agora':'clique para usar'}</span></button>`).join('')}</div>
-    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">${!e.tem_alto?'<button class="btn" data-criar="alto">+ Criar plano “Alto desempenho”</button>':''}${!e.tem_maximo?'<button class="btn" data-criar="maximo">+ Criar plano “Desempenho máximo”</button>':''}</div>`;
+    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">${!e.tem_alto&&e.sistema!=='linux'?'<button class="btn" data-criar="alto">+ Criar plano “Alto desempenho”</button>':''}${!e.tem_maximo&&e.sistema!=='linux'?'<button class="btn" data-criar="maximo">+ Criar plano “Desempenho máximo”</button>':''}</div>`;
   if(e.modo) h+=`<h2 class="secao" style="margin-bottom:8px">Modo de energia do Windows</h2><div class="seg" id="segModo">${e.modos.map(m=>`<button data-modo="${m.guid}" aria-pressed="${m.guid===e.modo.guid}">${esc(m.nome)}</button>`).join('')}</div>`;
   if(e.ajustes.length) h+=`<h2 class="secao" style="margin-bottom:8px">Ajustes do plano “${esc(e.ativo?.nome||'')}”</h2><div class="painel"><table><thead><tr><th class="e">Ajuste</th><th>Na tomada</th><th>Na bateria</th></tr></thead><tbody>${e.ajustes.map(a=>`<tr><td class="e">${esc(a.titulo)}</td>${['tomada','bateria'].map(onde=>`<td><select data-aj="${a.chave}" data-onde="${onde}">${(a.tipo==='enum'?a.opcoes:a.opcoes.map(v=>({v,t:a.tipo==='min'?fmtMin(v):v+'%'}))).concat((a.tipo!=='enum'&&!a.opcoes.includes(a.valor[onde]))?[{v:a.valor[onde],t:a.tipo==='min'?fmtMin(a.valor[onde]):a.valor[onde]+'%'}]:[]).map(o=>`<option value="${o.v}" ${+o.v===a.valor[onde]?'selected':''}>${esc(o.t)}</option>`).join('')}</select></td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   if(e.brilho!=null) h+=`<h2 class="secao" style="margin-bottom:8px">Brilho da tela</h2><div class="painel pad" style="display:flex;align-items:center;gap:14px"><input type="range" min="0" max="100" value="${e.brilho}" id="brilho"><b id="brilhoV">${e.brilho}%</b></div>`;
-  h+=`<h2 class="secao" style="margin-bottom:8px">Ajustes do Windows</h2><div class="painel cfg" style="max-width:none">${e.windows.map(w=>`<div class="item"><b>${esc(w.titulo)}</b><div class="ctl"><label class="sw"><input type="checkbox" data-win="${w.chave}" ${w.ativo?'checked':''}><span></span></label></div><small>${esc(w.descricao)}</small></div>`).join('')}</div>`;
+  if(e.windows.length) h+=`<h2 class="secao" style="margin-bottom:8px">Ajustes do Windows</h2><div class="painel cfg" style="max-width:none">${e.windows.map(w=>`<div class="item"><b>${esc(w.titulo)}</b><div class="ctl"><label class="sw"><input type="checkbox" data-win="${w.chave}" ${w.ativo?'checked':''}><span></span></label></div><small>${esc(w.descricao)}</small></div>`).join('')}</div>`;
   $('#enCorpo').innerHTML=h; }
 $('#enCorpo').addEventListener('click',async e=>{ const p=e.target.closest('[data-plano]'); if(p){ const r=await POST('acao',{tipo:'energia_plano',guid:p.dataset.plano}).catch(()=>null); if(r) toast(r.ok?'Plano de energia trocado.':r.msg,!r.ok); vEnergia(); return; }
   const c=e.target.closest('[data-criar]'); if(c){ const r=await POST('acao',{tipo:'energia_criar',base:c.dataset.criar}).catch(()=>null); if(r) toast(r.msg,!r.ok); vEnergia(); return; }
@@ -1851,7 +1858,7 @@ const tSvc=Tabela($('#tSvc'),[
   {k:'usuario',t:'Conta',e:1,texto:1},{k:'descricao',t:'Descrição',e:1,texto:1,f:r=>`<span class="mut2" style="font-size:12px">${esc((r.descricao||'').slice(0,160))}</span>`},
 ],{ordem:'exibicao',desc:false,clique:r=>{ if(r.pid) abrirProcesso(r.pid); },menu:(e,r)=>{ const prot=!!r.protegido, run=r.status==='running';
   const ac=(oque,ini)=>async()=>{ if(oque==='parar' && !await confirmar(`Parar o serviço “${r.exibicao}”?`,'O programa que usa esse serviço pode parar de funcionar até ele ser iniciado de novo.','Parar',1)) return; const x=await POST('acao',{tipo:'servico',nome:r.nome,oque,inicio:ini}).catch(()=>null); if(x) toast(x.msg,!x.ok); vServicos(true); };
-  abrirMenu(e,r.exibicao,[{t:'Iniciar',ic:'liga',des:prot||run,mot:prot?'do Windows':'',f:ac('iniciar')},{t:'Parar',ic:'matar',perigo:1,des:prot||!run,mot:prot?'do Windows':'',f:ac('parar')},{t:'Reiniciar',ic:'liga',des:prot||!run,f:ac('reiniciar')},'-',
+  abrirMenu(e,r.exibicao,[{t:'Iniciar',ic:'liga',des:prot||run,mot:prot?'do '+SO:'',f:ac('iniciar')},{t:'Parar',ic:'matar',perigo:1,des:prot||!run,mot:prot?'do '+SO:'',f:ac('parar')},{t:'Reiniciar',ic:'liga',des:prot||!run,f:ac('reiniciar')},'-',
     {t:'Inicialização: Automática',ic:'liga',des:prot,f:ac('inicio','automatico')},{t:'Inicialização: Automática (atrasada)',ic:'liga',des:prot,f:ac('inicio','atrasado')},{t:'Inicialização: Manual',ic:'liga',des:prot,f:ac('inicio','manual')},{t:'Inicialização: Desativada',ic:'matar',perigo:1,des:prot,f:ac('inicio','desativado')},'-',
     {t:'Ver processo',ic:'det',des:!r.pid,f:()=>abrirProcesso(r.pid)},{t:'Abrir local do arquivo',ic:'pasta',des:!r.exe,f:()=>acao({tipo:'pasta',caminho:r.exe})},{t:'Pesquisar na internet',ic:'web',f:()=>pesquisar(`serviço ${r.nome} ${r.exibicao} o que é`)}]); }});
 seg($('#segSvc'),d=>{filtroSvc=d.f; renderSvc();}); $('#bSvc').oninput=renderSvc; $('#svcAtualizar').onclick=()=>vServicos(true);
@@ -1911,7 +1918,7 @@ function abrirPrograma(nome){ if(!nome) return; let aba='arvore', g=null, T={}, 
     if(aba==='conn') T.a=Tabela($('#gt'),colConn,{ordem:'remoto',clique:r=>abrirProcesso(r.pid),vazio:'Nenhuma conexão aberta.'});
     preencher(true); }
   function preencher(primeira){ if(gavAtual!==o) return; $('#gTit').innerHTML=ico(g.exe,'ico-g')+esc(g.nome);
-    $('#gSub').innerHTML=g.ausente?'Não está aberto agora — mostrando o histórico.':`${g.nproc} processos · ${g.janelas||0} janelas · ${g.nconn} conexões · ${g.nips} IPs${g.exe?` · <code>${esc(g.exe)}</code>`:''}${g.protegido?' · '+ESCUDO('Windows')+' faz parte do Windows':''}`;
+    $('#gSub').innerHTML=g.ausente?'Não está aberto agora — mostrando o histórico.':`${g.nproc} processos · ${g.janelas||0} janelas · ${g.nconn} conexões · ${g.nips} IPs${g.exe?` · <code>${esc(g.exe)}</code>`:''}${g.protegido?' · '+ESCUDO(SO)+' faz parte do Windows':''}`;
     const prot=!!g.protegido;
     botoesAcoes([{t:'Mostrar janela',ic:'janela',des:g.ausente,f:()=>acao({tipo:'mostrar',programa:g.nome})},{t:'Abrir local',ic:'pasta',des:!g.exe,f:()=>acao({tipo:'pasta',programa:g.nome})},
       {t:'Monitorar em detalhe',ic:'det',des:g.ausente,dica:'Toda a rede deste programa, segundo a segundo: taxa, pacotes, protocolos, latência, jitter, chamadas (RTP) e o que competia com ele. Dá para comparar até 4 programas.',f:()=>anMonitorar(g.nome)},
@@ -2240,7 +2247,8 @@ $('#navLimpar').onclick=async()=>{ const ids=[...document.querySelectorAll('[dat
   const r=await POST('acao',{tipo:'navegadores',ids}).catch(()=>null); toast(r?r.msg:'O serviço não respondeu.',!(r&&r.ok));
   API('navegadores').then(d=>{ NAVS=d; renderNavs(); }).catch(()=>{}); };
 document.querySelector('#v-otimizar').addEventListener('click',async e=>{ const b=e.target.closest('[data-tarefa]'); if(!b) return;
-  const t=b.dataset.tarefa; if(!await confirmar(t==='otimizar'?'Otimizar as unidades agora?':'Limpar componentes antigos do Windows?',t==='otimizar'?'O Windows vai fazer o TRIM nos SSDs e desfragmentar HDs. Você pode continuar usando o PC.':'Remove versões antigas de atualizações que já foram substituídas. Pode demorar até 20 minutos; o PC pode ficar um pouco mais lento enquanto isso.','Executar')) return;
+  const t=b.dataset.tarefa; const lin=SO==='Linux';
+  if(!await confirmar(t==='otimizar'?'Otimizar as unidades agora?':lin?'Remover pacotes que ninguém usa?':'Limpar componentes antigos do Windows?',t==='otimizar'?(lin?'O Linux vai fazer o TRIM nos SSDs montados. Você pode continuar usando o PC.':'O Windows vai fazer o TRIM nos SSDs e desfragmentar HDs. Você pode continuar usando o PC.'):lin?'Roda o apt autoremove: tira bibliotecas e kernels antigos que nada mais usa. Leva poucos minutos.':'Remove versões antigas de atualizações que já foram substituídas. Pode demorar até 20 minutos; o PC pode ficar um pouco mais lento enquanto isso.','Executar')) return;
   const r=await POST('acao',{tipo:'tarefa',qual:t}).catch(()=>null); toast(r?r.msg:'O serviço não respondeu.',!(r&&r.ok)); acompanharTarefa(); });
 function estadoTarefa(d){ const a=d.atual; $('#tarefaEstado').innerHTML=a?`<b>${esc(a.nome)}</b>: ${a.situacao==='rodando'?'rodando há '+dur(Date.now()/1000-a.inicio)+'…':esc(a.situacao)+(a.fim?' '+quando(a.fim):'')}`:'Nenhuma tarefa rodou ainda.';
   document.querySelectorAll('[data-tarefa]').forEach(b=>b.disabled=!!(a&&a.situacao==='rodando')); return a&&a.situacao==='rodando'; }

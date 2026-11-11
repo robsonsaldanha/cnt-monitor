@@ -119,9 +119,9 @@ def teste_baixar():
 
     abrir = urllib.request.build_opener(SemSeguir).open
 
-    def destino():
+    def destino(sufixo="", ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64)"):
         try:
-            abrir(raiz + "/baixar", timeout=10)
+            abrir(urllib.request.Request(raiz + "/baixar" + sufixo, headers={"User-Agent": ua}), timeout=10)
         except urllib.error.HTTPError as e:
             assert e.code == 302, e.code
             return e.headers["Location"]
@@ -145,6 +145,21 @@ def teste_baixar():
         for ruim in ("../segredo.exe", "CNTMonitor-Setup-1.0.exe/../x", "outro.exe"):
             ultima(ruim)
             assert destino().startswith("https://github.com/"), ruim             # nome fora do padrão não vira link
+
+        # Linux: o .deb (pelo navegador do Linux ou por ?so=linux); Android não é Linux de computador
+        deb = "cnt-monitor_9.9.9_amd64.deb"
+        linux_ua = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0"
+        with open(os.path.join(pasta, "ultima.json"), "w", encoding="utf-8") as f:
+            json.dump({"arquivo": nome, "linux": {"arquivo": deb}}, f)
+        assert destino(ua=linux_ua).startswith("https://github.com/")             # ultima.json sem o .deb no disco
+        open(os.path.join(pasta, deb), "wb").close()
+        assert destino(ua=linux_ua) == "/download/" + deb
+        assert destino("?so=linux") == "/download/" + deb and destino("?so=windows", linux_ua) == "/download/" + nome
+        assert destino(ua="Mozilla/5.0 (Linux; Android 14; Pixel 8)") == "/download/" + nome
+        assert destino() == "/download/" + nome
+        with open(os.path.join(pasta, "ultima.json"), "w", encoding="utf-8") as f:
+            json.dump({"arquivo": nome, "linux": {"arquivo": "../" + deb}}, f)
+        assert destino("?so=linux").startswith("https://github.com/")
     finally:
         p.kill()
 

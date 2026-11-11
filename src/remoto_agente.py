@@ -428,7 +428,8 @@ def _listar_pasta(caminho, pastas, discos):
     """Itens de uma pasta (ou as pastas de partida, com caminho vazio), como quem é atendido os veria."""
     if not caminho:
         itens = [{"nome": k, "caminho": v, "pasta": True} for k, v in pastas.items()]
-        itens += [{"nome": f"Disco {u[:2]}", "caminho": u, "pasta": True} for u in discos]
+        itens += [{"nome": (f"Disco {u[:2]}" if WIN else "Sistema (/)" if u == "/" else f"Disco {os.path.basename(u)}"),
+                   "caminho": u, "pasta": True} for u in discos]
         return "", itens
     caminho = remoto.validar_caminho(caminho)
     itens = []
@@ -735,9 +736,9 @@ def _foto_tudo():
 class Telas:
     """Uma foto da área de trabalho inteira serve às trilhas de todos os monitores no mesmo instante."""
 
-    def __init__(self, monitores, foto=_foto_tudo):
+    def __init__(self, monitores, foto=None):
         self.monitores = monitores
-        self._foto = foto
+        self._foto = foto or _foto_tudo
         self._lock = threading.Lock()
         self._img, self._ts = None, 0.0
 
@@ -771,13 +772,18 @@ class Agente:
                  monitores=None, ler_area=True, area=None, pastas=None, ao_arquivo=None):
         self.sessao = remoto.Sessao(agora)
         self.area = area or AreaWindows()
-        self.entrada = entrada or Entrada(area=self.area.texto)
+        self.entrada = entrada or (Entrada(area=self.area.texto) if WIN else Entrada(
+            enviar=lambda ev: _linux_tela().enviar_evento(ev, self.monitores), area=self.area.texto))
         self._ao_estado = ao_estado
         self._historico = ao_arquivo or (lambda item: ao_estado({"arquivo": item}))
         self._stun = list(stun or [])
         self._turn = turn            # (urls, usuário, senha) do retransmissor de reserva
         if monitores is None:
-            monitores = listar_monitores() if WIN else [{"x": 0, "y": 0, "w": 1280, "h": 720, "principal": True}]
+            try:
+                monitores = listar_monitores()
+            except Exception as e:  # noqa: BLE001  (Linux sem tela ou Wayland sem autorização)
+                print("remoto: não consegui ler os monitores:", e, file=sys.stderr)
+                monitores = [{"x": 0, "y": 0, "w": 1280, "h": 720, "principal": True}]
         self.monitores = monitores[:remoto.MAX_MONITORES]
         self.entrada.monitores = self.monitores
         self._capturar = capturar or Telas(self.monitores).quadro
@@ -1113,6 +1119,29 @@ async def _principal(stun, turn=None, ler_area=True):
     await agente.iniciar()
     threading.Thread(target=ler, daemon=True).start()
     await agente.fim.wait()
+    if not WIN:
+        _linux_tela().fechar()          # Wayland: fecha a sessão do portal (o aviso de compartilhamento some)
+
+
+def _linux_tela():
+    from monitorpc.linux import tela
+    return tela
+
+
+def _sas_linux():
+    """Linux não tem a tela segura do Ctrl+Alt+Del: manda as três teclas (o ambiente decide: no GNOME abre o
+    "Desligar/Sair", no KDE e no Mint, o menu de sessão)."""
+    t = _linux_tela()
+    for est in (0, T_SOBE):
+        for scan, ext in ((0x1D, 0), (0x38, 0), (0x53, T_ESTENDIDA)) if est == 0 else ((0x53, T_ESTENDIDA), (0x38, 0), (0x1D, 0)):
+            t.enviar_evento(("tecla", scan, T_SCAN | ext | est), [])
+    return ""
+
+
+if not WIN:     # Linux: X11 (mss + XTest) ou Wayland (portal + PipeWire); área de transferência por xclip/wl-clipboard
+    from monitorpc.linux.tela import listar_monitores, Telas, pastas_do_usuario, unidades, bloquear as _bloquear  # noqa: E402,F811
+    from monitorpc.linux.area import AreaLinux as AreaWindows  # noqa: E402,F811
+    _ctrl_alt_del = _sas_linux
 
 
 def main():

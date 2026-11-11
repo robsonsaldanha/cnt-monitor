@@ -379,6 +379,8 @@ def validar_caminho(p):
     import ntpath
     if not isinstance(p, str) or not p or len(p) > 1000 or "\x00" in p:
         raise Erro("Caminho inválido.")
+    if os.name != "nt":
+        return _validar_caminho_linux(p)
     p = p.replace("/", "\\")
     if not re.match(r"^[A-Za-z]:\\", p) or ":" in p[2:] or any(ord(ch) < 32 for ch in p):
         raise Erro("Caminho inválido.")
@@ -386,6 +388,20 @@ def validar_caminho(p):
     if not re.match(r"^[A-Za-z]:\\", p):
         raise Erro("Caminho inválido.")
     return p[0].upper() + p[1:]
+
+
+def _validar_caminho_linux(p):
+    """Linux: só caminho absoluto (/home/...), sem caracteres de controle e fora de /proc, /sys e /dev
+    (arquivos especiais que não terminam ou não são arquivos). As permissões são as de quem está no PC."""
+    import posixpath
+    if not p.startswith("/") or any(ord(ch) < 32 for ch in p):
+        raise Erro("Caminho inválido.")
+    p = posixpath.normpath(p)
+    if p.startswith("//"):
+        p = "/" + p.lstrip("/")
+    if p.split("/")[1:2] in (["proc"], ["sys"], ["dev"]):
+        raise Erro("Caminho inválido.")
+    return p
 
 
 def _arquivo_historico():
@@ -459,7 +475,7 @@ class Gerente:
         if self._comando:
             cmd = list(self._comando)
         elif getattr(sys, "frozen", False):
-            cmd = [os.path.join(config.pasta_programa(), "remoto", "MonitorPCRemoto.exe")]
+            cmd = [os.path.join(config.pasta_programa(), config.EXE_REMOTO)]
         else:
             cmd = [sys.executable, os.path.join(config.pasta_recursos(), "remoto_agente.py")]
         if not self._opcoes().get("ler_area", True):
@@ -528,7 +544,8 @@ class Gerente:
                 return False, f"Não consegui iniciar o acesso remoto: {e}"
             self._proc, self._estado, self._respostas = p, {"estado": "iniciando"}, {}
             threading.Thread(target=self._ler, args=(p,), daemon=True, name="remoto-agente").start()
-            self._cond.wait_for(lambda: self._estado.get("estado") != "iniciando", 30)
+            # Linux com Wayland: antes do convite a pessoa escolhe as telas no aviso do sistema (pode levar minutos)
+            self._cond.wait_for(lambda: self._estado.get("estado") != "iniciando", 30 if os.name == "nt" else 300)
             if self._estado.get("estado") != "convite":
                 self._matar()
                 self._estado = {"estado": "encerrada", "motivo": "Não consegui preparar o convite."}

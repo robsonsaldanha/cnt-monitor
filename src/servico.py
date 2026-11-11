@@ -51,9 +51,18 @@ def proteger_pasta(pasta):
 
 
 def proteger_dados():
-    """(Por padrão o Windows deixa qualquer usuário criar arquivos dentro de ProgramData.)"""
-    if WIN and not os.environ.get("MONITORPC_DADOS"):
+    """(Por padrão o Windows deixa qualquer usuário criar arquivos dentro de ProgramData.)
+    Linux: a pasta é do root e os outros usuários só leem (o ícone de cada um lê o token e a configuração);
+    os segredos ficam com 0600."""
+    if os.environ.get("MONITORPC_DADOS"):
+        return
+    if WIN:
         proteger_pasta(config.BASE)
+    elif os.geteuid() == 0:
+        os.makedirs(config.BASE, exist_ok=True)
+        os.chmod(config.BASE, 0o755)
+        if os.path.exists(config.SEGREDOS):
+            os.chmod(config.SEGREDOS, 0o600)
 
 
 def iniciar_motor():
@@ -105,7 +114,14 @@ if WIN:
             win32event.WaitForSingleObject(self.ev, win32event.INFINITE)
 
 
+def _sigterm(*_):
+    raise KeyboardInterrupt      # systemctl stop: sai pelo mesmo caminho do Ctrl+C (para o motor e a API)
+
+
 def modo_console():
+    if not WIN:
+        import signal
+        signal.signal(signal.SIGTERM, _sigterm)
     segundos = None
     saida = None
     if "--segundos" in sys.argv:
@@ -134,7 +150,11 @@ def modo_console():
 
 
 def main():
-    if "--console" in sys.argv or not WIN:
+    if not WIN and "--console" not in sys.argv:
+        os.umask(0o022)
+        preparar_log()          # Linux: unidade systemd cnt-monitor.service (o journal também guarda o que sair)
+        modo_console()
+    elif "--console" in sys.argv or not WIN:
         modo_console()
     elif len(sys.argv) == 1:
         servicemanager.Initialize()

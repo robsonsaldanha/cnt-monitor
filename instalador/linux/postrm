@@ -1,0 +1,14 @@
+#!/bin/sh
+# Depois de remover: tira o atalho de inicialização e o link. "purge" (apt purge) apaga também os dados.
+set -e
+
+case "$1" in
+    remove|purge)
+        rm -f /usr/bin/cnt-monitor /etc/xdg/autostart/cnt-monitor.desktop
+        [ -d /run/systemd/system ] && systemctl daemon-reload >/dev/null 2>&1 || true
+        ;;
+esac
+if [ "$1" = "purge" ]; then
+    rm -rf /var/lib/cnt-monitor
+fi
+exit 0

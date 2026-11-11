@@ -216,7 +216,7 @@ class Motor:
         self._abrir_icone()
 
     def _abrir_icone(self):
-        exe = os.path.join(config.pasta_programa(), "MonitorPC.exe")
+        exe = os.path.join(config.pasta_programa(), config.EXE_ICONE)
         if os.path.exists(exe) and time.time() - self.bandeja_ts > 30:
             sessao.abrir_na_tela_do_usuario(f'"{exe}" --bandeja')
 
@@ -988,7 +988,7 @@ class Motor:
 
     def status(self):
         tm = list(self.tempos)
-        return {"versao": config.VERSAO, "admin": eh_admin(), "modo_coleta": self.leitor.modo,
+        return {"versao": config.VERSAO, "sistema": "windows" if WIN else "linux", "admin": eh_admin(), "modo_coleta": self.leitor.modo,
                 "tempo_amostra_ms": round(sum(tm) / len(tm) * 1000, 1) if tm else None,
                 "tempo_amostra_max_ms": round(max(tm) * 1000, 1) if tm else None,
                 "rede_ok": self.rede.ok, "rede_erro": self.rede.erro, "eventos_rede": self.rede.eventos,

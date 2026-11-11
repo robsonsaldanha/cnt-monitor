@@ -7,6 +7,7 @@ este gancho, no ícone da bandeja do técnico, troca essas teclas por F13..F22 s
 marcada está em primeiro plano. O Windows ignora F13..F22; a página recebe e manda a tecla
 verdadeira para o outro computador. Em qualquer outra janela (ou com o toggle desligado) nada muda.
 """
+import os
 import threading
 
 MARCA = "⁣"            # separador invisível no fim do título = sessão com atalhos ligados
@@ -152,3 +153,7 @@ class Gancho:
                 continue
             u.TranslateMessage(ctypes.byref(msg))
             u.DispatchMessageW(ctypes.byref(msg))
+
+
+if os.name != "nt":     # Linux com X11: XGrabKey só com a janela da sessão na frente
+    from .linux.teclado import Gancho  # noqa: E402,F401,F811

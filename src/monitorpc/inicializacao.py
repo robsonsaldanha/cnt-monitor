@@ -171,3 +171,7 @@ def alterar(item, ativo):
     with winreg.CreateKeyEx(raiz, APROVADO + "\\" + sub, 0, winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY) as k:
         winreg.SetValueEx(k, nome, 0, winreg.REG_BINARY, dado)
     return True
+
+
+if not WIN:     # Linux: autostart do XDG
+    from .linux.inicializacao import listar, alterar  # noqa: E402,F401,F811

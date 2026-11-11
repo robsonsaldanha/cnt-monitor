@@ -282,6 +282,11 @@ def navegadores(apagar_ids=None):
 
 
 # ---------------------------------------------------------------- tarefas longas (otimizar unidades, componentes)
+TAREFAS = {"otimizar": ("Otimizar unidades (TRIM no SSD / desfragmentar HD)", ["defrag.exe", "/C", "/O", "/U", "/V"]),
+           "componentes": ("Limpeza de componentes do Windows (DISM)",
+                           ["Dism.exe", "/Online", "/Cleanup-Image", "/StartComponentCleanup"])}
+
+
 class Tarefas:
     def __init__(self):
         self.atual = None
@@ -292,14 +297,9 @@ class Tarefas:
         with self.lock:
             if self.atual and self.atual["situacao"] == "rodando":
                 return False, f'Já tem uma tarefa rodando: {self.atual["nome"]}.'
-            if tipo == "otimizar":
-                nome = "Otimizar unidades (TRIM no SSD / desfragmentar HD)"
-                cmd = ["defrag.exe", "/C", "/O", "/U", "/V"]
-            elif tipo == "componentes":
-                nome = "Limpeza de componentes do Windows (DISM)"
-                cmd = ["Dism.exe", "/Online", "/Cleanup-Image", "/StartComponentCleanup"]
-            else:
+            if tipo not in TAREFAS:
                 return False, "Tarefa desconhecida."
+            nome, cmd = TAREFAS[tipo]
             self.atual = {"tipo": tipo, "nome": nome, "situacao": "rodando", "inicio": time.time(), "saida": ""}
         threading.Thread(target=self._exec, args=(cmd,), daemon=True).start()
         return True, f"{nome}: começou. Pode levar alguns minutos; você pode continuar usando o PC."
@@ -318,3 +318,7 @@ class Tarefas:
     def estado(self):
         with self.lock:
             return {"atual": dict(self.atual) if self.atual else None, "historico": list(self.historico)}
+
+
+if not WIN:     # Linux: /tmp, ~/.cache, lixeira, crash, apt, journal; fstrim e apt autoremove
+    from .linux.limpeza import CATEGORIAS, NAVEGADORES, TAREFAS, navegadores, _perfis  # noqa: E402,F401,F811

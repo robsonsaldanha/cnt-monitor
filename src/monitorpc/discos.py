@@ -68,6 +68,8 @@ class Discos:
             io = {}
         out = []
         for nome, c in io.items():
+            if not WIN and self.mapa and nome not in self.mapa:
+                continue        # Linux: partições, loop e zram aparecem na lista do psutil, mas não são discos
             hist = self._ant.setdefault(nome, [])
             atual = (t, c.read_bytes, c.write_bytes, (c.read_time or 0) + (c.write_time or 0))
             while len(hist) > 1 and hist[1][0] <= t - janela:
@@ -86,3 +88,7 @@ class Discos:
                         "ler": round(ler), "gravar": round(gravar), "ativo": round(ativo, 1)})
         out.sort(key=lambda d: d["id"])
         return out
+
+
+if not WIN:     # Linux: /sys/block
+    from .linux.discos import mapa_discos  # noqa: E402,F401,F811

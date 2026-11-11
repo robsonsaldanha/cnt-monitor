@@ -287,6 +287,12 @@ def teste_nomes_e_caminhos():
     assert remoto.caminho_livre("P", "a.txt", existe.__contains__) == os.path.join("P", "a (3).txt")
     assert remoto.caminho_livre("P", "b.txt", existe.__contains__) == os.path.join("P", "b.txt")
     v = remoto.validar_caminho
+    if os.name != "nt":         # Linux: caminho absoluto, fora de /proc, /sys e /dev
+        assert v("/home/ana/../ana/Documentos") == "/home/ana/Documentos" and v("//home//x") == "/home/x" and v("/") == "/"
+        for ruim in ("\\\\servidor\\c$\\x", "C:\\x", "Documentos/a", "", None, 5, "/a\x00b", "/" + "a" * 1000, "/a\nb",
+                     "/proc/self/environ", "/sys/kernel", "/dev/sda", "/home/../proc/1/mem"):
+            assert "inválido" in _erro(v, ruim), ruim
+        return
     assert v("c:\\Users\\Ana\\..\\Ana\\Documentos") == "C:\\Users\\Ana\\Documentos" and v("D:/fotos/x.jpg") == "D:\\fotos\\x.jpg"
     assert v("C:\\") == "C:\\"
     for ruim in ("\\\\servidor\\c$\\x", "\\\\?\\C:\\x", "\\\\.\\PhysicalDrive0", "C:\\a.txt:fluxo", "Documentos\\a", "C:a.txt",
@@ -726,8 +732,10 @@ def teste_gerente_e_acoes_do_motor():
 
 def teste_agente_aberto_pelo_caminho_do_servico():
     """O serviço abre o agente com CreateProcessAsUser e dois canos. Aqui vai com o token do próprio teste:
-    trocar de sessão só a conta do serviço consegue."""
+    trocar de sessão só a conta do serviço consegue. No Linux: subprocess como o usuário da sessão gráfica."""
     import threading
+    if os.name != "nt":
+        return _agente_pelo_servico_linux()
     import win32api
     import win32con
     import win32security
@@ -763,6 +771,28 @@ def teste_agente_aberto_pelo_caminho_do_servico():
     t.start()
     t.join()
     assert not erros, erros
+
+
+def _agente_pelo_servico_linux():
+    import pwd
+    import subprocess
+    from monitorpc.linux import sessao as LS
+    eu = {"uid": os.getuid(), "tipo": "x11", "display": os.environ.get("DISPLAY", ":0")}
+    g = remoto.Gerente([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src", "remoto_agente.py")])
+    g._abrir = lambda cmd: LS._popen_como(eu, cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                                          text=True, encoding="utf-8", bufsize=1, start_new_session=True)
+    try:
+        assert g.pedir(stun=False) == (True, "")
+        proc = g._proc
+        assert proc.poll() is None and remoto.ler_convite(g.estado()["convite"])
+        ok, msg = g.ordem("resposta", codigo="MPCRLIXO")
+        assert not ok and "alterado" in msg
+        g.parar()
+        assert proc.wait(10) is not None and g.estado()["estado"] == "encerrada"
+    finally:
+        g.parar()
+    amb = LS.ambiente(eu)          # variáveis da sessão: as de um processo do próprio usuário, com o padrão do systemd
+    assert amb["XDG_RUNTIME_DIR"] and amb["DBUS_SESSION_BUS_ADDRESS"] and pwd.getpwuid(eu["uid"])
 
 
 def teste_acoes_de_ajuda_so_no_proprio_pc():
@@ -806,6 +836,8 @@ def teste_acoes_de_ajuda_so_no_proprio_pc():
 
 def teste_chamadas_win32_existem():
     """O caminho do serviço só roda instalado: confere aqui que cada função Win32 usada existe mesmo no pywin32."""
+    if os.name != "nt":
+        return print("  (pulado: só no Windows)")
     import importlib
     import re
     from monitorpc import sessao
@@ -854,6 +886,8 @@ def teste_atalhos_do_windows_so_na_sessao():
              "PrintScreen": 0x2C, "KeyW": 0x57, "KeyT": 0x54, "KeyN": 0x4E}
     assert {f"F{sub - K.VK_F13 + 13}": vk for vk, (sub, _q) in K.TROCAS.items()} == {f: vk_js[c] for f, c in js.items()}
     assert all(c in remoto_agente.SCAN or c in remoto_agente.SCAN_E0 for c in js.values())
+    if os.name != "nt":
+        return
     u = ctypes.WinDLL("user32")
     for nome in ("SetWindowsHookExW", "UnhookWindowsHookEx", "CallNextHookEx", "SetTimer", "GetForegroundWindow",
                  "GetWindowTextW", "GetAsyncKeyState", "SendInput", "GetMessageW"):

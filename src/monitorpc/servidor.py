@@ -117,13 +117,31 @@ REGRA_FW = "Monitor do PC (acesso pelo celular)"
 
 def firewall(ligar, porta):
     if not WIN:
-        return
+        return _firewall_linux(ligar, porta)
     subprocess.run(["netsh", "advfirewall", "firewall", "delete", "rule", f"name={REGRA_FW}"],
                    capture_output=True, timeout=20, creationflags=SEM_JANELA)
     if ligar:
         subprocess.run(["netsh", "advfirewall", "firewall", "add", "rule", f"name={REGRA_FW}", "dir=in", "action=allow",
                         "protocol=TCP", f"localport={porta}", "profile=private"],
                        capture_output=True, timeout=20, creationflags=SEM_JANELA)
+
+
+def _firewall_linux(ligar, porta):
+    """Linux: só mexe se o ufw estiver ligado (no Ubuntu e no Mint ele vem desligado: a porta já fica acessível).
+    Libera só para as redes locais, como o perfil "Privada" do Windows."""
+    import shutil
+    if not porta or not shutil.which("ufw"):
+        return
+    try:
+        if "Status: active" not in subprocess.run(["ufw", "status"], capture_output=True, text=True, timeout=20).stdout:
+            return
+        for rede in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"):
+            regra = ["from", rede, "to", "any", "port", str(porta), "proto", "tcp"]
+            subprocess.run(["ufw", "delete", "allow", *regra], capture_output=True, timeout=20)
+            if ligar:
+                subprocess.run(["ufw", "allow", *regra, "comment", REGRA_FW], capture_output=True, timeout=20)
+    except (OSError, subprocess.SubprocessError) as e:
+        print("firewall (ufw):", e)
 
 
 def ips_rede():

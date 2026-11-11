@@ -105,6 +105,8 @@ class Ventoinhas:
     # ---------------- acesso ao LHM (substituivel no demo e nos testes) ----------------
     def _controles(self):
         """{id: objeto IControl} dos canais que o hardware deixa escrever."""
+        if hasattr(self.sens, "controles"):          # Linux: canais pwm do hwmon (mesma interface do LHM)
+            return self.sens.controles()
         pc = getattr(self.sens, "_pc", None)
         out = {}
         if pc is None:
