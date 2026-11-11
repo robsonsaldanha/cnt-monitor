@@ -28,12 +28,13 @@ SEGREDO = "segredo-de-teste"
 _ip = [0]
 
 
-def _servidor(turn=True):
+def _servidor(turn=True, downloads=None):
     s = socket.socket()
     s.bind(("127.0.0.1", 0))
     porta = s.getsockname()[1]
     s.close()
-    amb = dict(os.environ, PORTA=str(porta), TURN_HOST="203.0.113.9", TURN_SEGREDO=SEGREDO if turn else "")
+    amb = dict(os.environ, PORTA=str(porta), TURN_HOST="203.0.113.9", TURN_SEGREDO=SEGREDO if turn else "",
+               DOWNLOADS=downloads or os.path.join(DADOS, "sem-downloads"))
     p = subprocess.Popen(["node", os.path.join(RAIZ, "servidor-vps", "encontro.js")], env=amb,
                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     assert "ouvindo" in p.stdout.readline()
@@ -101,6 +102,49 @@ def teste_servidor():
         assert _req(url, "/responder", {"pedido": pedido, "dados": "x" * 70000})[0] in (400, 413)
         assert _req(url, "/sair", {"id": "123456789", "chave": CHAVE_A})[0] == 200
         assert _req(url, "/registrar", {"id": "123456789", "chave": CHAVE_B})[0] == 200     # ID liberado
+    finally:
+        p.kill()
+
+
+def teste_baixar():
+    """/baixar entrega a cópia da VPS quando ultima.json e o .exe existem; senão (ou com nome fora do padrão) vai ao GitHub."""
+    pasta = os.path.join(DADOS, "downloads")
+    os.makedirs(pasta)
+    p, url = _servidor(downloads=pasta)
+    raiz = url[:-len("/api")]
+
+    class SemSeguir(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, *a, **k):
+            return None
+
+    abrir = urllib.request.build_opener(SemSeguir).open
+
+    def destino():
+        try:
+            abrir(raiz + "/baixar", timeout=10)
+        except urllib.error.HTTPError as e:
+            assert e.code == 302, e.code
+            return e.headers["Location"]
+        raise AssertionError("não redirecionou")
+
+    def ultima(arquivo):
+        with open(os.path.join(pasta, "ultima.json"), "w", encoding="utf-8") as f:
+            json.dump({"arquivo": arquivo}, f)
+
+    try:
+        github = destino()
+        assert github.startswith("https://github.com/"), github                  # pasta vazia
+        nome = "CNTMonitor-Setup-9.9.9.exe"
+        ultima(nome)
+        assert destino().startswith("https://github.com/")                       # ultima.json sem o .exe
+        open(os.path.join(pasta, nome), "wb").close()
+        assert destino() == "/download/" + nome
+        with open(os.path.join(pasta, "ultima.json"), "w", encoding="utf-8") as f:
+            f.write("{quebrado")
+        assert destino().startswith("https://github.com/")                       # ultima.json inválido
+        for ruim in ("../segredo.exe", "CNTMonitor-Setup-1.0.exe/../x", "outro.exe"):
+            ultima(ruim)
+            assert destino().startswith("https://github.com/"), ruim             # nome fora do padrão não vira link
     finally:
         p.kill()
 

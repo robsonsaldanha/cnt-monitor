@@ -57,6 +57,14 @@ def baixar(url, destino, tamanho, sha):
     os.replace(tmp, destino)
 
 
+def sha256_de(caminho):
+    h = hashlib.sha256()
+    with open(caminho, "rb") as f:
+        for b in iter(lambda: f.read(1 << 20), b""):
+            h.update(b)
+    return h.hexdigest()
+
+
 def versao(nome):
     return tuple(int(x) for x in RE_NOME.match(nome).group(1).split("."))
 
@@ -65,7 +73,7 @@ def main():
     os.makedirs(PASTA, exist_ok=True)
     ver, nome, url, tamanho, sha = ultima_release()
     destino = os.path.join(PASTA, nome)
-    if not (os.path.exists(destino) and os.path.getsize(destino) == tamanho):
+    if not (os.path.exists(destino) and os.path.getsize(destino) == tamanho and sha256_de(destino) == sha):
         baixar(url, destino, tamanho, sha)
         print(f"baixado {nome} ({tamanho} bytes, sha256 conferido)")
     info = {"versao": ver, "arquivo": nome, "tamanho": tamanho, "sha256": sha}
