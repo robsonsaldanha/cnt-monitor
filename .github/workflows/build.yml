@@ -31,6 +31,9 @@ jobs:
       - name: Testes das ventoinhas
         run: python build/teste_ventoinhas.py
 
+      - name: Testes do medidor de FPS
+        run: python build/teste_jogo.py
+
       - name: Testes de segurança
         run: python build/teste_seguranca.py
 
