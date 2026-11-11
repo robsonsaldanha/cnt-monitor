@@ -1,0 +1,15 @@
+[Unit]
+Description=CNT Monitor - copia o instalador da última release para o site
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=robson
+Group=robson
+ExecStart=/usr/bin/python3 /var/www/html_cntmonitor/servidor-vps/baixar-instalador.py
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ReadWritePaths=/var/www/cntmonitor_downloads
+ProtectHome=yes

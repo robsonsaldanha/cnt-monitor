@@ -19,6 +19,8 @@ const http = require('http');
 const dgram = require('dgram');
 const https = require('https');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 const PORTA = parseInt(process.env.PORTA || '4070', 10);
 const ECO_PORTA = parseInt(process.env.ECO_PORTA || '48790', 10);
@@ -78,8 +80,18 @@ setInterval(() => {
 }, 10000).unref();
 
 // ---------------------------------------------------------------- download: sempre o instalador mais novo
+// Primeiro a cópia da própria VPS (baixar-instalador.py grava DOWNLOADS/ultima.json; o nginx serve /download/);
+// sem ela, o arquivo da release no GitHub.
 const REPO = 'robsonsaldanha/cnt-monitor';
+const DOWNLOADS = process.env.DOWNLOADS || '/var/www/cntmonitor_downloads';
 let instalador = { url: `https://github.com/${REPO}/releases/latest`, em: 0 };
+function instaladorLocal() {
+  try {
+    const u = JSON.parse(fs.readFileSync(path.join(DOWNLOADS, 'ultima.json'), 'utf8'));
+    if (/^CNTMonitor-Setup-[\d.]+\.exe$/.test(u.arquivo) && fs.existsSync(path.join(DOWNLOADS, u.arquivo))) return '/download/' + u.arquivo;
+  } catch (_) { }
+  return null;
+}
 function atualizarInstalador() {
   if (Date.now() - instalador.em < 600000) return;
   instalador.em = Date.now();
@@ -122,8 +134,9 @@ async function tratar(req, res) {
   if (req.method === 'OPTIONS') return responder(res, 204, {});
   if (rota === '/saude') return responder(res, 200, { ok: true, pcs: pcs.size, pedidos: pedidos.size });
   if (url.pathname === '/baixar') {
-    atualizarInstalador();
-    res.writeHead(302, { Location: instalador.url, 'Cache-Control': 'no-store' });
+    const local = instaladorLocal();
+    if (!local) atualizarInstalador();
+    res.writeHead(302, { Location: local || instalador.url, 'Cache-Control': 'no-store' });
     return res.end();
   }
   if (!passou(ip, 'outro')) return erro(res, 429, 'Muitas requisições. Espere um minuto.');

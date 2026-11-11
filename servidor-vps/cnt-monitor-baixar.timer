@@ -1,0 +1,10 @@
+[Unit]
+Description=CNT Monitor - confere a cada 30 min se saiu versão nova do instalador
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=30min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
