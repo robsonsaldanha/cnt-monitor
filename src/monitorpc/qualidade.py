@@ -8,6 +8,8 @@
 - DNS (consulta direta aos servidores do Windows), HTTP/TLS (tempos de cada etapa) e teste de velocidade (Cloudflare).
 - País e operadora (AS) do IP com a base DB-IP Lite embutida (CC BY 4.0), sem consultar a internet.
 - Sondas: pinga só os IPs que alguém está olhando, e a "Análise de rede", que grava uma captura contínua.
+- Teste real até um destino por ICMP, TCP (tempo de conexão) ou UDP. No UDP, silêncio não é perda: só vira perda
+  quando o destino responde a outras sondas; se nunca responde, a referência é o eco UDP do servidor da CNT.
 """
 import os
 import ssl
@@ -783,6 +785,170 @@ class Velocidade:
                                assimetria=round(down["mbps"] / up["mbps"], 1) if up["mbps"] else None)
         except Exception as e:  # noqa: BLE001
             self.estado.update(fase="erro", erro=str(e))
+
+
+# ================================================================ TCP e UDP até um destino
+# Eco UDP do servidor da CNT: devolve o datagrama que começa com "CNTE" (até 64 bytes). Só é usado quando o destino
+# não devolve nada, e a medida aparece separada: o caminho até o servidor não é o caminho até o destino.
+ECO_UDP = (os.environ.get("MONITORPC_ECO_HOST") or "monitor.cntoficial.com.br", int(os.environ.get("MONITORPC_ECO_PORTA") or 48790))
+ECO_PREFIXO = b"CNTE"
+
+
+def _familia(ip):
+    return socket.AF_INET6 if ":" in ip else socket.AF_INET
+
+
+def sonda_tcp(ip, porta, timeout=2.0):
+    """Tempo para abrir uma conexão TCP na porta (o "ping" de quem não responde a ICMP). Conexão recusada (RST)
+    também é resposta do destino e mede o tempo de ida e volta."""
+    s = socket.socket(_familia(ip), socket.SOCK_STREAM)
+    s.settimeout(timeout)
+    t0 = time.perf_counter()
+    try:
+        s.connect((ip, porta))
+        tipo = "aberta"
+    except ConnectionRefusedError:
+        tipo = "recusada"
+    except OSError:
+        return {"tipo": "silencio", "rtt": None}
+    finally:
+        s.close()
+    return {"tipo": tipo, "rtt": round((time.perf_counter() - t0) * 1000, 2)}
+
+
+def sonda_udp(ip, porta, timeout=1.0, carga=b"CNT-Monitor", confere=None):
+    """Um datagrama UDP. Mede o tempo quando volta uma resposta do programa do outro lado ou um "porta inacessível"
+    (o ICMP que o próprio destino devolve; o Windows entrega como ConnectionResetError). Silêncio NÃO é perda:
+    servidores de chamada, de jogo e firewalls descartam calados o que não esperavam."""
+    s = socket.socket(_familia(ip), socket.SOCK_DGRAM)
+    s.settimeout(timeout)
+    try:
+        s.connect((ip, porta))
+        t0 = time.perf_counter()
+        s.send(carga)
+        try:
+            dados = s.recv(2048)
+            tipo = "resposta" if confere is None or dados == confere else "silencio"
+        except ConnectionResetError:
+            tipo = "porta_inacessivel"
+        except socket.timeout:
+            tipo = "silencio"
+        rtt = round((time.perf_counter() - t0) * 1000, 2)
+        return {"tipo": tipo, "rtt": None if tipo == "silencio" else rtt}
+    except OSError:
+        return {"tipo": "erro", "rtt": None}
+    finally:
+        s.close()
+
+
+def sonda_eco(seq=0, timeout=1.0, eco=None):
+    """Ida e volta UDP até o eco do servidor da CNT (referência da saída UDP desta internet)."""
+    host, porta = eco or ECO_UDP
+    try:
+        ip = socket.getaddrinfo(host, porta, type=socket.SOCK_DGRAM)[0][4][0]
+    except OSError:
+        return {"tipo": "erro", "rtt": None}
+    carga = ECO_PREFIXO + struct.pack(">Q", seq)
+    return sonda_udp(ip, porta, timeout, carga, confere=carga)
+
+
+def jitter_movel(rtts, janela=10):
+    """Jitter de cada ponto: média de |rtt - rtt anterior| nos últimos `janela` pares sem perda (None se ainda não há)."""
+    out, difs, ant = [], deque(maxlen=janela), None
+    for r in rtts:
+        if r is not None and ant is not None:
+            difs.append(abs(r - ant))
+        if r is not None:
+            ant = r
+        out.append(round(sum(difs) / len(difs), 2) if difs else None)
+    return out
+
+
+def resumo_udp(amostras, tipos):
+    """UDP: se o destino respondeu a alguma sonda, quem ficou sem resposta é perda de verdade; se nunca respondeu,
+    não dá para falar em perda ("sem devolução UDP")."""
+    respondeu = any(t in ("resposta", "porta_inacessivel") for t in tipos)
+    r = resumo(amostras if respondeu else [a for a in amostras if a is not None])
+    r["sem_devolucao"] = not respondeu
+    if not respondeu:
+        r["perda"] = None
+    return r
+
+
+class TesteDestino:
+    """Teste real até um destino por ICMP, TCP ou UDP, 2 medidas por segundo, pelo tempo escolhido."""
+    INTERVALO = 0.5
+    PROTOCOLOS = ("icmp", "tcp", "udp")
+
+    def __init__(self, icmp=None, tcp=None, udp=None, eco=None):
+        self._icmp = icmp or (lambda ip: {"tipo": "resposta", "rtt": ping(ip, 1000)["rtt"]})
+        self._tcp = tcp or sonda_tcp
+        self._udp = udp or sonda_udp
+        self._eco = eco or sonda_eco
+        self.estado = {"fase": "parado"}
+        self._cancelar = threading.Event()
+        self._lock = threading.Lock()
+
+    def iniciar(self, destino, protocolo, porta=0, segundos=30):
+        if protocolo not in self.PROTOCOLOS:
+            raise ValueError("Escolha ICMP, TCP ou UDP.")
+        try:
+            porta, segundos = int(porta or 0), int(segundos or 30)
+        except (TypeError, ValueError):
+            raise ValueError("Porta ou duração inválida.") from None
+        if protocolo != "icmp" and not 1 <= porta <= 65535:
+            raise ValueError("Informe a porta (1 a 65535) para testar TCP ou UDP.")
+        segundos = max(5, min(300, segundos))
+        ip = alvo_valido(destino)
+        with self._lock:
+            if self.estado.get("fase") == "medindo":
+                return False, "Já tem um teste rodando."
+            self._cancelar.clear()
+            self.estado = {"fase": "medindo", "destino": str(destino).strip()[:120], "ip": ip, "protocolo": protocolo,
+                           "porta": porta if protocolo != "icmp" else None, "segundos": segundos, "inicio": time.time(),
+                           "amostras": [], "tipos": {}}
+        threading.Thread(target=self._rodar, daemon=True).start()
+        return True, "Teste começou."
+
+    def cancelar(self):
+        self._cancelar.set()
+
+    def _medir(self, e):
+        if e["protocolo"] == "icmp":
+            return self._icmp(e["ip"])
+        return (self._tcp if e["protocolo"] == "tcp" else self._udp)(e["ip"], e["porta"])
+
+    def _rodar(self):
+        e = self.estado
+        try:
+            fim = e["inicio"] + e["segundos"]
+            while time.time() < fim and not self._cancelar.is_set():
+                t = time.time()
+                r = self._medir(e)
+                tipo = r.get("tipo") or ("resposta" if r.get("rtt") is not None else "silencio")
+                e["amostras"].append([round(t, 2), r.get("rtt"), tipo])
+                e["tipos"][tipo] = e["tipos"].get(tipo, 0) + 1
+                self._cancelar.wait(max(0.0, self.INTERVALO - (time.time() - t)))
+            rtts = [a[1] for a in e["amostras"]]
+            r = resumo_udp(rtts, [a[2] for a in e["amostras"]]) if e["protocolo"] == "udp" else resumo(rtts)
+            r["mos"], r["fator_r"] = mos(r.get("mediana"), r.get("jitter"), r.get("perda"))
+            e["resultado"] = r
+            if r.get("sem_devolucao") and not self._cancelar.is_set():
+                ref = [self._eco(i) for i in range(10)]
+                e["vps"] = {**resumo([x["rtt"] for x in ref]), "servidor": ECO_UDP[0],
+                            "respondeu": any(x["rtt"] is not None for x in ref)}
+            e["fase"] = "cancelado" if self._cancelar.is_set() else "pronto"
+        except Exception as ex:  # noqa: BLE001
+            e.update(fase="erro", erro=str(ex))
+        e["fim"] = time.time()
+
+    def ver(self):
+        e = dict(self.estado)
+        am = list(e.get("amostras") or [])
+        jit = jitter_movel([a[1] for a in am])
+        e["serie"] = [[a[0], a[1], j, a[2]] for a, j in zip(am, jit)]
+        e.pop("amostras", None)
+        return e
 
 
 # ================================================================ país e operadora (DB-IP Lite)

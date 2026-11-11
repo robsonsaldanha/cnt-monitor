@@ -189,6 +189,129 @@ def teste_sessao_prazos():
 
 
 # ---------------------------------------------------------------- agente: conexão de verdade, na mesma máquina
+_MON1 = {"x": 0, "y": 0, "w": 640, "h": 360, "principal": True}
+
+
+class AreaFalsa:
+    """Área de transferência de mentira: os testes não mexem na de quem está rodando."""
+
+    def __init__(self):
+        self.n, self.conteudo, self.escritos = 1, None, []
+
+    def seq(self):
+        return self.n
+
+    def ler(self):
+        return self.conteudo
+
+    def copiar(self, conteudo):          # quem é atendido copiou alguma coisa
+        self.conteudo, self.n = conteudo, self.n + 1
+
+    def _escrever(self, tipo, valor):
+        self.escritos.append((tipo, valor))
+        self.conteudo, self.n = (tipo, valor), self.n + 1
+
+    def texto(self, t):
+        self._escrever("texto", t)
+
+    def imagem(self, png):
+        self._escrever("imagem", png)
+
+    def arquivos(self, caminhos):
+        self._escrever("arquivos", list(caminhos))
+
+
+def teste_mouse_em_varios_monitores():
+    """Monitor 2 à direita, maior e mais alto que o principal: o clique cai no pixel certo da área de trabalho inteira."""
+    import remoto_agente as ra
+    mons = [{"x": 0, "y": 0, "w": 1920, "h": 1080}, {"x": 1920, "y": -200, "w": 2560, "h": 1440},
+            {"x": -1280, "y": 100, "w": 1280, "h": 1024}]
+    vx, vy, vw, vh = ra.area_virtual(mons)
+    assert (vx, vy, vw, vh) == (-1280, -200, 5760, 1440)
+    for m, fx, fy, px, py in ((0, 0, 0, 0, 0), (0, 1, 1, 1919, 1079), (1, 0, 0, 1920, -200), (1, 1, 1, 4479, 1239),
+                              (1, 0.5, 0.5, 1920 + 1280, -200 + 720), (2, 0, 0, -1280, 100), (2, 1, 1, -1, 1123)):
+        ev = ra.traduzir({"t": "mouse", "a": "move", "m": m, "x": fx, "y": fy}, mons)
+        assert len(ev) == 1 and ev[0][4] == 0x0001 | 0x8000 | 0x4000, ev
+        nx, ny = ev[0][1], ev[0][2]
+        # o Windows converte de volta com pixel = n * largura // 65536
+        assert (vx + nx * vw // 65536, vy + ny * vh // 65536) == (px, py), (m, fx, fy, nx, ny)
+    assert ra.traduzir({"t": "mouse", "a": "move", "x": 0, "y": 0}, mons)[0][1:3] == (ra._no_monitor(mons, 0, 0, 0))
+    for ruim in (3, -1, True, "1", 1.0):                     # monitor que não existe ou número estranho
+        assert ra.traduzir({"t": "mouse", "a": "move", "m": ruim, "x": 0, "y": 0}, mons) == [], ruim
+    e = ra.Entrada(lambda ev: None, lambda t: None)
+    e.monitores = mons
+    saiu = []
+    e._enviar = saiu.append
+    e.aplicar({"t": "mouse", "a": "baixa", "b": 0, "m": 1, "x": 0, "y": 0})
+    assert saiu[0][4] & 0x4000 and saiu[0][4] & 0x0002
+
+
+def teste_atalhos_so_da_lista():
+    import remoto_agente as ra
+    for nome, seq in remoto.ATALHOS.items():
+        assert seq in ("SAS", "BLOQUEAR") or all(c in ra.SCAN or c in ra.SCAN_E0 for c in seq), nome
+    saiu, sas, bloq = [], [], []
+    e = ra.Entrada(saiu.append, lambda t: None, sas=lambda: sas.append(1) or "", bloquear=lambda: bloq.append(1) or "")
+    assert e.aplicar({"t": "atalho", "n": "win_r"}) == ""
+    assert saiu == [("tecla", 0x5B, 8 | 1), ("tecla", 0x13, 8), ("tecla", 0x13, 8 | 2), ("tecla", 0x5B, 8 | 1 | 2)]
+    e.aplicar({"t": "atalho", "n": "ctrl_alt_del"})
+    e.aplicar({"t": "atalho", "n": "win_l"})
+    assert sas == [1] and bloq == [1] and len(saiu) == 4          # nada simulado: cada um chama a função própria
+    for ruim in ("rodar", "", None, 5, ["win"], "__class__"):
+        e.aplicar({"t": "atalho", "n": ruim})
+    assert len(saiu) == 4 and not e._teclas                      # nada fica apertado depois de um atalho
+    e2 = ra.Entrada(saiu.append, lambda t: None, sas=lambda: "bloqueado")
+    assert e2.aplicar({"t": "atalho", "n": "ctrl_alt_del"}) == "bloqueado"     # o aviso volta para o técnico
+
+
+def teste_area_de_transferencia_modos_e_teto():
+    p = remoto.area_permite
+    assert p("ambos", "para_atendido") and p("ambos", "para_tecnico")
+    assert p("para_atendido", "para_atendido") and not p("para_atendido", "para_tecnico")
+    assert p("para_tecnico", "para_tecnico") and not p("para_tecnico", "para_atendido")
+    assert not p("desligada", "para_atendido") and not p("desligada", "para_tecnico")
+    # o teto de quem é atendido: o técnico não passa por cima, mas mandar para lá continua valendo
+    assert not p("ambos", "para_tecnico", False) and not p("para_tecnico", "para_tecnico", False)
+    assert p("ambos", "para_atendido", False)
+    assert not p("tudo", "para_atendido") and not p("ambos", "lado")
+
+
+def teste_nomes_e_caminhos():
+    n = remoto.nome_seguro
+    assert n("relatório final.pdf") == "relatório final.pdf"
+    assert n("..\\..\\Windows\\System32\\a.dll") == "a.dll" and n("../../etc/passwd") == "passwd"
+    assert n('a<b>c:d"e|f?g*h.txt') == "abcdefgh.txt" and n("x\x00\x1f.txt") == "x.txt"
+    assert n("CON.txt") == "_CON.txt" and n("nul") == "_nul" and n("  ..  ") == "arquivo" and n(None) == "arquivo"
+    assert len(n("a" * 400 + ".txt")) == 154
+    existe = {os.path.join("P", "a.txt"), os.path.join("P", "a (2).txt")}
+    assert remoto.caminho_livre("P", "a.txt", existe.__contains__) == os.path.join("P", "a (3).txt")
+    assert remoto.caminho_livre("P", "b.txt", existe.__contains__) == os.path.join("P", "b.txt")
+    v = remoto.validar_caminho
+    assert v("c:\\Users\\Ana\\..\\Ana\\Documentos") == "C:\\Users\\Ana\\Documentos" and v("D:/fotos/x.jpg") == "D:\\fotos\\x.jpg"
+    assert v("C:\\") == "C:\\"
+    for ruim in ("\\\\servidor\\c$\\x", "\\\\?\\C:\\x", "\\\\.\\PhysicalDrive0", "C:\\a.txt:fluxo", "Documentos\\a", "C:a.txt",
+                 "", None, 5, "C:\\a\x00b", "C:\\" + "a" * 1000, "C:\\a\nb"):
+        assert "inválido" in _erro(v, ruim), ruim
+
+
+def teste_historico_de_arquivos():
+    r = Relogio()
+    remoto.historico_gravar({"sentido": "recebido", "nome": "..\\a.txt", "tamanho": 10, "sha256": "a" * 64,
+                             "tecnico": "123 456 789<script>", "caminho": "C:\\x\\a.txt"}, r)
+    r.t += 10
+    remoto.historico_gravar({"sentido": "enviado", "nome": "b.txt", "tamanho": "20", "sha256": "não é hash"}, r)
+    for ruim in ({"sentido": "apagado", "nome": "x"}, {"sentido": "enviado", "tamanho": "muito"}, None, [1]):
+        remoto.historico_gravar(ruim, r)
+    h = remoto.historico(agora=r)
+    assert [x["nome"] for x in h] == ["b.txt", "a.txt"]                         # a mais nova primeiro
+    assert h[1]["tecnico"] == "123 456 789" and h[1]["sha256"] == "a" * 64 and h[0]["sha256"] == "" and h[0]["tamanho"] == 20
+    r.t += remoto.HISTORICO_DIAS * 86400 - 5                                     # a primeira passou dos 90 dias
+    assert [x["nome"] for x in remoto.historico(agora=r)] == ["b.txt"]
+    remoto.historico_gravar({"sentido": "enviado", "nome": "c.txt", "tamanho": 1}, r)
+    with open(os.path.join(DADOS, "arquivos_remotos.jsonl"), encoding="utf-8") as f:
+        assert len(f.readlines()) == 2                                           # e saiu do arquivo ao gravar a próxima
+
+
 def teste_entrada_traduz_e_solta():
     import remoto_agente as ra
     assert ra.traduzir({"t": "mouse", "a": "move", "x": 0.5, "y": 1}) == [("mouse", 32768, 65535, 0, 0x8001)]
@@ -231,8 +354,8 @@ async def _sessao_real(senha_errada=False):
     import remoto_agente as ra
 
     estados, entrou, area, recebidas, trilhas = [], [], [], [], []
-    agente = ra.Agente(estados.append, stun=(), capturar=lambda: Image.new("RGB", (640, 360), (255, 255, 255)),
-                       entrada=ra.Entrada(entrou.append, area.append))
+    agente = ra.Agente(estados.append, stun=(), capturar=lambda i: Image.new("RGB", (640, 360), (255, 255, 255)),
+                       entrada=ra.Entrada(entrou.append, area.append), monitores=[_MON1], area=AreaFalsa())
     await agente.iniciar()
     assert estados[-1]["estado"] == "convite" and len(estados[-1]["senha"]) == 9
     senha = "AAAA-AAAA" if senha_errada else estados[-1]["senha"]
@@ -295,7 +418,8 @@ async def _sessao_real(senha_errada=False):
         canal[0].send("isto não é json")
         canal[0].send(json.dumps(["lista"]))
         await _ate(lambda: len(entrou) == 2 and area == ["colado"])
-        assert entrou == [("mouse", 16384, 49151, 0, 0x8003), ("tecla", 0x2A, 8)]
+        # 640x360: x = 0,25 * 639 = pixel 160, y = 0,75 * 359 = pixel 269, na área de trabalho inteira (0x4000)
+        assert entrou == [("mouse", 16384, 48970, 0, 0xC003), ("tecla", 0x2A, 8)]
 
         await agente.comando({"cmd": "encerrar"})
         assert estados[-1]["estado"] == "encerrada" and agente.fim.is_set()
@@ -309,6 +433,148 @@ async def _sessao_real(senha_errada=False):
 def teste_agente_sessao_completa():
     import asyncio
     asyncio.run(_sessao_real())
+
+
+async def _ativa(**k):
+    """Uma sessão j\u00e1 aceita, com o canal de dados aberto pelo t\u00e9cnico. Devolve (agente, tec, controle, dados, recebidas)."""
+    import asyncio
+    from PIL import Image
+    from aiortc import RTCPeerConnection, RTCSessionDescription
+    import remoto_agente as ra
+
+    estados, recebidas = [], {"controle": [], "dados": []}
+    k.setdefault("monitores", [_MON1, {"x": 640, "y": 0, "w": 800, "h": 600, "principal": False}])
+    agente = ra.Agente(estados.append, stun=(), capturar=lambda i: Image.new("RGB", (64, 36), (255, 255, 255)),
+                       entrada=ra.Entrada(lambda ev: None, k["area"].texto if "area" in k else (lambda t: None)), **k)
+    await agente.iniciar()
+    senha = estados[-1]["senha"]
+    tec = RTCPeerConnection()
+    oferta = remoto.ler_convite(estados[-1]["convite"])
+    canais = {}
+
+    @tec.on("datachannel")
+    def _canal(c):
+        canais["controle"] = c
+        c.on("message", lambda m: recebidas["controle"].append(json.loads(m)))
+        c.send(json.dumps({"t": "prova", "mac": remoto.prova(remoto.chave(senha, oferta, tec.localDescription.sdp), "tecnico")}))
+
+    await tec.setRemoteDescription(RTCSessionDescription(sdp=oferta, type="offer"))
+    await tec.setLocalDescription(await tec.createAnswer())
+    await agente.comando({"cmd": "resposta", "codigo": remoto.resposta(tec.localDescription.sdp)})
+    await _ate(lambda: estados[-1]["estado"] == "aguardando_aceite")
+    await agente.comando({"cmd": "aceitar"})
+    await _ate(lambda: any(m["t"] == "ativa" for m in recebidas["controle"]))
+    d = tec.createDataChannel("dados")
+    d.on("message", lambda m: recebidas["dados"].append(m if isinstance(m, bytes) else json.loads(m)))
+    await _ate(lambda: d.readyState == "open" and agente.arquivos is not None)
+    await asyncio.sleep(0.1)
+    return agente, tec, canais["controle"], d, recebidas
+
+
+def teste_agente_arquivos_e_area_de_transferencia():
+    import asyncio
+    import hashlib
+    import remoto_agente as ra
+
+    baixados = tempfile.mkdtemp(prefix="mpc-downloads-", dir=DADOS)
+    origem = os.path.join(DADOS, "origem.bin")
+    conteudo = os.urandom(3 * remoto.TAM_PEDACO + 123)
+    with open(origem, "wb") as f:
+        f.write(conteudo)
+
+    def json_de(lista, t, n=None):
+        return [m for m in lista if isinstance(m, dict) and m.get("t") == t and (n is None or m.get("id") == n)]
+
+    async def rodar():
+        historico, area = [], AreaFalsa()
+        agente, tec, ctl, d, rec = await _ativa(area=area, pastas=lambda: {"Downloads": baixados}, ao_arquivo=historico.append)
+        try:
+            ativa = next(m for m in rec["controle"] if m["t"] == "ativa")
+            assert [m["n"] for m in ativa["monitores"]] == [1, 2] and ativa["ler_area"] is True
+            mids = [t.mid for t in tec.getTransceivers()]
+            assert [m["mid"] for m in ativa["monitores"]] == mids                # cada trilha diz de qual monitor \u00e9
+
+            # --- o t\u00e9cnico manda um arquivo: chega em Downloads\CNT Monitor, com nome seguro, e entra no hist\u00f3rico
+            def mandar(n, nome, dados, sha=None, **extra):
+                d.send(json.dumps({"t": "enviar", "id": n, "nome": nome, "tamanho": len(dados), **extra}))
+                for i in range(0, len(dados), remoto.TAM_PEDACO):
+                    d.send(n.to_bytes(4, "big") + dados[i:i + remoto.TAM_PEDACO])
+                d.send(json.dumps({"t": "enviado", "id": n, "sha256": sha or hashlib.sha256(dados).hexdigest()}))
+
+            mandar(1, "..\\..\\relat\u00f3rio.bin", conteudo)
+            await _ate(lambda: json_de(rec["dados"], "recebido", 1))
+            r = json_de(rec["dados"], "recebido", 1)[0]
+            assert json_de(rec["dados"], "aceito", 1) and r["ok"], r
+            final = os.path.join(baixados, "CNT Monitor", "relat\u00f3rio.bin")
+            assert r["caminho"] == final and open(final, "rb").read() == conteudo
+            assert historico[-1]["sentido"] == "recebido" and historico[-1]["sha256"] == hashlib.sha256(conteudo).hexdigest()
+            mandar(2, "relat\u00f3rio.bin", b"abc")                              # mesmo nome: n\u00e3o sobrescreve
+            await _ate(lambda: json_de(rec["dados"], "recebido", 2))
+            assert json_de(rec["dados"], "recebido", 2)[0]["caminho"].endswith("relat\u00f3rio (2).bin")
+            mandar(3, "estragado.bin", b"12345", sha="0" * 64)                   # SHA-256 n\u00e3o confere: nada fica
+            await _ate(lambda: json_de(rec["dados"], "recebido", 3))
+            assert not json_de(rec["dados"], "recebido", 3)[0]["ok"]
+            assert sorted(os.listdir(os.path.join(baixados, "CNT Monitor"))) == ["relat\u00f3rio (2).bin", "relat\u00f3rio.bin"]
+            d.send(json.dumps({"t": "enviar", "id": 4, "nome": "grande", "tamanho": remoto.MAX_ARQUIVO + 1}))
+            await _ate(lambda: json_de(rec["dados"], "recebido", 4))
+            assert not json_de(rec["dados"], "recebido", 4)[0]["ok"]
+
+            # --- colar no Explorer: s\u00f3 o que chegou nesta sess\u00e3o vai para a \u00e1rea de transfer\u00eancia
+            d.send(json.dumps({"t": "colar_arquivos", "id": 5, "caminhos": [final, "C:\\Windows\\win.ini"]}))
+            await _ate(lambda: json_de(rec["dados"], "colado", 5))
+            assert area.escritos[-1] == ("arquivos", [final])
+
+            # --- buscar no outro PC: pastas de partida, listar e baixar com SHA-256
+            d.send(json.dumps({"t": "listar", "id": 6, "caminho": ""}))
+            d.send(json.dumps({"t": "listar", "id": 7, "caminho": DADOS}))
+            d.send(json.dumps({"t": "listar", "id": 8, "caminho": "\\\\servidor\\c$"}))
+            await _ate(lambda: all(json_de(rec["dados"], "lista", n) for n in (6, 7, 8)))
+            assert json_de(rec["dados"], "lista", 6)[0]["itens"][0] == {"nome": "Downloads", "caminho": baixados, "pasta": True}
+            assert any(x["nome"] == "origem.bin" and x["tamanho"] == len(conteudo) for x in json_de(rec["dados"], "lista", 7)[0]["itens"])
+            assert "inv\u00e1lido" in json_de(rec["dados"], "lista", 8)[0]["erro"]
+            d.send(json.dumps({"t": "baixar", "id": 9, "caminho": origem}))
+            await _ate(lambda: json_de(rec["dados"], "concluido", 9))
+            ini = json_de(rec["dados"], "inicio", 9)[0]
+            veio = b"".join(m[4:] for m in rec["dados"] if isinstance(m, bytes) and int.from_bytes(m[:4], "big") == 9)
+            assert ini["tamanho"] == len(conteudo) and veio == conteudo
+            assert json_de(rec["dados"], "concluido", 9)[0]["sha256"] == hashlib.sha256(conteudo).hexdigest()
+            assert historico[-1]["sentido"] == "enviado" and historico[-1]["caminho"] == origem
+            d.send(json.dumps({"t": "baixar", "id": 10, "caminho": os.path.join(DADOS, "nao-existe.bin")}))
+            await _ate(lambda: json_de(rec["dados"], "erro", 10))
+
+            # --- \u00e1rea de transfer\u00eancia: sem o t\u00e9cnico dizer o modo, nada sai daqui
+            area.copiar(("texto", "senha do banco"))
+            await asyncio.sleep(2 * ra.VIGIAR_AREA_S + 0.3)
+            assert not [m for m in rec["controle"] if m["t"] == "area"]
+            ctl.send(json.dumps({"t": "area_modo", "modo": "ambos"}))
+            await asyncio.sleep(0.2)
+            area.copiar(("texto", "copiado l\u00e1"))
+            await _ate(lambda: [m for m in rec["controle"] if m["t"] == "area"])
+            assert [m["texto"] for m in rec["controle"] if m["t"] == "area"] == ["copiado l\u00e1"]
+            ctl.send(json.dumps({"t": "area", "texto": "do t\u00e9cnico"}))           # escrita daqui n\u00e3o volta como c\u00f3pia nova
+            await _ate(lambda: area.escritos and area.escritos[-1] == ("texto", "do t\u00e9cnico"))
+            await asyncio.sleep(2 * ra.VIGIAR_AREA_S + 0.3)
+            assert len([m for m in rec["controle"] if m["t"] == "area"]) == 1
+            # imagem do t\u00e9cnico vai para a \u00e1rea de transfer\u00eancia (n\u00e3o para Downloads)
+            mandar(11, "imagem.png", b"\x89PNG-de-mentira", area="imagem")
+            await _ate(lambda: json_de(rec["dados"], "recebido", 11))
+            assert area.escritos[-1] == ("imagem", b"\x89PNG-de-mentira")
+            # quem \u00e9 atendido desliga a leitura (teto): nem com \"ambos\" sai mais nada
+            await agente.comando({"cmd": "area_permitir", "valor": False})
+            await _ate(lambda: [m for m in rec["controle"] if m["t"] == "area_teto"])
+            area.copiar(("texto", "outra senha"))
+            await asyncio.sleep(2 * ra.VIGIAR_AREA_S + 0.3)
+            assert len([m for m in rec["controle"] if m["t"] == "area"]) == 1
+            # monitor escondido anda devagar; o \"ver\" s\u00f3 aceita monitores que existem
+            ctl.send(json.dumps({"t": "ver", "m": [1, 7, True, "0"]}))
+            await _ate(lambda: agente.visiveis == {1})
+            ctl.send(json.dumps({"t": "ola", "tecnico": "987 654 321;rm"}))
+            await _ate(lambda: agente.tecnico == "987 654 321")
+        finally:
+            await agente.encerrar()
+            await tec.close()
+
+    asyncio.run(rodar())
 
 
 def teste_agente_senha_errada():
@@ -518,7 +784,8 @@ def teste_acoes_de_ajuda_so_no_proprio_pc():
     threading.Thread(target=s.serve_forever, daemon=True).start()
     servidor.SESSOES["sessao-ajuda"] = time.time() + 60
     try:
-        for tipo in ("ajuda_estado", "ajuda_pedir", "ajuda_resposta", "ajuda_aceitar", "ajuda_encerrar", "ajuda_tec_convite"):
+        for tipo in ("ajuda_estado", "ajuda_pedir", "ajuda_resposta", "ajuda_aceitar", "ajuda_encerrar", "ajuda_tec_convite",
+                     "ajuda_arquivos"):
             con = http.client.HTTPConnection("127.0.0.1", s.server_address[1], timeout=10)
             con.request("POST", "/api/acao", json.dumps({"tipo": tipo}),
                         {"Content-Type": "application/json", "Cookie": "mpc_sessao=sessao-ajuda", "X-Token": "tok"})
@@ -547,7 +814,8 @@ def teste_chamadas_win32_existem():
         with open(os.path.join(raiz, arq), encoding="utf-8") as f:
             usos = set(re.findall(r"\b(win32\w+|pywintypes)\.(\w+)", f.read()))
         for mod, nome in sorted(usos):
-            assert hasattr(importlib.import_module(mod), nome), f"{arq}: {mod}.{nome} não existe"
+            assert hasattr(importlib.import_module(mod), nome) or importlib.util.find_spec(f"{mod}.{nome}"), \
+                f"{arq}: {mod}.{nome} não existe"           # função do módulo ou submódulo (win32com.shell)
     assert sessao.em_servico() is False          # o teste roda na sessão de um usuário, não na do serviço
 
 

@@ -10,7 +10,7 @@ não prova nada. A segurança vem de três coisas, todas aqui:
      batem, a chave sai outra e a prova falha;
   2. uma tentativa só: senha errada encerra a sessão e o convite deixa de valer;
   3. aceite de quem está no computador, com um código de conferência igual nos dois lados.
-Nada disso é gravado em disco.
+Nada disso é gravado em disco. Da sessão, só o histórico de arquivos transferidos fica guardado (90 dias).
 """
 import os
 import re
@@ -310,12 +310,145 @@ def conferir_atendido(senha, sdp_convite, sdp_tecnico, mac):
     return confere(chave(senha, sdp_convite, sdp_tecnico), "atendido", mac)
 
 
+# ---------------------------------------------------------------- atalhos, área de transferência e arquivos
+MAX_MONITORES = 4           # uma trilha de vídeo por monitor
+# Combinações que o técnico manda pela barra (fora da tela cheia o navegador fica com Win, Alt+Tab e afins).
+# Lista fechada: o agente não aceita outro nome. Teclas pelo KeyboardEvent.code; "SAS" (Ctrl+Alt+Del) e
+# "BLOQUEAR" (Win+L) o Windows não aceita simulados: o agente chama a função própria de cada um.
+ATALHOS = {
+    "ctrl_alt_del": "SAS",
+    "ctrl_shift_esc": ("ControlLeft", "ShiftLeft", "Escape"),
+    "win": ("MetaLeft",),
+    "win_r": ("MetaLeft", "KeyR"),
+    "win_e": ("MetaLeft", "KeyE"),
+    "win_d": ("MetaLeft", "KeyD"),
+    "win_l": "BLOQUEAR",
+    "win_shift_s": ("MetaLeft", "ShiftLeft", "KeyS"),
+    "alt_tab": ("AltLeft", "Tab"),
+    "alt_f4": ("AltLeft", "F4"),
+    "print": ("PrintScreen",),
+    "colar": ("ControlLeft", "KeyV"),
+}
+# para_atendido = do técnico para o PC atendido; para_tecnico = o contrário
+MODOS_AREA = ("ambos", "para_atendido", "para_tecnico", "desligada")
+MAX_TEXTO_AREA = 100000
+MAX_IMAGEM_AREA = 16 * 1024 * 1024
+MAX_ARQUIVO = 8 * 1024 ** 3
+TAM_PEDACO = 16384          # cabe em qualquer canal de dados (o limite do aiortc é 64 KB por mensagem)
+PASTA_RECEBIDOS = "CNT Monitor"     # dentro de Downloads de quem é atendido
+HISTORICO_DIAS = 90
+_RESERVADOS = {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)), *(f"LPT{i}" for i in range(1, 10))}
+
+
+def area_permite(modo, sentido, ler_atendido=True):
+    """Se a área de transferência pode ir no sentido dado. ler_atendido é o teto de quem é atendido:
+    desligado, nada sai da área de transferência dele, seja qual for o modo que o técnico escolheu."""
+    if sentido not in ("para_atendido", "para_tecnico") or modo not in MODOS_AREA:
+        return False
+    if sentido == "para_tecnico" and not ler_atendido:
+        return False
+    return modo in ("ambos", sentido)
+
+
+def nome_seguro(nome):
+    """Só o nome do arquivo (sem pastas), sem caracteres que o Windows recusa e sem nomes reservados."""
+    nome = re.split(r"[\\/]", str(nome or ""))[-1]
+    nome = "".join(ch for ch in nome if ord(ch) >= 32 and ch not in '<>:"|?*').strip(" .")
+    base, ext = os.path.splitext(nome)
+    if base.upper() in _RESERVADOS:
+        base = "_" + base
+    nome = (base[:150] + ext[:20]).strip(" .")
+    return nome or "arquivo"
+
+
+def caminho_livre(pasta, nome, existe=os.path.exists):
+    """pasta\\nome, ou "nome (2).ext", "nome (3).ext"... se já existir: nunca sobrescreve."""
+    base, ext = os.path.splitext(nome)
+    c, n = os.path.join(pasta, nome), 1
+    while existe(c) or existe(c + ".cntparte"):
+        n += 1
+        c = os.path.join(pasta, f"{base} ({n}){ext}")
+    return c
+
+
+def validar_caminho(p):
+    """Caminho de arquivo ou pasta pedido pelo técnico: só caminho completo numa unidade (C:\\...).
+    Recusa rede (\\\\servidor), dispositivos (\\\\?\\, \\\\.\\), fluxos alternativos (arquivo:fluxo) e
+    caminhos relativos. Quem limita o que dá para ler é o Windows: o agente lê com as permissões de quem
+    está no computador."""
+    import ntpath
+    if not isinstance(p, str) or not p or len(p) > 1000 or "\x00" in p:
+        raise Erro("Caminho inválido.")
+    p = p.replace("/", "\\")
+    if not re.match(r"^[A-Za-z]:\\", p) or ":" in p[2:] or any(ord(ch) < 32 for ch in p):
+        raise Erro("Caminho inválido.")
+    p = ntpath.normpath(p)
+    if not re.match(r"^[A-Za-z]:\\", p):
+        raise Erro("Caminho inválido.")
+    return p[0].upper() + p[1:]
+
+
+def _arquivo_historico():
+    return os.path.join(config.BASE, "arquivos_remotos.jsonl")
+
+
+_lock_hist = threading.Lock()
+
+
+def historico_gravar(item, agora=time.time):
+    """Uma transferência concluída (mandada pelo agente). Guarda 90 dias."""
+    if not isinstance(item, dict) or item.get("sentido") not in ("recebido", "enviado"):
+        return
+    try:
+        tamanho = max(0, int(item.get("tamanho") or 0))
+    except (TypeError, ValueError):
+        return
+    sha = str(item.get("sha256") or "")
+    linha = {"ts": agora(), "sentido": item["sentido"], "nome": nome_seguro(item.get("nome")), "tamanho": tamanho,
+             "sha256": sha if re.fullmatch(r"[0-9a-f]{64}", sha) else "",
+             "tecnico": re.sub(r"[^0-9 ]", "", str(item.get("tecnico") or ""))[:15],
+             "caminho": str(item.get("caminho") or "")[:1000]}
+    limite = agora() - HISTORICO_DIAS * 86400
+    with _lock_hist:
+        linhas = [x for x in _ler_historico() if x["ts"] >= limite] + [linha]
+        os.makedirs(config.BASE, exist_ok=True)
+        tmp = _arquivo_historico() + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            f.writelines(json.dumps(x, ensure_ascii=False) + "\n" for x in linhas[-5000:])
+        os.replace(tmp, _arquivo_historico())
+
+
+def _ler_historico():
+    out = []
+    try:
+        with open(_arquivo_historico(), encoding="utf-8") as f:
+            for linha in f:
+                try:
+                    x = json.loads(linha)
+                except ValueError:
+                    continue
+                if isinstance(x, dict) and isinstance(x.get("ts"), (int, float)):
+                    out.append(x)
+    except OSError:
+        pass
+    return out
+
+
+def historico(limite=200, agora=time.time):
+    """Transferências dos últimos 90 dias, a mais nova primeiro."""
+    corte = agora() - HISTORICO_DIAS * 86400
+    with _lock_hist:
+        linhas = [x for x in _ler_historico() if x["ts"] >= corte]
+    return sorted(linhas, key=lambda x: -x["ts"])[:limite]
+
+
 # ---------------------------------------------------------------- lado do serviço
 class Gerente:
     """Liga o agente (remoto_agente) só enquanto dura um pedido de ajuda e repassa as ordens a ele."""
 
-    def __init__(self, comando=None):
+    def __init__(self, comando=None, opcoes=None):
         self._comando = comando
+        self._opcoes = opcoes or (lambda: {})     # {"ler_area": bool}: decisões de quem é atendido
         self._cond = threading.Condition()
         self._proc = None
         self._estado = {"estado": "parada"}
@@ -329,6 +462,8 @@ class Gerente:
             cmd = [os.path.join(config.pasta_programa(), "remoto", "MonitorPCRemoto.exe")]
         else:
             cmd = [sys.executable, os.path.join(config.pasta_recursos(), "remoto_agente.py")]
+        if not self._opcoes().get("ler_area", True):
+            cmd = cmd + ["--sem-ler-area"]
         if not stun:
             return cmd + ["--sem-stun"]
         if isinstance(turn, dict) and turn.get("urls") and turn.get("username") and turn.get("credential"):
@@ -366,9 +501,15 @@ class Gerente:
                 if p is not self._proc:
                     return
                 if "estado" in d:
-                    self._estado = {k: d.get(k, "") for k in ("estado", "motivo", "conferencia", "convite", "senha", "senha_errada")}
+                    self._estado = {k: d.get(k, "") for k in ("estado", "motivo", "conferencia", "convite", "senha", "senha_errada",
+                                                            "tecnico")}
                 if d.get("id") is not None:
                     self._respostas[d["id"]] = str(d.get("erro") or "")
+                if isinstance(d.get("arquivo"), dict):
+                    try:
+                        historico_gravar(d["arquivo"])
+                    except OSError as e:
+                        print("remoto: não consegui gravar o histórico de arquivos:", e, file=sys.stderr)
                 self._cond.notify_all()
         with self._cond:
             if p is self._proc and self._estado.get("estado") != "encerrada":

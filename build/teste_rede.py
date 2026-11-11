@@ -94,13 +94,25 @@ def teste_agrupar_tcp_udp_portas():
                 _acc("192.168.1.5", "8.8.8.8", 443, 50001, True, False, 1),
                 _acc("192.168.1.5", "155.133.250.1", 27015, 60000, True, True, 4)])
     acc[(9, socket.inet_aton("127.0.0.1"), socket.inet_aton("127.0.0.1"), struct.pack(">HH", 1, 2), False)] = [5, 5, 1, 1]
-    lista, det = rede.agrupar(acc, {"192.168.1.5"})
+    # fluxo UDP com o ritmo de chegada medido pelo ETW (relógio de 10 MHz): variação 40 ms em 4, maior intervalo 30 ms
+    chave, v = _acc("192.168.1.5", "200.1.1.1", 10000, 40000, True, False, 5, pid=8)
+    acc[chave] = v + [400_000, 4, 300_000]
+    lista, det, fluxos = rede.agrupar(acc, {"192.168.1.5"})
     tot = {(p, ip): (e, r) for p, ip, e, r in lista}
-    assert tot == {(7, "8.8.8.8"): (2000, 4000), (7, "155.133.250.1"): (4000, 0)}   # loopback fica de fora
+    assert tot == {(7, "8.8.8.8"): (2000, 4000), (7, "155.133.250.1"): (4000, 0), (8, "200.1.1.1"): (0, 5000)}   # loopback fica de fora
     d = {(x[0], x[1], x[3]): x[4:] for x in det}
     assert d[("8.8.8.8", 443, False)] == (2000, 3000, 2, 3)
     assert d[("8.8.8.8", 443, True)] == (0, 1000, 0, 1)
     assert d[("155.133.250.1", 27015, True)] == (4000, 0, 4, 0)
+    f = {(x[0], x[1], x[2], x[4]): x[5:] for x in fluxos}
+    assert f[(7, "8.8.8.8", 443, False)] == (2000, 3000, 2, 3, 0, 0, 0)
+    assert f[(8, "200.1.1.1", 10000, True)] == (0, 5000, 0, 5, 40.0, 4, 30.0)
+    vivos = rede.FluxosVivos()
+    for s in range(100, 106):
+        vivos.add(s, [(8, "200.1.1.1", 10000, 40000, True, 0, 5000, 0, 5, 40.0, 4, 30.0 + s - 100)])
+    x = vivos.lista(agora=105.5)[0]
+    assert x["rec"] == 5000 and x["pps"] == 5 and x["jitter"] == 10.0 and x["silencio"] == 35.0
+    assert vivos.lista(agora=200) == []                                          # parado há mais de 10 s: some
 
 
 def teste_trafego_por_ip_e_protocolo():

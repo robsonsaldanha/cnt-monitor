@@ -18,6 +18,7 @@ import psutil
 
 from . import config, configuracao, banco, rede, temperatura, nt, gpu, discos, inicializacao
 from . import alertas, jogo, energia, servicos, atualizacao, sessao, regras, limpeza, vps, captura, ventoinhas, remoto, encontro
+from . import rede_programa
 from . import qualidade
 
 WIN = os.name == "nt"
@@ -156,7 +157,7 @@ class Motor:
         self.regras = regras.MotorRegras()
         self.tarefas = limpeza.Tarefas()
         vps.vincular(configuracao.obter("vps"))
-        self.ajuda = remoto.Gerente()
+        self.ajuda = remoto.Gerente(opcoes=lambda: {"ler_area": configuracao.obter("remoto_permitir_ler_area")})
         # MONITORPC_ENCONTRO troca o servidor do ID (testes e demonstração); "0" desliga
         self._url_encontro = os.environ.get("MONITORPC_ENCONTRO") or encontro.SERVIDOR
         self.encontro = encontro.Encontro(self.ajuda, self._url_encontro)
@@ -168,9 +169,15 @@ class Motor:
         self.navegar = None
         self.servidores = None
         self.trafego = rede.TrafegoIP()
+        self.fluxos_vivos = rede.FluxosVivos()
         self.geo = qualidade.GeoIP()
         self.sondas = qualidade.Sondas(carga_fn=self._carga)
         self.velocidade = qualidade.Velocidade()
+        self.teste = qualidade.TesteDestino()
+        self.rprog = rede_programa.Monitor(
+            self._grupo_pids, lambda: [(g["nome"], g["env"] or 0, g["rec"] or 0) for g in (self.estado or {}).get("programas", [])
+                                       if not g.get("outros")],
+            lambda: list(self.conns), maquina=self.info_maquina)
         self._cont = deque(maxlen=40)       # leituras dos contadores TCP/UDP/placas para as taxas recentes
         self._cache_rede = {}
 
@@ -222,6 +229,8 @@ class Motor:
         self.jogo.fps.parar()
         self.sondas.parar()
         self.velocidade.cancelar()
+        self.teste.cancelar()
+        self.rprog.parar()          # o monitoramento por programa em andamento fica salvo
 
     def _loop_rapido(self):
         while not self.parar_ev.is_set():
@@ -338,6 +347,8 @@ class Motor:
             self.vps.sincronizar(configuracao.obter("vps"))
         except Exception:
             pass
+        if self.ajuda.estado().get("estado") == "ativa":     # o teto da área de transferência vale na hora
+            self.ajuda.ordem("area_permitir", valor=configuracao.obter("remoto_permitir_ler_area"))
 
     def _acao_ajuda(self, tipo, a):
         """Acesso remoto (pedir ajuda / ajudar alguém). O servidor só deixa chegar aqui o que vem do próprio PC."""
@@ -361,8 +372,10 @@ class Motor:
             if tipo == "ajuda_aceitar":
                 r = self.ajuda.ordem("aceitar")
                 if r[0]:
-                    self._abrir_icone()      # a faixa "Acesso remoto ativo" é do ícone: garante que ele está aberto
+                    self._abrir_icone()      # o aviso e o "Encerrar conexão do técnico" são do ícone: garante que está aberto
                 return estado(*r)
+            if tipo == "ajuda_arquivos":
+                return {"ok": True, "msg": "", "dados": {"itens": remoto.historico()}}
             if tipo == "ajuda_encerrar":
                 self.ajuda.parar()
                 return estado()
@@ -475,6 +488,8 @@ class Motor:
         trafego = self.rede.coletar() if self.rede.ok else []
         if trafego:
             self.trafego.add(t, self.rede.detalhe)
+            self.fluxos_vivos.add(t, self.rede.fluxos)
+            self.rprog.add_fluxos(t, self.rede.fluxos)
         for pid, ip, env, rec in trafego:
             self._net_ev[pid].append((t, env, rec))
         net_pid = {}
@@ -1174,7 +1189,38 @@ class Motor:
         return {"captura": cap, "salvas": self.sondas.lista(), "sistema": qualidade.diferenca(base, self._cont[-1]),
                 "wifi": cache["wifi"], "gateway": cache.get("gateway"), "dns": cache.get("dns", []),
                 "velocidade": self.velocidade.estado, "geoip": self.geo.disponivel,
-                "top_ips": [{"ip": ip, "host": self._host(ip)} for ip in self._top_ips(8)]}
+                "top_ips": [{"ip": ip, "host": self._host(ip)} for ip in self._top_ips(8)],
+                "teste": self.teste.ver(), "programas": self.rprog.ao_vivo(), "programas_salvos": self.rprog.lista()}
+
+    def conexoes_qualidade(self):
+        """Conexões em andamento (tráfego nos últimos 10 s) com a qualidade de cada uma: taxa, pacotes/s, RTT e
+        retransmissões do TCP (do Windows), jitter de chegada do UDP, ping ao destino e uma nota (MOS estimado)."""
+        t = time.time()
+        fl = sorted(self.fluxos_vivos.lista(t), key=lambda x: -x["bytes_10s"])[:60]
+        with self.lock:
+            procs, conns = self.procs, list(self.conns)
+        ips = list(dict.fromkeys(x["ip"] for x in fl if rede.tipo_ip(x["ip"]) in ("internet", "rede local")))
+        self.sondas.vigiar(ips[:qualidade.Sondas.MAX_VIGIA])
+        tcp = {(c["lport"], c["rip"], c["rport"]): c for c in conns if c["proto"].startswith("TCP") and c["estado"] == "Conectado"}
+        out, estats = [], 0
+        for x in fl:
+            udp = x["udp"]
+            p = self.sondas.resumo_ip(x["ip"], 30)
+            r = {**x, "proto": "UDP" if udp else "TCP", "programa": self._pid_prog.get(x["pid"], (0, None))[1] or "—",
+                 "processo": (procs.get(x["pid"]) or {}).get("nome") or "", "host": self._host(x["ip"]),
+                 "servico": rede.servico(x["rport"], udp) or rede.servico(x["lport"], udp) or "",
+                 "ping": p["mediana"] if p else None, "ping_jitter": p["jitter"] if p else None,
+                 "perda": p["perda"] if p else None, "rtt_tcp": None, "retransmissoes": None}
+            c = tcp.get((x["lport"], x["ip"], x["rport"]))
+            if c and estats < 20:
+                estats += 1
+                e = qualidade.tcp_estats(c["lip"], c["lport"], c["rip"], c["rport"])
+                if e:
+                    r["rtt_tcp"], r["retransmissoes"] = e.get("rtt"), e.get("retransmissoes")
+            lat = r["ping"] if r["ping"] is not None else r["rtt_tcp"]
+            r["mos"] = qualidade.mos(lat, x["jitter"] if x["jitter"] is not None else r["ping_jitter"], r["perda"] or 0)[0]
+            out.append(r)
+        return out
 
     def _top_ips(self, n):
         t = time.time()
@@ -1221,6 +1267,25 @@ class Motor:
             if tipo == "rede_analise_apagar":
                 ok = self.sondas.apagar(str(a.get("id") or ""))
                 return {"ok": ok, "msg": "Análise apagada." if ok else "Análise não encontrada."}
+            if tipo == "rede_teste":
+                ok, msg = self.teste.iniciar(a.get("destino"), a.get("protocolo"), a.get("porta"), a.get("segundos"))
+                return {"ok": ok, "msg": msg}
+            if tipo == "rede_teste_cancelar":
+                self.teste.cancelar()
+                return {"ok": True, "msg": "Teste cancelado."}
+            if tipo == "rede_prog_iniciar":
+                ok, msg = self.rprog.adicionar(a.get("programa"))
+                return {"ok": ok, "msg": msg}
+            if tipo == "rede_prog_remover":
+                ok, msg = self.rprog.remover(str(a.get("programa") or ""))
+                return {"ok": ok, "msg": msg}
+            if tipo == "rede_prog_parar":
+                ident = self.rprog.parar()
+                return {"ok": bool(ident), "msg": "Monitoramento salvo. Use Exportar .log para levar os dados." if ident
+                        else "Nenhum programa sendo monitorado.", "dados": ident}
+            if tipo == "rede_prog_apagar":
+                ok = self.rprog.apagar(str(a.get("id") or ""))
+                return {"ok": ok, "msg": "Monitoramento apagado." if ok else "Monitoramento não encontrado."}
         except ValueError as e:
             return {"ok": False, "msg": str(e)}
         except OSError as e:

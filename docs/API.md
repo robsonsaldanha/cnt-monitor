@@ -54,6 +54,13 @@ segundos Unix (UTC) para datas.
 | `/api/v1/vps` | servidores cadastrados e últimas leituras (sem senhas) |
 | `/api/v1/status` | versão, saúde da coleta, sensores, banco |
 
+Fora da v1 (usados pela janela do programa, podem mudar entre versões), também só leitura e só neste PC:
+
+| Caminho | O que devolve |
+|---|---|
+| `/api/rede/conexoes` | conexões em andamento com taxa, pacotes/s, RTT e retransmissões TCP, jitter UDP, ping e MOS |
+| `/api/rede/programas/log?id=atual` | o `.log` do monitoramento por programa em andamento (ou `id` de um salvo): cabeçalho com o resumo e uma linha por segundo separada por TAB |
+
 ## Exemplos
 
 PowerShell:

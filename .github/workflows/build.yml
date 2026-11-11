@@ -37,6 +37,9 @@ jobs:
       - name: Testes das estatísticas de rede
         run: python build/teste_rede.py
 
+      - name: Testes da rede por programa (RTP, sondas TCP/UDP, .log)
+        run: python build/teste_rede_programa.py
+
       - name: Testes de segurança
         run: python build/teste_seguranca.py
 
@@ -104,7 +107,9 @@ jobs:
             --collect-submodules qrcode --hidden-import zxingcpp src/bandeja.py
           pyinstaller --noconfirm --clean --console --name MonitorPCRemoto --icon instalador/icone.ico `
             --paths src --collect-all aiortc --collect-all av --collect-all aioice --collect-all pylibsrtp `
-            --hidden-import win32clipboard --hidden-import PIL.ImageGrab src/remoto_agente.py
+            --hidden-import win32clipboard --hidden-import PIL.ImageGrab --hidden-import PIL.BmpImagePlugin --hidden-import PIL.PngImagePlugin `
+            --hidden-import win32ts --hidden-import win32security --hidden-import win32profile --hidden-import win32api --hidden-import win32file `
+            --hidden-import win32com.shell src/remoto_agente.py
           Get-ChildItem dist | Format-Table Name
 
       - name: Teste do agente do acesso remoto empacotado

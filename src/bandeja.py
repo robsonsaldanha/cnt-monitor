@@ -678,16 +678,26 @@ class MiniPainel:
         self.root.after(500, self._tick)
 
 
-class FaixaAjuda:
-    """Faixa sempre por cima enquanto um técnico está vendo e controlando este computador, com o botão Encerrar.
-    Não dá para esconder: só some quando a sessão acaba. Também mostra o pedido de acesso (Aceitar/Recusar)
-    na frente de tudo, no mesmo Tk (um Tk por thread)."""
-    COR = "#c62828"
+AJUDA = {"ativa": False, "tecnico": ""}     # acesso remoto: menu do ícone e ponto vermelho
+
+
+def encerrar_tecnico(*_):
+    def tarefa():
+        try:
+            api_post("api/acao", {"tipo": "ajuda_encerrar"}, timeout=20)
+            notificar_windows("A conexão do técnico foi encerrada.", "CNT Monitor — acesso remoto")
+        except Exception as e:  # noqa: BLE001
+            notificar(f"Não consegui encerrar o acesso remoto: {e}")
+    threading.Thread(target=tarefa, daemon=True).start()
+
+
+class PedidoAjuda:
+    """Acesso remoto do lado de quem é atendido: mostra o pedido de acesso (Aceitar/Recusar) na frente de tudo
+    e, com o técnico conectado, avisa sem cobrir a tela: notificação do Windows quando ele entra, ponto
+    vermelho no ícone e "Encerrar conexão do técnico" no menu do ícone."""
 
     def __init__(self):
-        self.ativa = False
         self.root = None
-        self.visivel = False
         self.pedido = None          # estado "aguardando_aceite" enquanto a pessoa não responde
         self.dlg = None
         self.dlg_visivel = False
@@ -702,7 +712,15 @@ class FaixaAjuda:
         while True:
             try:
                 d = api_post("api/acao", {"tipo": "ajuda_estado"}).get("dados") or {}
-                self.ativa = d.get("estado") == "ativa"
+                ativa = d.get("estado") == "ativa"
+                if ativa != AJUDA["ativa"]:
+                    AJUDA["ativa"], AJUDA["tecnico"] = ativa, d.get("tecnico") or ""
+                    if ativa:
+                        quem = f" (ID {AJUDA['tecnico']})" if AJUDA["tecnico"] else ""
+                        notificar_windows(f"Um técnico{quem} está vendo e controlando este computador. Para encerrar, "
+                                          "use “Encerrar conexão do técnico” no menu deste ícone.",
+                                          "CNT Monitor — acesso remoto ativo")
+                    atualizar_icone_agora()
                 pede = d.get("estado") == "aguardando_aceite" and time.time() - self._respondeu > 5
                 self.pedido = d if pede else None
                 if self.pedido and antes != "aguardando_aceite":
@@ -712,18 +730,14 @@ class FaixaAjuda:
                 pass        # serviço fora do ar por um instante: mantém o que estava
             time.sleep(1)
 
-    def _encerrar(self):
-        try:
-            api_post("api/acao", {"tipo": "ajuda_encerrar"}, timeout=20)
-            self.ativa = False
-            self.pedido = None
-        except Exception as e:  # noqa: BLE001
-            notificar(f"Não consegui encerrar o acesso remoto: {e}")
-
     def _responder(self, aceitar):
         self.pedido = None
         if not aceitar:
-            return self._encerrar()
+            try:
+                api_post("api/acao", {"tipo": "ajuda_encerrar"}, timeout=20)
+            except Exception as e:  # noqa: BLE001
+                notificar(f"Não consegui recusar o acesso remoto: {e}")
+            return
         try:
             r = api_post("api/acao", {"tipo": "ajuda_aceitar"}, timeout=20)
             if not r.get("ok"):
@@ -794,34 +808,12 @@ class FaixaAjuda:
         root = tk.Tk()
         self.root = root
         root.withdraw()
-        root.overrideredirect(True)
-        root.attributes("-topmost", True)
-        root.configure(bg=self.COR)
-        tk.Label(root, text="Acesso remoto ativo: um técnico está vendo e controlando este computador", fg="#ffffff",
-                 bg=self.COR, font=("Segoe UI Semibold", 10), padx=14, pady=7).pack(side="left")
-        b = tk.Label(root, text="Encerrar", fg=self.COR, bg="#ffffff", font=("Segoe UI", 9, "bold"), padx=12, pady=3,
-                     cursor="hand2")
-        b.pack(side="left", padx=(0, 10))
-        b.bind("<Button-1>", lambda _e: threading.Thread(target=self._encerrar, daemon=True).start())
         self._montar_pedido(tk)
         root.after(500, self._tick)
         root.mainloop()
 
     def _tick(self):
         try:
-            if self.ativa:
-                r = self.root
-                r.update_idletasks()
-                l, t, rt, _b = monitores()[0]
-                r.geometry(f"+{l + (rt - l - r.winfo_reqwidth()) // 2}+{t}")
-                if not self.visivel:
-                    r.deiconify()
-                    self.visivel = True
-                r.attributes("-topmost", True)
-                r.lift()
-            elif self.visivel:
-                self.root.withdraw()
-                self.visivel = False
             if self.pedido and not self.dlg_visivel:
                 self._mostrar_pedido()
             elif self.pedido:
@@ -830,12 +822,12 @@ class FaixaAjuda:
                 self.dlg.withdraw()                      # respondido na janela do Monitor, venceu ou o técnico desistiu
                 self.dlg_visivel = False
         except Exception as e:  # noqa: BLE001
-            print("faixa do acesso remoto:", e)
+            print("pedido do acesso remoto:", e)
         self.root.after(500, self._tick)
 
 
 # ------------------------------------------------------------------ ícone
-def desenhar(mem, cpu, ok=True, jogo=False):
+def desenhar(mem, cpu, ok=True, jogo=False, remoto=False):
     from PIL import Image, ImageDraw
     img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
@@ -858,7 +850,23 @@ def desenhar(mem, cpu, ok=True, jogo=False):
         d.rounded_rectangle([x0, 54 - h, x1, 54], radius=4, fill=c)
     if jogo:
         d.ellipse([44, 2, 62, 20], fill=(90, 169, 230, 255))
+    if remoto:          # técnico conectado: ponto vermelho com borda branca, visível em qualquer barra de tarefas
+        d.ellipse([0, 38, 26, 64], fill=(255, 255, 255, 255))
+        d.ellipse([3, 41, 23, 61], fill=(220, 38, 38, 255))
     return img
+
+
+_ICONE_JA = threading.Event()
+
+
+def atualizar_icone_agora():
+    """Redesenha o ícone e refaz o menu já (sem esperar a próxima volta de 3 s)."""
+    _ICONE_JA.set()
+    if ICONE is not None:
+        try:
+            ICONE.update_menu()
+        except Exception:  # noqa: BLE001
+            pass
 
 
 ESTADO = {"jogo": False, "planos": [], "fps": None, "recentes": [], "fluxos": []}
@@ -874,16 +882,19 @@ def atualizar_icone():
         try:
             if ICONE is not None:
                 if e:
-                    chave = (int(e["mem_pct"] // 4), int(e["cpu"] // 10), ESTADO["jogo"])
+                    chave = (int(e["mem_pct"] // 4), int(e["cpu"] // 10), ESTADO["jogo"], AJUDA["ativa"])
                     if chave != ultimo:
-                        ICONE.icon = desenhar(e["mem_pct"], e["cpu"], jogo=ESTADO["jogo"])
+                        ICONE.icon = desenhar(e["mem_pct"], e["cpu"], jogo=ESTADO["jogo"], remoto=AJUDA["ativa"])
                         ultimo = chave
                     partes = [f"Memória {e['mem_pct']:.0f}%", f"CPU {e['cpu']:.0f}%"]
                     if e.get("temp_cpu"):
                         partes.append(f"{e['temp_cpu']:.0f}°C")
                     if ESTADO["jogo"] and ESTADO["fps"]:
                         partes.append(f"{ESTADO['fps']:.0f} FPS")
-                    ICONE.title = ("CNT Monitor — " + ", ".join(partes))[:120]
+                    titulo = "CNT Monitor — " + ", ".join(partes)
+                    if AJUDA["ativa"]:
+                        titulo = "CNT Monitor — técnico conectado (acesso remoto ativo)"
+                    ICONE.title = titulo[:120]
                 else:
                     if ultimo != "erro":
                         ICONE.icon = desenhar(0, 0, ok=False)
@@ -891,7 +902,8 @@ def atualizar_icone():
                     ICONE.title = "CNT Monitor — serviço não está respondendo"
         except Exception:
             pass
-        time.sleep(3)
+        _ICONE_JA.wait(3)
+        _ICONE_JA.clear()
 
 
 def atualizar_extras(forcar=False):
@@ -1000,7 +1012,7 @@ def main():
     for alvo in (loop_fila, loop_janelas, atualizar_icone, loop_extras):
         threading.Thread(target=alvo, daemon=True).start()
     MiniPainel().iniciar()
-    FaixaAjuda().iniciar()
+    PedidoAjuda().iniciar()
     import pystray
 
     def alternar_jogo(*_):
@@ -1183,6 +1195,7 @@ def main():
         pystray.MenuItem("Mini painel", alternar_mini, checked=lambda *_: bool(_cfg["v"].get("mini_ativo"))),
         pystray.MenuItem("Otimizar", lambda *_: abrir_janela("otimizar")),
         pystray.MenuItem("Relatório", lambda *_: abrir_janela("relatorio")),
+        pystray.MenuItem("Encerrar conexão do técnico", encerrar_tecnico, visible=lambda *_: AJUDA["ativa"]),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Depuração", pystray.Menu(
             pystray.MenuItem("Abrir o registro do ícone (bandeja.log)",

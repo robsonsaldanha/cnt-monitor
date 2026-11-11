@@ -9,12 +9,19 @@
 //   PC atendido:  POST /api/registrar {id, chave}  ->  GET /api/esperar?id&chave (espera longa)  ->  POST /api/enviar
 //   técnico:      POST /api/conectar {id}  ->  GET /api/receber?pedido (espera longa)  ->  POST /api/responder
 //
-// Variáveis: PORTA (padrão 4070), TURN_SEGREDO (o mesmo static-auth-secret do coturn), TURN_HOST.
+// Variáveis: PORTA (padrão 4070), TURN_SEGREDO (o mesmo static-auth-secret do coturn), TURN_HOST,
+// ECO_PORTA (padrão 48790/udp; "0" desliga).
+//
+// Eco UDP: o CNT Monitor mede a saída UDP da internet de quem testa quando o destino de um teste não devolve
+// nada. Devolve o mesmo datagrama (nunca maior: não serve para amplificar ataque), só os que começam com "CNTE"
+// e têm até 64 bytes, e no máximo 20 por segundo por endereço.
 const http = require('http');
+const dgram = require('dgram');
 const https = require('https');
 const crypto = require('crypto');
 
 const PORTA = parseInt(process.env.PORTA || '4070', 10);
+const ECO_PORTA = parseInt(process.env.ECO_PORTA || '48790', 10);
 const TURN_SEGREDO = process.env.TURN_SEGREDO || '';
 const TURN_HOST = process.env.TURN_HOST || 'turn.cntoficial.com.br';
 const TURN_VALIDADE = 12 * 3600;
@@ -179,9 +186,26 @@ async function tratar(req, res) {
   return erro(res, 404, 'não encontrado');
 }
 
+// ---------------------------------------------------------------- eco UDP
+const ecoContas = new Map();     // ip -> [segundo, n]
+function eco(msg, ip, agora = Date.now()) {
+  if (msg.length < 12 || msg.length > 64 || msg.toString('latin1', 0, 4) !== 'CNTE') return null;
+  const s = Math.floor(agora / 1000), c = ecoContas.get(ip);
+  if (!c || c[0] !== s) { if (ecoContas.size > 50000) ecoContas.clear(); ecoContas.set(ip, [s, 1]); }
+  else if (++c[1] > 20) return null;
+  return msg;
+}
+
 if (require.main === module) {
   atualizarInstalador();
   http.createServer((req, res) => tratar(req, res).catch(e => { console.error(e); erro(res, 500, 'Erro interno.'); }))
-    .listen(PORTA, '127.0.0.1', () => console.log(`encontro ouvindo em 127.0.0.1:${PORTA}${TURN_SEGREDO ? ' (com TURN)' : ' (sem TURN)'}`));
+    .listen(PORTA, '127.0.0.1', () => {
+      console.log(`encontro ouvindo em 127.0.0.1:${PORTA}${TURN_SEGREDO ? ' (com TURN)' : ' (sem TURN)'}`);
+      if (!ECO_PORTA) return;
+      const u = dgram.createSocket('udp4');
+      u.on('message', (m, r) => { const x = eco(m, r.address); if (x) u.send(x, r.port, r.address); });
+      u.on('error', e => console.error('eco UDP:', e.message));
+      u.bind(ECO_PORTA, () => console.log(`eco UDP em 0.0.0.0:${ECO_PORTA}`));
+    });
 }
-module.exports = { tratar, pcs, pedidos };
+module.exports = { tratar, pcs, pedidos, eco };

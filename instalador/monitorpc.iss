@@ -85,6 +85,10 @@ Filename: "{sys}\sc.exe"; Parameters: "failure MonitorPC reset= 86400 actions= r
 ; Só UDP, só para o agente (que existe apenas durante um pedido de ajuda) e só vindo da rede local.
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""Monitor do PC (acesso remoto)"""; Flags: runhidden waituntilterminated
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""Monitor do PC (acesso remoto)"" dir=in action=allow program=""{app}\remoto\MonitorPCRemoto.exe"" protocol=UDP remoteip=localsubnet profile=any"; Flags: runhidden waituntilterminated
+; Monitoramento de rede por programa: o serviço lê o cabeçalho RTP das chamadas por socket bruto, e o firewall do
+; Windows só entrega a ele os pacotes UDP que chegam se houver uma regra. O serviço não abre porta UDP nenhuma.
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""CNT Monitor (análise de chamadas)"""; Flags: runhidden waituntilterminated
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""CNT Monitor (análise de chamadas)"" dir=in action=allow program=""{app}\servico\MonitorPCServico.exe"" protocol=UDP profile=any"; Flags: runhidden waituntilterminated
 Filename: "{sys}\sc.exe"; Parameters: "start MonitorPC"; StatusMsg: "Iniciando o monitoramento..."; Flags: runhidden waituntilterminated
 Filename: "{app}\MonitorPC.exe"; Description: "Abrir o CNT Monitor agora"; Flags: postinstall nowait skipifsilent runasoriginaluser
 
@@ -95,6 +99,7 @@ Filename: "{sys}\timeout.exe"; Parameters: "/t 3 /nobreak"; Flags: runhidden wai
 Filename: "{sys}\reg.exe"; Parameters: "delete HKLM\Software\Microsoft\Windows\CurrentVersion\Run /v MonitorDoPC /f"; Flags: runhidden waituntilterminated; RunOnceId: "removeinicio"
 Filename: "{sys}\sc.exe"; Parameters: "delete MonitorPC"; Flags: runhidden waituntilterminated; RunOnceId: "removeservico"
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""Monitor do PC (acesso remoto)"""; Flags: runhidden waituntilterminated; RunOnceId: "removefirewall"
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""CNT Monitor (análise de chamadas)"""; Flags: runhidden waituntilterminated; RunOnceId: "removefirewallrtp"
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{commonappdata}\MonitorPC"
@@ -111,4 +116,20 @@ begin
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM MonitorPCServico.exe', '', SW_HIDE, ewWaitUntilTerminated, R);
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM MonitorPCRemoto.exe', '', SW_HIDE, ewWaitUntilTerminated, R);
   Result := '';
+end;
+
+{ Acesso remoto: o técnico manda Ctrl+Alt+Del pelo menu Atalhos. O Windows só aceita essa combinação vinda de
+  SendSAS, e só se a política SoftwareSASGeneration deixar serviços chamarem (1 = serviços, 3 = serviços e
+  acessibilidade). Valor 2 (só acessibilidade) vira 3 para não tirar o que já estava ligado. }
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  V: Cardinal;
+begin
+  if CurStep <> ssPostInstall then Exit;
+  if not RegQueryDWordValue(HKLM64, 'SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System', 'SoftwareSASGeneration', V) then
+    V := 0;
+  if (V = 0) then
+    RegWriteDWordValue(HKLM64, 'SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System', 'SoftwareSASGeneration', 1)
+  else if (V = 2) then
+    RegWriteDWordValue(HKLM64, 'SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System', 'SoftwareSASGeneration', 3);
 end;

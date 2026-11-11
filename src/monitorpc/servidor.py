@@ -356,6 +356,17 @@ def fabrica(motor, TOKEN, remoto=False):
             if r == "/api/rede/analise/abrir":
                 d = m.sondas.abrir(q.get("id", ""))
                 return self._json(d) if d else self._json({"erro": "análise não encontrada"}, 404)
+            if r == "/api/rede/conexoes":
+                return self._json(m.conexoes_qualidade())
+            if r == "/api/rede/programas/abrir":
+                d = m.rprog.abrir(q.get("id", ""))
+                return self._json(d) if d else self._json({"erro": "monitoramento não encontrado"}, 404)
+            if r == "/api/rede/programas/log":
+                d = m.rprog.exportar(q.get("id", ""))
+                if not d:
+                    return self._json({"erro": "monitoramento não encontrado"}, 404)
+                return self._env(200, d[1].encode("utf-8"), "text/plain; charset=utf-8",
+                                 {"Content-Disposition": f'attachment; filename="{d[0]}"'})
             if r == "/api/hardware":
                 return self._json(m.hardware())
             if r == "/api/ventoinhas":

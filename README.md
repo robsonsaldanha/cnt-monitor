@@ -21,7 +21,7 @@ Depois de instalado, ele se atualiza sozinho (Configurações → Atualizações
 | Processos | Todos os processos com caminho, usuário, threads, handles, rede, GPU, conexões e IPs. |
 | Rede e IPs | Quanto cada programa envia e recebe, com quais IPs conversa (nome, país e operadora), TCP × UDP, pacotes/s, protocolo pela porta (HTTPS, QUIC, DNS, Steam…) e as conexões abertas. |
 | Detalhes de um IP | Ping 1/s enquanto você olha (latência mín./média/mediana/máx., P95, P99, desvio, jitter, perda e perda em rajada), MOS e pontuações, gráfico de tráfego, programas, RTT e retransmissões de cada conexão TCP, traceroute e Path MTU. Os IPs de um programa ou processo também mostram latência, jitter e perda. |
-| Análise de rede | Grava uma análise contínua (até 24 h) para o roteador, a internet e os IPs escolhidos: quedas, disponibilidade, MTTR/MTBF, bufferbloat, pontuações de saúde e contadores do Windows (retransmissões TCP, erros UDP, descartes, fragmentação, erros por placa). Mais: teste de velocidade com bufferbloat (só no clique), teste de DNS, tempos de HTTP/TLS e Wi-Fi (sinal, RSSI, canal, redes no mesmo canal). |
+| Análise de rede | **Conexões em andamento** com a qualidade de cada uma (taxa, pacotes/s, RTT e retransmissões do TCP, jitter de chegada e maior silêncio do UDP, ping e nota MOS). **Teste real até um destino** por ICMP, TCP (tempo de conexão na porta) ou UDP, com gráfico de latência e faixa de jitter; no UDP, silêncio não conta como perda e o eco do servidor da CNT aparece como referência separada. **Monitoramento detalhado por programa** (até 4, para comparar): taxa segundo a segundo, pacotes, TCP × UDP, latência e jitter até os servidores do programa, chamadas (RTP: jitter RFC 3550, perda, ordem e codec), MOS e o que mais competia pela rede; ao parar, exporta um `.log` (uma linha por segundo, separada por TAB). Em Ferramentas: grava uma análise contínua (até 24 h) para o roteador, a internet e os IPs escolhidos: quedas, disponibilidade, MTTR/MTBF, bufferbloat, pontuações de saúde e contadores do Windows (retransmissões TCP, erros UDP, descartes, fragmentação, erros por placa). Mais: teste de velocidade com bufferbloat (só no clique), teste de DNS, tempos de HTTP/TLS e Wi-Fi (sinal, RSSI, canal, redes no mesmo canal). |
 | Temperatura e hardware | CPU, GPU, SSD, placa-mãe, ventoinhas, clocks e consumo (LibreHardwareMonitor + PawnIO). |
 | Histórico | 7 dias de histórico (configurável) do PC, de cada programa e das temperaturas. |
 | Lentidão | Momentos em que o PC ficou lento, com os programas culpados. |
@@ -76,7 +76,19 @@ Depois de instalado, ele se atualiza sozinho (Configurações → Atualizações
   **senha temporária**, com botões para copiar como texto ou imagem e para trocar ID e senha (o ID novo vale na hora).
 - O técnico digita os dois e quem está no computador recebe um **pop-up na frente das outras janelas** para
   **Aceitar** ou **Recusar**, com um código de conferência.
-- Vários atendimentos ao mesmo tempo, cada um numa janela. Faixa vermelha com “Encerrar” durante a sessão.
+- Vários atendimentos ao mesmo tempo, cada um numa janela que abre ocupando a tela. A tela remota fica embaixo de uma
+  **barra própria** (nada por cima dela): ID e tempo, monitores, layout, Ajustar/Tamanho real, Tela cheia, Atalhos,
+  Área de transferência, Arquivos e Encerrar.
+- **Vários monitores:** lado a lado (como estão de verdade), um ou outro (botões 1 · 2) ou **janelas separadas**, uma
+  por monitor, para arrastar cada uma para um monitor do técnico. O padrão fica em Configurações → Acesso remoto.
+- **Atalhos** para o Windows do outro lado (Ctrl+Alt+Del, Ctrl+Shift+Esc, Win, Win+R, Win+E, Win+D, Win+L,
+  Win+Shift+S, Alt+Tab, Alt+F4, Print Screen). Em tela cheia o teclado inteiro vai direto.
+- **Área de transferência compartilhada** (texto, imagem e arquivos) nos dois sentidos, num só, ou desligada. Quem é
+  atendido pode proibir o técnico de ler a área de transferência dele (Configurações).
+- **Arquivos** pela própria conexão criptografada: enviar (escolher, arrastar ou Ctrl+V), buscar e baixar do outro PC
+  com as permissões de quem está nele, SHA-256 conferido. Quem é atendido vê o histórico (90 dias) na tela Acesso remoto.
+- Com o técnico conectado, quem é atendido recebe uma notificação do Windows, o ícone ganha um ponto vermelho e o
+  menu do ícone mostra **“Encerrar conexão do técnico”**.
 - A tela e os comandos vão direto de um PC ao outro, **criptografados de ponta a ponta**; o servidor da CNT só
   apresenta os dois lados e, quando a ligação direta é impossível, um retransmissor repassa os pacotes sem conseguir lê-los.
 - A senha troca depois de cada acesso e o ID quando o PC reinicia. Sem o servidor, vale o convite manual.
@@ -117,8 +129,9 @@ histórico, processos, serviços e alertas (ex.: disco cheio). A identidade do s
   as instalações antigas seguirem atualizando.
 - `servidor-vps/`: o que roda em https://monitor.cntoficial.com.br (`/var/www/html_cntmonitor`, clone deste
   repositório): site com o download, ponto de encontro do acesso por ID (`encontro.js`, Node sem dependências,
-  serviço `cnt-monitor-encontro`) e a configuração do coturn (retransmissor). Atualizar: `git pull` na VPS e
-  `sudo systemctl restart cnt-monitor-encontro`.
+  serviço `cnt-monitor-encontro`, que também responde o eco UDP na porta 48790 usado como referência nos testes UDP)
+  e a configuração do coturn (retransmissor). Atualizar: `git pull` na VPS e
+  `sudo systemctl restart cnt-monitor-encontro`; a porta 48790/udp precisa estar liberada no firewall da VPS.
 
 ## Gerar o instalador e testar
 
@@ -134,6 +147,8 @@ Testes automáticos (rodam sem tocar na tela):
 - `python build/teste_ventoinhas.py`: curvas, histerese, convivência com outros programas, proteção e liberação.
 - `python build/teste_encontro.py`: ponto de encontro do acesso por ID, troca de ID e conexão.
 - `python build/teste_remoto.py` e `python build/teste_seguranca.py`: acesso remoto e regras de segurança.
+- `python build/teste_rede.py` e `python build/teste_rede_programa.py`: estatísticas de rede, RTP, sondas TCP/UDP,
+  monitoramento por programa e o `.log`.
 
 ## Contribuir
 

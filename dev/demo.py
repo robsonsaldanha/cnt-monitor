@@ -116,10 +116,18 @@ class RedeFake(rede.MonitorRede):
 
     def coletar(self):
         pids = [p.pid for p in psutil.process_iter()][:6]
-        out = []
+        out, self.detalhe, self.fluxos = [], [], []
         for i, pid in enumerate(pids):
-            for ip, _ in random.sample(IPS, 3):
-                out.append((pid, ip, int(random.random() * 4e4), int(random.random() * 3e5)))
+            for k, (ip, _) in enumerate(random.sample(IPS, 3)):
+                env, rec = int(random.random() * 4e4), int(random.random() * 3e5)
+                out.append((pid, ip, env, rec))
+                udp = k == 0 and i % 2 == 0            # um fluxo UDP (chamada/jogo) em metade dos programas
+                porta = 3478 if udp else 443
+                pe, pr = env // 1200 + 1, rec // 1200 + 1
+                self.detalhe.append((ip, porta, 50000 + i, udp, env, rec, pe, pr))
+                self.fluxos.append((pid, ip, porta, 50000 + i, udp, env, rec, pe, pr,
+                                    (2 + random.random() * 6) * 4 if udp else 0.0, 4 if udp else 0,
+                                    20 + random.random() * 40 if udp else 0.0))
         self.eventos += len(out)
         return out
 

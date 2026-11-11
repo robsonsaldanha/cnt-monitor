@@ -243,8 +243,7 @@ input[type=range]{width:220px;max-width:100%;accent-color:var(--acento)}
 .atu-ok{color:var(--ok)}
 @media (prefers-reduced-motion:reduce){.atu-vai i{animation:none}}
 .aj-vivo{background:color-mix(in srgb,var(--perigo) 12%,var(--painel));border:1px solid var(--perigo);border-radius:var(--raio);padding:14px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:space-between}
-.aj-tela{background:#000;border-radius:var(--raio);outline:none;overflow:hidden} .aj-tela:focus{box-shadow:0 0 0 2px var(--acento)}
-.aj-tela video{width:100%;max-height:calc(100vh - 230px);object-fit:contain;display:block}
+.aj-arq{margin-top:16px} .aj-arq td small{color:var(--txt3)}
 .aj-home{grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start}
 .aj-meu,.aj-outro{padding:18px;display:flex;flex-direction:column;gap:10px}
 .aj-meu>b,.aj-outro>b{font:700 18px/1.2 var(--tit)}
@@ -258,7 +257,38 @@ input[type=range]{width:220px;max-width:100%;accent-color:var(--acento)}
 .aj-outro .btn.pri{align-self:flex-start}
 .so-sessao .app{display:block}.so-sessao .lateral,.so-sessao #v-ajuda>h1,.so-sessao #v-ajuda>.sub{display:none}
 .so-sessao main,.so-sessao .conteudo{padding:8px}
-.so-sessao .aj-tela video{max-height:calc(100vh - 70px)} .aj-tela:fullscreen video{height:100vh;max-height:100vh}
+/* sessão do técnico: moldura com barra em cima e a tela remota embaixo, sem nada por cima dela */
+.rs-ativo{overflow:hidden} .rs-ativo #rs,.rs-filha{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;background:#0b0f14;color:#e6edf3}
+.so-tela{margin:0;overflow:hidden} .so-tela>*:not(.rs){display:none!important}
+.rs-barra{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 10px;background:#141b23;border-bottom:1px solid #26313d;font-size:13px;min-height:44px}
+.rs-id{display:flex;align-items:center;gap:8px;padding:4px 10px;background:#1d2732;border-radius:8px;margin-right:4px}
+.rs-id b{font:700 14px Consolas,"Cascadia Mono",monospace;letter-spacing:.5px} .rs-id span:last-child{color:#9fb0c0;font-variant-numeric:tabular-nums}
+.rs-ponto{width:8px;height:8px;border-radius:50%;background:#2ecc71;box-shadow:0 0 0 3px rgba(46,204,113,.2)}
+.rs-bt{background:#1d2732;color:#e6edf3;border:1px solid #2b3846;border-radius:7px;padding:5px 10px;font:inherit;cursor:pointer;white-space:nowrap}
+.rs-bt:hover{background:#26323f} .rs-bt:focus-visible{outline:2px solid #5aa9e6;outline-offset:1px} .rs-bt.on{background:#1f6fb2;border-color:#1f6fb2}
+.rs-bt.perigo{background:#5a1f1f;border-color:#7a2a2a} .rs-bt.perigo:hover{background:#7a2a2a}
+.rs-cont{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:#e8a33d;color:#141a21;font-size:11px;font-weight:700;text-align:center}
+.rs-grupo{display:flex;gap:2px} .rs-grupo .rs-bt{min-width:32px;font-weight:700}
+.rs-sep{width:1px;height:22px;background:#2b3846;margin:0 4px} .rs-nota{color:#9fb0c0;font-size:12px}
+.rs-corpo{flex:1;display:flex;min-height:0}
+.rs-palco{flex:1;overflow:auto;display:flex;outline:none;background:#000;min-width:0}
+.rs-palco:focus-visible{box-shadow:inset 0 0 0 2px #1f6fb2} .rs-palco.rs-solta{box-shadow:inset 0 0 0 3px #4cc38a}
+.rs-mapa{position:relative;margin:auto;flex:none} .rs-mapa video{position:absolute;display:block;background:#000;object-fit:fill}
+.rs-menu{position:fixed;z-index:70;min-width:260px;max-width:340px;background:#1a222c;border:1px solid #2b3846;border-radius:10px;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.45);color:#e6edf3}
+.rs-menu button{display:block;width:100%;text-align:left;background:none;border:0;color:inherit;padding:7px 10px;border-radius:6px;font:inherit;cursor:pointer}
+.rs-menu button:hover{background:#26323f} .rs-menu button.on{background:#1f6fb2} .rs-menu small,.rs-menu .mut{color:#9fb0c0}
+.rs-menu p{margin:6px 10px;font-size:12px} .rs-menu hr{border:0;border-top:1px solid #2b3846;margin:6px 0}
+.rs-arq{width:360px;flex:none;background:#121920;border-left:1px solid #26313d;overflow:auto;padding:10px 12px;font-size:13px}
+.rs-arq h4{margin:14px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#9fb0c0} .rs-arq .mut{color:#9fb0c0} .rs-arq p{margin:6px 0}
+.rs-arq-cab{display:flex;align-items:center;justify-content:space-between} .rs-erro{color:#ef5f5f}
+.rs-item{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:6px} .rs-item:hover{background:#1b2530}
+.rs-nome{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:6px} .rs-pasta{cursor:pointer} .rs-pasta .rs-nome{font-weight:600}
+.rs-ic{width:16px;height:16px;flex:none;fill:#e8a33d}
+.rs-cam{display:flex;gap:6px;align-items:center;flex-wrap:wrap} .rs-cam code{font-size:11px;word-break:break-all;color:#c9d4de}
+.rs-lista{max-height:40vh;overflow:auto;margin-top:6px}
+.rs-tr{padding:4px 0 8px;border-bottom:1px solid #1f2933} .rs-barrinha{height:4px;background:#26313d;border-radius:2px;margin:2px 6px 4px}
+.rs-barrinha i{display:block;height:100%;background:#1f6fb2;border-radius:2px} .rs-tr.ok .rs-barrinha i{background:#2e9d62} .rs-tr.erro .rs-barrinha i{background:#c93b3b}
+.rs-tr>small{display:block;padding:0 6px;word-break:break-all}
 .so-impressao{display:none}
 .hw{padding:12px 14px}
 .hw .t{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
@@ -814,7 +844,7 @@ class Grafico{
     dica.style.left=Math.min(e.clientX+14,innerWidth-dica.offsetWidth-8)+'px'; dica.style.top=Math.min(e.clientY+14,innerHeight-dica.offsetHeight-8)+'px'; }
   desenhar(){ if(!this.cv.clientWidth) return; const {c,w,h}=prep(this.cv); c.clearRect(0,0,w,h); if(!this.d) return;
     const a=this.A(),W=w-a.l-a.r,H=h-a.t-a.b,d=this.d;
-    const todos=d.series.flatMap(s=>s.pts.map(p=>p[1]).filter(v=>v!=null));
+    const todos=d.series.flatMap(s=>[...s.pts.map(p=>p[1]),...(s.faixa||[]).map(p=>p[2])].filter(v=>v!=null));
     const ymax=this.o.ymax||niceMax(Math.max(this.o.ymin||1,...todos)); const X=t=>a.l+(t-d.t0)/(d.t1-d.t0)*W, Y=v=>a.t+H-(v/ymax)*H;
     c.font='11px "Segoe UI",system-ui'; c.fillStyle=css('--txt3'); c.strokeStyle=css('--grade'); c.lineWidth=1;
     for(let i=0;i<=4;i++){ const v=ymax*i/4,y=Math.round(Y(v))+.5; c.beginPath(); c.moveTo(a.l,y); c.lineTo(w-a.r,y); c.stroke(); c.textAlign='right'; c.textBaseline='middle'; c.fillText(this.o.eixo(v),a.l-8,y); }
@@ -822,8 +852,12 @@ class Grafico{
     for(let i=0;i<=n;i++){ const t=d.t0+span*i/n, dt=new Date(t*1000); const r=span>36*3600?dt.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit'}).replace('.','')+' '+hh(dt):span<=1800?hhs(dt):hh(dt); c.fillText(r,Math.min(Math.max(X(t),a.l+24),w-a.r-24),h-a.b+5); }
     if(this.o.limiar){ const y=Y(this.o.limiar); c.save(); c.setLineDash([4,4]); c.strokeStyle=css('--perigo'); c.globalAlpha=.55; c.beginPath(); c.moveTo(a.l,y); c.lineTo(w-a.r,y); c.stroke(); c.restore(); }
     const gap=Math.max(d.passo*4,this.o.gap||240);
-    for(const s of d.series){ c.beginPath(); let ant=null; for(const p of s.pts){ if(p[1]==null){ant=null;continue;} const x=X(p[0]),y=Y(Math.min(p[1],ymax)); if(ant!=null&&p[0]-ant<=gap) c.lineTo(x,y); else c.moveTo(x,y); ant=p[0]; } c.strokeStyle=s.cor; c.lineWidth=s.grossa?2.2:1.6; c.lineJoin='round'; c.stroke();
+    // faixa [[t, baixo, alto]] (ex.: latência ± jitter), desenhada embaixo da linha, em trechos sem buraco
+    for(const s of d.series) if(s.faixa){ let tr=[]; const fechar=()=>{ if(tr.length>1){ c.beginPath(); tr.forEach((p,i)=>{ const x=X(p[0]),y=Y(Math.min(p[2],ymax)); i?c.lineTo(x,y):c.moveTo(x,y); }); for(let i=tr.length-1;i>=0;i--) c.lineTo(X(tr[i][0]),Y(Math.max(0,tr[i][1]))); c.closePath(); c.globalAlpha=.16; c.fillStyle=s.cor; c.fill(); c.globalAlpha=1; } tr=[]; };
+      for(const p of s.faixa){ if(p[1]==null||p[2]==null||(tr.length&&p[0]-tr[tr.length-1][0]>gap)) fechar(); if(p[1]!=null&&p[2]!=null) tr.push(p); } fechar(); }
+    for(const s of d.series){ c.beginPath(); let ant=null; for(const p of s.pts){ if(p[1]==null){ant=null;continue;} const x=X(p[0]),y=Y(Math.min(p[1],ymax)); if(ant!=null&&p[0]-ant<=gap) c.lineTo(x,y); else c.moveTo(x,y); ant=p[0]; } c.strokeStyle=s.cor; c.lineWidth=s.grossa?2.2:1.6; c.lineJoin='round'; if(s.traco) c.setLineDash([5,4]); c.stroke(); c.setLineDash([]);
       if(s.area){ c.lineTo(X(s.pts[s.pts.length-1]?.[0]||d.t1),a.t+H); c.lineTo(X(s.pts[0]?.[0]||d.t0),a.t+H); c.closePath(); c.globalAlpha=.1; c.fillStyle=s.cor; c.fill(); c.globalAlpha=1; } }
+    for(const m of d.perdas||[]){ const x=X(m.t); c.fillStyle=m.cor||css('--perigo'); c.fillRect(Math.round(x)-1,a.t,3,7); }   // sem resposta naquele instante
     if(this.marca!=null){ const x=Math.round(X(this.marca))+.5; c.strokeStyle=css('--acento'); c.lineWidth=2; c.beginPath(); c.moveTo(x,a.t); c.lineTo(x,a.t+H); c.stroke(); }
     if(this.hover!=null){ const x=Math.round(X(this.hover))+.5; c.strokeStyle=css('--txt3'); c.lineWidth=1; c.beginPath(); c.moveTo(x,a.t); c.lineTo(x,a.t+H); c.stroke(); }
     if(!todos.length){ c.fillStyle=css('--txt3'); c.textAlign='center'; c.textBaseline='middle'; c.font='13px "Segoe UI",system-ui'; c.fillText('Ainda sem dados neste período.',a.l+W/2,a.t+H/2); } }
@@ -848,8 +882,9 @@ addEventListener('hashchange',()=>ir(location.hash));
 
 /* =================== acesso remoto =================== */
 let AJU={modo:null, est:null, visto:'', timer:null, pc:null, canal:null, fluxo:null, oferta:'', sdp:'', senha:'', resp:null, fase:'form', msg:'',
-  meu:null, manual:false, srv:'', pedido:null, alvo:''};
-const SESSAO=location.hash==='#sessao';   // janela aberta pelo botão Conectar: uma sessão de técnico, sem o resto do programa
+  meu:null, manual:false, srv:'', pedido:null, alvo:'', trilhas:{}, tecId:''};
+const SESSAO=location.hash==='#sessao';
+const TELA=location.hash==='#tela';         // janela de um monitor no layout "janelas separadas": quem preenche é a janela da sessão   // janela aberta pelo botão Conectar: uma sessão de técnico, sem o resto do programa
 const AJ_STUN=['stun:stun.l.google.com:19302','stun:stun.cloudflare.com:3478'];
 const ajAcao=(tipo,d)=>POST('acao',{tipo,...(d||{})}).catch(()=>({ok:false,msg:'O serviço não respondeu.'}));
 function ajCopiar(t){ navigator.clipboard.writeText(t).then(()=>toast('Copiado.'),()=>toast('Não consegui copiar. Selecione o texto e use Ctrl+C.',1)); }
@@ -880,8 +915,9 @@ function ajRender(){ const el=$('#ajCorpo'); ajTag(); if(AJU.modo==='pedir') ret
       <label class="aj-campo">ID<input id="ajIdT" inputmode="numeric" placeholder="000 000 000" autocomplete="off" maxlength="13"></label>
       <label class="aj-campo">Senha<input id="ajSenhaId" placeholder="XXXX-XXXX" autocomplete="off" spellcheck="false" maxlength="12"></label>
       <button class="btn pri" id="ajConectarId">Conectar</button></div></div>
-    <p class="mut" style="margin-top:12px">Os dois computadores se acham pelo servidor da CNT, que só apresenta um ao outro: a tela e os comandos vão direto de um ao outro, criptografados, e a senha nunca passa por ele. <button class="btn" id="ajManual">Usar convite manual</button></p>`;
-  ajMeuAtualizar();
+    <p class="mut" style="margin-top:12px">Os dois computadores se acham pelo servidor da CNT, que só apresenta um ao outro: a tela e os comandos vão direto de um ao outro, criptografados, e a senha nunca passa por ele. <button class="btn" id="ajManual">Usar convite manual</button></p>
+    <div class="aj-arq" id="ajArq"></div>`;
+  ajMeuAtualizar(); ajArquivos();
   $('#ajCopTxt').onclick=()=>{ if(AJU.meu) ajCopiar(AJU.meu.texto); };
   $('#ajCopImg').onclick=ajCopiarImagem;
   $('#ajTrocaId').onclick=async()=>{ if(!await confirmar('Trocar o ID?','Quem tem o ID antigo não consegue mais conectar a este computador.','Trocar')) return; const r=await ajAcao('ajuda_trocar_id'); if(r.ok&&r.dados){ AJU.meu=r.dados.meu; ajMeuAtualizar(); toast('ID trocado.'); } else toast(r.msg,1); };
@@ -891,6 +927,9 @@ function ajRender(){ const el=$('#ajCorpo'); ajTag(); if(AJU.modo==='pedir') ret
   id.oninput=()=>{ const d=id.value.replace(/\D/g,'').slice(0,9); id.value=d.replace(/(\d{3})(?=\d)/g,'$1 '); };
   sn.oninput=()=>{ const d=sn.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8); sn.value=d.length>4?d.slice(0,4)+'-'+d.slice(4):d; };
   id.onkeydown=sn.onkeydown=e=>{ if(e.key==='Enter') go(); }; $('#ajConectarId').onclick=go; }
+// histórico do que técnicos mandaram para este computador ou levaram dele (90 dias, gravado pelo serviço)
+async function ajArquivos(){ const r=await ajAcao('ajuda_arquivos'), el=$('#ajArq'); if(!el||!r.ok||!r.dados) return; const l=r.dados.itens||[];
+  el.innerHTML=`<h2 class="secao" style="margin-bottom:8px">Arquivos transferidos no acesso remoto</h2><div class="painel">${l.length?`<div class="tw" style="max-height:360px"><table><thead><tr><th>Quando</th><th>Sentido</th><th>Arquivo</th><th>Tamanho</th><th>Técnico</th></tr></thead><tbody>${l.map(x=>`<tr><td>${esc(quando(x.ts))}</td><td>${x.sentido==='recebido'?'Recebido do técnico':'Levado pelo técnico'}</td><td title="${esc(x.caminho)}${x.sha256?' · SHA-256 '+esc(x.sha256):''}">${esc(x.nome)}<br><small>${esc(x.caminho)}</small></td><td>${fB(x.tamanho)}</td><td>${esc(x.tecnico||'—')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="vazio">Nenhum arquivo transferido nos últimos 90 dias.</div>'}</div>`; }
 async function ajCopiarImagem(){ const m=AJU.meu; if(!m||!m.id) return;
   const c=document.createElement('canvas'); c.width=720; c.height=340; const g=c.getContext('2d');
   const f=g.createLinearGradient(0,0,720,340); f.addColorStop(0,'#0b3150'); f.addColorStop(1,'#061a2b'); g.fillStyle=f; g.fillRect(0,0,720,340);
@@ -905,8 +944,9 @@ const AJU_JANELAS=new Map();
 function ajAbrirSessao(id, senha){ id=String(id||'').replace(/\D/g,''); senha=String(senha||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
   if(id.length!==9) return toast('O ID tem 9 números.',1); if(senha.length!==8) return toast('A senha tem 8 letras e números.',1);
   if(AJU.meu&&AJU.meu.id&&AJU.meu.id.replace(/\D/g,'')===id) return toast('Esse é o ID deste computador.',1);
-  const w=window.open('/#sessao','_blank','popup,width=1400,height=860'); if(!w) return toast('O navegador bloqueou a janela nova. Permita janelas pop-up para o CNT Monitor.',1);
-  AJU_JANELAS.set(w,{id,senha,servidor:(AJU.meu&&AJU.meu.servidor)||''}); $('#ajSenhaId').value=''; }
+  // a sessão abre ocupando a tela toda (área útil): a tela remota aparece inteira, reduzida só se não couber
+  const w=window.open('/#sessao','_blank',`popup,left=${screen.availLeft||0},top=${screen.availTop||0},width=${screen.availWidth},height=${screen.availHeight}`); if(!w) return toast('O navegador bloqueou a janela nova. Permita janelas pop-up para o CNT Monitor.',1);
+  AJU_JANELAS.set(w,{id,senha,servidor:(AJU.meu&&AJU.meu.servidor)||'',tecnico:(AJU.meu&&AJU.meu.id)||''}); $('#ajSenhaId').value=''; }
 addEventListener('message',e=>{ if(e.origin!==location.origin||e.data!=='sessao-pronta') return; const p=AJU_JANELAS.get(e.source); if(!p) return; AJU_JANELAS.delete(e.source); e.source.postMessage({tipo:'sessao',...p},location.origin); });
 const AJ_ATIVOS=['convite','conectando','aguardando_aceite','ativa'];
 function ajVigiar(){ clearInterval(AJU.timer); AJU.timer=setInterval(async()=>{
@@ -931,7 +971,8 @@ function ajRenderPedir(el){ const e=AJU.est||{estado:'iniciando'}; AJU.visto=JSO
   if(b('ajPermitir')) b('ajPermitir').onclick=async()=>{ const r=await ajAcao('ajuda_aceitar'); if(!r.ok) toast(r.msg,1); if(r.dados) AJU.est=r.dados; ajRender(); };
   if(b('ajCancelar')) b('ajCancelar').onclick=async()=>{ const r=await ajAcao('ajuda_encerrar'); if(r.dados) AJU.est=r.dados; ajRender(); };
   if(b('ajNovo')) b('ajNovo').onclick=()=>{ AJU.modo=null; AJU.est=null; AJU.manual=false; AJU.foiAtiva=false; ajRender(); }; }
-function ajTecFechar(){ const pc=AJU.pc, c=AJU.canal; AJU.pc=AJU.canal=AJU.fluxo=null; AJU.senha=''; if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+function ajTecFechar(){ const pc=AJU.pc, c=AJU.canal; AJU.pc=AJU.canal=AJU.fluxo=null; AJU.trilhas={}; AJU.senha=''; if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+  if(RS){ clearInterval(RS.timer); rsFecharJanelas(); for(const ok of RS.espera.values()) ok(null); RS=null; } document.body.classList.remove('rs-ativo');
   try{ if(c&&c.readyState==='open') c.send(JSON.stringify({t:'fim'})); }catch(_){ } if(pc) setTimeout(()=>pc.close(),150); }
 function ajTecFim(motivo){ if(AJU.modo!=='tecnico'||AJU.fase==='fim') return; ajTecFechar(); AJU.fase='fim'; AJU.msg=motivo; ajRender(); }
 function ajPreferirH264(pc){ // H.264: o navegador decodifica pela placa de vídeo e o outro lado comprime mais rápido que o VP8
@@ -942,8 +983,10 @@ function ajPreferirH264(pc){ // H.264: o navegador decodifica pela placa de víd
 async function ajTecIniciar(codigo, senha, ice){ const r=await ajAcao('ajuda_tec_convite',{codigo}); if(!r.ok) return r.msg||'Esse convite não serve.';
   ajTecFechar(); AJU.oferta=r.dados.sdp; AJU.senha=senha; AJU.resp=null;
   const pc=AJU.pc=new RTCPeerConnection({iceServers:ice});
-  pc.ontrack=e=>{ try{ e.receiver.playoutDelayHint=0; e.receiver.jitterBufferTarget=0; }catch(_){ } AJU.fluxo=(e.streams&&e.streams[0])||new MediaStream([e.track]); const v=$('#ajVideo'); if(v) v.srcObject=AJU.fluxo; };
-  pc.ondatachannel=e=>{ const c=AJU.canal=e.channel; const provar=()=>{ if(AJU.resp) c.send(JSON.stringify({t:'prova',mac:AJU.resp.prova})); }; c.onmessage=ajTecMsg; if(c.readyState==='open') provar(); else c.onopen=provar; };
+  // uma trilha por monitor; o "ativa" do agente diz qual trilha (mid) é de qual monitor
+  pc.ontrack=e=>{ try{ e.receiver.playoutDelayHint=0; e.receiver.jitterBufferTarget=0; }catch(_){ } const s=new MediaStream([e.track]); AJU.fluxo=AJU.fluxo||s;
+    AJU.trilhas[(e.transceiver&&e.transceiver.mid)||String(Object.keys(AJU.trilhas).length)]=s; };
+  pc.ondatachannel=e=>{ if(e.channel.label!=='controle') return; const c=AJU.canal=e.channel; const provar=()=>{ if(AJU.resp) c.send(JSON.stringify({t:'prova',mac:AJU.resp.prova})); }; c.onmessage=ajTecMsg; if(c.readyState==='open') provar(); else c.onopen=provar; };
   // Antes de ligar pela primeira vez o navegador desiste sozinho em ~15 s ("failed"), muito antes de a pessoa colar o código de resposta
   // do outro lado. Por isso "failed" só encerra depois de já ter ligado; até lá os endereços do convite são tentados de novo a cada 5 s
   // (com outro rótulo, senão o navegador ignora o endereço repetido), o que também mantém aberto o caminho de volta no roteador e no
@@ -982,14 +1025,17 @@ async function ajIdConectar(id, senha, srv){ AJU.srv=srv; AJU.alvo=id; document.
 function ajDesistir(){ if(AJU.srv&&AJU.pedido&&!['ativa','fim'].includes(AJU.fase)){ try{ navigator.sendBeacon(AJU.srv+'/responder',JSON.stringify({pedido:AJU.pedido,dados:{tipo:'desistiu'}})); }catch(_){ } } AJU.pedido=null; }
 function ajSessaoIniciar(){ document.body.classList.add('so-sessao'); for(const x of VISTAS) $('#v-'+x).hidden=x!=='ajuda'; vista='ajuda';
   AJU.modo='tecnico'; AJU.fase='ligando'; AJU.alvo=''; ajRender();
-  addEventListener('message',e=>{ if(e.origin!==location.origin||e.source!==window.opener||!e.data||e.data.tipo!=='sessao'||AJU.alvo) return; ajIdConectar(e.data.id,e.data.senha,e.data.servidor); });
+  addEventListener('message',e=>{ if(e.origin!==location.origin||e.source!==window.opener||!e.data||e.data.tipo!=='sessao'||AJU.alvo) return; AJU.tecId=String(e.data.tecnico||''); ajIdConectar(e.data.id,e.data.senha,e.data.servidor); });
   addEventListener('pagehide',()=>{ ajDesistir(); ajTecFechar(); });
   if(window.opener) window.opener.postMessage('sessao-pronta',location.origin); else ajTecFim('Abra o acesso pela tela de Acesso remoto do CNT Monitor.'); }
 async function ajTecMsg(ev){ let m; try{ m=JSON.parse(ev.data); }catch(_){ return; } if(!m||typeof m!=='object') return;
   if(m.t==='prova'&&(AJU.fase==='codigo'||AJU.fase==='conferindo')){ const r=await ajAcao('ajuda_tec_conferir',{senha:AJU.senha,oferta:AJU.oferta,resposta:AJU.sdp,mac:m.mac}); AJU.senha='';
     if(!r.ok){ ajTecFim('O outro computador não provou que conhece a senha, então a conexão foi encerrada. Pode haver alguém no meio do caminho: peça um convite novo.'); return; }
     AJU.fase='aguardando'; ajRender(); }
-  else if(m.t==='ativa'&&AJU.fase==='aguardando'){ AJU.fase='ativa'; ajRender(); }
+  else if(m.t==='ativa'&&AJU.fase==='aguardando') rsAtivar(m);
+  else if(m.t==='area'&&typeof m.texto==='string'&&RS) rsAreaChegou(m.texto);
+  else if(m.t==='area_teto'&&RS){ RS.lerTeto=m.ler_area!==false; rsBarra(); }
+  else if(m.t==='aviso'&&typeof m.msg==='string') toast(m.msg,1);
   else if(m.t==='fim') ajTecFim(typeof m.motivo==='string'&&m.motivo?m.motivo:'A sessão foi encerrada pelo outro lado.'); }
 function ajSairTec(){ if(SESSAO){ ajDesistir(); ajTecFechar(); window.close(); return; } ajTecFechar(); AJU.fase='form'; ajRender(); }
 function ajRenderTecnico(el){ const conf=AJU.resp?esc(AJU.resp.conferencia):'';
@@ -1006,23 +1052,223 @@ function ajRenderTecnico(el){ const conf=AJU.resp?esc(AJU.resp.conferencia):'';
   if(AJU.fase==='aguardando'){ el.innerHTML=`<div class="painel"><div class="aj-passo"><b>Senha conferida nos dois lados.</b><p class="mut">Aguardando a pessoa permitir o acesso no computador dela.</p></div>
       <div class="aj-passo"><b>Código de conferência</b><div class="aj-senha">${conf}</div><p class="mut">A pessoa está vendo um código igual a este antes de clicar em Permitir. Não precisa digitar em lugar nenhum.</p><p><button class="btn" id="ajSair">Cancelar</button></p></div></div>`;
     $('#ajSair').onclick=ajSairTec; return; }
-  if(AJU.fase==='ativa'){ el.innerHTML=`<div class="rel-cab"><b>Conectado${AJU.alvo?' a '+esc(ajFmtId(AJU.alvo)):''}</b><span class="mut">Clique na tela para o teclado ir para o outro computador.</span><span style="flex:1"></span><button class="btn" id="ajCheia">Tela cheia</button><button class="btn" id="ajArea">Enviar minha área de transferência</button><button class="btn perigo" id="ajSair">Encerrar</button></div>
-      <div class="aj-tela" id="ajTela" tabindex="0"><video id="ajVideo" autoplay playsinline muted></video></div>`; ajControle(); return; }
+  if(AJU.fase==='ativa'){ if(!document.getElementById('rs')) rsAbrir(el); return; }
   el.innerHTML=`<div class="painel aj-passo"><b>Sessão encerrada</b><p>${esc(AJU.msg)}</p><p><button class="btn pri" id="ajSair">${SESSAO?'Fechar janela':'Voltar'}</button></p></div>`; $('#ajSair').onclick=()=>{ if(SESSAO) return window.close(); AJU.modo=null; AJU.fase='form'; ajRender(); }; }
-function ajControle(){ const t=$('#ajTela'), v=$('#ajVideo'); v.srcObject=AJU.fluxo; const apertadas=new Set(); let ult=0;
-  const env=m=>{ try{ if(AJU.fase==='ativa'&&AJU.canal&&AJU.canal.readyState==='open') AJU.canal.send(JSON.stringify(m)); }catch(_){ } };
-  const pos=e=>{ const r=v.getBoundingClientRect(), vw=v.videoWidth||16, vh=v.videoHeight||9, k=Math.min(r.width/vw,r.height/vh), w=vw*k, h=vh*k; return {x:(e.clientX-r.left-(r.width-w)/2)/w, y:(e.clientY-r.top-(r.height-h)/2)/h}; };
-  t.onmousemove=e=>{ const n=performance.now(); if(n-ult<16) return; ult=n; env({t:'mouse',a:'move',...pos(e)}); };
-  t.onmousedown=e=>{ t.focus(); e.preventDefault(); env({t:'mouse',a:'baixa',b:e.button,...pos(e)}); };
-  t.onmouseup=e=>{ e.preventDefault(); env({t:'mouse',a:'sobe',b:e.button,...pos(e)}); };
-  t.onwheel=e=>{ e.preventDefault(); env({t:'mouse',a:'roda',d:-Math.sign(e.deltaY)*120,...pos(e)}); };
-  t.oncontextmenu=e=>e.preventDefault();
-  t.onkeydown=e=>{ e.preventDefault(); apertadas.add(e.code); env({t:'tecla',a:'baixa',c:e.code}); };
-  t.onkeyup=e=>{ e.preventDefault(); apertadas.delete(e.code); env({t:'tecla',a:'sobe',c:e.code}); };
-  t.onblur=()=>{ for(const c of apertadas) env({t:'tecla',a:'sobe',c}); apertadas.clear(); };
-  $('#ajCheia').onclick=()=>t.requestFullscreen().then(()=>{ t.focus(); if(navigator.keyboard&&navigator.keyboard.lock) navigator.keyboard.lock().catch(()=>{}); }).catch(()=>{});
-  $('#ajArea').onclick=()=>navigator.clipboard.readText().then(x=>{ env({t:'area',texto:x.slice(0,100000)}); toast('Área de transferência enviada. Use Ctrl+V no outro computador.'); },()=>toast('O navegador não deixou ler a área de transferência.',1));
-  $('#ajSair').onclick=()=>ajTecFim('Você encerrou a sessão.'); t.focus(); }
+
+/* --- sessão do técnico: moldura com barra (como a do AnyDesk), vários monitores, atalhos, área de transferência e arquivos.
+   Nada fica por cima da tela remota: a barra é uma faixa própria em cima e o painel de arquivos encolhe a área do vídeo. --- */
+const RS_ATALHOS=[['ctrl_alt_del','Ctrl+Alt+Del'],['ctrl_shift_esc','Ctrl+Shift+Esc (Gerenciador de Tarefas)'],['win','Win (menu Iniciar)'],['win_r','Win+R (Executar)'],['win_e','Win+E (Explorador de Arquivos)'],['win_d','Win+D (mostrar a área de trabalho)'],['win_l','Win+L (bloquear)'],['win_shift_s','Win+Shift+S (recorte de tela)'],['alt_tab','Alt+Tab'],['alt_f4','Alt+F4'],['print','Print Screen']];
+const RS_AREA={ambos:'Nos dois sentidos',para_atendido:'Só daqui para lá',para_tecnico:'Só de lá para cá',desligada:'Desligada'};
+const RS_LAYOUT={lado:'Lado a lado',um:'Um ou outro',janelas:'Janelas separadas'};
+let RS=null;
+const rsEnv=m=>{ try{ if(AJU.fase==='ativa'&&AJU.canal&&AJU.canal.readyState==='open') AJU.canal.send(JSON.stringify(m)); }catch(_){ } };
+const rsPode=s=>!!RS&&(RS.area==='ambos'||RS.area===s)&&(s!=='para_tecnico'||RS.lerTeto);
+const rsDur=ms=>{ const s=Math.floor(ms/1000), h=Math.floor(s/3600), m=Math.floor(s/60)%60; return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(s%60).padStart(2,'0'); };
+class SHA256{ // em pedaços: a WebCrypto só calcula o arquivo inteiro de uma vez, e arquivos grandes não cabem na memória
+  constructor(){ this.h=Int32Array.from(SHA256.H); this.buf=new Uint8Array(64); this.n=0; this.len=0; this.w=new Int32Array(64); }
+  update(d){ let i=0; this.len+=d.length; if(this.n){ const k=Math.min(64-this.n,d.length); this.buf.set(d.subarray(0,k),this.n); this.n+=k; i=k; if(this.n<64) return this; this.bloco(this.buf,0); this.n=0; }
+    for(;i+64<=d.length;i+=64) this.bloco(d,i); if(i<d.length){ this.buf.set(d.subarray(i),0); this.n=d.length-i; } return this; }
+  bloco(d,o){ const w=this.w, K=SHA256.K, r=(x,n)=>(x>>>n)|(x<<(32-n));
+    for(let j=0;j<16;j++) w[j]=(d[o+4*j]<<24)|(d[o+4*j+1]<<16)|(d[o+4*j+2]<<8)|d[o+4*j+3];
+    for(let j=16;j<64;j++){ const a=w[j-15], b=w[j-2]; w[j]=(w[j-16]+(r(a,7)^r(a,18)^(a>>>3))+w[j-7]+(r(b,17)^r(b,19)^(b>>>10)))|0; }
+    let [a,b,c,dd,e,f,g,h]=this.h;
+    for(let j=0;j<64;j++){ const t1=(h+(r(e,6)^r(e,11)^r(e,25))+((e&f)^(~e&g))+K[j]+w[j])|0, t2=((r(a,2)^r(a,13)^r(a,22))+((a&b)^(a&c)^(b&c)))|0;
+      h=g; g=f; f=e; e=(dd+t1)|0; dd=c; c=b; b=a; a=(t1+t2)|0; }
+    const s=this.h; s[0]+=a; s[1]+=b; s[2]+=c; s[3]+=dd; s[4]+=e; s[5]+=f; s[6]+=g; s[7]+=h; }
+  hex(){ const n=this.len, p=new Uint8Array(((n+8)>>6<<6)+64-n), v=new DataView(p.buffer); p[0]=0x80;
+    v.setUint32(p.length-8,Math.floor(n/0x20000000)); v.setUint32(p.length-4,(n*8)>>>0); this.update(p);
+    return [...this.h].map(x=>(x>>>0).toString(16).padStart(8,'0')).join(''); } }
+SHA256.K=(()=>{ const k=[], h=[]; for(let n=2;k.length<64;n++){ let p=true; for(let d=2;d*d<=n;d++) if(n%d===0){ p=false; break; } if(!p) continue;
+  if(h.length<8) h.push((Math.sqrt(n)%1)*2**32|0); k.push((Math.cbrt(n)%1)*2**32|0); } SHA256.H=h; return Int32Array.from(k); })();
+function rsStream(m){ const t=AJU.trilhas||{}; return (m.mid!=null&&t[m.mid])||Object.values(t)[m.i]||AJU.fluxo; }
+// "ativa" do agente: traz os monitores (posição e tamanho reais) e se quem é atendido deixa ler a área de transferência dele
+function rsAtivar(m){ const lista=Array.isArray(m.monitores)&&m.monitores.length?m.monitores.slice(0,4):[{}];
+  RS={mons:lista.map((x,i)=>({i, n:+x.n||i+1, x:+x.x||0, y:+x.y||0, w:+x.w||0, h:+x.h||0, mid:x.mid==null?null:String(x.mid)})), layout:CFG.remoto_layout||'lado', sel:0, ajuste:true,
+    area:CFG.remoto_area||'ambos', lerTeto:m.ler_area!==false, inicio:Date.now(), janelas:new Map(), dados:null, prox:1, transf:new Map(), espera:new Map(), copiados:[],
+    ultArea:'', ultAreaImg:'', pendente:null, pasta:'', lista:null, painel:false, colando:null, teclas:new Set(), timer:null, ultV:null, nota:null};
+  try{ const c=RS.dados=AJU.pc.createDataChannel('dados'); c.binaryType='arraybuffer'; c.bufferedAmountLowThreshold=MB; c.onmessage=rsDados; }catch(_){ }
+  rsEnv({t:'ola',tecnico:AJU.tecId||''}); rsEnv({t:'area_modo',modo:RS.area});
+  AJU.fase='ativa'; ajRender(); }
+function rsAbrir(el){ document.body.classList.add('rs-ativo');
+  el.innerHTML=`<div class="rs" id="rs"><div class="rs-barra" id="rsBarra"></div><div class="rs-corpo"><div class="rs-palco" id="rsPalco" tabindex="0" aria-label="Tela do outro computador"><div class="rs-mapa"></div></div><aside class="rs-arq" id="rsArq" hidden></aside></div><div class="rs-menu" id="rsMenu" hidden></div></div>`;
+  rsLigar($('#rsPalco')); rsMontar(); RS.timer=setInterval(()=>{ const t=$('#rsTempo'); if(t&&RS) t.textContent=rsDur(Date.now()-RS.inicio); },1000);
+  $('#rsPalco').focus(); setTimeout(rsFoco,400); }
+addEventListener('resize',()=>rsDimensionarTudo()); addEventListener('focus',()=>rsFoco());
+document.addEventListener('mousedown',e=>{ const mn=$('#rsMenu'); if(mn&&!mn.hidden&&!e.target.closest('#rsMenu,[data-menu]')) mn.hidden=true; },true);
+const rsMostrando=i=>RS.layout==='lado'||i===RS.sel||(RS.layout==='janelas'&&RS.janelas.has(i));
+function rsBarra(){ const b=$('#rsBarra'); if(!b||!RS) return; const varios=RS.mons.length>1;
+  b.innerHTML=`<div class="rs-id"><span class="rs-ponto"></span><b>${esc(AJU.alvo?ajFmtId(AJU.alvo):'Sessão remota')}</b><span id="rsTempo">${rsDur(Date.now()-RS.inicio)}</span></div>
+    ${varios?`<div class="rs-grupo" role="group" aria-label="Monitores">${RS.mons.map(m=>`<button class="rs-bt${rsMostrando(m.i)?' on':''}" data-mon="${m.i}" title="Monitor ${m.n}${m.w?' · '+m.w+'×'+m.h:''}">${m.n}</button>`).join('')}</div><button class="rs-bt" data-menu="layout">${RS_LAYOUT[RS.layout]} ▾</button>`:''}
+    <button class="rs-bt" id="rsAjuste" title="Ajustar: reduz a tela do outro computador até caber (nunca amplia). Tamanho real: um pixel lá é um pixel aqui, com rolagem.">${RS.ajuste?'Ajustar à janela':'Tamanho real'}</button>
+    <button class="rs-bt" id="rsCheia" title="Em tela cheia, Win, Alt+Tab e os outros atalhos vão direto para o outro computador. Segure Esc para sair.">Tela cheia</button><span class="rs-sep"></span>
+    <button class="rs-bt" data-menu="atalhos">Atalhos ▾</button><button class="rs-bt" data-menu="area">Área de transferência: ${esc(RS_AREA[RS.area])} ▾</button>
+    <button class="rs-bt${RS.painel?' on':''}" id="rsArqBt">Arquivos${RS.copiados.length?` <span class="rs-cont">${RS.copiados.length}</span>`:''}</button>
+    <span class="rs-nota" id="rsNota" role="status"></span><span style="flex:1"></span><button class="rs-bt perigo" id="rsSair">Encerrar</button>`;
+  b.onclick=e=>{ const x=e.target.closest('button'); if(!x||!RS) return;
+    if(x.dataset.menu) return rsMenu(x.dataset.menu,x);
+    if(x.dataset.mon!=null) rsEscolherMonitor(+x.dataset.mon);
+    else if(x.id==='rsAjuste'){ RS.ajuste=!RS.ajuste; rsBarra(); rsDimensionarTudo(); }
+    else if(x.id==='rsCheia') return rsTelaCheia($('#rsPalco'));
+    else if(x.id==='rsArqBt') return rsPainel(!RS.painel);
+    else if(x.id==='rsSair') return ajTecFim('Você encerrou a sessão.');
+    const p=$('#rsPalco'); if(p) p.focus(); }; }
+function rsNota(t){ const n=$('#rsNota'); if(!n||!RS) return; n.textContent=t; clearTimeout(RS.nota); RS.nota=setTimeout(()=>{ n.textContent=''; },4000); }
+function rsEscolherMonitor(i){ if(RS.layout==='janelas'&&RS.janelas.has(i)){ try{ RS.janelas.get(i).w.focus(); }catch(_){ } return; }
+  if(RS.layout==='lado') RS.layout='um'; RS.sel=i; rsMontar(); }
+function rsMontar(){ if(!RS) return; const p=$('#rsPalco'); if(!p) return;
+  if(RS.layout==='janelas'&&RS.mons.length>1){ for(const m of RS.mons) if(m.i!==RS.sel&&!RS.janelas.has(m.i)) rsAbrirJanela(m.i); }
+  else rsFecharJanelas();
+  rsPreencher(p, RS.layout==='lado'?RS.mons.map(m=>m.i):[RS.sel]); rsBarra(); rsVer(); }
+function rsPreencher(p, vis){ const mapa=p.querySelector('.rs-mapa'), doc=p.ownerDocument; mapa.innerHTML='';
+  for(const i of vis){ const v=doc.createElement('video'); v.autoplay=v.playsInline=v.muted=true; v.dataset.m=i; v.srcObject=rsStream(RS.mons[i]); v.onloadedmetadata=v.onresize=()=>rsDimensionar(p); mapa.appendChild(v); }
+  rsDimensionar(p); }
+// Ajustar: reduz até caber, nunca amplia. Tamanho real: um pixel do outro computador = um pixel desta tela (com rolagem).
+function rsDimensionar(p){ if(!RS||!p||!p.isConnected) return; const vids=[...p.querySelectorAll('video[data-m]')]; if(!vids.length) return;
+  const dpr=p.ownerDocument.defaultView.devicePixelRatio||1;
+  const ms=vids.map(v=>{ const m=RS.mons[+v.dataset.m]; return {v, x:m.x, y:m.y, w:m.w||v.videoWidth||1280, h:m.h||v.videoHeight||720}; });
+  const x0=Math.min(...ms.map(m=>m.x)), y0=Math.min(...ms.map(m=>m.y)), W=Math.max(...ms.map(m=>m.x+m.w))-x0, H=Math.max(...ms.map(m=>m.y+m.h))-y0;
+  const r=p.getBoundingClientRect(), k=RS.ajuste?Math.min(1/dpr,r.width/W,r.height/H):1/dpr, mapa=p.querySelector('.rs-mapa');
+  mapa.style.width=Math.floor(W*k)+'px'; mapa.style.height=Math.floor(H*k)+'px';
+  for(const m of ms) Object.assign(m.v.style,{left:(m.x-x0)*k+'px',top:(m.y-y0)*k+'px',width:m.w*k+'px',height:m.h*k+'px'}); }
+function rsDimensionarTudo(){ if(!RS) return; rsDimensionar($('#rsPalco')); for(const j of RS.janelas.values()) if(j.palco) rsDimensionar(j.palco); }
+// o agente manda a 30 quadros por segundo só os monitores à vista; os outros a 1 por segundo
+function rsVer(){ if(!RS) return; const v=new Set(RS.layout==='lado'?RS.mons.map(m=>m.i):[RS.sel]);
+  for(const [i,j] of RS.janelas) if(j.palco&&!j.w.closed&&!j.w.document.hidden) v.add(i);
+  rsEnv({t:'ver',m:[...v]}); }
+function rsTelaCheia(palco){ const kb=palco.ownerDocument.defaultView.navigator.keyboard;
+  palco.requestFullscreen().then(()=>{ palco.focus(); if(kb&&kb.lock) kb.lock().catch(()=>{}); }).catch(()=>{}); }
+// mouse, teclado, colar e arrastar arquivos: o mesmo para a janela principal e para as janelas de cada monitor
+function rsLigar(palco){ let ult=0;
+  const pos=(e,v)=>{ const r=v.getBoundingClientRect(); return {m:+v.dataset.m, x:(e.clientX-r.left)/r.width, y:(e.clientY-r.top)/r.height}; };
+  const vid=e=>e.target.closest&&e.target.closest('video[data-m]');
+  palco.onmousemove=e=>{ const v=vid(e); if(!v||!RS) return; const n=performance.now(); if(n-ult<16) return; ult=n; RS.ultV=v; rsEnv({t:'mouse',a:'move',...pos(e,v)}); };
+  palco.onmousedown=e=>{ palco.focus(); const v=vid(e); if(!v||!RS) return; e.preventDefault(); RS.ultV=v; rsEnv({t:'mouse',a:'baixa',b:e.button,...pos(e,v)}); };
+  palco.onmouseup=e=>{ const v=vid(e)||(RS&&RS.ultV); if(!v||!RS) return; e.preventDefault(); rsEnv({t:'mouse',a:'sobe',b:e.button,...pos(e,v)}); };
+  palco.onwheel=e=>{ const v=vid(e); if(!v||!RS) return; e.preventDefault(); rsEnv({t:'mouse',a:'roda',d:-Math.sign(e.deltaY)*120,...pos(e,v)}); };
+  palco.oncontextmenu=e=>e.preventDefault();
+  palco.onkeydown=e=>{ if(!RS) return;
+    // Ctrl+V: deixa o navegador disparar "colar" para levar antes o que está copiado aqui (texto, imagem ou arquivos)
+    if((e.ctrlKey||e.metaKey)&&e.code==='KeyV'&&rsPode('para_atendido')){ if(!RS.colando) RS.colando=setTimeout(()=>{ if(!RS) return; RS.colando=null; rsEnv({t:'atalho',n:'colar'}); },700); return; }
+    e.preventDefault(); RS.teclas.add(e.code); rsEnv({t:'tecla',a:'baixa',c:e.code}); };
+  palco.onkeyup=e=>{ if(!RS) return; e.preventDefault(); if(!RS.teclas.has(e.code)) return; RS.teclas.delete(e.code); rsEnv({t:'tecla',a:'sobe',c:e.code}); };
+  palco.onblur=()=>{ if(!RS) return; for(const c of RS.teclas) rsEnv({t:'tecla',a:'sobe',c}); RS.teclas.clear(); };
+  palco.addEventListener('paste',e=>{ if(!RS||!RS.colando) return; e.preventDefault(); clearTimeout(RS.colando); RS.colando=null; rsColar(e.clipboardData); });
+  palco.ondragover=e=>{ if(e.dataTransfer&&[...e.dataTransfer.types].includes('Files')){ e.preventDefault(); palco.classList.add('rs-solta'); } };
+  palco.ondragleave=()=>palco.classList.remove('rs-solta');
+  palco.ondrop=e=>{ palco.classList.remove('rs-solta'); const f=[...((e.dataTransfer&&e.dataTransfer.files)||[])]; if(!f.length||!RS) return; e.preventDefault(); rsPainel(true); f.forEach(x=>rsEnviar(x,x.name)); }; }
+async function rsColar(cd){ const fs=[...((cd&&cd.files)||[])];
+  if(fs.length){ rsPainel(true); const r=await Promise.all(fs.map(f=>rsEnviar(f,f.name))); const ok=r.filter(x=>x&&x.ok&&x.caminho).map(x=>x.caminho); if(!ok.length) return;
+    const q=await rsPedir({t:'colar_arquivos',caminhos:ok}); if(q&&q.ok) rsEnv({t:'atalho',n:'colar'}); return; }
+  const txt=cd&&cd.getData('text/plain'), img=[...((cd&&cd.items)||[])].find(i=>i.kind==='file'&&i.type.startsWith('image/'));
+  if(txt){ RS.ultArea='t:'+txt; rsEnv({t:'area',texto:txt.slice(0,100000)}); }
+  else if(img){ const b=img.getAsFile(); if(b){ RS.ultAreaImg='i:'+b.size; const r=await rsEnviar(b,'imagem.png',{area:'imagem'},true); if(!r||!r.ok) return; } }
+  rsEnv({t:'atalho',n:'colar'}); }
+// Copiou algo aqui e voltou para a janela da sessão: vai para o outro computador (o navegador pede permissão uma vez)
+async function rsFoco(){ if(!RS||AJU.fase!=='ativa') return; if(RS.pendente&&document.hasFocus()){ const p=RS.pendente; RS.pendente=null; rsPorNaArea(p); }
+  if(!rsPode('para_atendido')||!navigator.clipboard||!navigator.clipboard.read) return;
+  try{ for(const it of await navigator.clipboard.read()){
+      if(it.types.includes('text/plain')){ const t=await (await it.getType('text/plain')).text(); if(t&&'t:'+t!==RS.ultArea){ RS.ultArea='t:'+t; rsEnv({t:'area',texto:t.slice(0,100000)}); rsNota('Texto enviado para o outro computador'); } return; }
+      const tipo=it.types.find(x=>x.startsWith('image/')); if(tipo){ const b=await it.getType(tipo); if('i:'+b.size!==RS.ultAreaImg){ RS.ultAreaImg='i:'+b.size; if(await rsEnviar(b,'imagem.png',{area:'imagem'},true)) rsNota('Imagem enviada para o outro computador'); } return; } }
+    RS.semPermLer=false; }catch(_){ RS.semPermLer=true; } }
+function rsPorNaArea(p){ if(!RS) return; if(!document.hasFocus()){ RS.pendente=p; return; }   // o navegador só escreve com a janela em foco
+  if(p.texto!=null) navigator.clipboard.writeText(p.texto).then(()=>rsNota('Texto copiado do outro computador'),()=>{ RS.pendente=p; });
+  else navigator.clipboard.write([new ClipboardItem({'image/png':p.img})]).then(async()=>{ rsNota('Imagem copiada do outro computador');
+    try{ const it=(await navigator.clipboard.read())[0], tp=it.types.find(x=>x.startsWith('image/')); if(tp) RS.ultAreaImg='i:'+(await it.getType(tp)).size; }catch(_){ } },()=>{ RS.pendente=p; }); }
+function rsAreaChegou(texto){ if(!rsPode('para_tecnico')) return; RS.ultArea='t:'+texto; rsPorNaArea({texto}); }
+function rsMenu(qual, bt){ const mn=$('#rsMenu'); if(!mn.hidden&&mn.dataset.q===qual){ mn.hidden=true; return; } mn.dataset.q=qual; let h='';
+  if(qual==='atalhos') h=RS_ATALHOS.map(([n,r])=>`<button data-at="${n}">${esc(r)}</button>`).join('')+'<p class="mut">Em tela cheia, Win, Alt+Tab e os outros atalhos vão direto para o outro computador.</p>';
+  if(qual==='layout') h=Object.entries(RS_LAYOUT).map(([k,r])=>`<button data-lay="${k}" class="${RS.layout===k?'on':''}">${esc(r)}</button>`).join('')+'<p class="mut">O padrão fica em Configurações → Acesso remoto.</p>';
+  if(qual==='area') h=Object.entries(RS_AREA).map(([k,r])=>`<button data-area="${k}" class="${RS.area===k?'on':''}">${esc(r)}${!RS.lerTeto&&(k==='ambos'||k==='para_tecnico')?' <small>(lá para cá bloqueado por quem você atende)</small>':''}</button>`).join('')
+    +`<hr><button data-acao="enviar">Enviar minha área de transferência agora</button><p class="mut">Texto e imagem vão sozinhos quando um dos lados copia. Arquivos: copie no Explorer e aperte Ctrl+V na tela remota; os copiados lá aparecem em Arquivos.${RS.semPermLer?' O navegador ainda não deixou ler a sua área de transferência: aceite o pedido dele.':''}</p>`;
+  mn.innerHTML=h; const r=bt.getBoundingClientRect(); mn.style.left=Math.max(4,Math.min(r.left,innerWidth-344))+'px'; mn.style.top=r.bottom+4+'px'; mn.hidden=false;
+  mn.onclick=e=>{ const x=e.target.closest('button'); if(!x||!RS) return; mn.hidden=true;
+    if(x.dataset.at) rsEnv({t:'atalho',n:x.dataset.at});
+    if(x.dataset.lay){ RS.layout=x.dataset.lay; rsMontar(); }
+    if(x.dataset.area){ RS.area=x.dataset.area; rsEnv({t:'area_modo',modo:RS.area}); rsBarra(); }
+    if(x.dataset.acao==='enviar'){ RS.ultArea=RS.ultAreaImg=''; rsFoco(); }
+    $('#rsPalco').focus(); }; }
+// janelas separadas: cada monitor numa janela própria, que dá para arrastar para outro monitor do técnico
+function rsAbrirJanela(i){ const m=RS.mons[i], w=window.open('/#tela','cnt-tela-'+(AJU.alvo||'x')+'-'+i,`popup,width=${Math.min(screen.availWidth,1280)},height=${Math.min(screen.availHeight,800)},left=${(screen.availLeft||0)+60*i},top=${(screen.availTop||0)+40*i}`);
+  if(!w) return toast('O navegador bloqueou a janela do monitor '+m.n+'. Permita janelas pop-up para o CNT Monitor.',1);
+  RS.janelas.set(i,{w,palco:null}); }
+window.rsTelaPronta=w=>{ const par=RS&&[...RS.janelas].find(([,j])=>j.w===w); if(!par) return w.close(); const [i,j]=par, m=RS.mons[i], d=w.document;
+  d.title='CNT Monitor — '+(AJU.alvo?ajFmtId(AJU.alvo)+' · ':'')+'monitor '+m.n; d.body.classList.add('so-tela');
+  const raiz=d.createElement('div'); raiz.className='rs rs-filha';
+  raiz.innerHTML=`<div class="rs-barra"><div class="rs-id"><span class="rs-ponto"></span><b>Monitor ${m.n}</b><span>${esc(AJU.alvo?ajFmtId(AJU.alvo):'')}</span></div><button class="rs-bt" data-a="ajuste">${RS.ajuste?'Ajustar à janela':'Tamanho real'}</button><button class="rs-bt" data-a="cheia">Tela cheia</button><span style="flex:1"></span><span class="rs-nota">Arraste esta janela para outro monitor. Fechar esta janela não encerra a sessão.</span></div><div class="rs-corpo"><div class="rs-palco" tabindex="0" aria-label="Monitor ${m.n} do outro computador"><div class="rs-mapa"></div></div></div>`;
+  d.body.appendChild(raiz); const palco=raiz.querySelector('.rs-palco'); j.palco=palco; rsLigar(palco); rsPreencher(palco,[i]);
+  raiz.querySelector('.rs-barra').onclick=e=>{ const x=e.target.closest('button'); if(!x||!RS) return; if(x.dataset.a==='cheia') return rsTelaCheia(palco);
+    if(x.dataset.a==='ajuste'){ RS.ajuste=!RS.ajuste; x.textContent=RS.ajuste?'Ajustar à janela':'Tamanho real'; rsBarra(); rsDimensionarTudo(); } palco.focus(); };
+  w.addEventListener('resize',()=>rsDimensionar(palco)); w.addEventListener('focus',()=>rsFoco()); d.addEventListener('visibilitychange',rsVer);
+  w.addEventListener('pagehide',()=>{ if(RS&&RS.janelas.get(i)===j){ RS.janelas.delete(i); rsBarra(); rsVer(); } }); rsBarra(); rsVer(); palco.focus(); };
+function rsFecharJanelas(){ if(!RS) return; for(const j of RS.janelas.values()) try{ j.w.close(); }catch(_){ } RS.janelas.clear(); }
+// ---- arquivos: pelo canal "dados" da própria conexão (criptografado, sem servidor), em pedaços de 16 KB com SHA-256 no fim
+function rsEsperar(id,ms){ return new Promise(ok=>{ RS.espera.set(id,ok); if(ms) setTimeout(()=>{ if(RS&&RS.espera.get(id)===ok){ RS.espera.delete(id); ok(null); } },ms); }); }
+async function rsAberto(){ for(let k=0;k<50&&RS&&RS.dados&&RS.dados.readyState==='connecting';k++) await ajEsperar(100); return !!(RS&&RS.dados&&RS.dados.readyState==='open'); }
+async function rsPedir(m,ms=20000){ if(!await rsAberto()) return null; const id=RS.prox++, p=rsEsperar(id,ms); RS.dados.send(JSON.stringify({...m,id})); return p; }
+const rsFolga=c=>new Promise(ok=>{ const f=()=>{ c.removeEventListener('bufferedamountlow',f); ok(); }; c.addEventListener('bufferedamountlow',f); setTimeout(f,200); });
+function rsDados(ev){ if(!RS) return; const d=ev.data;
+  if(d instanceof ArrayBuffer){ if(d.byteLength<4) return; const t=RS.transf.get(new DataView(d).getUint32(0)); if(!t||t.estado!=='baixando') return;
+    const parte=new Uint8Array(d,4); t.sha.update(parte); t.feito+=parte.length; if(t.w) t.escrita=t.escrita.then(()=>t.w.write(parte)); else t.partes.push(parte); rsArqProgresso(t); return; }
+  let m; try{ m=JSON.parse(d); }catch(_){ return; } if(!m||typeof m!=='object') return;
+  if(m.t==='area_arquivos'&&Array.isArray(m.itens)){ if(!rsPode('para_tecnico')) return; RS.copiados=m.itens.slice(0,50); rsBarra(); rsArqRender(); rsNota(RS.copiados.length+' arquivo(s) copiado(s) lá: baixe em Arquivos'); return; }
+  if(m.t==='inicio'&&m.area==='imagem'){ if(rsPode('para_tecnico')) RS.transf.set(m.id,{id:m.id,area:true,oculto:true,nome:'imagem.png',tamanho:m.tamanho,feito:0,partes:[],sha:new SHA256(),estado:'baixando',escrita:Promise.resolve()}); return; }
+  const t=RS.transf.get(m.id);
+  if(m.t==='inicio'&&t&&t.sentido==='baixa'){ t.tamanho=m.tamanho; t.nome=m.nome||t.nome; t.estado='baixando'; rsArqRender(); return; }
+  if(m.t==='concluido'&&t) return rsBaixou(t,m.sha256);
+  if(m.t==='erro'&&t) return rsFalhou(t,m.msg);
+  const ok=RS.espera.get(m.id); if(ok){ RS.espera.delete(m.id); return ok(m); }
+  if(m.t==='recebido'&&t&&!m.ok){ t.cancelado=true; rsFalhou(t,m.erro); } }
+async function rsBaixou(t,sha){ await t.escrita.catch(()=>{}); const conf=t.feito===t.tamanho&&t.sha.hex()===String(sha||'').toLowerCase();
+  if(t.area){ RS.transf.delete(t.id); if(conf){ RS.ultAreaImg='i:'+t.tamanho; rsPorNaArea({img:new Blob(t.partes,{type:'image/png'})}); } return; }
+  if(!conf) return rsFalhou(t,'O arquivo chegou diferente do original (SHA-256 não confere). Baixe de novo.');
+  if(t.w) await t.w.close();
+  else { const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(t.partes)); a.download=t.nome; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),60000); t.partes=[]; }
+  t.estado='ok'; t.sha256=sha; rsArqRender(); }
+function rsFalhou(t,msg){ if(t.estado==='ok'||t.estado==='erro') return; t.estado='erro'; t.erro=msg||'Falhou.'; if(t.w) t.w.abort().catch(()=>{}); t.partes=[]; rsArqRender(); }
+async function rsBaixar(it){ if(!RS) return; const id=RS.prox++, t={id,sentido:'baixa',nome:it.nome,tamanho:it.tamanho||0,feito:0,estado:'aguardando',sha:new SHA256(),partes:[],escrita:Promise.resolve()};
+  // arquivo grande vai direto para o disco (o navegador pergunta onde salvar); o pequeno sai como download comum
+  if((it.tamanho||0)>200*MB&&window.showSaveFilePicker){ try{ t.w=await (await showSaveFilePicker({suggestedName:it.nome})).createWritable(); }catch(e){ if(e&&e.name==='AbortError') return; } }
+  RS.transf.set(id,t); rsPainel(true); if(!await rsAberto()) return rsFalhou(t,'O canal de arquivos não abriu.');
+  RS.dados.send(JSON.stringify({t:'baixar',id,caminho:it.caminho})); }
+async function rsEnviar(blob,nome,extra={},oculto=false){ if(!RS) return null; const id=RS.prox++, t={id,sentido:'envio',nome,tamanho:blob.size,feito:0,estado:'aguardando',oculto};
+  RS.transf.set(id,t); rsArqRender(); if(!await rsAberto()){ rsFalhou(t,'O canal de arquivos não abriu.'); return null; }
+  const c=RS.dados, r0=rsEsperar(id,60000); c.send(JSON.stringify({t:'enviar',id,nome,tamanho:blob.size,...extra})); const r=await r0;
+  if(!r||r.t!=='aceito'){ rsFalhou(t,(r&&r.erro)||'O outro computador não aceitou o arquivo.'); return r; }
+  t.estado='enviando'; rsArqRender(); const sha=new SHA256(), cab=new Uint8Array(4); new DataView(cab.buffer).setUint32(0,id);
+  for(let pos=0;pos<blob.size;){ if(t.cancelado||!RS||c.readyState!=='open'){ try{ c.send(JSON.stringify({t:'cancelar',id})); }catch(_){ } rsFalhou(t,'Cancelado.'); return null; }
+    const buf=new Uint8Array(await blob.slice(pos,pos+MB).arrayBuffer()); sha.update(buf);
+    for(let i=0;i<buf.length;i+=16384){ while(c.bufferedAmount>4*MB) await rsFolga(c); const p=buf.subarray(i,i+16384), x=new Uint8Array(4+p.length); x.set(cab); x.set(p,4); c.send(x); }
+    pos+=buf.length; t.feito=pos; rsArqProgresso(t); }
+  const r1=rsEsperar(id,120000); c.send(JSON.stringify({t:'enviado',id,sha256:sha.hex()})); const q=await r1;
+  if(!q||!q.ok){ rsFalhou(t,(q&&q.erro)||'O outro computador não confirmou o arquivo.'); return q; }
+  t.estado='ok'; t.sha256=q.sha256||sha.hex(); t.caminho=q.caminho; t.nome=q.nome||t.nome; rsArqRender(); return q; }
+function rsPainel(abrir){ if(!RS) return; RS.painel=abrir; const a=$('#rsArq'); if(!a) return; a.hidden=!abrir; rsBarra(); if(abrir){ rsArqRender(); if(RS.lista===null) rsListar(''); } setTimeout(rsDimensionarTudo,0); }
+async function rsListar(caminho){ RS.lista='carregando'; rsArqRender(); const r=await rsPedir({t:'listar',caminho}); if(!RS) return;
+  if(!r||r.erro) RS.lista={erro:(r&&r.erro)||'O outro computador não respondeu.'}; else { RS.lista=r; RS.pasta=r.caminho||''; } rsArqRender(); }
+const rsAcima=p=>{ if(/^[A-Za-z]:\\?$/.test(p)) return ''; const q=p.replace(/\\+$/,'').replace(/\\[^\\]*$/,''); return /^[A-Za-z]:$/.test(q)?q+'\\':q; };
+const RS_PASTA='<svg viewBox="0 0 24 24" class="rs-ic" aria-hidden="true"><path d="M3 6h7l2 2h9v11H3z"/></svg>';
+let rsProgT=0;
+function rsArqProgresso(t){ if(t.oculto) return; const n=performance.now(); if(n-rsProgT<250) return; rsProgT=n; rsArqRender(); }
+function rsTrHtml(t){ const pct=t.tamanho?Math.min(100,Math.round(t.feito*100/t.tamanho)):(t.estado==='ok'?100:0), vai=t.estado==='aguardando'||t.estado==='enviando'||t.estado==='baixando';
+  const est=t.estado==='ok'?'concluído · SHA-256 conferido':t.estado==='erro'?esc(t.erro):t.estado==='aguardando'?'aguardando…':pct+'%';
+  return `<div class="rs-tr ${t.estado}" data-tr="${t.id}"><div class="rs-item"><span class="rs-nome" title="${esc(t.caminho||t.nome)}">${t.sentido==='envio'?'↑':'↓'} ${esc(t.nome)}</span><small>${fB(t.tamanho)}</small>${vai?`<button class="btn" data-cancelar="${t.id}">Cancelar</button>`:''}</div><div class="rs-barrinha"><i style="width:${pct}%"></i></div><small class="mut">${est}${t.sentido==='envio'&&t.estado==='ok'&&t.caminho?' · '+esc(t.caminho):''}</small></div>`; }
+function rsArqRender(){ const a=$('#rsArq'); if(!a||a.hidden||!RS) return; const l=RS.lista, tr=[...RS.transf.values()].filter(t=>!t.oculto).reverse();
+  a.innerHTML=`<div class="rs-arq-cab"><b>Arquivos</b><button class="rs-bt" data-x="fechar" aria-label="Fechar o painel de arquivos">✕</button></div>
+    <section><h4>Enviar para o outro computador</h4><button class="btn pri" data-x="escolher">Escolher arquivos…</button><input type="file" multiple hidden id="rsArqIn"><p class="mut">Ou arraste para a tela, ou copie no Explorer e aperte Ctrl+V na tela remota. Vão para Downloads\\CNT Monitor de quem você atende.</p></section>
+    ${RS.copiados.length?`<section><h4>Copiados no outro computador</h4>${RS.copiados.map((x,k)=>`<div class="rs-item"><span class="rs-nome" title="${esc(x.caminho)}">${esc(x.nome)}</span><small>${fB(x.tamanho)}</small><button class="btn" data-cop="${k}">Baixar</button></div>`).join('')}</section>`:''}
+    <section><h4>Buscar no outro computador</h4><div class="rs-cam"><button class="btn" data-x="inicio">Início</button>${RS.pasta?`<button class="btn" data-x="acima">Acima</button><code title="${esc(RS.pasta)}">${esc(RS.pasta)}</code>`:''}</div>
+    <div class="rs-lista">${l===null||l==='carregando'?'<p class="mut">Carregando…</p>':l.erro?`<p class="rs-erro">${esc(l.erro)}</p>`:(l.itens||[]).map((x,k)=>`<div class="rs-item${x.pasta?' rs-pasta':''}" ${x.pasta?`data-abrir="${k}" role="button" tabindex="0"`:''}><span class="rs-nome" title="${esc(x.caminho)}">${x.pasta?RS_PASTA:''}${esc(x.nome)}</span>${x.pasta?'':`<small>${fB(x.tamanho)}</small><button class="btn" data-bx="${k}">Baixar</button>`}</div>`).join('')||'<p class="mut">Pasta vazia.</p>'}</div>
+    <p class="mut">Você vê o que a pessoa atendida veria: as permissões são as dela.</p></section>
+    <section><h4>Transferências desta sessão</h4>${tr.length?tr.map(rsTrHtml).join(''):'<p class="mut">Nenhuma ainda.</p>'}</section>`;
+  a.onclick=e=>{ const x=e.target.closest('[data-x],[data-abrir],[data-bx],[data-cop],[data-cancelar]'); if(!x||!RS) return; const it=RS.lista&&RS.lista.itens;
+    if(x.dataset.x==='fechar') return rsPainel(false); if(x.dataset.x==='escolher') return $('#rsArqIn').click();
+    if(x.dataset.x==='inicio') return rsListar(''); if(x.dataset.x==='acima') return rsListar(rsAcima(RS.pasta));
+    if(x.dataset.abrir!=null&&it) return rsListar(it[+x.dataset.abrir].caminho);
+    if(x.dataset.bx!=null&&it) return rsBaixar(it[+x.dataset.bx]);
+    if(x.dataset.cop!=null) return rsBaixar(RS.copiados[+x.dataset.cop]);
+    if(x.dataset.cancelar!=null){ const t=RS.transf.get(+x.dataset.cancelar); if(!t) return; t.cancelado=true; if(t.sentido==='baixa'){ try{ RS.dados.send(JSON.stringify({t:'cancelar',id:t.id})); }catch(_){ } rsFalhou(t,'Cancelado.'); } } };
+  a.onkeydown=e=>{ if(e.key==='Enter'&&e.target.dataset.abrir!=null) e.target.click(); };
+  $('#rsArqIn').onchange=e=>{ [...e.target.files].forEach(f=>rsEnviar(f,f.name)); e.target.value=''; }; }
 
 /* =================== ciclo ao vivo =================== */
 let E=null, PROCS=[], STATUS=null, SERIE=[], ultSeg=0, contRede=0, contHw=0, NAV_TS=0;
@@ -1401,6 +1647,11 @@ const CFG_DEF=[
     ['tema','sel','Tema','Cores da janela.',{auto:'Igual ao Windows',escuro:'Escuro',claro:'Claro'}],
     ['varias_janelas','sw','Permitir abrir mais de uma janela','Desligado: clicar em “Abrir” de novo só traz a janela que já está aberta para a frente. Ligado: cada clique abre uma janela nova.'],
   ]],
+  ['Acesso remoto',[
+    ['remoto_layout','sel','Layout padrão com vários monitores','Como aparece o computador acessado quando ele tem mais de um monitor. Dá para trocar durante a sessão, pela barra.',{lado:'Lado a lado (como estão de verdade)',um:'Um ou outro (botões 1 · 2 na barra)',janelas:'Janelas separadas (uma por monitor)'}],
+    ['remoto_area','sel','Área de transferência compartilhada','Quando você acessa outro computador: o que um lado copia, o outro pode colar. Dá para trocar durante a sessão.',{ambos:'Nos dois sentidos',para_atendido:'Só daqui para o computador acessado',para_tecnico:'Só do computador acessado para cá',desligada:'Desligada'}],
+    ['remoto_permitir_ler_area','sw','Permitir que o técnico leia a minha área de transferência','Quando alguém acessa este computador. Desligado, nada do que você copia vai para o técnico (senhas, por exemplo), mesmo que ele escolha “nos dois sentidos”.'],
+  ]],
   ['Rede',[
     ['rede_por_programa','sw','Medir a rede de cada programa','Mostra quanto cada programa e processo envia e recebe e com quais IPs conversa (TCP e UDP).'],
     ['dns_reverso','sw','Descobrir o nome dos IPs','Mostra o nome do site/servidor ao lado do IP (ex.: api.anthropic.com).'],
@@ -1673,6 +1924,7 @@ function abrirPrograma(nome){ if(!nome) return; let aba='arvore', g=null, T={}, 
     $('#gSub').innerHTML=g.ausente?'Não está aberto agora — mostrando o histórico.':`${g.nproc} processos · ${g.janelas||0} janelas · ${g.nconn} conexões · ${g.nips} IPs${g.exe?` · <code>${esc(g.exe)}</code>`:''}${g.protegido?' · '+ESCUDO('Windows')+' faz parte do Windows':''}`;
     const prot=!!g.protegido;
     botoesAcoes([{t:'Mostrar janela',ic:'janela',des:g.ausente,f:()=>acao({tipo:'mostrar',programa:g.nome})},{t:'Abrir local',ic:'pasta',des:!g.exe,f:()=>acao({tipo:'pasta',programa:g.nome})},
+      {t:'Monitorar em detalhe',ic:'det',des:g.ausente,dica:'Toda a rede deste programa, segundo a segundo: taxa, pacotes, protocolos, latência, jitter, chamadas (RTP) e o que competia com ele. Dá para comparar até 4 programas.',f:()=>anMonitorar(g.nome)},
       {t:'Fechar (X)',ic:'fechar',des:g.ausente||prot,f:async()=>{ if(CFG.confirmar_encerrar && !await confirmar(`Fechar ${g.nome}?`,'Vou pedir para todas as janelas desse programa fecharem, como se você clicasse no X.','Fechar')) return; acao({tipo:'fechar_janelas',programa:g.nome}); }},{t:'Forçar encerramento',ic:'matar',perigo:1,des:g.ausente||prot||!CFG.permitir_encerrar,f:async()=>{ if(CFG.confirmar_encerrar && !await confirmar(`Forçar o encerramento de ${g.nome}?`,`Os ${g.nproc} processos serão encerrados na hora. O que não estiver salvo será perdido.`,'Forçar encerramento',1)) return; acao({tipo:'forcar_programa',programa:g.nome}); }}]);
     $('#gMini').innerHTML=g.ausente?'':miniCards([['Memória',fB(g.mem),E?fP(g.mem/E.mem_total*100)+' da RAM':''],['CPU',fP(g.cpu),'',nivel(g.cpu,50,20)],['Disco',fR(g.ler+g.gravar),`ler ${fR(g.ler)} · gravar ${fR(g.gravar)}`],['Rede',fN(g.env+g.rec),`↑ ${fN(g.env)} · ↓ ${fN(g.rec)}`],['GPU',fP(g.gpu),g.gpu_mem?fB(g.gpu_mem)+' de vídeo':'']]);
     if(aba==='arvore'){ if(MENU_ABERTO) return; $('#gArv').innerHTML='<table><thead><tr><th class="e">Processo</th><th>PID</th><th>Memória</th><th>CPU</th><th>Disco</th><th>Rede</th><th>GPU</th><th>Conexões</th></tr></thead><tbody>'+(linhasArvore(g.processos,false)||'<tr><td colspan="8" class="vazio">Nenhum processo aberto agora.</td></tr>')+'</tbody></table>'; }
@@ -1695,9 +1947,12 @@ const AJUDA_REDE={
   bufferbloat:'Bufferbloat = quanto a latência sobe quando a internet está cheia (download/upload). Comparamos a mediana do ping com o link ocioso (≤10% do pico) e carregado (≥60%). Nota A+ < 5 ms, A < 30, B < 60, C < 200, D < 400, F acima.',
   saude:'Pontuações de 0 a 100 (maior = melhor). Tempo real: MOS. Estabilidade: 100 − (2×desvio + 0,5×jitter máximo + 5×maior sequência de perdas). Sem congestionamento: 100 − bufferbloat/2. Confiabilidade: 100 − 20×(% do tempo fora do ar). Saúde: média das que existirem.',
   trace:'Traceroute: manda pings com TTL 1, 2, 3… e cada roteador do caminho responde. Perda ou latência alta num salto do meio nem sempre é defeito: muitos roteadores limitam respostas a ping e mesmo assim encaminham o tráfego normalmente.',
-  tcp:'Dados do próprio Windows sobre cada conexão TCP (RTT suavizado, variação, retransmissões, ACKs duplicados, timeouts e RTO). A coleta liga quando você abre esta aba, então os números contam a partir daí. Não existe equivalente para UDP (jogos, chamadas): só o próprio programa sabe.',
+  tcp:'Dados do próprio Windows sobre cada conexão TCP (RTT suavizado, variação, retransmissões, ACKs duplicados, timeouts e RTO). A coleta liga quando você abre esta aba, então os números contam a partir daí. No UDP o Windows não mede isso: o jitter de chegada vem do ritmo dos pacotes e, nas chamadas, do cabeçalho RTP (Monitoramento detalhado por programa).',
   analise:'Grava 1 ping por segundo para cada destino, a carga da internet e os contadores do Windows enquanto estiver ligada (até 24 h). Bom para deixar rodando durante um jogo, uma chamada ou o horário em que a internet piora. Queda = 3 segundos ou mais sem resposta de nenhum destino da internet.',
-  limites:'O CNT Monitor mede a partir deste PC. Não dá para ver daqui: contadores do roteador/switch/operadora (BGP, filas, DSCP, NAT, conntrack), camada física (fibra, FEC, colisões), métricas de VoIP/RTP/SIP e a perda interna de jogos UDP (só o jogo sabe — no CS2 é o netgraph dele).'};
+  conexoes:'Cada linha é uma conexão com tráfego nos últimos 10 s. TCP: RTT e retransmissões medidos pelo próprio Windows. UDP: jitter de chegada (quanto o intervalo entre os pacotes que chegam varia) e o maior silêncio. Ping: 1 por segundo ao destino enquanto esta tela está aberta. Nota: MOS estimado (1 a 4,4) com latência, jitter e perda.',
+  teste:'Mede de verdade até um destino, 2 vezes por segundo. ICMP é o ping. TCP mede o tempo para abrir uma conexão na porta (um “ping” que passa por firewall que bloqueia ICMP). UDP: o destino só responde se o programa dele quiser; silêncio total não é perda (aparece “sem devolução”), e aí o servidor da CNT entra como referência separada, porque o caminho até ele é outro.',
+  programa:'Escolha até 4 programas (ex.: o navegador e um softphone) e veja, segundo a segundo, a taxa de transferência, os pacotes, TCP × UDP, a latência e o jitter até os servidores que cada um usa, a qualidade das chamadas (RTP: jitter RFC 3550, perda e ordem pela numeração) e quem mais usava a rede no mesmo segundo. Parar salva; Exportar .log gera um arquivo texto (uma linha por segundo, separada por TAB) para levar e analisar.',
+  limites:'O CNT Monitor mede a partir deste PC. Não dá para ver daqui: contadores do roteador/switch/operadora (BGP, filas, DSCP, NAT, conntrack), camada física (fibra, FEC, colisões), mensagens SIP criptografadas e a perda interna de jogos UDP (só o jogo sabe — no CS2 é o netgraph dele).'};
 function abrirIP(ip){ if(!ip) return; let aba='resumo', d=null, T={}, cont=0, tr=null, gP=null, gT=null;
   const o={ async atualizar(primeira){ try{ d=await API('rede/ip?ip='+encodeURIComponent(ip)); }catch(_){ return; } if(primeira) montar(); else preencher(); },
     tick(){ if(++cont % Math.max(1,Math.round(1000/CFG.intervalo_ms))===0) o.atualizar(false); } };
@@ -1737,7 +1992,7 @@ function abrirIP(ip){ if(!ip) return; let aba='resumo', d=null, T={}, cont=0, tr
 
 /* =================== ANÁLISE DE REDE =================== */
 let AN=null, anAberta=null, anVista=null, anCont=0, anMontado=false, anG1=null, anG2=null, anDns=null, anHttp=null, anTr=null, anT=null, anPlacas=null, anSalvas=null, anDnsT=null;
-async function vAnalise(forcar){ if(!forcar&&anMontado&&(anCont++%3)) return; try{ AN=await API('rede/analise'); }catch(_){ return; } if(MENU_ABERTO) return;
+async function vAnalise(forcar){ if(!forcar&&anMontado&&(anCont++%3)) return; try{ [AN,anConD]=await Promise.all([API('rede/analise'),API('rede/conexoes').catch(()=>anConD)]); }catch(_){ return; } if(MENU_ABERTO) return;
   if(!anMontado) montarAnalise(); if(anAberta){ if(!anVista||anVista.id!==anAberta||anVista.gravando){ try{ anVista=await API('rede/analise/abrir?id='+encodeURIComponent(anAberta)); }catch(_){ anAberta=null; anVista=AN.captura; } } }
   else anVista=AN.captura; preencherAnalise(); }
 async function iniciarAnalise(alvos,minutos){ const r=await POST('acao',{tipo:'rede_analise_iniciar',alvos,minutos:minutos||0}).catch(()=>null); if(!r) return; toast(r.msg,!r.ok);
@@ -1745,6 +2000,15 @@ async function iniciarAnalise(alvos,minutos){ const r=await POST('acao',{tipo:'r
 const kvHtml=l=>l.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('');
 function montarAnalise(){ anMontado=true;
   $('#redeAnalise').innerHTML=`
+  <div class="painel"><div class="cab"><h2>Conexões em andamento</h2><span class="desc">tráfego nos últimos 10 s e a qualidade de cada uma</span>${AJ(AJUDA_REDE.conexoes)}</div><div class="tw curta" id="anCon"></div></div>
+  <div class="painel secao"><div class="cab"><h2>Teste real até um destino</h2>${AJ(AJUDA_REDE.teste)}</div>
+    <div style="padding:10px 14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input type="text" id="anTDest" placeholder="IP ou nome, ex.: 8.8.8.8 ou sip.operadora.com.br" style="flex:1;min-width:220px" aria-label="Destino do teste">
+      <select id="anTProto" aria-label="Protocolo"><option value="icmp">ICMP (ping)</option><option value="tcp">TCP (tempo de conexão)</option><option value="udp">UDP</option></select>
+      <input type="number" id="anTPorta" min="1" max="65535" placeholder="porta" style="width:90px" aria-label="Porta" hidden>
+      <select id="anTSeg" aria-label="Duração"><option value="10">10 s</option><option value="30" selected>30 s</option><option value="60">1 min</option><option value="120">2 min</option><option value="300">5 min</option></select><button class="btn pri" id="anTB">Testar</button></div>
+    <div id="anTRes" style="padding:0 14px 8px"></div><div class="graf" style="padding:0 14px 12px" id="anTGraf" hidden><div class="leg" id="anTLeg"></div><canvas id="anTG" height="170"></canvas></div></div>
+  <div class="painel secao" id="anProg"><div class="cab"><h2>Monitoramento detalhado por programa</h2>${AJ(AJUDA_REDE.programa)}<div class="dir" id="anProgB"></div></div><div id="anProgCorpo" style="padding:0 14px 14px"></div></div>
+  <h2 class="secao" style="margin:24px 0 8px">Ferramentas</h2>
   <div class="painel"><div class="cab"><h2>Gravar uma análise</h2>${AJ(AJUDA_REDE.analise)}</div><div id="anNova" style="padding:12px 14px"></div></div>
   <div class="painel secao" id="anResP" hidden><div class="cab"><h2 id="anResT">Análise</h2><span class="desc" id="anResD"></span><div class="dir" id="anResB"></div></div>
     <div style="padding:0 14px"><div id="anCards"></div></div>
@@ -1764,6 +2028,20 @@ function montarAnalise(){ anMontado=true;
   <div class="painel secao"><div class="cab"><h2>Análises salvas</h2><span class="desc">as 30 mais recentes</span></div><div class="tw curta" id="anSalvas"></div></div>
   <p class="mut secao" style="font-size:12px">${esc(AJUDA_REDE.limites)} País e operadora: <a href="https://db-ip.com" target="_blank" rel="noopener">IP Geolocation by DB-IP</a> (CC BY 4.0), consultado no próprio PC.</p>`;
   anG1=new Grafico($('#anG1'),{fmt:v=>nf1.format(v)+' ms',eixo:v=>nf0.format(v)+' ms',ymin:10,gap:1e9}); anG2=new Grafico($('#anG2'),{fmt:fN,eixo:eixoN,ymin:KB,gap:1e9});
+  anTG=new Grafico($('#anTG'),{fmt:v=>nf1.format(v)+' ms',eixo:v=>nf0.format(v)+' ms',ymin:10,gap:3});
+  anConT=Tabela($('#anCon'),[{k:'programa',t:'Programa',e:1,texto:1,f:r=>`${esc(r.programa)}<span class="pid">${esc(r.processo)} ${r.pid}</span>`},{k:'proto',t:'Prot.',e:1,texto:1},
+    {k:'ip',t:'Destino',e:1,texto:1,f:r=>`<code>${esc(r.ip)}:${r.rport}</code>${r.host?`<div class="mut" style="font-size:11px">${esc(r.host)}</div>`:''}`},{k:'servico',t:'Serviço',e:1,texto:1},
+    {k:'env',t:'↑',f:r=>fN(r.env)},{k:'rec',t:'↓',f:r=>fN(r.rec)},{k:'pps',t:'Pacotes/s',f:r=>nf0.format(r.pps)},
+    {k:'ping',t:'Ping',v:r=>r.ping??1e9,f:r=>fMs(r.ping)},{k:'rtt_tcp',t:'RTT TCP',v:r=>r.rtt_tcp??1e9,f:r=>r.proto==='TCP'?fMs(r.rtt_tcp):'<span class="mut">—</span>'},
+    {k:'retransmissoes',t:'Retransm.',v:r=>r.retransmissoes??-1,f:r=>r.retransmissoes==null?'<span class="mut">—</span>':`<span class="${r.retransmissoes>0?'quente':''}">${nf0.format(r.retransmissoes)}</span>`},
+    {k:'jitter',t:'Jitter',v:r=>r.jitter??-1,f:r=>r.proto==='UDP'?fMs(r.jitter):'<span class="mut">—</span>'},{k:'silencio',t:'Maior silêncio',v:r=>r.silencio??-1,f:r=>r.proto==='UDP'?fMs(r.silencio):'<span class="mut">—</span>'},
+    {k:'perda',t:'Perda (ping)',v:r=>r.perda??-1,f:r=>r.perda==null?'<span class="mut">—</span>':`<span class="${r.perda>=2?'muito':r.perda>0?'quente':''}">${nf1.format(r.perda)}%</span>`},{k:'mos',t:'Nota',v:r=>r.mos??-1,f:r=>anNotaMos(r.mos)}],
+    {ordem:'rec',clique:r=>abrirIP(r.ip),menu:(e,r)=>abrirMenu(e,r.programa,[{t:'Detalhes do IP',ic:'det',f:()=>abrirIP(r.ip)},{t:'Monitorar este programa em detalhe',ic:'det',f:()=>anMonitorar(r.programa)}]),vazio:'Nenhuma conexão com tráfego agora.'});
+  anProgSalvasT=null;
+  $('#anTProto').onchange=()=>{ $('#anTPorta').hidden=$('#anTProto').value==='icmp'; };
+  $('#anTB').onclick=async()=>{ const rod=AN&&AN.teste&&AN.teste.fase==='medindo';
+    const r=await POST('acao',rod?{tipo:'rede_teste_cancelar'}:{tipo:'rede_teste',destino:$('#anTDest').value,protocolo:$('#anTProto').value,porta:+$('#anTPorta').value||0,segundos:+$('#anTSeg').value}).catch(()=>null);
+    if(r){ if(!r.ok||rod) toast(r.msg,!r.ok); } vAnalise(true); };
   $('#anVelB').onclick=async()=>{ const rod=AN&&AN.velocidade&&!['parado','pronto','erro'].includes(AN.velocidade.fase); const r=await POST('acao',{tipo:rod?'rede_velocidade_cancelar':'rede_velocidade'}).catch(()=>null); if(r) toast(r.msg,!r.ok); vAnalise(true); };
   $('#anDnsB').onclick=async()=>{ const b=$('#anDnsB'); b.disabled=true; b.textContent='Testando…'; const r=await POST('acao',{tipo:'rede_dns'}).catch(()=>null); b.disabled=false; b.textContent='Testar DNS'; if(r){ if(!r.ok) toast(r.msg,1); anDns=r.dados; preencherAnalise(); } };
   $('#anHttpB').onclick=async()=>{ const b=$('#anHttpB'); b.disabled=true; const r=await POST('acao',{tipo:'rede_http',url:$('#anUrl').value}).catch(()=>null); b.disabled=false; if(r){ if(!r.ok) toast(r.msg,1); anHttp=r.ok?r.dados:null; preencherAnalise(); } };
@@ -1816,9 +2094,106 @@ function preencherAnalise(){ const a=AN; if(!a) return; const cap=a.captura;
     ['Download',ve.download?`<b>${nf1.format(ve.download.mbps)} Mb/s</b> · pico ${nf1.format(ve.download.pico_mbps)} Mb/s`:'—'],['Upload',ve.upload?`<b>${nf1.format(ve.upload.mbps)} Mb/s</b> · pico ${nf1.format(ve.upload.pico_mbps)} Mb/s`:'—'],
     ['Latência ociosa',ve.latencia?`${fMs(ve.latencia.mediana)} · jitter ${fMs(ve.latencia.jitter)}`:'—'],['Latência sob carga',ve.download?`↓ ${fMs(ve.download.latencia.mediana)} · ↑ ${ve.upload?fMs(ve.upload.latencia.mediana):'—'}`:'—'],
     [`Bufferbloat${AJ(AJUDA_REDE.bufferbloat)}`,ve.bufferbloat!=null?`+${fMs(ve.bufferbloat)} · nota <b>${ve.nota}</b>`:'—'],['Assimetria',ve.assimetria?`download ${nf1.format(ve.assimetria)}× o upload`:'—']]);
+  if(anConD) anConT.def(anConD); anTesteRender(a.teste); anProgRender(a);
   if(anDns) anDnsT.def(anDns.servidores);
   $('#anHttp').innerHTML=anHttp?kvHtml([['Resposta',`HTTP ${anHttp.status??'?'} · ${fB(anHttp.bytes)} · IP <code>${esc(anHttp.ip)}</code>`],['DNS',fMs(anHttp.dns)],['Conexão TCP',fMs(anHttp.tcp)],['TLS',anHttp.tls!=null?`${fMs(anHttp.tls)} · ${esc(anHttp.tls_versao||'')}`:'— (http)'],['Primeiro byte (TTFB)',fMs(anHttp.ttfb)],['Total',`<b>${fMs(anHttp.total)}</b>`]]):'';
   anSalvas.def(a.salvas); }
+
+/* --- Análise: teste real até um destino e monitoramento detalhado por programa --- */
+let anConD=null, anConT=null, anTG=null, anProgG=null, anProgChave='', anProgVista=null, anProgSalvasT=null;
+const AN_CORES=['#5aa9e6','#e8a33d','#4cc38a','#c678dd'];
+const anNotaMos=m=>m==null?'<span class="mut">—</span>':`<b class="${m<3.1?'muito':m<3.6?'quente':''}">${nf1.format(m)}</b>`;
+// mesmo cálculo do serviço, para mostrar o resumo enquanto o teste ainda mede
+function anResumo(rtts, udp){ const ok=rtts.filter(v=>v!=null), s=[...ok].sort((a,b)=>a-b), p=q=>s.length?s[Math.min(s.length-1,Math.round((s.length-1)*q))]:null;
+  const dif=[]; let ant=null; for(const v of rtts){ if(v!=null&&ant!=null) dif.push(Math.abs(v-ant)); if(v!=null) ant=v; }
+  return {min:s[0]??null, media:ok.length?ok.reduce((a,b)=>a+b,0)/ok.length:null, mediana:p(.5), p95:p(.95), max:s[s.length-1]??null,
+    jitter:dif.length?dif.reduce((a,b)=>a+b,0)/dif.length:null, perda:udp&&!ok.length?null:rtts.length?(rtts.length-ok.length)*100/rtts.length:null}; }
+function anTesteRender(t){ const res=$('#anTRes'); if(!res) return; const rod=t&&t.fase==='medindo', b=$('#anTB'); b.textContent=rod?'Cancelar':'Testar'; b.className='btn '+(rod?'':'pri');
+  if(!t||t.fase==='parado'){ res.innerHTML='<p class="mut" style="margin:0">ICMP mede o ping. TCP mede o tempo para abrir uma conexão na porta (serve para destinos que bloqueiam ping). UDP manda um datagrama e espera a resposta ou o aviso de “porta fechada” do próprio destino. Duas medidas por segundo.</p>'; $('#anTGraf').hidden=true; return; }
+  const s=t.serie||[], udp=t.protocolo==='udp', r=t.resultado||anResumo(s.map(x=>x[1]),udp), semDev=udp&&(t.resultado?t.resultado.sem_devolucao:!s.some(x=>x[1]!=null)&&s.length>0);
+  const prot={icmp:'ICMP',tcp:'TCP porta '+t.porta,udp:'UDP porta '+t.porta}[t.protocolo];
+  const tipos=t.tipos||{}, mos=t.resultado?t.resultado.mos:null;
+  res.innerHTML=`<p style="margin:0 0 8px"><b>${esc(t.destino)}</b> <span class="mut">(${esc(t.ip)}) · ${prot} · ${rod?`medindo… ${s.length} de ${t.segundos*2} medidas`:t.fase==='erro'?'falhou: '+esc(t.erro||''):t.fase==='cancelado'?'cancelado':'concluído '+quando(t.fim)}</span></p>`
+    +miniCards([['Mínimo',fMs(r.min)],['Média',fMs(r.media)],['P95',fMs(r.p95)],['Máximo',fMs(r.max)],['Jitter',fMs(r.jitter),'variação entre medidas seguidas'],
+      ['Perda',semDev?'sem devolução':r.perda==null?'—':nf1.format(r.perda)+'%',semDev?'UDP sem resposta não é perda':udp?`${tipos.resposta||0} respostas · ${tipos.porta_inacessivel||0} porta fechada`:'',semDev?'':r.perda>=2?'muito':r.perda>0?'quente':''],
+      ['MOS estimado',mos!=null?nf1.format(mos):'—',mos!=null?'1 a 4,4 (chamada boa ≥ 4)':'no fim do teste']])
+    +(semDev?`<div class="aviso" style="margin-top:10px">O destino não devolveu nenhum datagrama UDP. Isso <b>não</b> é perda: servidores de chamada, de jogo e firewalls descartam calados o que não esperavam.${t.vps?` Referência pelo servidor da CNT (${esc(t.vps.servidor)}), <b>rota diferente</b>: mede a sua saída de internet, não o destino — ${t.vps.respondeu?`mediana ${fMs(t.vps.mediana)} · jitter ${fMs(t.vps.jitter)} · perda ${nf1.format(t.vps.perda||0)}%`:'o servidor da CNT também não respondeu: UDP pode estar bloqueado nesta rede'}.`:rod?'':' A referência pelo servidor da CNT aparece aqui no fim do teste.'}</div>`:'');
+  $('#anTGraf').hidden=!s.length; if(!s.length) return;
+  const t0=s[0][0], t1=Math.max(s[s.length-1][0], t0+5);
+  const lat={nome:'Latência',cor:COR(0),grossa:1,pts:s.map(x=>[x[0],x[1]]),faixa:s.map(x=>[x[0],x[1]!=null&&x[2]!=null?x[1]-x[2]:null,x[1]!=null&&x[2]!=null?x[1]+x[2]:null])}, jit={nome:'Jitter',cor:COR(1),traco:1,pts:s.map(x=>[x[0],x[2]])};
+  legenda($('#anTLeg'),[lat,jit],'<span class="mut">faixa = latência ± jitter'+(semDev?'':' · traço vermelho = sem resposta')+'</span>');
+  anTG.def({t0,t1,passo:.5,series:[lat,jit],perdas:semDev?[]:s.filter(x=>x[1]==null).map(x=>({t:x[0]}))}); }
+async function anMonitorar(nome){ const r=await POST('acao',{tipo:'rede_prog_iniciar',programa:nome}).catch(()=>null); if(!r) return; toast(r.msg,!r.ok); if(!r.ok) return;
+  anProgVista=null; if(gavAtual) fecharGaveta(); abaRede='analise'; document.querySelectorAll('#segRede button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f==='analise'));
+  $('#redeGeral').hidden=true; $('#redeAnalise').hidden=false; if(vista!=='rede') location.hash='#rede'; await vAnalise(true); const p=$('#anProg'); if(p) p.scrollIntoView({behavior:'smooth',block:'start'}); }
+function anProgRender(a){ const corpo=$('#anProgCorpo'), bts=$('#anProgB'); if(!corpo) return; const v=anProgVista||a.programas||{};
+  if(!anProgSalvasT){ corpo.innerHTML=''; anProgChave=''; }
+  if(!v.ativo&&!anProgVista){ const usando=((E&&E.programas)||[]).filter(g=>!g.outros&&(g.env||0)+(g.rec||0)>0).sort((x,y)=>(y.env+y.rec)-(x.env+x.rec));
+    bts.innerHTML=''; const opcoes=`<option value="">Escolha um programa usando a rede agora…</option>${usando.map(g=>`<option value="${esc(g.nome)}">${esc(g.nome)} — ${fN(g.env+g.rec)}</option>`).join('')}`;
+    if(anProgChave==='inicio'&&$('#anPSel')){ const sel=$('#anPSel'); if(document.activeElement!==sel){ const v0=sel.value; sel.innerHTML=opcoes; sel.value=v0; } anProgSalvasT.def(a.programas_salvos||[]); return; }
+    anProgChave='inicio';
+    corpo.innerHTML=`<p style="margin:4px 0 10px">Vigia tudo o que um programa faz na rede: taxa de transferência segundo a segundo, pacotes, TCP × UDP, latência e jitter até os servidores que ele usa, a qualidade das chamadas (RTP) e o que mais estava usando a rede ao mesmo tempo. Dá para monitorar até 4 programas e comparar.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><select id="anPSel" aria-label="Programa">${opcoes}</select><button class="btn pri" id="anPIni">Monitorar em detalhe</button>
+      <span class="mut">ou abra o programa (tela Programas) e use “Monitorar em detalhe”.</span></div>
+      <h3 style="margin:16px 0 6px;font-size:13px">Monitoramentos salvos</h3><div class="tw curta" id="anPSalvas"></div><p class="mut" style="font-size:12px">${(v.limites||[]).map(esc).join(' ')}</p>`;
+    $('#anPIni').onclick=()=>{ const n=$('#anPSel').value; if(!n) return toast('Escolha um programa.',1); anMonitorar(n); };
+    anProgSalvasT=Tabela($('#anPSalvas'),[{k:'inicio',t:'Início',f:r=>quando(r.inicio)},{k:'segundos',t:'Duração',f:r=>dur(r.segundos)},{k:'programas',t:'Programas',e:1,texto:1,v:r=>r.programas.join(', '),f:r=>esc(r.programas.join(', '))}],
+      {ordem:'inicio',clique:r=>anAbrirProg(r.id),menu:(e,r)=>abrirMenu(e,quando(r.inicio),[{t:'Abrir',ic:'det',f:()=>anAbrirProg(r.id)},{t:'Exportar .log',ic:'det',f:()=>anExportar(r.id)},
+        {t:'Apagar',ic:'fechar',f:async()=>{ const x=await POST('acao',{tipo:'rede_prog_apagar',id:r.id}).catch(()=>null); if(x) toast(x.msg,!x.ok); vAnalise(true); }}]),vazio:'Nenhum monitoramento salvo ainda.'});
+    anProgSalvasT.def(a.programas_salvos||[]); return; }
+  const progs=v.programas||[], chave=(anProgVista?'s:':'v:')+v.id+':'+progs.map(p=>p.nome).join('|');
+  if(chave===anProgChave&&document.activeElement&&document.activeElement.id==='anPMais'){ /* escolhendo: não recria a barra */ } else {
+  bts.innerHTML=anProgVista?`<button class="btn" id="anPExp">Exportar .log</button><button class="btn" id="anPFechar">Fechar</button>`
+    :`<select id="anPMais" aria-label="Adicionar programa"><option value="">+ comparar com…</option>${((E&&E.programas)||[]).filter(g=>!g.outros&&!progs.some(p=>p.nome===g.nome)&&(g.env||0)+(g.rec||0)>0).map(g=>`<option value="${esc(g.nome)}">${esc(g.nome)}</option>`).join('')}</select><button class="btn" id="anPExp">Exportar .log</button><button class="btn perigo" id="anPParar">Parar e salvar</button>`;
+  $('#anPExp').onclick=()=>anExportar(anProgVista?v.id:'atual');
+  if($('#anPFechar')) $('#anPFechar').onclick=()=>{ anProgVista=null; anProgSalvasT=null; anProgRender(AN); };
+  if($('#anPParar')) $('#anPParar').onclick=async()=>{ const r=await POST('acao',{tipo:'rede_prog_parar'}).catch(()=>null); if(r){ toast(r.msg,!r.ok); if(r.dados) anProgVista=await API('rede/programas/abrir?id='+encodeURIComponent(r.dados)).catch(()=>null); } anProgSalvasT=null; vAnalise(true); };
+  if($('#anPMais')) $('#anPMais').onchange=e=>{ if(e.target.value) anMonitorar(e.target.value); }; }
+  if(chave!==anProgChave){ anProgChave=chave; anProgSalvasT={def(){}};
+    const graf=(id,t,d)=>`<div class="graf secao"><h2 style="margin:0 0 4px;font-size:13px">${t}${d?` <span class="mut" style="font-weight:400">${d}</span>`:''}</h2><div class="leg" id="${id}L"></div><canvas id="${id}" height="150"></canvas></div>`;
+    corpo.innerHTML=`<p style="margin:4px 0 8px" id="anPInfo"></p><div id="anPCards"></div>`
+      +graf('anPG1','Latência e jitter','linha = latência até os servidores do programa · faixa = latência ± jitter · traço vermelho = sonda sem resposta')
+      +graf('anPG5','Qualidade (MOS estimado)','4 ou mais = chamada boa · abaixo de 3,1 = ruim')
+      +graf('anPG2','Taxa de transferência','linha cheia = ↓ recebendo · tracejada = ↑ enviando')
+      +graf('anPG3','Protocolos','linha cheia = TCP · tracejada = UDP (↑ + ↓)')
+      +graf('anPG4','Competindo pela rede','áreas = outros programas · linha grossa = os programas monitorados')
+      +`<div id="anPRtp"></div><p class="mut" style="font-size:12px;margin-top:10px">${(v.limites||[]).map(esc).join(' ')}</p>`;
+    const ms={fmt:v=>nf1.format(v)+' ms',eixo:v=>nf0.format(v)+' ms',ymin:10,gap:5};
+    anProgG=[new Grafico($('#anPG1'),ms),new Grafico($('#anPG2'),{fmt:fN,eixo:eixoN,ymin:KB,gap:5}),new Grafico($('#anPG3'),{fmt:fN,eixo:eixoN,ymin:KB,gap:5}),
+      new Grafico($('#anPG4'),{fmt:fN,eixo:eixoN,ymin:KB,gap:5}),new Grafico($('#anPG5'),{fmt:v=>nf1.format(v),eixo:v=>nf1.format(v),ymax:5,gap:5})]; }
+  const CI=Object.fromEntries((v.colunas||[]).map((k,i)=>[k,i])), cor=i=>AN_CORES[i%4];
+  $('#anPInfo').innerHTML=anProgVista?`Monitoramento de ${quando(v.inicio)} · ${dur(v.segundos)}`:`<b>Monitorando</b> há ${dur(v.segundos)} · ${progs.map((p,i)=>`<span class="chip" style="border-color:${cor(i)}">${esc(p.nome)}${progs.length>1?` <button class="btn" data-tirar="${esc(p.nome)}" aria-label="Tirar ${esc(p.nome)}" style="padding:0 6px">×</button>`:''}</span>`).join(' ')}`
+    +(v.captura_rtp&&!v.captura_rtp.ok&&v.captura_rtp.erro?` · <span class="quente">análise de chamadas (RTP) indisponível: ${esc(v.captura_rtp.erro)}</span>`:'');
+  $('#anPInfo').onclick=async e=>{ const b=e.target.closest('[data-tirar]'); if(!b) return; const r=await POST('acao',{tipo:'rede_prog_remover',programa:b.dataset.tirar}).catch(()=>null); if(r) toast(r.msg,!r.ok); anProgChave=''; vAnalise(true); };
+  $('#anPCards').innerHTML=progs.map((p,i)=>{ const r=p.resumo||{}, l=r.latencia||{}, rtp=(p.rtp||[])[0];
+    return `<h3 style="margin:12px 0 6px;font-size:14px;color:${cor(i)}">${esc(p.nome)}</h3>`+miniCards([['Nota',r.nota!=null?r.nota+'/100':'—',r.mos!=null?`MOS ${nf1.format(r.mos)} · pior ${nf1.format(r.mos_min)}`:'sem latência medida',r.nota==null?'':r.nota<60?'muito':r.nota<80?'quente':'ok'],
+      ['Latência',fMs(l.mediana),l.p95!=null?`P95 ${fMs(l.p95)} · máx ${fMs(l.max)}`:'sondas até os destinos'],
+      ['Jitter',fMs(r.rtp_jitter??r.jitter_chegada??l.jitter),r.rtp_jitter!=null?'da chamada (RTP, RFC 3550)':r.jitter_chegada!=null?'de chegada dos pacotes UDP':'entre as sondas'],
+      ['Perda',r.rtp_perda!=null?nf1.format(r.rtp_perda)+'%':l.perda!=null?nf1.format(l.perda)+'%':'—',r.rtp_perda!=null?`chamada · ${r.rtp_fora_de_ordem} fora de ordem`:'das sondas',(r.rtp_perda??l.perda)>=2?'muito':(r.rtp_perda??l.perda)>0?'quente':''],
+      ['Taxa',`↓ ${fN(r.rec_medio)} · ↑ ${fN(r.env_medio)}`,`pico ↓ ${fN(r.rec_pico)} · ↑ ${fN(r.env_pico)} · ${nf1.format(r.pps_medio||0)} pacotes/s`],
+      ['TCP',r.tcp_rtt!=null?fMs(r.tcp_rtt):'—',`${nf0.format(r.tcp_retransmissoes||0)} retransmissões · ${fB(r.tcp_total)} TCP · ${fB(r.udp_total)} UDP`,r.tcp_retransmissoes>0?'quente':''],
+      ['Chamada (RTP)',rtp?esc(rtp.codec):'—',rtp?`${nf0.format(rtp.recebidos)} pacotes · jitter ${fMs(rtp.jitter_ms)}`:'nenhum fluxo de voz/vídeo visto']])
+      +`<div class="tw curta" style="margin-top:6px"><table><thead><tr><th class="e">Destino</th><th>Sonda</th><th>Latência</th><th>↑</th><th>↓</th><th class="e">Portas</th></tr></thead><tbody>${(p.destinos||[]).map(d=>`<tr><td class="e"><code>${esc(d.ip)}</code></td><td>${{icmp:'ICMP',tcp:'TCP',udp:'UDP',sem_devolucao:'UDP sem devolução'}[d.modo]||'—'}</td><td>${fMs(d.rtt)}</td><td>${fB(d.env)}</td><td>${fB(d.rec)}</td><td class="e">${esc([...(d.tcp||[]).map(x=>'TCP '+x),...(d.udp||[]).map(x=>'UDP '+x)].slice(0,4).join(', '))}</td></tr>`).join('')||'<tr><td colspan="6" class="vazio">Ainda sem tráfego.</td></tr>'}</tbody></table></div>`; }).join('');
+  const todas=progs.flatMap(p=>p.serie||[]); if(!todas.length||!anProgG) return;
+  const t0=Math.min(...todas.map(l=>l[0])), t1=Math.max(...todas.map(l=>l[0]))+1, passo=Math.max(1,...progs.map(p=>p.passo||1)), col=(p,k)=>(p.serie||[]).map(l=>[l[0],l[CI[k]]]);
+  const s1=[], perdas=[];
+  progs.forEach((p,i)=>{ const jit=l=>l[CI.rtp_jitter_ms]??l[CI.jitter_chegada_ms]; s1.push({nome:p.nome,cor:cor(i),grossa:1,pts:col(p,'latencia_ms'),faixa:(p.serie||[]).map(l=>[l[0],l[CI.latencia_ms]!=null&&jit(l)!=null?Math.max(0,l[CI.latencia_ms]-jit(l)):null,l[CI.latencia_ms]!=null&&jit(l)!=null?l[CI.latencia_ms]+jit(l):null])});
+    s1.push({nome:'jitter — '+p.nome,cor:cor(i),traco:1,pts:(p.serie||[]).map(l=>[l[0],jit(l)])}); (p.serie||[]).forEach(l=>{ if(l[CI.sonda_sem_resposta]) perdas.push({t:l[0],cor:css('--perigo')}); }); });
+  const b={t0,t1,passo};
+  anProgG[0].def({...b,series:s1,perdas}); legenda($('#anPG1L'),s1.filter(s=>!s.traco));
+  const s5=progs.map((p,i)=>({nome:p.nome,cor:cor(i),grossa:1,pts:col(p,'mos')})); anProgG[4].def({...b,series:s5}); legenda($('#anPG5L'),s5);
+  const s2=progs.flatMap((p,i)=>[{nome:'↓ '+p.nome,cor:cor(i),grossa:1,pts:col(p,'rec_Bps')},{nome:'↑ '+p.nome,cor:cor(i),traco:1,pts:col(p,'env_Bps')}]); anProgG[1].def({...b,series:s2}); legenda($('#anPG2L'),s2);
+  const s3=progs.flatMap((p,i)=>[{nome:'TCP '+p.nome,cor:cor(i),pts:(p.serie||[]).map(l=>[l[0],l[CI.tcp_env_Bps]+l[CI.tcp_rec_Bps]])},{nome:'UDP '+p.nome,cor:cor(i),traco:1,pts:(p.serie||[]).map(l=>[l[0],l[CI.udp_env_Bps]+l[CI.udp_rec_Bps]])}]); anProgG[2].def({...b,series:s3}); legenda($('#anPG3L'),s3);
+  // competindo: áreas empilhadas dos outros programas (os 5 que mais usaram) e a soma dos monitorados por cima
+  const conc=(v.concorrencia||[]).filter(x=>x[0]>=t0), tot={}; conc.forEach(([,o])=>{ for(const k in o) tot[k]=(tot[k]||0)+o[k]; });
+  const nomes=Object.keys(tot).sort((x,y)=>tot[y]-tot[x]).slice(0,5), s4=[];
+  nomes.forEach((n,i)=>s4.push({nome:n,cor:COR(i+3),area:1,pts:conc.map(([t,o])=>[t,nomes.slice(i).reduce((a,k)=>a+(o[k]||0),0)])}));
+  const meus=new Map(); progs.forEach(p=>(p.serie||[]).forEach(l=>meus.set(l[0],(meus.get(l[0])||0)+l[CI.env_Bps]+l[CI.rec_Bps])));
+  s4.push({nome:progs.length>1?'monitorados (soma)':progs[0].nome,cor:cor(0),grossa:1,pts:[...meus].sort((x,y)=>x[0]-y[0])});
+  anProgG[3].def({...b,series:s4}); legenda($('#anPG4L'),s4,nomes.length?'':'<span class="mut">nenhum outro programa usou a rede</span>'); }
+async function anAbrirProg(id){ anProgVista=await API('rede/programas/abrir?id='+encodeURIComponent(id)).catch(()=>null); if(!anProgVista) return toast('Esse monitoramento não existe mais.',1); anProgChave=''; anProgRender(AN); const p=$('#anProg'); if(p) p.scrollIntoView({behavior:'smooth',block:'start'}); }
+function anExportar(id){ const a=document.createElement('a'); a.href='/api/rede/programas/log?id='+encodeURIComponent(id); a.download=''; document.body.appendChild(a); a.click(); a.remove();
+  toast('Arquivo .log baixado (pasta Downloads). Numa sessão remota, o técnico leva o arquivo pelo painel Arquivos.'); }
 
 function abrirProcesso(pid){ let aba='info', d=null, T={}, cont=0;
   const o={ async atualizar(primeira){ try{ d=await API('processo?pid='+pid); }catch(_){ return; } if(primeira) montar(); else preencher(); },
@@ -2550,7 +2925,8 @@ async function carregarAcesso(){ try{ ACESSO=await API('acesso'); }catch(_){ ret
   if(cp) cp.onclick=()=>copiar(a.api_chave); }
 /* =================== início =================== */
 addEventListener('resize',()=>{ if(vista==='geral') vGeral(); gH.forEach(g=>g&&g.desenhar()); grTemp.desenhar(); grRec.desenhar(); });
-(async()=>{ await carregarCfg(); if(SESSAO){ ajSessaoIniciar(); return; } try{ SERIE=await API('serie?seg=900'); ultSeg=SERIE.length?SERIE[SERIE.length-1][0]:0; }catch(_){}
+(async()=>{ if(TELA){ document.body.classList.add('so-tela'); if(window.opener&&window.opener.rsTelaPronta) window.opener.rsTelaPronta(window); else window.close(); return; }
+  await carregarCfg(); if(SESSAO){ ajSessaoIniciar(); return; } try{ SERIE=await API('serie?seg=900'); ultSeg=SERIE.length?SERIE[SERIE.length-1][0]:0; }catch(_){}
   ir(location.hash||CFG.tela_inicial||'ajuda'); if(!REMOTO) ajVigiar(); loop(); cicloStatus(); setInterval(cicloStatus,15000);
   API('lentidao?dias=1').then(d=>contLent(d.episodios)).catch(()=>{}); API('vps').then(l=>{ VPS=l; const off=l.filter(v=>v.ativo&&!v.online&&v.erro!=='iniciando').length; $('#contVps').hidden=!off; $('#contVps').textContent=off; }).catch(()=>{});
   setInterval(()=>{ if(vista!=='lentidao') API('lentidao?dias=1').then(d=>contLent(d.episodios)).catch(()=>{}); if(vista==='historico') vHistorico(); if(vista==='lentidao') vLentidao(); if(vista==='hardware') carregarTempHist(); if(vista==='recurso'&&faixaRec.h) carregarHistRec(); },60000); })();

@@ -3,7 +3,8 @@
 - Conexões abertas (TCP/UDP) com o PID dono: psutil.
 - Bytes enviados/recebidos por processo e por IP remoto: ETW do Windows
   (provedor Microsoft-Windows-Kernel-Network). Precisa de administrador,
-  por isso roda dentro do serviço.
+  por isso roda dentro do serviço. Cada fluxo UDP também guarda o intervalo
+  entre os pacotes que chegam (jitter de chegada e o maior silêncio).
 - Nome dos IPs (DNS reverso) em segundo plano, com cache.
 """
 import os
@@ -207,6 +208,10 @@ if WIN:
 
     _U16 = struct.Struct("<H").unpack_from
     _U64 = struct.Struct("<Q").unpack_from
+    _I64 = struct.Struct("<q").unpack_from
+    _f = ctypes.c_int64()
+    ctypes.windll.kernel32.QueryPerformanceFrequency(ctypes.byref(_f))
+    FREQ = _f.value or 10_000_000          # o relógio dos eventos (QPC): o mesmo de time.perf_counter()
     KERNEL_NETWORK = "7DD42A49-5329-4832-8DFD-43D979153A88"
     # id do evento -> (é envio?, é IPv6?, é UDP?)
     EVENTOS = {10: (True, False, False), 11: (False, False, False), 26: (True, True, False), 27: (False, True, False),
@@ -228,11 +233,14 @@ class MonitorRede:
         self._cb = None
         self._locais = set()
         self._ult_locais = 0
+        self.fluxos = []
+        self._ult = {}               # fluxo UDP -> (hora do último pacote que chegou, intervalo anterior)
+        self._ult_poda = 0
 
     # -- callback: chamado para cada envio/recebimento; precisa ser leve
     def _evento(self, addr):
         # Lê o EVENT_RECORD direto da memória (mais rápido que montar a estrutura):
-        # Id do evento no offset 40, UserDataLength no 86 e o ponteiro UserData no 96.
+        # hora (QPC) no offset 16, Id do evento no 40, UserDataLength no 86 e o ponteiro UserData no 96.
         try:
             cab = ctypes.string_at(addr, 104)
             k = EVENTOS.get(_U16(cab, 40)[0])
@@ -252,10 +260,26 @@ class MonitorRede:
             acc = self._acc
             v = acc.get(chave)
             if v is None:
-                v = acc[chave] = [0, 0, 0, 0]
+                v = acc[chave] = [0, 0, 0, 0, 0, 0, 0]     # bytes e pacotes (env, rec), variação, n, maior intervalo
             i = 0 if envio else 1
             v[i] += tam
             v[i + 2] += 1
+            if udp and not envio:
+                ts = _I64(cab, 16)[0]
+                u = self._ult.get(chave)
+                if u is None:
+                    self._ult[chave] = (ts, None)
+                else:
+                    gap = ts - u[0]
+                    if gap > v[6]:
+                        v[6] = gap
+                    if gap > 2 * FREQ:              # voltou depois de um silêncio: recomeça a medir o ritmo
+                        self._ult[chave] = (ts, None)
+                    else:
+                        if u[1] is not None:
+                            v[4] += abs(gap - u[1])
+                            v[5] += 1
+                        self._ult[chave] = (ts, gap)
             self.eventos += 1
         except Exception:
             pass
@@ -367,7 +391,13 @@ class MonitorRede:
     def coletar(self):
         """Devolve [(pid, ip_remoto, env, rec)] desde a última chamada (bytes)."""
         acc, self._acc = self._acc, {}
-        lista, self.detalhe = agrupar(acc, self._ips_locais())
+        lista, self.detalhe, self.fluxos = agrupar(acc, self._ips_locais(), FREQ)
+        agora = time.perf_counter()
+        if agora - self._ult_poda > 10:           # fluxos parados há mais de 10 s saem do controle de ritmo
+            self._ult_poda = agora
+            limite = (agora - 10) * FREQ
+            for k in [k for k, u in list(self._ult.items()) if u[0] < limite]:
+                self._ult.pop(k, None)
         return lista
 
 
@@ -382,12 +412,18 @@ def servico(porta, udp):
     return PORTAS.get(porta)
 
 
-def agrupar(acc, locais):
-    """acc {(pid, destino, origem, portas, udp): [env, rec, pacotes_env, pacotes_rec]} do ETW ->
-    ([(pid, ip_remoto, env, rec)], [(ip_remoto, porta_remota, porta_local, udp, env, rec, pk_env, pk_rec)])."""
+def agrupar(acc, locais, freq=10_000_000):
+    """acc {(pid, destino, origem, portas, udp): [env, rec, pacotes_env, pacotes_rec, (variação, n, maior intervalo)]}
+    do ETW -> ([(pid, ip_remoto, env, rec)], [(ip_remoto, porta_remota, porta_local, udp, env, rec, pk_env, pk_rec)],
+    [(pid, ip_remoto, porta_remota, porta_local, udp, env, rec, pk_env, pk_rec, variação_ms, n, maior_intervalo_ms)]).
+    Variação: soma de |intervalo - intervalo anterior| entre pacotes UDP que chegam (dividida por n = jitter)."""
     out = {}
     det = {}
-    for (pid, d, s, portas, udp), (env, rec, pe, pr) in list(acc.items()):
+    flu = {}
+    ms = 1000 / freq
+    for (pid, d, s, portas, udp), v in list(acc.items()):
+        env, rec, pe, pr = v[:4]
+        var, nvar, gap = v[4:7] if len(v) >= 7 else (0, 0, 0)
         try:
             fam = socket.AF_INET6 if len(d) == 16 else socket.AF_INET
             ip_d = socket.inet_ntop(fam, d)
@@ -410,8 +446,50 @@ def agrupar(acc, locais):
         x = det.setdefault((remoto, p_rem, p_loc, udp), [0, 0, 0, 0])
         for i, n in enumerate((env, rec, pe, pr)):
             x[i] += n
+        f = flu.setdefault((pid, remoto, p_rem, p_loc, udp), [0, 0, 0, 0, 0.0, 0, 0.0])
+        for i, n in enumerate((env, rec, pe, pr, var * ms, nvar)):
+            f[i] += n
+        f[6] = max(f[6], gap * ms)
     return ([(k[0], k[1], v[0], v[1]) for k, v in out.items()],
-            [(*k, *v) for k, v in det.items()])
+            [(*k, *v) for k, v in det.items()],
+            [(*k, *v) for k, v in flu.items()])
+
+
+class FluxosVivos:
+    """Últimos 10 s de cada fluxo (processo, IP e portas remota/local, TCP ou UDP), para a tabela de conexões em
+    andamento: taxa, pacotes por segundo, jitter de chegada (UDP) e o maior silêncio."""
+    JANELA = 10
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.f = {}          # chave -> deque[(t, env, rec, pe, pr, var_ms, n, gap_ms)]
+
+    def add(self, t, fluxos):
+        from collections import deque
+        with self.lock:
+            for pid, ip, p_rem, p_loc, udp, *v in fluxos:
+                self.f.setdefault((pid, ip, p_rem, p_loc, udp), deque()).append((t, *v))
+
+    def lista(self, agora=None):
+        agora = agora or time.time()
+        out = []
+        with self.lock:
+            for k in list(self.f):
+                q = self.f[k]
+                while q and q[0][0] < agora - self.JANELA:
+                    q.popleft()
+                if not q:
+                    del self.f[k]
+                    continue
+                rec2 = [x for x in q if x[0] >= agora - 2]
+                nvar = sum(x[6] for x in q)
+                out.append({"pid": k[0], "ip": k[1], "rport": k[2], "lport": k[3], "udp": k[4],
+                            "env": round(sum(x[1] for x in rec2) / 2), "rec": round(sum(x[2] for x in rec2) / 2),
+                            "pps": round(sum(x[3] + x[4] for x in rec2) / 2, 1),
+                            "jitter": round(sum(x[5] for x in q) / nvar, 2) if nvar >= 5 else None,
+                            "silencio": round(max(x[7] for x in q), 1) if k[4] else None,
+                            "bytes_10s": sum(x[1] + x[2] for x in q)})
+        return out
 
 
 class TrafegoIP:

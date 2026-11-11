@@ -2,7 +2,7 @@
 import os
 import sys
 
-VERSAO = "2.8.0"
+VERSAO = "2.9.0"
 WIN = os.name == "nt"
 
 if os.environ.get("MONITORPC_DADOS"):
@@ -33,6 +33,10 @@ PADRAO = {
     "abrir_janela_ao_iniciar": False,
     "tema": "auto",
     "tela_inicial": "ajuda",     # tela que abre primeiro (Acesso remoto)
+    # acesso remoto: como o técnico vê vários monitores e a área de transferência compartilhada
+    "remoto_layout": "lado",          # lado a lado | um (um ou outro) | janelas (uma janela por monitor)
+    "remoto_area": "ambos",           # modo padrão quando este PC é o do técnico (remoto.MODOS_AREA)
+    "remoto_permitir_ler_area": True,  # quando este PC é atendido: o técnico pode ler a área de transferência
     "rede_por_programa": True,
     "dns_reverso": True,
     "rede_em_bits": False,
@@ -164,6 +168,8 @@ PADRAO = {
 OPCOES = {
     "intervalo_ms": [250, 500, 1000, 2000, 5000],
     "tema": ["auto", "escuro", "claro"],
+    "remoto_layout": ["lado", "um", "janelas"],
+    "remoto_area": ["ambos", "para_atendido", "para_tecnico", "desligada"],
     "tela_inicial": ["ajuda", "geral", "programas", "processos", "capturas", "hardware", "rede", "historico", "vps", "config"],
     "sensores_intervalo_s": [1, 2, 5, 10],
     "retencao_dias": [1, 3, 7, 15, 30],
