@@ -25,7 +25,7 @@ Depois de instalado, ele se atualiza sozinho (Configurações → Atualizações
 | Lentidão | Momentos em que o PC ficou lento, com os programas culpados. |
 | Alertas | Alertas na tela por CPU, memória, disco, temperatura e outros limites que você define. |
 | Relatório / Comparar | Relatório completo (HTML, PDF, CSV) com recomendações e comparação lado a lado de dois períodos. |
-| Mini painel | Painel pequeno sempre visível (o mouse passa através dele) com os números principais. |
+| Mini painel | Painel pequeno sempre por cima, inclusive de jogos em janela ou sem borda (o mouse passa através dele), com os números principais. Em tela cheia exclusiva nenhuma janela aparece sobre o jogo: use “Tela cheia em janela”. |
 
 ### Desempenho e manutenção
 
