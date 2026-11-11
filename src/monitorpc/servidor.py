@@ -348,6 +348,14 @@ def fabrica(motor, TOKEN, remoto=False):
                 return self._json(m.programa(q.get("nome", "")))
             if r == "/api/rede":
                 return self._json(m.rede_estado())
+            if r == "/api/rede/ip":
+                d = m.ip_detalhe(q.get("ip", ""))
+                return self._json(d) if d else self._json({"erro": "IP inválido"}, 400)
+            if r == "/api/rede/analise":
+                return self._json(m.analise_rede())
+            if r == "/api/rede/analise/abrir":
+                d = m.sondas.abrir(q.get("id", ""))
+                return self._json(d) if d else self._json({"erro": "análise não encontrada"}, 404)
             if r == "/api/hardware":
                 return self._json(m.hardware())
             if r == "/api/ventoinhas":

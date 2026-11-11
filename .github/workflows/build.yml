@@ -34,6 +34,9 @@ jobs:
       - name: Testes do medidor de FPS
         run: python build/teste_jogo.py
 
+      - name: Testes das estatísticas de rede
+        run: python build/teste_rede.py
+
       - name: Testes de segurança
         run: python build/teste_seguranca.py
 
@@ -64,6 +67,28 @@ jobs:
           Copy-Item $exe.FullName presentmon\PresentMon.exe
           Get-ChildItem pm, presentmon | Format-Table Name, Length
 
+      - name: País e operadora dos IPs (DB-IP Lite, CC BY 4.0)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force geoip | Out-Null
+          foreach ($tipo in 'country', 'asn') {
+            $ok = $false
+            foreach ($m in 0, 1) {
+              $mes = (Get-Date).AddMonths(-$m).ToString('yyyy-MM')
+              try {
+                Invoke-WebRequest "https://download.db-ip.com/free/dbip-$tipo-lite-$mes.mmdb.gz" -OutFile "geoip\$tipo.gz"
+                $ok = $true; break
+              } catch { Write-Host "dbip-$tipo-lite-$mes indisponível" }
+            }
+            if (-not $ok) { throw "Não consegui baixar a base DB-IP ($tipo)" }
+            $in = [IO.File]::OpenRead("geoip\$tipo.gz")
+            $gz = New-Object IO.Compression.GZipStream($in, [IO.Compression.CompressionMode]::Decompress)
+            $out = [IO.File]::Create("geoip\dbip-$tipo-lite.mmdb")
+            $gz.CopyTo($out); $out.Close(); $gz.Close(); $in.Close()
+            Remove-Item "geoip\$tipo.gz"
+          }
+          python -c "import maxminddb; r=maxminddb.open_database('geoip/dbip-asn-lite.mmdb'); print(r.get('1.1.1.1'))"
+          Get-ChildItem geoip | Format-Table Name, Length
       - name: Gerar executáveis (PyInstaller)
         shell: pwsh
         run: |
@@ -73,7 +98,7 @@ jobs:
             --hidden-import win32ts --hidden-import win32profile --hidden-import win32process --hidden-import win32security `
             --hidden-import win32crypt --collect-submodules paramiko --collect-submodules qrcode `
             --collect-all pythonnet --collect-all clr_loader `
-            --add-data "src/ui;ui" --add-data "lhm;lhm" --add-data "presentmon;presentmon" src/servico.py
+            --hidden-import maxminddb --add-data "src/ui;ui" --add-data "lhm;lhm" --add-data "presentmon;presentmon" --add-data "geoip;geoip" src/servico.py
           pyinstaller --noconfirm --clean --windowed --name MonitorPC --icon instalador/icone.ico `
             --paths src --hidden-import pystray._win32 --hidden-import PIL.ImageTk --hidden-import PIL.ImageGrab `
             --collect-submodules qrcode --hidden-import zxingcpp src/bandeja.py

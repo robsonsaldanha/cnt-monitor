@@ -208,9 +208,9 @@ if WIN:
     _U16 = struct.Struct("<H").unpack_from
     _U64 = struct.Struct("<Q").unpack_from
     KERNEL_NETWORK = "7DD42A49-5329-4832-8DFD-43D979153A88"
-    # id do evento -> (é envio?, é IPv6?)
-    EVENTOS = {10: (True, False), 11: (False, False), 26: (True, True), 27: (False, True),
-               42: (True, False), 43: (False, False), 58: (True, True), 59: (False, True)}
+    # id do evento -> (é envio?, é IPv6?, é UDP?)
+    EVENTOS = {10: (True, False, False), 11: (False, False, False), 26: (True, True, False), 27: (False, True, False),
+               42: (True, False, True), 43: (False, False, True), 58: (True, True, True), 59: (False, True, True)}
 
 
 class MonitorRede:
@@ -222,6 +222,7 @@ class MonitorRede:
         self.erro = None
         self.eventos = 0
         self._acc = {}
+        self.detalhe = []
         self._th = None
         self._handle = None
         self._cb = None
@@ -237,22 +238,24 @@ class MonitorRede:
             k = EVENTOS.get(_U16(cab, 40)[0])
             if k is None:
                 return
-            envio, v6 = k
-            n = 40 if v6 else 16
+            envio, v6, udp = k
+            n = 44 if v6 else 20                      # PID, tamanho, destino, origem, porta destino, porta origem
             ud = _U64(cab, 96)[0]
             if not ud or _U16(cab, 86)[0] < n:
                 return
             buf = ctypes.string_at(ud, n)
             pid, tam = struct.unpack_from("<II", buf, 0)
             if v6:
-                chave = (pid, buf[8:24], buf[24:40])
+                chave = (pid, buf[8:24], buf[24:40], buf[40:44], udp)
             else:
-                chave = (pid, buf[8:12], buf[12:16])
+                chave = (pid, buf[8:12], buf[12:16], buf[16:20], udp)
             acc = self._acc
             v = acc.get(chave)
             if v is None:
-                v = acc[chave] = [0, 0]
-            v[0 if envio else 1] += tam
+                v = acc[chave] = [0, 0, 0, 0]
+            i = 0 if envio else 1
+            v[i] += tam
+            v[i + 2] += 1
             self.eventos += 1
         except Exception:
             pass
@@ -364,29 +367,141 @@ class MonitorRede:
     def coletar(self):
         """Devolve [(pid, ip_remoto, env, rec)] desde a última chamada (bytes)."""
         acc, self._acc = self._acc, {}
-        locais = self._ips_locais()
+        lista, self.detalhe = agrupar(acc, self._ips_locais())
+        return lista
+
+
+def servico(porta, udp):
+    """Nome do serviço pela porta conhecida (QUIC é o HTTP/3 sobre UDP 443)."""
+    if udp and porta == 443:
+        return "QUIC (HTTP/3)"
+    if 27000 <= porta <= 27100:
+        return "Steam/Valve (jogo)"
+    if 3478 <= porta <= 3481 or 19302 <= porta <= 19309:
+        return "STUN/TURN (chamadas)"
+    return PORTAS.get(porta)
+
+
+def agrupar(acc, locais):
+    """acc {(pid, destino, origem, portas, udp): [env, rec, pacotes_env, pacotes_rec]} do ETW ->
+    ([(pid, ip_remoto, env, rec)], [(ip_remoto, porta_remota, porta_local, udp, env, rec, pk_env, pk_rec)])."""
+    out = {}
+    det = {}
+    for (pid, d, s, portas, udp), (env, rec, pe, pr) in list(acc.items()):
+        try:
+            fam = socket.AF_INET6 if len(d) == 16 else socket.AF_INET
+            ip_d = socket.inet_ntop(fam, d)
+            ip_s = socket.inet_ntop(fam, s)
+            p_d, p_s = struct.unpack(">HH", portas)
+        except (OSError, ValueError, struct.error):
+            continue
+        if ip_d.startswith("::ffff:"):
+            ip_d = ip_d[7:]
+        if ip_s.startswith("::ffff:"):
+            ip_s = ip_s[7:]
+        remoto, p_rem, p_loc = ip_d, p_d, p_s
+        if ip_d in locais and ip_s not in locais:
+            remoto, p_rem, p_loc = ip_s, p_s, p_d
+        if tipo_ip(remoto) == "este PC":
+            continue  # tráfego interno do próprio PC não conta
+        v = out.setdefault((pid, remoto), [0, 0])
+        v[0] += env
+        v[1] += rec
+        x = det.setdefault((remoto, p_rem, p_loc, udp), [0, 0, 0, 0])
+        for i, n in enumerate((env, rec, pe, pr)):
+            x[i] += n
+    return ([(k[0], k[1], v[0], v[1]) for k, v in out.items()],
+            [(*k, *v) for k, v in det.items()])
+
+
+class TrafegoIP:
+    """Série por segundo de cada IP remoto (TCP × UDP, bytes e pacotes) e tráfego por serviço."""
+    SEG = 600          # 10 minutos por IP
+    MAX_IPS = 400
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.ips = {}                 # ip -> {"seg": {ts: [tcp_e, tcp_r, udp_e, udp_r, pk_e, pk_r]}, "tot": [...], "serv": {}}
+        self.servicos = {}            # ts -> {servico: bytes}
+
+    def add(self, t, detalhe):
+        ts = int(t)
+        with self.lock:
+            sv = self.servicos.setdefault(ts, {})
+            for ip, p_rem, p_loc, udp, env, rec, pe, pr in detalhe:
+                x = self.ips.get(ip)
+                if x is None:
+                    if len(self.ips) >= self.MAX_IPS:
+                        self._podar(ts)
+                    x = self.ips[ip] = {"seg": {}, "tot": [0] * 6, "serv": {}, "ult": ts}
+                s = x["seg"].setdefault(ts, [0] * 6)
+                o = 2 if udp else 0
+                s[o] += env
+                s[o + 1] += rec
+                s[4] += pe
+                s[5] += pr
+                for i, n in ((o, env), (o + 1, rec), (4, pe), (5, pr)):
+                    x["tot"][i] += n
+                x["ult"] = ts
+                nome = servico(p_rem, udp) or servico(p_loc, udp) or ("Outro UDP" if udp else "Outro TCP")
+                a = x["serv"].setdefault(nome, [0, 0])
+                a[0] += env
+                a[1] += rec
+                sv[nome] = sv.get(nome, 0) + env + rec
+            limite = ts - self.SEG
+            for k in [k for k in self.servicos if k < limite]:
+                del self.servicos[k]
+
+    def _podar(self, ts):
+        velho = min(self.ips, key=lambda k: self.ips[k]["ult"])
+        del self.ips[velho]
+
+    def resumo(self, ip, agora=None):
+        """Totais, PPS, pico, sustentado e a série dos últimos 10 minutos de um IP (ou None)."""
+        ts = int(agora or time.time())
+        with self.lock:
+            x = self.ips.get(ip)
+            if not x:
+                return None
+            for k in [k for k in x["seg"] if k < ts - self.SEG]:
+                del x["seg"][k]
+            serie = sorted(x["seg"].items())
+            tot, serv = list(x["tot"]), {k: list(v) for k, v in x["serv"].items()}
+        return {"tot": dict(zip(("tcp_env", "tcp_rec", "udp_env", "udp_rec", "pacotes_env", "pacotes_rec"), tot)),
+                "servicos": [{"nome": k, "env": v[0], "rec": v[1]} for k, v in sorted(serv.items(), key=lambda kv: -sum(kv[1]))],
+                **estatisticas_serie(serie, ts), "serie": [[k, *v] for k, v in serie]}
+
+    def por_ip(self):
+        """{ip: {tcp, udp, pps}} do último segundo completo (para a tabela de IPs)."""
+        ts = int(time.time()) - 1
         out = {}
-        for (pid, d, s, ), (env, rec) in list(acc.items()):
-            try:
-                fam = socket.AF_INET6 if len(d) == 16 else socket.AF_INET
-                ip_d = socket.inet_ntop(fam, d)
-                ip_s = socket.inet_ntop(fam, s)
-            except (OSError, ValueError):
-                continue
-            if ip_d.startswith("::ffff:"):
-                ip_d = ip_d[7:]
-            if ip_s.startswith("::ffff:"):
-                ip_s = ip_s[7:]
-            remoto = ip_d
-            if ip_d in locais and ip_s not in locais:
-                remoto = ip_s
-            if tipo_ip(remoto) == "este PC":
-                continue  # tráfego interno do próprio PC não conta
-            k = (pid, remoto)
-            v = out.get(k)
-            if v is None:
-                out[k] = [env, rec]
-            else:
-                v[0] += env
-                v[1] += rec
-        return [(k[0], k[1], v[0], v[1]) for k, v in out.items()]
+        with self.lock:
+            for ip, x in self.ips.items():
+                s = x["seg"].get(ts)
+                tot = x["tot"]
+                out[ip] = {"tcp_tot": tot[0] + tot[1], "udp_tot": tot[2] + tot[3],
+                           "pps": (s[4] + s[5]) if s else 0, "servicos": sorted(x["serv"], key=lambda k: -sum(x["serv"][k]))[:3]}
+        return out
+
+    def protocolos(self):
+        """Série por segundo (10 min) de bytes por serviço, para o gráfico por protocolo."""
+        with self.lock:
+            itens = sorted(self.servicos.items())
+        nomes = {}
+        for _, d in itens:
+            for k, v in d.items():
+                nomes[k] = nomes.get(k, 0) + v
+        top = sorted(nomes, key=lambda k: -nomes[k])[:7]
+        return {"nomes": top, "totais": {k: nomes[k] for k in top},
+                "serie": [[ts, *[d.get(k, 0) for k in top]] for ts, d in itens]}
+
+
+def estatisticas_serie(serie, agora):
+    """serie [(ts, [tcp_e, tcp_r, udp_e, udp_r, pk_e, pk_r])] -> pico, sustentado (média de 60 s), burst e PPS."""
+    bps = [sum(v[:4]) for _, v in serie]
+    ult60 = [sum(v[:4]) for k, v in serie if k > agora - 60]
+    pps = [v[4] + v[5] for k, v in serie if k > agora - 60]
+    sust = sum(ult60) / 60 if ult60 else 0
+    pico = max(bps) if bps else 0
+    return {"pico": pico, "sustentado": round(sust), "burst": round(pico / sust, 1) if sust else None,
+            "pps": round(sum(pps) / 60, 1) if pps else 0, "pps_pico": max(pps) if pps else 0}
