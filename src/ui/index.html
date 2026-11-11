@@ -457,14 +457,17 @@ input.atalho{width:170px;text-align:center;cursor:pointer}
 </section>
 
 <section id="v-rede" hidden>
-  <h1>Rede e IPs</h1><p class="sub">Quanto cada programa envia e recebe, com quais IPs ele conversa e todas as conexões abertas.</p>
+  <h1>Rede e IPs</h1><p class="sub">Quanto cada programa envia e recebe, com quais IPs ele conversa, a qualidade de cada conexão e uma análise contínua da rede.</p>
+  <div class="seg secao" id="segRede" style="margin-bottom:14px"><button data-f="geral" aria-pressed="true">IPs e conexões</button><button data-f="analise" aria-pressed="false">Análise de rede</button></div>
+  <div id="redeGeral">
   <div class="grade g4" id="redeCards"></div>
   <div class="grade g2 secao lado2">
     <div class="painel"><div class="cab"><h2>Programas usando a rede</h2><span class="desc">agora</span></div><div class="tw curta" id="tRedeProg"></div></div>
     <div class="painel"><div class="cab"><h2>Placas de rede</h2></div><div class="tw curta" id="tIfs"></div></div>
   </div>
+  <div class="painel graf secao"><div class="cab"><h2>Tráfego por protocolo</h2><span class="desc">últimos 10 minutos, pela porta de cada pacote</span></div><div class="leg" id="protoLeg"></div><canvas id="protoG" height="150"></canvas></div>
   <div class="painel secao">
-    <div class="cab"><h2>IPs contatados</h2><span class="desc" id="remDesc"></span><div class="dir"><input type="search" id="bRem" placeholder="Filtrar IP, nome ou programa…"></div></div>
+    <div class="cab"><h2>IPs contatados</h2><span class="desc" id="remDesc"></span><div class="dir"><input type="search" id="bRem" placeholder="Filtrar IP, nome, país ou programa…"></div></div>
     <div class="tw" id="tRem"></div>
   </div>
   <div class="painel secao">
@@ -472,6 +475,8 @@ input.atalho{width:170px;text-align:center;cursor:pointer}
       <div class="dir"><div class="seg" id="segConn"><button data-f="ext" aria-pressed="true">Com a internet/rede</button><button data-f="todas" aria-pressed="false">Todas</button><button data-f="esc" aria-pressed="false">Portas abertas</button></div><input type="search" id="bConn" placeholder="Filtrar…"></div></div>
     <div class="tw" id="tConn"></div>
   </div>
+  </div>
+  <div id="redeAnalise" hidden></div>
 </section>
 
 <section id="v-hardware" hidden>
@@ -1244,14 +1249,19 @@ function renderIni(){ const f=$('#bIni').value.trim().toLowerCase(); const l=INI
 
 /* =================== REDE =================== */
 let REDE=null, filtroConn='ext';
+const fMs=v=>v==null?'<span class="mut">—</span>':nf1.format(v)+' ms';
+const corMs=(v,a,b)=>v==null?'':v>=b?'muito':v>=a?'quente':'';
+const colGeo=[{k:'pais',t:'País',e:1,texto:1,v:r=>(r.geo||{}).pais||'',f:r=>r.geo?`${esc(r.geo.pais||'')}${r.geo.operadora?`<div class="mut" style="font-size:11px">${esc(r.geo.operadora)}</div>`:''}`:'<span class="mut">—</span>'}];
+const colProto=[{k:'udp_tot',t:'TCP / UDP',v:r=>(r.udp_tot||0)-(r.tcp_tot||0),f:r=>(r.tcp_tot||r.udp_tot)?`${fB(r.tcp_tot||0)} / ${fB(r.udp_tot||0)}`:'<span class="mut">—</span>'},{k:'servicos',t:'Serviços',e:1,texto:1,v:r=>(r.servicos||[]).join(', '),f:r=>esc((r.servicos||[]).join(', '))}];
+const colLat=[{k:'lat',t:'Latência',v:r=>r.lat?.mediana??1e9,f:r=>r.lat?`<span class="${corMs(r.lat.mediana,80,150)}">${fMs(r.lat.mediana)}</span>`:'<span class="mut" title="medindo… (alguns servidores não respondem a ping)">—</span>'},{k:'jit',t:'Jitter',v:r=>r.lat?.jitter??1e9,f:r=>r.lat?fMs(r.lat.jitter):''},{k:'perda',t:'Perda',v:r=>r.lat?.perda??1e9,f:r=>r.lat&&r.lat.perda!=null?`<span class="${r.lat.perda>=100?'mut':r.lat.perda>=2?'muito':r.lat.perda>0?'quente':''}">${r.lat.perda>=100?'não responde':nf1.format(r.lat.perda)+'%'}</span>`:''}];
 const tRedeProg=Tabela($('#tRedeProg'),[{k:'nome',t:'Programa',e:1,texto:1,f:r=>`<span class="nm">${esc(r.nome)}</span>`},{k:'env',t:'Enviando',f:r=>fN(r.env)},{k:'rec',t:'Recebendo',f:r=>fN(r.rec)},{k:'nconn',t:'Conexões'},{k:'nips',t:'IPs'}],
   {ordem:'rec',clique:r=>abrirPrograma(r.nome),menu:(e,r)=>menuPrograma(e,E?.programas.find(g=>g.nome===r.nome)),limite:60});
 const tIfs=Tabela($('#tIfs'),[{k:'nome',t:'Placa',e:1,texto:1},{k:'ips',t:'IP',e:1,f:r=>esc((r.ips||[]).join(', '))},{k:'env',t:'↑',f:r=>fN(r.env)},{k:'rec',t:'↓',f:r=>fN(r.rec)},{k:'velocidade',t:'Velocidade',f:r=>r.velocidade?nf0.format(r.velocidade)+' Mb/s':'—'},{k:'rec_tot',t:'Recebido',f:r=>fB(r.rec_tot)}],{ordem:'rec_tot'});
 const tRem=Tabela($('#tRem'),[
   {k:'programa',t:'Programa',e:1,texto:1,f:r=>`<span class="nm">${esc(r.programa)}</span>`},{k:'ip',t:'IP',e:1,texto:1,f:r=>`<code>${esc(r.ip)}</code>`},
-  {k:'host',t:'Nome (DNS)',e:1,texto:1,f:r=>esc(r.host||'')||'<span class="mut">—</span>'},{k:'tipo',t:'Tipo',e:1,texto:1,f:r=>tagIP(r.tipo)},
-  {k:'env',t:'↑ agora',f:r=>fN(r.env)},{k:'rec',t:'↓ agora',f:r=>fN(r.rec)},{k:'env_tot',t:'Enviado',f:r=>fB(r.env_tot)},{k:'rec_tot',t:'Recebido',f:r=>fB(r.rec_tot)},{k:'ult',t:'Último tráfego',f:r=>quando(r.ult)},
-],{ordem:'rec_tot',clique:r=>abrirPrograma(r.programa),menu:(e,r)=>abrirMenu(e,r.ip,[{t:'Ver programa',ic:'prog',f:()=>abrirPrograma(r.programa)},{t:'Copiar IP',ic:'copiar',f:()=>copiar(r.ip)},{t:'Pesquisar esse IP',ic:'web',f:()=>pesquisar(`${r.ip} ${r.host||''} quem é`)}]),limite:500,vazio:'Nenhum tráfego medido ainda.'});
+  {k:'host',t:'Nome (DNS)',e:1,texto:1,f:r=>esc(r.host||'')||'<span class="mut">—</span>'},{k:'tipo',t:'Tipo',e:1,texto:1,f:r=>tagIP(r.tipo)},...colGeo,
+  {k:'env',t:'↑ agora',f:r=>fN(r.env)},{k:'rec',t:'↓ agora',f:r=>fN(r.rec)},{k:'pps',t:'Pacotes/s',f:r=>r.pps?nf0.format(r.pps):'<span class="mut">0</span>'},{k:'env_tot',t:'Enviado',f:r=>fB(r.env_tot)},{k:'rec_tot',t:'Recebido',f:r=>fB(r.rec_tot)},...colProto,{k:'ult',t:'Último tráfego',f:r=>quando(r.ult)},
+],{ordem:'rec_tot',clique:r=>abrirIP(r.ip),menu:(e,r)=>abrirMenu(e,r.ip,[{t:'Detalhes do IP',ic:'web',f:()=>abrirIP(r.ip)},{t:'Ver programa',ic:'prog',f:()=>abrirPrograma(r.programa)},{t:'Copiar IP',ic:'copiar',f:()=>copiar(r.ip)},{t:'Pesquisar esse IP',ic:'web',f:()=>pesquisar(`${r.ip} ${r.host||''} quem é`)}]),limite:500,vazio:'Nenhum tráfego medido ainda.'});
 const tConn=Tabela($('#tConn'),[
   {k:'programa',t:'Programa',e:1,texto:1,f:r=>`<span class="nm">${esc(r.programa)}</span>`},{k:'processo',t:'Processo',e:1,texto:1,f:r=>`${esc(r.processo)}<span class="pid">${r.pid}</span>`},
   {k:'proto',t:'Protocolo',e:1,texto:1},{k:'local',t:'Local',e:1,texto:1,v:r=>r.lip+':'+r.lport,f:r=>`<code>${esc(r.lip)}:${r.lport}</code>`},
@@ -1259,14 +1269,17 @@ const tConn=Tabela($('#tConn'),[
   {k:'host',t:'Nome (DNS)',e:1,texto:1,f:r=>esc(r.host||'')},{k:'tipo',t:'Tipo',e:1,texto:1,f:r=>tagIP(r.tipo)},{k:'servico',t:'Serviço',e:1,texto:1},{k:'estado',t:'Estado',e:1,texto:1},
 ],{ordem:'programa',desc:false,clique:r=>abrirProcesso(r.pid),menu:(e,r)=>menuProcesso(e,PROCS.find(p=>p.pid===r.pid)||{pid:r.pid,nome:r.processo,programa:r.programa,protegido:'?'}),limite:2000});
 seg($('#segConn'),d=>{filtroConn=d.f; renderConn();}); $('#bConn').oninput=renderConn; $('#bRem').oninput=renderRem;
-async function vRede(){ try{ REDE=await API('rede'); }catch(_){ return; } if(MENU_ABERTO) return;
+let abaRede='geral'; const gProto=new Grafico($('#protoG'),{fmt:fN,eixo:eixoN,ymin:KB*10,gap:3});
+seg($('#segRede'),d=>{ abaRede=d.f; $('#redeGeral').hidden=abaRede!=='geral'; $('#redeAnalise').hidden=abaRede!=='analise'; vRede(); });
+async function vRede(){ if(abaRede==='analise') return vAnalise(); try{ REDE=await API('rede'); }catch(_){ return; } if(MENU_ABERTO) return;
+  const pr=REDE.protocolos; if(pr&&pr.serie.length){ const ss=pr.nomes.map((n,i)=>({nome:n,cor:COR(i),pts:pr.serie.map(l=>[l[0],l[i+1]])})); legenda($('#protoLeg'),ss.map((s,i)=>({...s,nome:`${s.nome} · ${fB(pr.totais[pr.nomes[i]])}`}))); gProto.def({t0:pr.serie[0][0],t1:pr.serie[pr.serie.length-1][0]+1,passo:1,series:ss}); }
   const r=REDE, ext=r.conexoes.filter(c=>c.rip&&c.tipo!=='este PC'), ips=new Set(ext.map(c=>c.rip)); r.remotos.forEach(x=>ips.add(x.ip));
   const card=(t,v,d)=>`<div class="painel card"><div class="rot"><span>${t}</span></div><div class="val n">${v}</div><div class="det">${d}</div></div>`;
   $('#redeCards').innerHTML=card('Enviando',fN(r.env),'todas as placas')+card('Recebendo',fN(r.rec),'todas as placas')+card('Conexões',nf0.format(r.conexoes.length),`${ext.length} com outros computadores`)+card('IPs diferentes',nf0.format(ips.size),'conectados ou com tráfego');
   tRedeProg.def(r.programas.filter(p=>(p.env||0)+(p.rec||0)>0||p.nconn>0)); tIfs.def(r.interfaces);
   $('#remDesc').textContent=r.ativo?`tráfego por IP desde ${quando(r.desde)} (TCP e UDP)`:'medição por IP desligada ou indisponível — '+(r.erro||'veja Configurações');
   renderRem(); renderConn(); }
-function renderRem(){ if(!REDE) return; const f=$('#bRem').value.trim().toLowerCase(); tRem.def(REDE.remotos.filter(x=>!f||x.ip.includes(f)||(x.host||'').toLowerCase().includes(f)||x.programa.toLowerCase().includes(f))); }
+function renderRem(){ if(!REDE) return; const f=$('#bRem').value.trim().toLowerCase(); tRem.def(REDE.remotos.filter(x=>!f||x.ip.includes(f)||(x.host||'').toLowerCase().includes(f)||x.programa.toLowerCase().includes(f)||((x.geo||{}).pais||'').toLowerCase().includes(f)||((x.geo||{}).operadora||'').toLowerCase().includes(f))); }
 function renderConn(){ if(!REDE) return; const f=$('#bConn').value.trim().toLowerCase();
   let l=REDE.conexoes; if(filtroConn==='ext') l=l.filter(c=>c.rip&&c.tipo!=='este PC'); if(filtroConn==='esc') l=l.filter(c=>c.estado==='Aguardando');
   if(f) l=l.filter(c=>[c.programa,c.processo,c.rip,c.lip,c.host,c.servico,String(c.pid),String(c.rport),String(c.lport)].some(x=>(x||'').toLowerCase().includes(f)));
@@ -1652,7 +1665,7 @@ function abrirPrograma(nome){ if(!nome) return; let aba='arvore', g=null, T={}, 
     else h+='<div id="gInfo"></div>';
     $('#gCorpo').innerHTML=h;
     if(aba==='jan') T.a=Tabela($('#gt'),[{k:'titulo',t:'Janela',e:1,texto:1},{k:'pid',t:'PID'}],{ordem:'titulo',desc:false,clique:r=>acao({tipo:'mostrar',pid:r.pid}),vazio:'Nenhuma janela aberta (o programa pode estar só perto do relógio).'});
-    if(aba==='ips'){ T.a=Tabela($('#gt1'),[...colIps,{k:'env',t:'↑ agora',f:r=>fN(r.env)},{k:'rec',t:'↓ agora',f:r=>fN(r.rec)},{k:'env_tot',t:'Enviado',f:r=>fB(r.env_tot)},{k:'rec_tot',t:'Recebido',f:r=>fB(r.rec_tot)},{k:'ult',t:'Último',f:r=>quando(r.ult)}],{ordem:'rec_tot',vazio:'Sem tráfego medido.'});
+    if(aba==='ips'){ T.a=Tabela($('#gt1'),[...colIps,...colGeo,...colLat,{k:'env',t:'↑ agora',f:r=>fN(r.env)},{k:'rec',t:'↓ agora',f:r=>fN(r.rec)},{k:'env_tot',t:'Enviado',f:r=>fB(r.env_tot)},{k:'rec_tot',t:'Recebido',f:r=>fB(r.rec_tot)},...colProto,{k:'ult',t:'Último',f:r=>quando(r.ult)}],{ordem:'rec_tot',clique:r=>abrirIP(r.ip),vazio:'Sem tráfego medido.'});
       T.b=Tabela($('#gt2'),[...colIps,{k:'env',t:'Enviado',f:r=>fB(r.env)},{k:'rec',t:'Recebido',f:r=>fB(r.rec)},{k:'primeiro',t:'Primeira vez',f:r=>quando(r.primeiro)},{k:'ultimo',t:'Última vez',f:r=>quando(r.ultimo)}],{ordem:'rec',vazio:'Sem histórico.'}); }
     if(aba==='conn') T.a=Tabela($('#gt'),colConn,{ordem:'remoto',clique:r=>abrirProcesso(r.pid),vazio:'Nenhuma conexão aberta.'});
     preencher(true); }
@@ -1674,6 +1687,139 @@ function abrirPrograma(nome){ if(!nome) return; let aba='arvore', g=null, T={}, 
 $('#gCorpo').addEventListener('click',e=>{ if(e.target.closest('table')&&e.target.closest('#gArv')){ const tr=e.target.closest('tr[data-tipo=proc]'); if(tr){ const car=e.target.closest('.car'); const pid=+tr.dataset.pid; if(car&&!car.classList.contains('vz')){ recolhidos.has(pid)?recolhidos.delete(pid):recolhidos.add(pid); gavAtual&&gavAtual.atualizar(false); } else abrirProcesso(pid); } } });
 $('#gCorpo').addEventListener('contextmenu',e=>{ const tr=e.target.closest('#gArv tr[data-tipo=proc]'); if(tr){ tr.classList.add('marcado'); menuProcesso(e, PROCS.find(p=>p.pid===+tr.dataset.pid)); } });
 
+/* =================== DETALHES DE UM IP =================== */
+const AJUDA_REDE={
+  ping:'Ping ICMP 1 vez por segundo, só enquanto você olha este IP (ou durante uma Análise). Muitos servidores de jogo e firewalls não respondem a ping: aí aparece “não responde”, o que não quer dizer que a conexão esteja ruim.',
+  jitter:'Jitter = variação média entre um ping e o seguinte. Acima de 30 ms atrapalha chamadas e jogos. P95/P99 = 95%/99% dos pings ficaram abaixo desse valor.',
+  mos:'MOS (1 a 4,4) e fator R estimam a qualidade de uma chamada de voz pelo modelo E simplificado: latência + 2×jitter + 10 ms, menos 2,5 pontos por 1% de perda. Acima de 4 é ótimo; abaixo de 3,6 começa a incomodar.',
+  bufferbloat:'Bufferbloat = quanto a latência sobe quando a internet está cheia (download/upload). Comparamos a mediana do ping com o link ocioso (≤10% do pico) e carregado (≥60%). Nota A+ < 5 ms, A < 30, B < 60, C < 200, D < 400, F acima.',
+  saude:'Pontuações de 0 a 100 (maior = melhor). Tempo real: MOS. Estabilidade: 100 − (2×desvio + 0,5×jitter máximo + 5×maior sequência de perdas). Sem congestionamento: 100 − bufferbloat/2. Confiabilidade: 100 − 20×(% do tempo fora do ar). Saúde: média das que existirem.',
+  trace:'Traceroute: manda pings com TTL 1, 2, 3… e cada roteador do caminho responde. Perda ou latência alta num salto do meio nem sempre é defeito: muitos roteadores limitam respostas a ping e mesmo assim encaminham o tráfego normalmente.',
+  tcp:'Dados do próprio Windows sobre cada conexão TCP (RTT suavizado, variação, retransmissões, ACKs duplicados, timeouts e RTO). A coleta liga quando você abre esta aba, então os números contam a partir daí. Não existe equivalente para UDP (jogos, chamadas): só o próprio programa sabe.',
+  analise:'Grava 1 ping por segundo para cada destino, a carga da internet e os contadores do Windows enquanto estiver ligada (até 24 h). Bom para deixar rodando durante um jogo, uma chamada ou o horário em que a internet piora. Queda = 3 segundos ou mais sem resposta de nenhum destino da internet.',
+  limites:'O CNT Monitor mede a partir deste PC. Não dá para ver daqui: contadores do roteador/switch/operadora (BGP, filas, DSCP, NAT, conntrack), camada física (fibra, FEC, colisões), métricas de VoIP/RTP/SIP e a perda interna de jogos UDP (só o jogo sabe — no CS2 é o netgraph dele).'};
+function abrirIP(ip){ if(!ip) return; let aba='resumo', d=null, T={}, cont=0, tr=null, gP=null, gT=null;
+  const o={ async atualizar(primeira){ try{ d=await API('rede/ip?ip='+encodeURIComponent(ip)); }catch(_){ return; } if(primeira) montar(); else preencher(); },
+    tick(){ if(++cont % Math.max(1,Math.round(1000/CFG.intervalo_ms))===0) o.atualizar(false); } };
+  const tracar=async()=>{ const b=$('#ipTr'); if(b){ b.disabled=true; b.textContent='Traçando…'; } const r=await POST('acao',{tipo:'rede_traceroute',ip}).catch(()=>null);
+    const b2=$('#ipTr'); if(b2){ b2.disabled=false; b2.textContent='Traçar de novo'; } if(r){ toast(r.msg,!r.ok); if(r.dados){ tr=r.dados; if(aba==='trace'&&T.a) T.a.def(tr.saltos); } } };
+  function montar(){ abasGav([['resumo','Qualidade e tráfego'],['serv','Protocolos'],['prog','Programas'],['conn','Conexões TCP'],['trace','Rota (traceroute)']],aba,k=>{aba=k;montar();}); T={};
+    let h='<div id="gMini"></div>';
+    if(aba==='resumo') h+=`<div class="painel graf"><div class="cab"><h2>Latência (ping)</h2>${AJ(AJUDA_REDE.ping)}<span class="desc">últimos 5 minutos</span></div><canvas id="ipG1" height="150"></canvas></div><div class="painel graf secao"><div class="cab"><h2>Tráfego</h2></div><div class="leg"><span style="--c:${COR(0)}">TCP</span><span style="--c:${COR(1)}">UDP</span></div><canvas id="ipG2" height="150"></canvas></div><div class="painel secao"><dl class="kv" id="ipKv"></dl></div>`;
+    else if(aba==='trace') h+=`<div class="painel"><div class="cab"><h2>Caminho até ${esc(ip)}</h2>${AJ(AJUDA_REDE.trace)}<div class="dir"><button class="btn" id="ipTr">${tr?'Traçar de novo':'Traçar rota'}</button></div></div><div class="tw" id="gt"></div></div>`;
+    else h+=`<div class="painel">${aba==='conn'?`<div class="cab"><h2>Conexões com esse IP</h2>${AJ(AJUDA_REDE.tcp)}</div>`:''}<div class="tw" id="gt"></div></div>`;
+    $('#gCorpo').innerHTML=h;
+    if(aba==='resumo'){ gP=new Grafico($('#ipG1'),{fmt:v=>nf1.format(v)+' ms',eixo:v=>nf0.format(v)+' ms',ymin:10,gap:3}); gT=new Grafico($('#ipG2'),{fmt:fN,eixo:eixoN,ymin:KB,gap:3}); }
+    if(aba==='serv') T.a=Tabela($('#gt'),[{k:'nome',t:'Protocolo / serviço',e:1,texto:1},{k:'env',t:'Enviado',f:r=>fB(r.env)},{k:'rec',t:'Recebido',f:r=>fB(r.rec)}],{ordem:'rec',vazio:'Sem tráfego medido para esse IP nos últimos minutos.'});
+    if(aba==='prog') T.a=Tabela($('#gt'),[{k:'programa',t:'Programa',e:1,texto:1,f:r=>`<span class="nm">${esc(r.programa)}</span>`},{k:'env',t:'↑ agora',f:r=>fN(r.env)},{k:'rec',t:'↓ agora',f:r=>fN(r.rec)},{k:'env_tot',t:'Enviado',f:r=>fB(r.env_tot)},{k:'rec_tot',t:'Recebido',f:r=>fB(r.rec_tot)},{k:'primeiro',t:'Desde',f:r=>quando(r.primeiro)}],{ordem:'rec_tot',clique:r=>abrirPrograma(r.programa),vazio:'Nenhum programa trocou dados com esse IP desde que o serviço iniciou.'});
+    if(aba==='conn') T.a=Tabela($('#gt'),[...colConn.filter(c=>c.k!=='host'),{k:'rtt',t:'RTT TCP',v:r=>r.tcp?.rtt??1e9,f:r=>r.tcp?fMs(r.tcp.rtt):'<span class="mut">—</span>'},{k:'var',t:'Variação',v:r=>r.tcp?.rtt_var??-1,f:r=>r.tcp?fMs(r.tcp.rtt_var):''},{k:'ret',t:'Retransmissões',v:r=>r.tcp?.retransmissoes??-1,f:r=>r.tcp?nf0.format(r.tcp.retransmissoes):''},{k:'dup',t:'ACK dupl.',v:r=>r.tcp?.dup_acks??-1,f:r=>r.tcp?nf0.format(r.tcp.dup_acks):''},{k:'to',t:'Timeouts',v:r=>r.tcp?.timeouts??-1,f:r=>r.tcp?nf0.format(r.tcp.timeouts):''},{k:'rto',t:'RTO',v:r=>r.tcp?.rto??-1,f:r=>r.tcp&&r.tcp.rto!=null?fMs(r.tcp.rto):''}],{ordem:'remoto',clique:r=>abrirProcesso(r.pid),vazio:'Nenhuma conexão aberta com esse IP agora.'});
+    if(aba==='trace'){ T.a=Tabela($('#gt'),[{k:'ttl',t:'Salto'},{k:'ip',t:'Roteador',e:1,texto:1,f:r=>r.ip?`<code>${esc(r.ip)}</code>`:'<span class="mut">* não respondeu</span>'},{k:'host',t:'Nome',e:1,texto:1,f:r=>esc(r.host||'')},...colGeo,{k:'mediana',t:'Latência',f:r=>fMs(r.mediana)},{k:'min',t:'Mín.',f:r=>fMs(r.min)},{k:'max',t:'Máx.',f:r=>fMs(r.max)},{k:'perda',t:'Perda',f:r=>r.perda==null?'':nf0.format(r.perda)+'%'}],{ordem:'ttl',desc:false,vazio:'Clique em “Traçar rota”.'}); $('#ipTr').onclick=tracar; if(tr) T.a.def(tr.saltos); }
+    preencher(); }
+  function preencher(){ if(gavAtual!==o||!d) return; const g=d.geo, p=d.ping, p5=d.ping_5min, tf=d.trafego, pt=d.pontos;
+    $('#gTit').innerHTML=`<code>${esc(d.ip)}</code>`; $('#gSub').innerHTML=[d.host?esc(d.host):'',tagIP(d.tipo),g?esc([g.pais,g.operadora&&`${g.operadora} (AS${g.asn})`].filter(Boolean).join(' · ')):''].filter(Boolean).join(' · ');
+    botoesAcoes([{t:'Traçar rota',ic:'web',f:()=>{ aba='trace'; montar(); tracar(); }},{t:'Path MTU',ic:'web',dica:'Maior pacote que passa até esse IP sem fragmentar',f:async()=>{ const r=await POST('acao',{tipo:'rede_mtu',ip}).catch(()=>null); if(r) toast(r.msg,!r.ok); }},
+      {t:'Analisar continuamente',ic:'det',dica:'Grava ping, jitter e perda até você parar (aba Análise de rede)',f:()=>iniciarAnalise([ip,'1.1.1.1'])},{t:'Copiar IP',ic:'copiar',f:()=>copiar(ip)},{t:'Pesquisar',ic:'web',f:()=>pesquisar(`${ip} ${d.host||''} quem é`)}]);
+    const semPing=p&&p.perda>=100;
+    $('#gMini').innerHTML=miniCards([['Latência',semPing?'não responde':p?fMs(p.mediana):'medindo…',p&&!semPing?`P95 ${fMs(p.p95)} · máx ${fMs(p.max)}`:'ping ICMP',p&&!semPing?nivel(p.mediana,150,80):''],['Jitter',p&&!semPing?fMs(p.jitter):'—',p&&!semPing?`máx ${fMs(p.jitter_max)}`:'',p?nivel(p.jitter,30,10):''],
+      ['Perda',p?nf1.format(p.perda)+'%':'—',p?`${p.n} pings em 60 s`:'',p&&!semPing?nivel(p.perda,2,0.01):''],['Qualidade',pt&&pt.saude!=null?pt.saude+'/100':'—',pt&&pt.mos?`MOS ${nf1.format(pt.mos)} · R ${nf0.format(pt.fator_r)}`:''],
+      ['TCP / UDP',tf?`${fB(tf.tot.tcp_env+tf.tot.tcp_rec)} / ${fB(tf.tot.udp_env+tf.tot.udp_rec)}`:'—',tf?`${nf1.format(tf.pps)} pacotes/s`:'sem tráfego recente']]);
+    if(aba==='resumo'){ if(p5&&p5.serie.length) gP.def({t0:p5.serie[0][0],t1:p5.serie[p5.serie.length-1][0]+1,passo:1,series:[{nome:'Ping',cor:COR(4),grossa:1,pts:p5.serie}]});
+      if(tf&&tf.serie.length) gT.def({t0:tf.serie[0][0],t1:tf.serie[tf.serie.length-1][0]+1,passo:1,series:[{nome:'TCP',cor:COR(0),pts:tf.serie.map(l=>[l[0],l[1]+l[2]])},{nome:'UDP',cor:COR(1),pts:tf.serie.map(l=>[l[0],l[3]+l[4]])}]});
+      const lat=x=>x&&x.perda<100?`mín ${fMs(x.min)} · média ${fMs(x.media)} · mediana ${fMs(x.mediana)} · máx ${fMs(x.max)} · P95 ${fMs(x.p95)} · P99 ${fMs(x.p99)} · desvio ${fMs(x.desvio)}`:'—';
+      const kv=[['País',g?esc(g.pais||'—'):(REDE&&REDE.geoip===false?'base de países não instalada':'— (rede local ou sem registro)')],['Operadora (AS)',g&&g.operadora?esc(`${g.operadora} — AS${g.asn}`):'—'],
+        ['Latência (60 s)',lat(p)],['Latência (5 min)',lat(p5)],[`Jitter${AJ(AJUDA_REDE.jitter)}`,p&&p.jitter!=null?`médio ${fMs(p.jitter)} · máximo ${fMs(p.jitter_max)}`:'—'],['Perda (5 min)',p5?`${nf1.format(p5.perda)}% · maior sequência: ${p5.perda_rajada} pings`:'—'],
+        [`Qualidade${AJ(AJUDA_REDE.saude)}`,pt?['tempo_real','estabilidade'].filter(k=>pt[k]!=null).map(k=>`${k==='tempo_real'?'tempo real':k} ${pt[k]}/100`).join(' · ')+(pt.mos?` · MOS ${nf1.format(pt.mos)}${AJ(AJUDA_REDE.mos)}`:''):'—'],
+        ['Tráfego (10 min)',tf?`pico ${fN(tf.pico)} · sustentado ${fN(tf.sustentado)} · rajada ${tf.burst?nf1.format(tf.burst)+'×':'—'} · ${nf1.format(tf.pps)} pacotes/s (pico ${nf0.format(tf.pps_pico)})`:'—'],
+        ['Pacotes',tf?`${nf0.format(tf.tot.pacotes_env)} enviados · ${nf0.format(tf.tot.pacotes_rec)} recebidos`:'—']];
+      $('#ipKv').innerHTML=kv.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join(''); }
+    else if(aba==='serv') T.a.def(tf?tf.servicos:[]); else if(aba==='prog') T.a.def(d.programas); else if(aba==='conn') T.a.def(d.conexoes); }
+  abrirGaveta(o); }
+
+/* =================== ANÁLISE DE REDE =================== */
+let AN=null, anAberta=null, anVista=null, anCont=0, anMontado=false, anG1=null, anG2=null, anDns=null, anHttp=null, anTr=null, anT=null, anPlacas=null, anSalvas=null, anDnsT=null;
+async function vAnalise(forcar){ if(!forcar&&anMontado&&(anCont++%3)) return; try{ AN=await API('rede/analise'); }catch(_){ return; } if(MENU_ABERTO) return;
+  if(!anMontado) montarAnalise(); if(anAberta){ if(!anVista||anVista.id!==anAberta||anVista.gravando){ try{ anVista=await API('rede/analise/abrir?id='+encodeURIComponent(anAberta)); }catch(_){ anAberta=null; anVista=AN.captura; } } }
+  else anVista=AN.captura; preencherAnalise(); }
+async function iniciarAnalise(alvos,minutos){ const r=await POST('acao',{tipo:'rede_analise_iniciar',alvos,minutos:minutos||0}).catch(()=>null); if(!r) return; toast(r.msg,!r.ok);
+  if(r.ok){ anAberta=null; if(gavAtual) fecharGaveta(); abaRede='analise'; document.querySelectorAll('#segRede button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f==='analise')); $('#redeGeral').hidden=true; $('#redeAnalise').hidden=false; if(vista!=='rede') location.hash='#rede'; vAnalise(true); } }
+const kvHtml=l=>l.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('');
+function montarAnalise(){ anMontado=true;
+  $('#redeAnalise').innerHTML=`
+  <div class="painel"><div class="cab"><h2>Gravar uma análise</h2>${AJ(AJUDA_REDE.analise)}</div><div id="anNova" style="padding:12px 14px"></div></div>
+  <div class="painel secao" id="anResP" hidden><div class="cab"><h2 id="anResT">Análise</h2><span class="desc" id="anResD"></span><div class="dir" id="anResB"></div></div>
+    <div style="padding:0 14px"><div id="anCards"></div></div>
+    <div class="graf" style="padding:0 14px"><div class="leg" id="anLeg"></div><canvas id="anG1" height="170"></canvas><h2 style="margin:10px 0 4px;font-size:13px">Uso da internet</h2><canvas id="anG2" height="90"></canvas></div>
+    <div class="tw" id="anT"></div><div id="anQuedas" style="padding:8px 14px"></div></div>
+  <div class="grade g2 secao lado2">
+    <div class="painel"><div class="cab"><h2>Teste de velocidade</h2>${AJ('Baixa e envia dados para o Cloudflare com 4 conexões por ~10 s em cada sentido e mede o ping ao mesmo tempo (bufferbloat). Gasta cerca de 2 × sua velocidade × 10 s de dados. Só roda quando você clica.')}<div class="dir"><button class="btn pri" id="anVelB">Testar velocidade</button></div></div><dl class="kv" id="anVel"></dl></div>
+    <div class="painel"><div class="cab"><h2>Wi-Fi</h2></div><dl class="kv" id="anWifi"></dl></div>
+  </div>
+  <div class="painel secao"><div class="cab"><h2>Sistema (último minuto)</h2>${AJ('Contadores do Windows somados de todas as conexões: retransmissões TCP, falhas e resets de conexão, erros UDP, pacotes descartados, fragmentação e, por placa, uso, erros e descartes.')}</div><dl class="kv" id="anSis"></dl><div class="tw curta" id="anPlacas"></div></div>
+  <div class="grade g2 secao lado2">
+    <div class="painel"><div class="cab"><h2>DNS</h2>${AJ('Consulta direto cada servidor DNS do Windows: nomes comuns (normalmente em cache) e nomes inventados (resolução completa, sem cache). Mostra tempos, falhas (SERVFAIL), timeouts e respostas truncadas.')}<div class="dir"><button class="btn" id="anDnsB">Testar DNS</button></div></div><div class="tw curta" id="anDns"></div></div>
+    <div class="painel"><div class="cab"><h2>Site (HTTP/TLS)</h2>${AJ('Mede cada etapa ao abrir um endereço: DNS, conexão TCP, negociação TLS, tempo até o primeiro byte (TTFB) e total. Ajuda a separar internet lenta de site lento.')}</div>
+      <div style="padding:10px 14px;display:flex;gap:8px"><input type="text" id="anUrl" value="https://www.google.com" style="flex:1"><button class="btn" id="anHttpB">Medir</button></div><dl class="kv" id="anHttp"></dl></div>
+  </div>
+  <div class="painel secao"><div class="cab"><h2>Rota e MTU até qualquer destino</h2>${AJ(AJUDA_REDE.trace)}</div><div style="padding:10px 14px;display:flex;gap:8px;flex-wrap:wrap"><input type="text" id="anDest" placeholder="IP ou nome, ex.: 1.1.1.1 ou google.com" style="flex:1;min-width:220px"><button class="btn" id="anDestIp">Detalhes do IP</button><button class="btn" id="anDestTr">Traçar rota</button><button class="btn" id="anDestMtu">Path MTU</button></div><div class="tw curta" id="anTr"></div></div>
+  <div class="painel secao"><div class="cab"><h2>Análises salvas</h2><span class="desc">as 30 mais recentes</span></div><div class="tw curta" id="anSalvas"></div></div>
+  <p class="mut secao" style="font-size:12px">${esc(AJUDA_REDE.limites)} País e operadora: <a href="https://db-ip.com" target="_blank" rel="noopener">IP Geolocation by DB-IP</a> (CC BY 4.0), consultado no próprio PC.</p>`;
+  anG1=new Grafico($('#anG1'),{fmt:v=>nf1.format(v)+' ms',eixo:v=>nf0.format(v)+' ms',ymin:10,gap:1e9}); anG2=new Grafico($('#anG2'),{fmt:fN,eixo:eixoN,ymin:KB,gap:1e9});
+  $('#anVelB').onclick=async()=>{ const rod=AN&&AN.velocidade&&!['parado','pronto','erro'].includes(AN.velocidade.fase); const r=await POST('acao',{tipo:rod?'rede_velocidade_cancelar':'rede_velocidade'}).catch(()=>null); if(r) toast(r.msg,!r.ok); vAnalise(true); };
+  $('#anDnsB').onclick=async()=>{ const b=$('#anDnsB'); b.disabled=true; b.textContent='Testando…'; const r=await POST('acao',{tipo:'rede_dns'}).catch(()=>null); b.disabled=false; b.textContent='Testar DNS'; if(r){ if(!r.ok) toast(r.msg,1); anDns=r.dados; preencherAnalise(); } };
+  $('#anHttpB').onclick=async()=>{ const b=$('#anHttpB'); b.disabled=true; const r=await POST('acao',{tipo:'rede_http',url:$('#anUrl').value}).catch(()=>null); b.disabled=false; if(r){ if(!r.ok) toast(r.msg,1); anHttp=r.ok?r.dados:null; preencherAnalise(); } };
+  const dest=()=>$('#anDest').value.trim();
+  $('#anDestIp').onclick=()=>{ const v=dest(); if(!v) return; if(/^[0-9a-f:.]+$/i.test(v)&&/[.:]/.test(v)) abrirIP(v); else toast('Informe o IP (nomes servem para rota e MTU).',1); };
+  $('#anDestTr').onclick=async()=>{ const v=dest(); if(!v) return; const b=$('#anDestTr'); b.disabled=true; b.textContent='Traçando…'; const r=await POST('acao',{tipo:'rede_traceroute',ip:v}).catch(()=>null); b.disabled=false; b.textContent='Traçar rota'; if(r){ toast(r.msg,!r.ok); if(r.dados) anTr.def(r.dados.saltos); } };
+  $('#anDestMtu').onclick=async()=>{ const v=dest(); if(!v) return; const r=await POST('acao',{tipo:'rede_mtu',ip:v}).catch(()=>null); if(r) toast(r.msg,!r.ok); };
+  anTr=Tabela($('#anTr'),[{k:'ttl',t:'Salto'},{k:'ip',t:'Roteador',e:1,texto:1,f:r=>r.ip?`<a href="#" data-ip="${esc(r.ip)}"><code>${esc(r.ip)}</code></a>`:'<span class="mut">* não respondeu</span>'},{k:'host',t:'Nome',e:1,texto:1,f:r=>esc(r.host||'')},...colGeo,{k:'mediana',t:'Latência',f:r=>fMs(r.mediana)},{k:'max',t:'Máx.',f:r=>fMs(r.max)},{k:'perda',t:'Perda',f:r=>r.perda==null?'':nf0.format(r.perda)+'%'}],{ordem:'ttl',desc:false,vazio:'Informe um destino e clique em “Traçar rota”.'});
+  anT=Tabela($('#anT'),[{k:'nome',t:'Destino',e:1,texto:1,f:r=>`${esc(r.nome)}${r.nome!==r.ip?`<div class="mut" style="font-size:11px">${esc(r.ip)}</div>`:''}`},{k:'mediana',t:'Mediana',f:r=>`<span class="${corMs(r.mediana,150,80)}">${fMs(r.mediana)}</span>`},{k:'min',t:'Mín.',f:r=>fMs(r.min)},{k:'media',t:'Média',f:r=>fMs(r.media)},{k:'max',t:'Máx.',f:r=>fMs(r.max)},{k:'p95',t:'P95',f:r=>fMs(r.p95)},{k:'p99',t:'P99',f:r=>fMs(r.p99)},{k:'desvio',t:'Desvio',f:r=>fMs(r.desvio)},
+    {k:'jitter',t:'Jitter',f:r=>`<span class="${corMs(r.jitter,30,10)}">${fMs(r.jitter)}</span>`},{k:'jitter_max',t:'Jitter máx.',f:r=>fMs(r.jitter_max)},{k:'perda',t:'Perda',f:r=>r.perda==null?'—':`<span class="${r.perda>=2?'muito':r.perda>0?'quente':''}">${nf1.format(r.perda)}%</span>`},{k:'perda_rajada',t:'Maior rajada',f:r=>r.perda_rajada?r.perda_rajada+' s':'0'},
+    {k:'bufferbloat',t:'Bufferbloat',v:r=>r.bufferbloat??-1,f:r=>r.bufferbloat==null?'<span class="mut" title="precisa de momentos com a internet ociosa e cheia durante a análise">—</span>':`+${fMs(r.bufferbloat)} <b>${r.nota_bufferbloat}</b>`},{k:'mos',t:'MOS',v:r=>r.pontos.mos??-1,f:r=>r.pontos.mos?nf1.format(r.pontos.mos):'—'},{k:'saude',t:'Saúde',v:r=>r.pontos.saude??-1,f:r=>r.pontos.saude!=null?r.pontos.saude+'/100':'—'}],{ordem:'nome',desc:false,clique:r=>abrirIP(r.ip),vazio:'Sem destinos.'});
+  anPlacas=Tabela($('#anPlacas'),[{k:'nome',t:'Placa',e:1,texto:1},{k:'velocidade',t:'Link',f:r=>r.velocidade?nf0.format(r.velocidade)+' Mb/s':'—'},{k:'duplex',t:'Duplex',e:1,texto:1},{k:'mtu',t:'MTU'},{k:'uso',t:'Uso',f:r=>r.uso==null?'—':nf1.format(r.uso)+'%'},{k:'pps',t:'Pacotes/s',f:r=>nf0.format(r.pps)},{k:'erros',t:'Erros',v:r=>r.erros_in+r.erros_out,f:r=>`${r.erros_in} ↓ · ${r.erros_out} ↑`},{k:'desc',t:'Descartes',v:r=>r.descartes_in+r.descartes_out,f:r=>`${r.descartes_in} ↓ · ${r.descartes_out} ↑`}],{ordem:'pps'});
+  const abrirSalva=id=>{ anAberta=id; anVista=null; vAnalise(true); };
+  anSalvas=Tabela($('#anSalvas'),[{k:'inicio',t:'Início',f:r=>quando(r.inicio)},{k:'segundos',t:'Duração',f:r=>dur(r.segundos)},{k:'nomes',t:'Destinos',e:1,texto:1,v:r=>r.nomes.join(', '),f:r=>esc(r.nomes.join(', '))}],{ordem:'inicio',clique:r=>abrirSalva(r.id),
+    menu:(e,r)=>abrirMenu(e,quando(r.inicio),[{t:'Abrir',ic:'det',f:()=>abrirSalva(r.id)},{t:'Apagar',ic:'fechar',f:async()=>{ const x=await POST('acao',{tipo:'rede_analise_apagar',id:r.id}).catch(()=>null); if(x) toast(x.msg,!x.ok); if(anAberta===r.id){ anAberta=null; anVista=null; } vAnalise(true); }}]),vazio:'Nenhuma análise salva ainda.'});
+  anDnsT=Tabela($('#anDns'),[{k:'servidor',t:'Servidor',e:1,texto:1,f:r=>`<code>${esc(r.servidor)}</code>`},{k:'c',t:'Comum (cache)',v:r=>r.comuns.mediana??1e9,f:r=>fMs(r.comuns.mediana)},{k:'s',t:'Sem cache',v:r=>r.sem_cache.mediana??1e9,f:r=>`${fMs(r.sem_cache.mediana)} <span class="mut">máx ${fMs(r.sem_cache.max)}</span>`},{k:'sucesso',t:'Sucesso',f:r=>r.sucesso+'%'},{k:'falhas',t:'Falhas',v:r=>r.timeouts+r.servfail,f:r=>`${r.timeouts} timeout · ${r.servfail} SERVFAIL${r.truncadas?` · ${r.truncadas} truncadas`:''}`}],{ordem:'s',desc:false,vazio:'Clique em “Testar DNS”.'});
+  $('#redeAnalise').addEventListener('click',e=>{ const x=e.target.closest('a[data-ip]'); if(x){ e.preventDefault(); abrirIP(x.dataset.ip); } });
+}
+function preencherAnalise(){ const a=AN; if(!a) return; const cap=a.captura;
+  if(cap){ if(!$('#anParar')||$('#anNova').dataset.ver!==String(!!anAberta)){ $('#anNova').dataset.ver=String(!!anAberta); $('#anNova').innerHTML=`<p style="margin:0 0 8px" id="anGrav"></p><button class="btn perigo" id="anParar">Parar e salvar</button>${anAberta?' <button class="btn" id="anVerAtual">Ver a gravação atual</button>':''}`;
+      $('#anParar').onclick=async()=>{ const r=await POST('acao',{tipo:'rede_analise_parar'}).catch(()=>null); if(r){ toast(r.msg,!r.ok); if(r.dados) anAberta=r.dados; anVista=null; } vAnalise(true); };
+      const v=$('#anVerAtual'); if(v) v.onclick=()=>{ anAberta=null; vAnalise(true); }; }
+    $('#anGrav').innerHTML=`<b>Gravando</b> há ${dur(cap.segundos)} — ${esc(cap.destinos.map(d=>d.nome).join(', '))}${cap.fim_max?` · para sozinha ${quando(cap.fim_max)}`:''}.`; }
+  else if(!$('#anIni')){ const ops=[a.gateway&&[a.gateway,'Roteador ('+a.gateway+')',1],['1.1.1.1','Cloudflare (1.1.1.1)',1],['8.8.8.8','Google (8.8.8.8)',1],...(a.top_ips||[]).map(x=>[x.ip,(x.host||x.ip)+' — em uso agora',0])].filter(Boolean);
+    $('#anNova').innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:6px 14px">${ops.map(([ip,t,on])=>`<label class="chip"><input type="checkbox" data-an="${esc(ip)}" ${on?'checked':''}> ${esc(t)}</label>`).join('')}</div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center"><input type="text" id="anExtra" placeholder="Outros destinos (IP ou nome, separados por vírgula)" style="flex:1;min-width:240px"><select id="anMin"><option value="0">até eu parar</option><option value="15">15 minutos</option><option value="60">1 hora</option><option value="360">6 horas</option><option value="1440">24 horas</option></select><button class="btn pri" id="anIni">Iniciar análise</button></div>
+      <small class="mut">Inclua o roteador e um destino da internet para separar problema da sua rede de problema da operadora.</small>`;
+    $('#anIni').onclick=()=>{ const l=[...document.querySelectorAll('#anNova [data-an]')].filter(x=>x.checked).map(x=>x.dataset.an).concat($('#anExtra').value.split(',').map(s=>s.trim()).filter(Boolean)); if(!l.length) return toast('Escolha pelo menos um destino.',1); iniciarAnalise(l,+$('#anMin').value); }; }
+  const v=anVista; $('#anResP').hidden=!v;
+  if(v){ $('#anResT').textContent=v.gravando?'Análise em andamento':'Análise de '+quando(v.inicio); $('#anResD').textContent=`${dur(v.segundos)} medidos${v.passo>1?` · gráfico em blocos de ${v.passo} s`:''}`;
+    $('#anResB').innerHTML=anAberta?'<button class="btn" id="anFechar">Fechar</button>':''; const f=$('#anFechar'); if(f) f.onclick=()=>{ anAberta=null; anVista=AN.captura; preencherAnalise(); };
+    const dp=v.disponibilidade, pior=v.destinos.filter(x=>x.bufferbloat!=null).sort((x,y)=>y.bufferbloat-x.bufferbloat)[0];
+    $('#anCards').innerHTML=miniCards([[`Saúde${AJ(AJUDA_REDE.saude)}`,v.saude!=null?v.saude+'/100':'—','média dos destinos',v.saude!=null?(v.saude<60?'muito':v.saude<80?'quente':'ok'):''],['Disponibilidade',dp.disponibilidade!=null?nf1.format(dp.disponibilidade)+'%':'—',`${dp.quedas} queda(s) · ${dur(dp.tempo_fora)} fora`,dp.quedas?'quente':''],
+      ['MTTR / MTBF',dp.mttr!=null?`${dur(dp.mttr)} / ${dur(dp.mtbf)}`:'—','tempo médio para voltar / entre quedas'],['Uso da internet',fN(v.carga.media),`pico ${fN(v.carga.pico)}`],[`Bufferbloat${AJ(AJUDA_REDE.bufferbloat)}`,pior?`+${fMs(pior.bufferbloat)} ${pior.nota_bufferbloat}`:'—','latência sob carga − ociosa']]);
+    const ss=v.destinos.map((d,i)=>({nome:d.nome,cor:COR(i),pts:v.tempo.map(l=>[l[0],l[2+2*i]])})); legenda($('#anLeg'),ss);
+    if(v.tempo.length){ const t0=v.tempo[0][0], t1=v.tempo[v.tempo.length-1][0]+v.passo; anG1.def({t0,t1,passo:v.passo,series:ss}); anG2.def({t0,t1,passo:v.passo,series:[{nome:'Uso',cor:COR(6),area:1,pts:v.tempo.map(l=>[l[0],l[1]])}]}); }
+    anT.def(v.destinos);
+    $('#anQuedas').innerHTML=dp.eventos.length?'<b>Quedas:</b> '+dp.eventos.slice(-20).map(e=>`${quando(e.t)} (${dur(e.dur)})`).join(' · '):'<span class="mut">Nenhuma queda registrada.</span>'; }
+  const s=a.sistema;
+  if(s){ const t=s.tcp,u=s.udp,ip=s.ip; $('#anSis').innerHTML=kvHtml([['TCP',`${t.taxa_retransmissao!=null?`<b class="${t.taxa_retransmissao>=2?'muito':t.taxa_retransmissao>=0.5?'quente':''}">${nf1.format(t.taxa_retransmissao)}%</b> retransmitido (${nf0.format(t.retransmitidos)} de ${nf0.format(t.segmentos_out)} segmentos)`:'sem envio'} · ${t.falhas_conexao} falhas de conexão · ${t.resets} resets recebidos · ${t.resets_enviados} enviados · ${nf1.format(t.conexoes_novas_s)} conexões novas/s · ${t.estabelecidas??'—'} abertas`],
+      ['UDP',`${nf0.format(u.datagramas_in)} recebidos · ${nf0.format(u.datagramas_out)} enviados · ${u.erros_in} erros de recepção${u.taxa_erro?` (${nf1.format(u.taxa_erro)}%)`:''} · ${u.sem_porta} sem porta`],
+      ['IP',`${ip.descartados_in} descartados ↓ · ${ip.descartados_out} ↑ · ${ip.erros_cabecalho} erros de cabeçalho · ${ip.fragmentados} fragmentados · ${ip.falhas_fragmentacao+ip.falhas_remontagem} falhas de fragmentação`],
+      ['DNS do Windows',esc((a.dns||[]).join(', ')||'—')],['Roteador',a.gateway?`<a href="#" data-ip="${esc(a.gateway)}"><code>${esc(a.gateway)}</code></a>`:'—']]); anPlacas.def(s.placas); }
+  const w=(a.wifi||[]).find(x=>x.conectado);
+  $('#anWifi').innerHTML=kvHtml(w?[['Rede',`${esc(w.ssid)} <span class="mut">${esc(w.bssid)}</span>`],['Sinal',`${w.sinal}%${w.rssi!=null?` · ${w.rssi} dBm`:''}`],['Padrão',esc(w.padrao)+(w.banda?` · ${w.banda}`:'')+(w.canal?` · canal ${w.canal}`:'')],['Taxa',`↓ ${nf0.format(w.rx_mbps)} Mb/s · ↑ ${nf0.format(w.tx_mbps)} Mb/s`],
+      ['Vizinhos',w.redes_visiveis!=null?`${w.redes_visiveis} redes visíveis · ${(w.mesmo_canal||[]).length} no mesmo canal${(w.canais_vizinhos||[]).length?` · ${w.canais_vizinhos.length} em canais sobrepostos`:''}`:'o Windows não liberou a lista de redes'],['Placa',esc(w.placa)]]
+    :[['Wi-Fi',(a.wifi||[]).length?'placa Wi-Fi não conectada':'nenhuma placa Wi-Fi — este PC usa cabo']]);
+  const ve=a.velocidade||{}, rod=!['parado','pronto','erro'].includes(ve.fase); $('#anVelB').textContent=rod?'Cancelar':'Testar velocidade'; $('#anVelB').className='btn '+(rod?'':'pri');
+  $('#anVel').innerHTML=kvHtml(ve.fase==='parado'&&!ve.download?[['Resultado','clique em “Testar velocidade”']]:[['Situação',{latencia:'medindo a latência…',download:'baixando…',upload:'enviando…',pronto:'pronto — '+quando(ve.fim),erro:'falhou: '+esc(ve.erro||''),parado:'cancelado'}[ve.fase]||esc(ve.fase)],
+    ['Download',ve.download?`<b>${nf1.format(ve.download.mbps)} Mb/s</b> · pico ${nf1.format(ve.download.pico_mbps)} Mb/s`:'—'],['Upload',ve.upload?`<b>${nf1.format(ve.upload.mbps)} Mb/s</b> · pico ${nf1.format(ve.upload.pico_mbps)} Mb/s`:'—'],
+    ['Latência ociosa',ve.latencia?`${fMs(ve.latencia.mediana)} · jitter ${fMs(ve.latencia.jitter)}`:'—'],['Latência sob carga',ve.download?`↓ ${fMs(ve.download.latencia.mediana)} · ↑ ${ve.upload?fMs(ve.upload.latencia.mediana):'—'}`:'—'],
+    [`Bufferbloat${AJ(AJUDA_REDE.bufferbloat)}`,ve.bufferbloat!=null?`+${fMs(ve.bufferbloat)} · nota <b>${ve.nota}</b>`:'—'],['Assimetria',ve.assimetria?`download ${nf1.format(ve.assimetria)}× o upload`:'—']]);
+  if(anDns) anDnsT.def(anDns.servidores);
+  $('#anHttp').innerHTML=anHttp?kvHtml([['Resposta',`HTTP ${anHttp.status??'?'} · ${fB(anHttp.bytes)} · IP <code>${esc(anHttp.ip)}</code>`],['DNS',fMs(anHttp.dns)],['Conexão TCP',fMs(anHttp.tcp)],['TLS',anHttp.tls!=null?`${fMs(anHttp.tls)} · ${esc(anHttp.tls_versao||'')}`:'— (http)'],['Primeiro byte (TTFB)',fMs(anHttp.ttfb)],['Total',`<b>${fMs(anHttp.total)}</b>`]]):'';
+  anSalvas.def(a.salvas); }
+
 function abrirProcesso(pid){ let aba='info', d=null, T={}, cont=0;
   const o={ async atualizar(primeira){ try{ d=await API('processo?pid='+pid); }catch(_){ return; } if(primeira) montar(); else preencher(); },
     tick(){ if(++cont % Math.max(1,Math.round(1000/CFG.intervalo_ms))===0) o.atualizar(false); } };
@@ -1681,7 +1827,7 @@ function abrirProcesso(pid){ let aba='info', d=null, T={}, cont=0;
     abasGav([['info','Detalhes'],['ips','IPs e tráfego'],['conn','Conexões'],['fam','Processos filhos'],['jan','Janelas']],aba,k=>{aba=k;montar();}); T={};
     let h='<div id="gMini"></div>'+(aba==='info'?'<div class="painel"><dl class="kv" id="gkv"></dl></div><div class="secao" id="gInfo"></div>':'<div class="painel"><div class="tw" id="gt"></div></div>');
     $('#gCorpo').innerHTML=h;
-    if(aba==='ips') T.a=Tabela($('#gt'),[...colIps,{k:'env',t:'↑ agora',f:r=>fN(r.env)},{k:'rec',t:'↓ agora',f:r=>fN(r.rec)},{k:'env_tot',t:'Enviado',f:r=>fB(r.env_tot)},{k:'rec_tot',t:'Recebido',f:r=>fB(r.rec_tot)},{k:'ult',t:'Último',f:r=>quando(r.ult)}],{ordem:'rec_tot',vazio:'Sem tráfego medido para esse processo.'});
+    if(aba==='ips') T.a=Tabela($('#gt'),[...colIps,...colGeo,...colLat,{k:'env',t:'↑ agora',f:r=>fN(r.env)},{k:'rec',t:'↓ agora',f:r=>fN(r.rec)},{k:'env_tot',t:'Enviado',f:r=>fB(r.env_tot)},{k:'rec_tot',t:'Recebido',f:r=>fB(r.rec_tot)},...colProto,{k:'ult',t:'Último',f:r=>quando(r.ult)}],{ordem:'rec_tot',clique:r=>abrirIP(r.ip),vazio:'Sem tráfego medido para esse processo.'});
     if(aba==='conn') T.a=Tabela($('#gt'),colConn,{ordem:'remoto',vazio:'Nenhuma conexão aberta.'});
     if(aba==='fam') T.a=Tabela($('#gt'),[{k:'nome',t:'Processo filho',e:1,texto:1},{k:'pid',t:'PID'},{k:'mem',t:'Memória',f:r=>fB(r.mem)},{k:'cpu',t:'CPU',f:r=>fP(r.cpu)}],{ordem:'mem',clique:r=>abrirProcesso(r.pid),menu:(e,r)=>menuProcesso(e,PROCS.find(p=>p.pid===r.pid)),vazio:'Nenhum processo filho.'});
     if(aba==='jan') T.a=Tabela($('#gt'),[{k:'t',t:'Janela',e:1,texto:1}],{ordem:'t',desc:false,clique:()=>acao({tipo:'mostrar',pid:d.pid,inicio:d.inicio}),vazio:'Esse processo não tem janela aberta.'});

@@ -19,7 +19,9 @@ Depois de instalado, ele se atualiza sozinho (Configurações → Atualizações
 | Visão geral | CPU por núcleo, memória, disco, rede, temperatura e GPU ao vivo (a cada 250 ms). |
 | Programas | Cada programa com todos os processos que abriu, em árvore. Botão direito: mostrar, abrir pasta, fechar, encerrar. |
 | Processos | Todos os processos com caminho, usuário, threads, handles, rede, GPU, conexões e IPs. |
-| Rede e IPs | Quanto cada programa envia e recebe, com quais IPs conversa (com nome) e as conexões abertas. |
+| Rede e IPs | Quanto cada programa envia e recebe, com quais IPs conversa (nome, país e operadora), TCP × UDP, pacotes/s, protocolo pela porta (HTTPS, QUIC, DNS, Steam…) e as conexões abertas. |
+| Detalhes de um IP | Ping 1/s enquanto você olha (latência mín./média/mediana/máx., P95, P99, desvio, jitter, perda e perda em rajada), MOS e pontuações, gráfico de tráfego, programas, RTT e retransmissões de cada conexão TCP, traceroute e Path MTU. Os IPs de um programa ou processo também mostram latência, jitter e perda. |
+| Análise de rede | Grava uma análise contínua (até 24 h) para o roteador, a internet e os IPs escolhidos: quedas, disponibilidade, MTTR/MTBF, bufferbloat, pontuações de saúde e contadores do Windows (retransmissões TCP, erros UDP, descartes, fragmentação, erros por placa). Mais: teste de velocidade com bufferbloat (só no clique), teste de DNS, tempos de HTTP/TLS e Wi-Fi (sinal, RSSI, canal, redes no mesmo canal). |
 | Temperatura e hardware | CPU, GPU, SSD, placa-mãe, ventoinhas, clocks e consumo (LibreHardwareMonitor + PawnIO). |
 | Histórico | 7 dias de histórico (configurável) do PC, de cada programa e das temperaturas. |
 | Lentidão | Momentos em que o PC ficou lento, com os programas culpados. |
@@ -148,4 +150,5 @@ Ele é distribuído na esperança de ser útil, mas **sem nenhuma garantia**; ve
 
 Componentes de terceiros mantêm as próprias licenças: LibreHardwareMonitor (MPL-2.0), PawnIO, PresentMon (MIT),
 ffmpeg (baixado à parte, GPL), aiortc e PyAV (BSD), paramiko e pystray (LGPL), Pillow, psutil, pywin32, qrcode,
-zxing-cpp (Apache-2.0) e a fonte Barlow ([SIL OFL 1.1](src/ui/fontes/OFL-LICENSE.txt)).
+zxing-cpp (Apache-2.0), maxminddb (Apache-2.0), a base de países e operadoras [IP Geolocation by DB-IP](https://db-ip.com)
+(CC BY 4.0, embutida e consultada no próprio PC) e a fonte Barlow ([SIL OFL 1.1](src/ui/fontes/OFL-LICENSE.txt)).

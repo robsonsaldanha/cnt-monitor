@@ -18,6 +18,7 @@ import psutil
 
 from . import config, configuracao, banco, rede, temperatura, nt, gpu, discos, inicializacao
 from . import alertas, jogo, energia, servicos, atualizacao, sessao, regras, limpeza, vps, captura, ventoinhas, remoto, encontro
+from . import qualidade
 
 WIN = os.name == "nt"
 NCPU = psutil.cpu_count() or 1
@@ -166,6 +167,16 @@ class Motor:
         self._ult_vps_limpa = 0
         self.navegar = None
         self.servidores = None
+        self.trafego = rede.TrafegoIP()
+        self.geo = qualidade.GeoIP()
+        self.sondas = qualidade.Sondas(carga_fn=self._carga)
+        self.velocidade = qualidade.Velocidade()
+        self._cont = deque(maxlen=40)       # leituras dos contadores TCP/UDP/placas para as taxas recentes
+        self._cache_rede = {}
+
+    def _carga(self):
+        e = self.estado or {}
+        return (e.get("env") or 0) + (e.get("rec") or 0)
 
     # ================================================================ ciclo
     def iniciar(self):
@@ -185,6 +196,7 @@ class Motor:
             pass
         for alvo, nome in ((self._loop_rapido, "coleta"), (self._loop_lento, "lento"), (self._loop_sensores, "sensores")):
             threading.Thread(target=alvo, name=nome, daemon=True).start()
+        self.sondas.iniciar()
         if os.path.exists(atualizacao.FLAG_REABRIR):
             threading.Timer(12, self._reabrir_icone).start()
 
@@ -208,6 +220,8 @@ class Motor:
         self.vent.liberar()
         self.rede.parar()
         self.jogo.fps.parar()
+        self.sondas.parar()
+        self.velocidade.cancelar()
 
     def _loop_rapido(self):
         while not self.parar_ev.is_set():
@@ -459,6 +473,8 @@ class Motor:
 
         # rede por processo: média do último segundo
         trafego = self.rede.coletar() if self.rede.ok else []
+        if trafego:
+            self.trafego.add(t, self.rede.detalhe)
         for pid, ip, env, rec in trafego:
             self._net_ev[pid].append((t, env, rec))
         net_pid = {}
@@ -847,9 +863,21 @@ class Motor:
         d["pai"] = {"pid": pai["pid"], "nome": pai["nome"]} if pai else None
         d["filhos"] = sorted(filhos, key=lambda x: x["mem"], reverse=True)
         d["conexoes"] = conns
-        d["ips"] = self._ips_fmt(ips, t)
+        d["ips"] = self._com_latencia(self._ips_fmt(ips, t))
         d["lista_janelas"] = janelas
         return d
+
+    def _com_latencia(self, ips, n=10):
+        """Quem olha os IPs de um programa/processo vê a latência: pinga os n com mais tráfego (da internet)."""
+        alvo = [r["ip"] for r in ips if r["tipo"] == "internet"][:n]
+        self.sondas.vigiar(alvo)
+        pt = self.trafego.por_ip()
+        for r in ips:
+            q = self.sondas.resumo_ip(r["ip"], 30)
+            r["lat"] = {k: q[k] for k in ("mediana", "jitter", "perda")} if q else None
+            r["geo"] = self.geo.info(r["ip"])
+            r.update(pt.get(r["ip"], {}))
+        return ips
 
     def programa(self, nome):
         t = time.time()
@@ -864,7 +892,7 @@ class Motor:
             g["lista_janelas"] = [{"pid": p, "titulo": tt} for p in pids for tt in self.janelas.get(p, [])]
         g.pop("pids", None)
         g["info"] = nt.info_arquivo(g.get("exe", ""))
-        g["ips_vivos"] = self._ips_fmt(vivos, t)
+        g["ips_vivos"] = self._com_latencia(self._ips_fmt(vivos, t))
         g["ips_7d"] = banco.remotos_programa(nome)
         for r in g["ips_7d"]:
             r["host"] = r["host"] or self._host(r["ip"])
@@ -901,7 +929,11 @@ class Motor:
             placas.append({**p, "velocidade": st.speed if st else 0,
                            "ips": [a.address for a in addrs.get(p["nome"], []) if a.family == 2]})
         progs.sort(key=lambda g: (g["env"] or 0) + (g["rec"] or 0), reverse=True)
-        return {"ativo": self.rede.ok, "erro": self.rede.erro, "env": e.get("env"), "rec": e.get("rec"),
+        pt = self.trafego.por_ip()
+        for r in rem[:500]:
+            r["geo"] = self.geo.info(r["ip"])
+            r.update(pt.get(r["ip"], {}))
+        return {"protocolos": self.trafego.protocolos(), "geoip": self.geo.disponivel, "ativo": self.rede.ok, "erro": self.rede.erro, "env": e.get("env"), "rec": e.get("rec"),
                 "programas": progs, "conexoes": conns, "remotos": rem[:500], "interfaces": placas, "desde": self.inicio}
 
     def hardware(self):
@@ -1097,7 +1129,103 @@ class Motor:
                 return {"ok": False, "msg": f"Não consegui alterar: {e}"}
             return {"ok": True, "msg": f'"{item["nome"]}" {"vai" if a.get("ativo") else "não vai mais"} iniciar com o Windows.'}
 
+        if isinstance(tipo, str) and tipo.startswith("rede_"):
+            return self._acao_rede(tipo, a)
         return self._acao_extra(tipo, a, c)
+
+    # ================================================================ análise de rede
+    def ip_detalhe(self, ip):
+        """Tudo sobre um IP remoto: tráfego (TCP×UDP, pacotes, serviços), programas, conexões com RTT TCP, ping e país."""
+        import ipaddress
+        try:
+            ip = str(ipaddress.ip_address(ip))
+        except ValueError:
+            return None
+        t = time.time()
+        self.sondas.vigiar([ip])
+        with self.lock:
+            procs = self.procs
+            conns = [self._conn_fmt(c, procs) for c in self.conns if c["rip"] == ip]
+            progs = [{"programa": pg, "env_tot": v["env_tot"], "rec_tot": v["rec_tot"], "primeiro": v["primeiro"], "ult": v["ult"],
+                      "env": round(self._taxa_ev(v, t)[0]), "rec": round(self._taxa_ev(v, t)[1])}
+                     for (pg, i), v in self.vivos.items() if i == ip]
+        for c in conns:
+            if c["proto"] == "TCP" and c["estado"] == "Conectado":
+                c["tcp"] = qualidade.tcp_estats(c["lip"], c["lport"], c["rip"], c["rport"])
+        p5 = self.sondas.resumo_ip(ip, 300)
+        return {"ip": ip, "host": self.dns.nome(ip), "tipo": rede.tipo_ip(ip), "geo": self.geo.info(ip),
+                "trafego": self.trafego.resumo(ip, t), "programas": progs, "conexoes": conns,
+                "ping": self.sondas.resumo_ip(ip, 60), "ping_5min": p5,
+                "pontos": qualidade.pontuacoes(p5) if p5 and p5["perda"] < 100 else None}
+
+    def analise_rede(self):
+        """Aba Análise: captura em andamento, capturas salvas, sistema (TCP/UDP/IP/placas), Wi-Fi e teste de velocidade."""
+        t = time.time()
+        self._cont.append(qualidade.contadores())
+        base = next((c for c in self._cont if t - c["t"] <= 60), self._cont[0])
+        if base is self._cont[-1] and len(self._cont) > 1:
+            base = self._cont[-2]
+        cache = self._cache_rede
+        if t - cache.get("t", 0) > 5:
+            cache.update(t=t, wifi=qualidade.wifi())
+        if t - cache.get("t_gw", 0) > 300:
+            cache.update(t_gw=t, gateway=qualidade.gateway(), dns=qualidade.servidores_dns())
+        cap = self.sondas.abrir("atual") if self.sondas.captura else None
+        return {"captura": cap, "salvas": self.sondas.lista(), "sistema": qualidade.diferenca(base, self._cont[-1]),
+                "wifi": cache["wifi"], "gateway": cache.get("gateway"), "dns": cache.get("dns", []),
+                "velocidade": self.velocidade.estado, "geoip": self.geo.disponivel,
+                "top_ips": [{"ip": ip, "host": self._host(ip)} for ip in self._top_ips(8)]}
+
+    def _top_ips(self, n):
+        t = time.time()
+        with self.lock:
+            soma = defaultdict(float)
+            for (pg, ip), v in self.vivos.items():
+                if t - v["ult"] < 120 and rede.tipo_ip(ip) == "internet":
+                    e, r = self._taxa_ev(v, t)
+                    soma[ip] += v["env_tot"] + v["rec_tot"] + 100 * (e + r)
+        return sorted(soma, key=lambda k: -soma[k])[:n]
+
+    def _acao_rede(self, tipo, a):
+        try:
+            if tipo == "rede_traceroute":
+                ip = qualidade.alvo_valido(a.get("ip"))
+                r = qualidade.traceroute(ip)
+                for s in r["saltos"]:
+                    s["host"] = self.dns.nome(s["ip"]) if s["ip"] else None
+                    s["geo"] = self.geo.info(s["ip"]) if s["ip"] else None
+                return {"ok": True, "msg": f'{len(r["saltos"])} saltos' + ("" if r["chegou"] else " (o destino não respondeu)"), "dados": r}
+            if tipo == "rede_mtu":
+                r = qualidade.path_mtu(qualidade.alvo_valido(a.get("ip")))
+                return {"ok": r["mtu"] is not None, "msg": r["msg"] or f'Path MTU: {r["mtu"]} bytes', "dados": r}
+            if tipo == "rede_dns":
+                return {"ok": True, "msg": "Teste de DNS concluído.", "dados": qualidade.teste_dns()}
+            if tipo == "rede_http":
+                return {"ok": True, "msg": "Teste HTTP concluído.", "dados": qualidade.medir_http(str(a.get("url") or ""))}
+            if tipo == "rede_velocidade":
+                ok = self.velocidade.iniciar(min(30, max(5, int(a.get("segundos") or 10))))
+                return {"ok": ok, "msg": "Teste de velocidade começou." if ok else "Já tem um teste rodando."}
+            if tipo == "rede_velocidade_cancelar":
+                self.velocidade.cancelar()
+                return {"ok": True, "msg": "Teste cancelado."}
+            if tipo == "rede_analise_iniciar":
+                bruto = a.get("alvos") if isinstance(a.get("alvos"), list) else []
+                if not 1 <= len(bruto) <= 10:
+                    return {"ok": False, "msg": "Escolha de 1 a 10 destinos."}
+                alvos = [qualidade.alvo_valido(x) for x in bruto]
+                ok, msg = self.sondas.iniciar_captura(alvos, [str(x)[:80] for x in bruto], max(0, min(1440, int(a.get("minutos") or 0))))
+                return {"ok": ok, "msg": msg}
+            if tipo == "rede_analise_parar":
+                ident = self.sondas.parar_captura()
+                return {"ok": bool(ident), "msg": "Análise salva." if ident else "Nenhuma análise gravando.", "dados": ident}
+            if tipo == "rede_analise_apagar":
+                ok = self.sondas.apagar(str(a.get("id") or ""))
+                return {"ok": ok, "msg": "Análise apagada." if ok else "Análise não encontrada."}
+        except ValueError as e:
+            return {"ok": False, "msg": str(e)}
+        except OSError as e:
+            return {"ok": False, "msg": f"Falhou: {e}"}
+        return {"ok": False, "msg": "Ação desconhecida."}
 
     def _acao_extra(self, tipo, a, c):
         def res(ok_msg):

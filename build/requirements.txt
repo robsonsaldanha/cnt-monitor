@@ -8,3 +8,4 @@ paramiko==3.5.1
 qrcode==8.2
 zxing-cpp==2.3.0
 aiortc==1.16.0
+maxminddb==3.2.0

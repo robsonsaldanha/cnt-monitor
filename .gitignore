@@ -10,3 +10,4 @@ instalador/PawnIO_setup.exe
 api/
 *.log
 teste-console.json
+geoip/
