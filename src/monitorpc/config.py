@@ -2,7 +2,7 @@
 import os
 import sys
 
-VERSAO = "3.0.0"
+VERSAO = "3.1.0"
 WIN = os.name == "nt"
 
 # Linux: o serviço (root) e o ícone de cada usuário leem a mesma pasta, como o ProgramData do Windows.
@@ -174,6 +174,19 @@ PADRAO = {
     "captura_gravar_audio": "",   # nome do dispositivo de áudio (DirectShow): microfone ou "Mixagem estéreo"
     "captura_gravar_atraso": 0,
     "captura_gravar_cronometro": True,
+    # personalizar (quem aplica é o ícone, com o usuário da sessão)
+    "pers_tema_auto": False,      # claro/escuro por horário (só age na virada do horário)
+    "pers_tema_claro": "07:00",
+    "pers_tema_escuro": "19:00",
+    "pers_papel_claro": "",       # papel de parede ao virar para o claro / escuro ("" = não muda)
+    "pers_papel_escuro": "",
+    "pers_papel_pasta": "",       # rotação de papel de parede a partir desta pasta
+    "pers_papel_minutos": 0,      # 0 = rotação desligada
+    "pers_papel_aleatorio": True,
+    "pers_perfis": None,          # preenchido com personalizar.PERFIS_PADRAO
+    "pers_lancador_ativo": True,
+    "pers_lancador_atalho": "Alt+Space",
+    "pers_remapear": [],          # remapeamentos de teclas e atalhos (Windows)
 }
 
 OPCOES = {
@@ -181,7 +194,8 @@ OPCOES = {
     "tema": ["auto", "escuro", "claro"],
     "remoto_layout": ["lado", "um", "janelas"],
     "remoto_area": ["ambos", "para_atendido", "para_tecnico", "desligada"],
-    "tela_inicial": ["ajuda", "geral", "programas", "processos", "capturas", "hardware", "rede", "historico", "vps", "config"],
+    "tela_inicial": ["ajuda", "geral", "programas", "processos", "capturas", "hardware", "rede", "historico", "vps",
+                     "personalizar", "config"],
     "sensores_intervalo_s": [1, 2, 5, 10],
     "retencao_dias": [1, 3, 7, 15, 30],
     "mini_canto": ["sup_dir", "sup_esq", "inf_dir", "inf_esq", "sup_centro", "inf_centro"],
@@ -206,6 +220,7 @@ OPCOES = {
     "captura_atraso_s": [1, 2, 3, 5, 10],
     "captura_afastar_mouse": ["", "sup_esq", "sup_dir", "inf_esq", "inf_dir"],
     "captura_gravar_fps": [10, 15, 24, 30, 60],
+    "pers_papel_minutos": [0, 5, 10, 15, 30, 60, 180, 720, 1440],
 }
 SEGREDOS = os.path.join(BASE, "segredos.bin")
 

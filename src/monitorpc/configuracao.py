@@ -25,8 +25,10 @@ def _validar(c):
     out["vps"] = []
     out["captura_acoes"] = []
     out["captura_fluxos"] = []
-    from . import ventoinhas
+    from . import ventoinhas, personalizar, remapear
     out["ventoinhas"] = ventoinhas.validar({})
+    out["pers_perfis"] = personalizar.validar_perfis(personalizar.PERFIS_PADRAO)
+    out["pers_remapear"] = []
     for k, padrao in config.PADRAO.items():
         if k not in c:
             continue
@@ -37,6 +39,14 @@ def _validar(c):
         if k == "alertas":
             if isinstance(v, list):
                 out[k] = alertas.validar(v)
+            continue
+        if k == "pers_perfis":
+            if isinstance(v, list):
+                out[k] = personalizar.validar_perfis(v)
+            continue
+        if k == "pers_remapear":
+            if isinstance(v, list):
+                out[k] = remapear.validar(v)
             continue
         if k in ("jogo_fechar", "mini_itens"):
             if isinstance(v, list):
@@ -106,6 +116,17 @@ def _validar(c):
                 v = v.strip().strip('"')[:260]
                 if v and not (ntpath.isabs(v) and ntpath.splitdrive(v)[0]):
                     continue  # só caminho completo (C:\..., \\servidor\...); senão fica a pasta padrão
+            elif k in ("pers_tema_claro", "pers_tema_escuro"):
+                if personalizar.minutos(v) is None:
+                    continue
+                v = "%02d:%02d" % divmod(personalizar.minutos(v), 60)
+            elif k in ("pers_papel_claro", "pers_papel_escuro", "pers_papel_pasta"):
+                v = personalizar.caminho_valido(v)
+                if v is None:
+                    continue
+            elif k == "pers_lancador_atalho":
+                r = captura.ler_atalho(v)
+                v = r[2] if r else ""
             elif k == "captura_imgur_id":
                 v = "".join(ch for ch in v if ch.isalnum())[:64]
             elif k == "captura_borda_cor":
@@ -207,7 +228,8 @@ PROTEGIDAS = {"acesso_senha", "api_chave"}   # só mudam pelas funções própri
 # só mudam no próprio PC: rodam programas, decidem para onde as capturas vão ou usam a chave de IA
 SO_LOCAL = {"captura_acoes", "captura_rodar_acoes", "captura_uploader", "captura_destino", "captura_ia",
             "captura_ia_provedor", "captura_ia_modelo", "captura_ia_prompt", "captura_fluxos", "captura_pasta", "ventoinhas",
-            "remoto_permitir_ler_area"}
+            "remoto_permitir_ler_area", "pers_perfis", "pers_remapear", "pers_papel_claro", "pers_papel_escuro",
+            "pers_papel_pasta"}
 OCULTO = "••••••"   # no lugar do valor dos cabeçalhos do uploader (podem ter token)
 
 

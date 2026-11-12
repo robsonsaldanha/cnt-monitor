@@ -34,6 +34,9 @@ jobs:
       - name: Testes do medidor de FPS
         run: python build/teste_jogo.py
 
+      - name: Testes do Personalizar (tema, perfis, renomear, lançador, remapear, registro)
+        run: python build/teste_personalizar.py
+
       - name: Testes das estatísticas de rede
         run: python build/teste_rede.py
 
@@ -223,8 +226,8 @@ jobs:
       - name: Testes das partes Linux (como root, para a captura de pacotes e o ping ICMP)
         run: sudo -E env "PATH=$PATH" python build/teste_linux.py
 
-      - name: Testes de rede, rede por programa, segurança, ventoinhas e FPS
-        run: for t in rede rede_programa seguranca ventoinhas jogo; do python build/teste_$t.py || exit 1; done
+      - name: Testes de rede, rede por programa, segurança, ventoinhas, FPS e Personalizar
+        run: for t in rede rede_programa seguranca ventoinhas jogo personalizar; do python build/teste_$t.py || exit 1; done
 
       - name: Testes do acesso remoto (numa tela virtual X11)
         run: xvfb-run -a -s "-screen 0 1600x900x24" python build/teste_remoto.py

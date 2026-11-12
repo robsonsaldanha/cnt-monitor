@@ -46,6 +46,21 @@ Depois de instalado, ele se atualiza sozinho (Configurações → Atualizações
 | Energia | Planos e ajustes de energia, modo de energia do Windows. |
 | Serviços | Serviços de terceiros: iniciar, parar, reiniciar e mudar o tipo de inicialização (os do Windows ficam protegidos). |
 
+### Personalizar
+
+| | |
+|---|---|
+| Barra e relógio (Windows) | Alinhamento dos ícones, Pesquisa, Visão de tarefas, Widgets, ocultar a barra sozinha, segundos no relógio, “Finalizar tarefa” no clique direito, extensões e arquivos ocultos no Explorer e menu de contexto clássico. Lido e gravado no próprio Windows, sem brigar com as Configurações dele. |
+| Ícones ao lado do relógio (Windows) | Escolher quais ficam visíveis e quais vão para a setinha (^). |
+| Tema e papel de parede | Claro/escuro agora ou por horário (só na virada, sem desfazer o que você trocar à mão), papel de parede para cada tema e rotação a partir de uma pasta. No Linux: GNOME/Ubuntu, Cinnamon/Mint, KDE e XFCE. |
+| Perfis | Trabalho, Jogo, Apresentação (e os seus): tema, papel, plano de energia, Modo Jogo, mini painel, barra, ícones da área de trabalho, não dormir e programas para abrir, num clique, no menu do ícone ou por atalho. |
+| Lançador rápido | Alt+Espaço (configurável): apps do Iniciar (inclusive da Microsoft Store), janelas abertas, telas do Monitor, páginas das Configurações, contas, `?pesquisa` e `>comando`. No Linux, `cnt-monitor --lancador` num atalho do sistema. |
+| Renomear em massa | Procurar e trocar (texto ou regex), maiúsculas/minúsculas, prefixo, sufixo e numeração, com prévia, conflitos marcados e desfazer. |
+| Remapear teclas (Windows) | Tecla → tecla, tecla → nada, atalho → atalho e tecla ou atalho → abrir programa, em todos os programas ou só num. |
+
+A grade de ícones ao lado do relógio (como o mod do Windhawk) não está aqui: no Windows 11 ela só é possível com código
+nativo injetado no Explorer.
+
 ### Ventoinhas
 
 - Controle **fixo** ou por **curva de temperatura** (pontos, sensor à escolha e histerese) de cada canal que o hardware
@@ -188,6 +203,8 @@ Testes automáticos (rodam sem tocar na tela):
 
 - `python build/teste_captura.py`: atalhos, emenda da rolagem, anotações, uploader e `.sxcu`, efeitos, QR, hash, gravação, aviso, IA, histórico, opções.
 - `python build/teste_ventoinhas.py`: curvas, histerese, convivência com outros programas, proteção e liberação.
+- `python build/teste_personalizar.py`: tema por horário, rotação do papel, perfis, renomear em massa (prévia,
+  conflitos, troca e desfazer), lançador e calculadora, remapeamento de teclas e, no CI, o registro do Windows.
 - `python build/teste_encontro.py`: ponto de encontro do acesso por ID, troca de ID e conexão.
 - `python build/teste_remoto.py` e `python build/teste_seguranca.py`: acesso remoto e regras de segurança.
 - `python build/teste_rede.py` e `python build/teste_rede_programa.py`: estatísticas de rede, RTP, sondas TCP/UDP,

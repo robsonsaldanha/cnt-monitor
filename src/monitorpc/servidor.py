@@ -603,9 +603,9 @@ def fabrica(motor, TOKEN, remoto=False):
                     if not isinstance(corpo, dict):
                         raise ParamInvalido("pedido inválido")
                     if remoto:
-                        # pela rede: nada de ventoinhas nem de capturas (tela e arquivos do usuário), e "abrir"
+                        # pela rede: nada de ventoinhas, capturas nem personalizar (tela, registro e arquivos do usuário), e "abrir"
                         # só vale para programa que o Monitor já conhece, nunca para um caminho mandado de fora
-                        if str(corpo.get("tipo", "")).startswith(("vent_", "captura", "ajuda_")):
+                        if str(corpo.get("tipo", "")).startswith(("vent_", "captura", "ajuda_", "pers_")):
                             return self._json({"erro": "só no próprio computador"}, 403)
                         corpo.pop("caminho", None)
                     return self._json(m.acao(corpo))
