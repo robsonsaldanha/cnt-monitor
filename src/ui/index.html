@@ -419,6 +419,7 @@ body:not([data-so="linux"]) .so-lin{display:none!important}
   <button data-v="regras"><svg viewBox="0 0 24 24"><path d="M4 6h10M4 12h7M4 18h10"/><circle cx="18" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Regras por programa</button>
   <button data-v="inicializacao"><svg viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M6.3 7.5a8 8 0 1 0 11.4 0"/></svg>Inicialização</button>
   <button data-v="energia"><svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>Energia e Windows</button>
+  <button data-v="personalizar"><svg viewBox="0 0 24 24"><path d="M14.5 4.5l5 5L10 19H5v-5z"/><path d="M12.5 6.5l5 5"/></svg>Personalizar</button>
   <button data-v="servicos"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01"/></svg>Serviços</button>
   <div class="grp">Análise</div>
   <button data-v="historico"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 4 8-9"/><path d="M3 21h18"/></svg>Histórico</button>
@@ -581,6 +582,12 @@ body:not([data-so="linux"]) .so-lin{display:none!important}
       <p class="mut2" style="margin-top:0;line-height:1.55">Esvazia a memória que o Windows guarda “de reserva” (lista de espera). <b>Normalmente não ajuda</b> — o Windows já libera esse cache sozinho quando precisa, e limpar faz os programas demorarem um pouco mais para abrir de novo. Use só se um jogo estiver dando travadinhas mesmo com memória sobrando.</p>
       <button class="btn" id="btnCache">Limpar cache agora</button> <span id="cacheRes" class="mut2"></span></div></div>
   </div>
+</section>
+
+<section id="v-personalizar" hidden>
+  <h1>Personalizar</h1><p class="sub">Barra de tarefas, relógio, tema e papel de parede, perfis, lançador rápido, renomear arquivos em massa e remapear teclas. O que é do Windows é lido e gravado no próprio Windows: mudar pelas Configurações dele também vale aqui.</p>
+  <div class="seg" id="peAbas" style="margin-bottom:14px;flex-wrap:wrap"></div>
+  <div id="persCorpo"><div class="vazio">Carregando…</div></div>
 </section>
 
 <section id="v-energia" hidden>
@@ -869,15 +876,16 @@ const eixoPct=v=>nf0.format(v)+'%', eixoB=v=>v>=GB?nf1.format(v/GB)+' GB':nf0.fo
 const eixoN=v=>CFG.rede_em_bits?(v*8>=1e6?nf1.format(v*8/1e6)+' Mb/s':nf0.format(v*8/1e3)+' Kb/s'):eixoR(v);
 
 /* =================== navegação =================== */
-const VISTAS=['geral','recurso','programas','processos','capturas','editor','jogo','otimizar','regras','inicializacao','energia','servicos','rede','hardware','ventoinhas','historico','lentidao','alertas','relatorio','comparar','vps','ajuda','config'];
+const VISTAS=['geral','recurso','programas','processos','capturas','editor','jogo','otimizar','regras','inicializacao','energia','personalizar','servicos','rede','hardware','ventoinhas','historico','lentidao','alertas','relatorio','comparar','vps','ajuda','config'];
 let vista='geral', recurso='cpu', ED_ID=0, CAP_ABA='capturar';
 function ir(h){ h=(h||'geral').replace(/^#/,''); let v=h, r=null; if(h.startsWith('recurso/')){ v='recurso'; r=h.split('/')[1]; }
   if(h==='capturas'||h.startsWith('capturas/')){ v='capturas'; CAP_ABA=h==='capturas/opcoes'?'opcoes':h==='capturas/estatisticas'?'estatisticas':'capturar'; }
-  if(h.startsWith('editor/')){ v='editor'; ED_ID=parseInt(h.split('/')[1])||0; } if(v==='editor'&&!ED_ID) v='capturas'; if(!VISTAS.includes(v)) v='geral';
+  if(h.startsWith('editor/')){ v='editor'; ED_ID=parseInt(h.split('/')[1])||0; }
+  if(h.startsWith('personalizar/')){ v='personalizar'; PERS.aba=h.split('/')[1]||''; } if(v==='editor'&&!ED_ID) v='capturas'; if(!VISTAS.includes(v)) v='geral';
   if(v==='recurso' && r==='temp'){ v='hardware'; }
   vista=v; if(r) recurso=r; for(const x of VISTAS) $('#v-'+x).hidden = x!==v;
   document.querySelectorAll('#nav button[data-v]').forEach(b=>{ if(b.dataset.v===v||(v==='recurso'&&b.dataset.v==='geral')||(v==='editor'&&b.dataset.v==='capturas')) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
-  const alvo = v==='recurso'?'recurso/'+recurso:v==='editor'?'editor/'+ED_ID:v==='capturas'&&CAP_ABA!=='capturar'?'capturas/'+CAP_ABA:v; if(location.hash!=='#'+alvo) history.replaceState(null,'','#'+alvo);
+  const alvo = v==='recurso'?'recurso/'+recurso:v==='editor'?'editor/'+ED_ID:v==='capturas'&&CAP_ABA!=='capturar'?'capturas/'+CAP_ABA:v==='personalizar'&&PERS.aba?'personalizar/'+PERS.aba:v; if(location.hash!=='#'+alvo) history.replaceState(null,'','#'+alvo);
   scrollTo(0,0); entrar(); }
 $('#nav').addEventListener('click',e=>{ const b=e.target.closest('button[data-v]'); if(b) ir(b.dataset.v); });
 addEventListener('hashchange',()=>ir(location.hash));
@@ -1289,6 +1297,7 @@ async function loop(){ const t0=performance.now(); await ciclo(); setTimeout(loo
 function entrar(){ fecharMenu();
   if(vista==='geral'&&E) vGeral(); if(vista==='recurso') vRecurso(true); if(vista==='programas') vArvore(); if(vista==='processos') renderProc();
   if(vista==='inicializacao') vIni(); if(vista==='rede') vRede(); if(vista==='hardware') vHardware(true); if(vista==='ventoinhas') vVentoinhas(true);
+  if(vista==='personalizar') vPersonalizar();
   if(vista==='historico') vHistorico(); if(vista==='lentidao') vLentidao(); if(vista==='relatorio') vRelatorio(); if(vista==='config') vConfig();
   if(vista==='jogo') vJogo(true); if(vista==='energia') vEnergia(); if(vista==='servicos') vServicos(); if(vista==='alertas') vAlertas();
   if(vista==='otimizar') vOtimizar(); if(vista==='regras') vRegras(); if(vista==='vps') vVps(true); if(vista==='ajuda') vAjuda(); if(vista==='comparar') vComparar();
@@ -1639,7 +1648,7 @@ const CFG_DEF=[
     ['intervalo_ms','sel','Velocidade de atualização','Com que frequência os números mudam na tela. 250 ms é o mais rápido; quanto mais rápido, um pouco mais de CPU o monitor usa.',{250:'250 ms (4× por segundo)',500:'500 ms',1000:'1 segundo',2000:'2 segundos',5000:'5 segundos'}],
     ['iniciar_com_windows','sw','Iniciar com o Windows','Mostra o ícone perto do relógio quando o Windows liga. O monitoramento (serviço) roda sempre, mesmo sem o ícone.'],
     ['abrir_janela_ao_iniciar','sw','Abrir a janela ao ligar o PC','Além do ícone, abre a janela do CNT Monitor quando o Windows liga.'],
-    ['tela_inicial','sel','Tela inicial','A tela que aparece ao abrir o CNT Monitor.',{ajuda:'Acesso remoto',geral:'Visão geral',programas:'Programas',processos:'Processos',capturas:'Capturas',hardware:'Hardware',rede:'Rede',historico:'Histórico',vps:'Servidores (VPS)',config:'Configurações'}],
+    ['tela_inicial','sel','Tela inicial','A tela que aparece ao abrir o CNT Monitor.',{ajuda:'Acesso remoto',geral:'Visão geral',programas:'Programas',processos:'Processos',capturas:'Capturas',hardware:'Hardware',rede:'Rede',historico:'Histórico',vps:'Servidores (VPS)',personalizar:'Personalizar',config:'Configurações'}],
     ['tema','sel','Tema','Cores da janela.',{auto:'Igual ao Windows',escuro:'Escuro',claro:'Claro'}],
     ['varias_janelas','sw','Permitir abrir mais de uma janela','Desligado: clicar em “Abrir” de novo só traz a janela que já está aberta para a frente. Ligado: cada clique abre uma janela nova.'],
   ]],
@@ -1848,6 +1857,187 @@ $('#ventCorpo').addEventListener('change',async e=>{ const t=e.target, card=t.cl
   else if(t.classList.contains('vt-ap')) vtEnviar(cid,{apelido:t.value.trim()});
   else if((t.classList.contains('vt-min')||t.classList.contains('vt-h'))&&card.dataset.modo==='manual') vtEnviar(cid,{modo:'manual',valor:+card.querySelector('.vt-r').value,minimo:vtMinimo(card),histerese:+card.querySelector('.vt-h').value});
   else if((t.classList.contains('vt-min')||t.classList.contains('vt-h'))&&card.dataset.modo==='curva') card.querySelector('[data-vt=curva]').click(); });
+
+/* =================== PERSONALIZAR =================== */
+const PERS={est:null, aba:'', planos:null, perfis:null, remap:null, verIcones:false, timer:null,
+  ren:{pasta:'', r:{buscar:'',substituir:'',regex:false,diferenciar:false,todas:true,caixa:'',prefixo:'',sufixo:'',numerar:false,inicio:1,passo:1,digitos:2,num_posicao:'fim',num_sep:' ',alvo:'nome',filtro:'',incluir_pastas:false}}};
+const PERS_ABAS=[['windows','Barra e Windows',1],['tema','Tema e papel de parede'],['perfis','Perfis'],['lancador','Lançador rápido'],['renomear','Renomear em massa'],['teclado','Remapear teclas',1]];
+const AJUDA_PE={
+  auto:'Troca entre claro e escuro nos horários abaixo. Só age na virada do horário: se você trocar o tema à mão no meio do dia, o CNT Monitor não desfaz.',
+  papeis:'Opcional: uma imagem vira o papel de parede quando o tema vira claro, e outra quando vira escuro.',
+  rotacao:'Troca o papel de parede a cada intervalo, usando as imagens (JPG, PNG ou BMP) da pasta escolhida.',
+  perfil:'Um perfil junta várias mudanças num clique (ou num atalho). O que estiver em “não muda” fica como está.',
+  acordado:'Enquanto este perfil for o último aplicado, o PC não dorme nem apaga a tela. Aplicar outro perfil desliga isso.',
+  lanc:'Abre uma caixa de busca no meio da tela: digite o nome de um programa, de uma janela aberta, de uma tela do CNT Monitor ou de uma página das Configurações do Windows e aperte Enter.',
+  regex:'Expressão regular, como no PowerRename. Na troca, use \\1, \\2… para os grupos entre parênteses.',
+  icones:'Ligado = o ícone aparece ao lado do relógio. Desligado = fica dentro da setinha (^). É a mesma opção de Configurações › Personalização › Barra de tarefas › Outros ícones da bandeja do sistema.',
+  programa:'Nome do programa (ex.: chrome.exe). Vazio = vale em qualquer programa. A regra de um programa vale mais que a geral.'
+};
+const REMAP_CODE={CapsLock:'CapsLock',Tab:'Tab',Escape:'Esc',Enter:'Enter',NumpadEnter:'Enter',Backspace:'Backspace',Space:'Space',Insert:'Insert',Delete:'Delete',Home:'Home',End:'End',PageUp:'PageUp',PageDown:'PageDown',ArrowUp:'Up',ArrowDown:'Down',ArrowLeft:'Left',ArrowRight:'Right',PrintScreen:'Print',ScrollLock:'ScrollLock',Pause:'Pause',NumLock:'NumLock',ContextMenu:'Menu',MediaPlayPause:'PlayPause',MediaTrackNext:'ProximaFaixa',MediaTrackPrevious:'FaixaAnterior',MediaStop:'PararMidia',AudioVolumeUp:'VolumeMais',AudioVolumeDown:'VolumeMenos',AudioVolumeMute:'Mudo'};
+function teclaRemap(e){ let t=REMAP_CODE[e.code]; if(!t&&/^Key[A-Z]$/.test(e.code)) t=e.code.slice(3); if(!t&&/^Digit\d$/.test(e.code)) t=e.code.slice(5); if(!t&&/^F\d{1,2}$/.test(e.code)) t=e.code; if(!t) return null;
+  const mods=[e.ctrlKey&&'Ctrl',e.altKey&&'Alt',e.shiftKey&&'Shift',e.metaKey&&'Win'].filter(Boolean);
+  if(!e.ctrlKey&&!e.altKey&&!e.metaKey&&t.length===1) return null;   // letra sozinha: deixa digitar (ex.: win+e)
+  return [...mods,t].join('+'); }
+async function persAcao(tipo, d, tent){ let r; try{ r=await POST('acao',{tipo,...(d||{})}); }catch(_){ return {ok:false,msg:'O serviço não respondeu.'}; }
+  if(r&&r.pendente){ for(let i=0;i<(tent||120);i++){ await new Promise(s=>setTimeout(s,250)); const x=await API('acao/resultado?id='+r.id).catch(()=>null); if(x&&x.resultado) return x.resultado; }
+    return {ok:false,msg:'O ícone do CNT Monitor (perto do relógio) não respondeu.'}; }
+  return r||{ok:false,msg:'Sem resposta.'}; }
+async function persCfg(o, msg){ const r=await POST('config',o).catch(()=>null); if(!r||!r.valores){ toast('Não consegui salvar.',1); return false; } CFG=r.valores;
+  const recusado=Object.keys(o).find(k=>typeof o[k]!=='object'&&String(CFG[k])!==String(o[k])); if(recusado){ toast(`Valor não aceito em “${recusado}”.`,1); return false; } if(msg!==null) toast(msg||'Salvo.'); return true; }
+async function vPersonalizar(){ if(REMOTO){ $('#persCorpo').innerHTML='<div class="vazio">Personalizar só funciona no próprio computador.</div>'; return; }
+  const r=await persAcao('pers_estado',{},60); if(!r.ok){ $('#persCorpo').innerHTML=`<div class="painel vazio">${esc(r.msg)} O que esta tela muda é feito pelo ícone, com o seu usuário.</div>`; return; }
+  PERS.est=r.dados; const win=PERS.est.so==='windows';
+  if(!PERS.aba||(!win&&PERS_ABAS.find(a=>a[0]===PERS.aba)?.[2])) PERS.aba=win?'windows':'tema';
+  if(!PERS.perfis) PERS.perfis=JSON.parse(JSON.stringify(CFG.pers_perfis||[]));
+  if(!PERS.remap) PERS.remap=(CFG.pers_remapear||[]).map(x=>({...x,_de:x.de.includes('+')?'atalho':'tecla',_para:x.abrir?'abrir':!x.para?'desativar':x.para.includes('+')?'atalho':'tecla'}));
+  if(!PERS.planos) PERS.planos=await API('energia/planos').catch(()=>[]);
+  $('#peAbas').innerHTML=PERS_ABAS.filter(a=>win||!a[2]).map(([k,t])=>`<button data-pa="${k}" aria-pressed="${k===PERS.aba}">${t}</button>`).join('');
+  peRender(); }
+function peRender(){ const f={windows:peWindows,tema:peTema,perfis:pePerfis,lancador:peLancador,renomear:peRenomear,teclado:peTeclado}[PERS.aba]||peTema;
+  $('#persCorpo').innerHTML=f(); peLigarAtalhos(); if(PERS.aba==='renomear'&&PERS.ren.pasta) peRenPrevia(); }
+function peSw(attr, on){ return `<label class="sw"><input type="checkbox" ${attr} ${on?'checked':''}><span></span></label>`; }
+function peWindows(){ const e=PERS.est;
+  const item=x=>{ const bool=x.opcoes.length===2&&x.opcoes.every(o=>typeof o[0]==='boolean');
+    const ctl=bool?peSw(`data-sis="${x.id}"`,x.valor):`<div class="seg">${x.opcoes.map(o=>`<button data-sis="${x.id}" data-val="${esc(o[0])}" aria-pressed="${o[0]===x.valor}">${esc(o[1])}</button>`).join('')}</div>`;
+    return `<div class="item"><b>${esc(x.titulo)}</b><div class="ctl">${ctl}</div><small>${x.reiniciar?'Vale depois de reiniciar o Explorer.':''}</small></div>`; };
+  let h=[['barra','Barra de tarefas e relógio'],['tema','Cores'],['explorer','Explorador de arquivos']].map(([g,t])=>{ const it=e.sistema.filter(x=>x.grupo===g); return it.length?`<h2 class="secao" style="margin-bottom:8px">${t}</h2><div class="painel cfg" style="max-width:none">${it.map(item).join('')}</div>`:''; }).join('');
+  h+=`<div style="margin-top:10px"><button class="btn" data-pe="explorer">Reiniciar o Explorer</button> <span class="mut2">A barra e as janelas de pastas somem por um segundo e voltam.</span></div>`;
+  const ic=e.icones.filter(i=>PERS.verIcones||i.existe);
+  h+=`<h2 class="secao" style="margin-bottom:8px">Ícones ao lado do relógio ${AJ(AJUDA_PE.icones)}</h2><div class="painel cfg" style="max-width:none">${ic.map(i=>`<div class="item"><b>${esc(i.nome)}</b><div class="ctl">${peSw(`data-icone="${esc(i.id)}"`,i.visivel)}</div><small>${esc(i.exe)}${i.existe?'':' — esse programa não existe mais'}</small></div>`).join('')||'<div class="vazio">O Windows ainda não registrou nenhum ícone.</div>'}</div>
+    <label class="mut2" style="display:inline-flex;gap:6px;margin-top:8px"><input type="checkbox" id="peVerIcones" ${PERS.verIcones?'checked':''}> mostrar também os de programas que não existem mais</label>
+    <p class="mut2">Ícones em grade (várias linhas e colunas) ao lado do relógio não existem no Windows 11 sem um programa que se injeta no Explorer (como o Windhawk), por isso não estão aqui.</p>`;
+  return h; }
+function peArquivo(k, t, tipo, dica){ return `<div class="item"><b>${t}</b><div class="ctl"><input type="text" data-pcfg="${k}" value="${esc(CFG[k]||'')}" placeholder="${tipo==='pasta'?'caminho completo da pasta':'vazio = não muda'}" style="width:300px"><button class="btn" data-escolher="${tipo}" data-alvo="${k}">Escolher…</button>${CFG[k]?`<button class="btn" data-limpa="${k}">Limpar</button>`:''}</div><small>${dica||''}</small></div>`; }
+function peTema(){ const c=CFG, e=PERS.est;
+  const mins=[[0,'desligada'],[5,'5 minutos'],[10,'10 minutos'],[15,'15 minutos'],[30,'30 minutos'],[60,'1 hora'],[180,'3 horas'],[720,'12 horas'],[1440,'1 dia']];
+  return `<div class="painel cfg" style="max-width:none">
+    <div class="item"><b>Tema agora</b><div class="ctl"><div class="seg"><button data-tema="claro" aria-pressed="${e.tema==='claro'}">Claro</button><button data-tema="escuro" aria-pressed="${e.tema==='escuro'}">Escuro</button></div></div><small>${e.so==='windows'?'Aplicativos e Windows (barra e Iniciar).':'GNOME/Ubuntu, Cinnamon/Mint, KDE e XFCE.'}</small></div>
+    <div class="item"><b>Trocar sozinho pelo horário ${AJ(AJUDA_PE.auto)}</b><div class="ctl">${peSw('data-pcfg="pers_tema_auto"',c.pers_tema_auto)}</div><small></small></div>
+    <div class="item"><b>Horários</b><div class="ctl">claro às <input type="time" data-pcfg="pers_tema_claro" value="${esc(c.pers_tema_claro)}"> escuro às <input type="time" data-pcfg="pers_tema_escuro" value="${esc(c.pers_tema_escuro)}"></div><small></small></div>
+    ${peArquivo('pers_papel_claro','Papel de parede ao virar claro','imagem',AJUDA_PE.papeis)}${peArquivo('pers_papel_escuro','Papel de parede ao virar escuro','imagem')}</div>
+    <h2 class="secao" style="margin-bottom:8px">Rotação do papel de parede ${AJ(AJUDA_PE.rotacao)}</h2><div class="painel cfg" style="max-width:none">
+    ${peArquivo('pers_papel_pasta','Pasta das imagens','pasta',c.pers_papel_pasta?`${e.papeis} imagem(ns) na pasta.`:'')}
+    <div class="item"><b>Trocar a cada</b><div class="ctl"><select data-pcfg="pers_papel_minutos">${mins.map(([v,t])=>`<option value="${v}" ${c.pers_papel_minutos===v?'selected':''}>${t}</option>`).join('')}</select></div><small></small></div>
+    <div class="item"><b>Ordem aleatória</b><div class="ctl">${peSw('data-pcfg="pers_papel_aleatorio"',c.pers_papel_aleatorio)}</div><small></small></div>
+    <div class="item"><b>Trocar agora</b><div class="ctl"><button class="btn" data-pe="papel_proximo" ${c.pers_papel_pasta?'':'disabled'}>Próximo papel</button></div><small>Também no menu do ícone › Personalizar.</small></div></div>`; }
+function pePerfis(){ const win=PERS.est.so==='windows';
+  const sel=(p,k,ops)=>`<select data-pp="${k}">${ops.map(([v,t])=>`<option value="${v}" ${(p[k]||'')===v?'selected':''}>${t}</option>`).join('')}</select>`;
+  const lig=[['','não muda'],['ligar','ligar'],['desligar','desligar']];
+  return `<p class="mut2" style="margin-top:0">${AJUDA_PE.perfil} Os perfis também ficam no menu do ícone › Personalizar.</p>`+PERS.perfis.map((p,i)=>`<div class="painel pad vt" data-perfil="${i}">
+    <div class="vt-cab"><div><input type="text" data-pp="nome" value="${esc(p.nome)}" maxlength="40" style="font-weight:600;width:220px"> ${PERS.est.perfil&&PERS.est.perfil===p.id?'<span class="tag on">último aplicado</span>':''}</div>
+      <div><button class="btn pri" data-pe="aplicar">Aplicar agora</button> <button class="btn" data-pe="remover">Remover</button></div></div>
+    <div class="form" style="padding:0">
+      <label class="campo">Atalho<input type="text" class="atalho" readonly data-pp="atalho" value="${esc(p.atalho||'')}" placeholder="${win?'clique e aperte':'só no Windows'}" ${win?'':'disabled'}></label>
+      <label class="campo">Tema${sel(p,'tema',[['','não muda'],['claro','claro'],['escuro','escuro']])}</label>
+      <label class="campo">Plano de energia<select data-pp="plano"><option value="">não muda</option>${(PERS.planos||[]).map(x=>`<option value="${esc(x.guid)}" ${p.plano===x.guid?'selected':''}>${esc(x.nome)}</option>`).join('')}</select></label>
+      <label class="campo">Modo Jogo${sel(p,'jogo',lig)}</label><label class="campo">Mini painel${sel(p,'mini',lig)}</label>
+      ${win?`<label class="campo">Barra de tarefas${sel(p,'barra',[['','não muda'],['ocultar','ocultar sozinha'],['mostrar','sempre visível']])}</label>
+      <label class="campo">Ícones da área de trabalho${sel(p,'icones_area',[['','não muda'],['ocultar','ocultar'],['mostrar','mostrar']])}</label>`:''}
+      <label class="campo">Papel de parede<span style="display:flex;gap:6px"><input type="text" data-pp="papel" value="${esc(p.papel||'')}" placeholder="não muda" style="flex:1;min-width:0"><button class="btn" data-escolher="imagem" data-ppalvo="papel">…</button></span></label>
+      <div class="campo" style="display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--txt2)"><span>Não deixar o PC dormir ${AJ(AJUDA_PE.acordado)}</span>${peSw('data-pp="acordado"',p.acordado)}</div>
+      <label class="campo largo">Programas ou arquivos para abrir (um por linha)<span style="display:flex;gap:6px"><textarea data-pp="abrir" rows="2" style="flex:1">${esc((p.abrir||[]).join('\n'))}</textarea><button class="btn" data-escolher="programa" data-ppalvo="abrir">+</button></span></label>
+    </div></div>`).join('')+`<div style="display:flex;gap:8px"><button class="btn" data-pe="novo_perfil">+ Novo perfil</button><button class="btn pri" data-pe="salvar_perfis">Salvar perfis</button></div>`; }
+function peLancador(){ const c=CFG, e=PERS.est, s=(e.atalhos||{}).lancador, win=e.so==='windows';
+  const sit=!c.pers_lancador_ativo?'desligado':s==='ok'?'<span style="color:var(--ok)">funcionando</span>':s?`<span style="color:var(--perigo)">${esc(s)}</span>`:'aguardando o ícone perto do relógio';
+  return `<div class="painel cfg" style="max-width:none">
+    ${win?`<div class="item"><b>Lançador rápido ${AJ(AJUDA_PE.lanc)}</b><div class="ctl">${peSw('data-pcfg="pers_lancador_ativo"',c.pers_lancador_ativo)}</div><small></small></div>
+    <div class="item"><b>Atalho</b><div class="ctl"><input type="text" class="atalho" readonly id="peLancAt" value="${esc(c.pers_lancador_atalho||'')}" placeholder="clique e aperte"></div><small>${sit}. Padrão: Alt+Espaço (o mesmo do PowerToys Run).</small></div>`
+    :`<div class="item"><b>Atalho no Linux ${AJ(AJUDA_PE.lanc)}</b><div class="ctl"><button class="btn" data-copiar="${esc(e.lancador_cmd)}">Copiar comando</button></div><small>O Wayland não deixa um programa criar atalho global. Crie um em Configurações › Teclado › Atalhos personalizados com o comando <code>${esc(e.lancador_cmd)}</code>.</small></div>`}
+    <div class="item"><b>Abrir agora</b><div class="ctl"><button class="btn pri" data-pe="lancador">Abrir o lançador</button></div><small>Também pelo menu do ícone › Personalizar.</small></div></div>
+    <div class="painel pad" style="margin-top:12px"><h2 style="margin-top:0">O que dá para digitar</h2><ul class="mut2" style="line-height:1.8;margin:0">
+      <li>O nome de um programa${win?' (inclusive os da Microsoft Store)':''}, de uma janela aberta ou de uma tela do CNT Monitor</li>
+      ${win?'<li>Uma página das Configurações do Windows: “wi-fi”, “bluetooth”, “som”, “windows update”…</li>':''}
+      <li>Uma conta: <code>12*3+4</code> (Enter copia o resultado)</li><li><code>?texto</code> pesquisa na web · <code>&gt;comando</code> abre ${win?'o Prompt de Comando':'o terminal'} rodando o comando</li>
+      <li>Os itens que você mais abre sobem na lista.</li></ul></div>`; }
+function peRenomear(){ const r=PERS.ren.r, e=PERS.est;
+  const chk=(k,t)=>`<label class="chip"><input type="checkbox" data-rr="${k}" ${r[k]?'checked':''}> ${t}</label>`;
+  const txt=(k,t,ph)=>`<label class="campo">${t}<input type="text" data-rr="${k}" value="${esc(r[k]??'')}" placeholder="${esc(ph||'')}"></label>`;
+  const num=(k,t,a,b)=>`<label class="campo">${t}<input type="number" data-rr="${k}" min="${a}" max="${b}" value="${r[k]}"></label>`;
+  const sel=(k,t,ops)=>`<label class="campo">${t}<select data-rr="${k}">${ops.map(([v,x])=>`<option value="${v}" ${r[k]===v?'selected':''}>${x}</option>`).join('')}</select></label>`;
+  return `<div class="painel"><div class="cab"><h2>Pasta</h2><div class="dir">${e.desfazer?`<button class="btn" data-pe="ren_desfazer">Desfazer a última (${e.desfazer.n} item(ns))</button>`:''}</div></div>
+    <div class="pad" style="display:flex;gap:8px"><input type="text" id="peRenPasta" value="${esc(PERS.ren.pasta)}" placeholder="caminho completo da pasta" style="flex:1"><button class="btn" data-escolher="pasta" data-alvo="ren">Escolher…</button></div>
+    <div class="form" style="padding-top:0">${txt('buscar','Procurar')}${txt('substituir','Trocar por')}
+      ${sel('alvo','Mexer em',[['nome','só no nome'],['extensao','só na extensão'],['tudo','nome e extensão']])}
+      ${sel('caixa','Maiúsculas e minúsculas',[['','não muda'],['minusculas','tudo minúsculo'],['maiusculas','TUDO MAIÚSCULO'],['titulo','Cada Palavra Com Maiúscula'],['frase','Só a primeira']])}
+      ${txt('prefixo','Colocar no começo')}${txt('sufixo','Colocar no fim')}${txt('filtro','Só os arquivos','*.jpg;*.png (vazio = todos)')}
+      <div class="campo largo" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">${chk('regex','Expressão regular')}${AJ(AJUDA_PE.regex)}${chk('diferenciar','Diferenciar maiúsculas')}${chk('todas','Trocar todas as vezes')}${chk('incluir_pastas','Incluir pastas')}${chk('numerar','Numerar')}</div>
+      ${r.numerar?`${num('inicio','Começar em',0,1000000)}${num('passo','De quanto em quanto',1,1000)}${num('digitos','Dígitos (01, 001…)',1,8)}${sel('num_posicao','Número no',[['fim','fim do nome'],['inicio','começo do nome']])}${txt('num_sep','Separador')}`:''}
+    </div></div>
+    <div class="painel secao"><div class="cab"><h2>Prévia</h2><span class="desc" id="peRenRes"></span><div class="dir"><button class="btn pri" data-pe="ren_aplicar" id="peRenBt" disabled>Renomear</button></div></div><div class="tw" id="peRenPrev"><div class="vazio">Escolha uma pasta.</div></div></div>`; }
+async function peRenPrevia(){ clearTimeout(PERS.timer); PERS.timer=setTimeout(async()=>{ const p=PERS.ren.pasta.trim(), el=$('#peRenPrev'); if(!el) return; if(!p){ el.innerHTML='<div class="vazio">Escolha uma pasta.</div>'; return; }
+    const r=await persAcao('pers_ren_previa',{pasta:p,regras:PERS.ren.r}); if(!$('#peRenPrev')) return; const bt=$('#peRenBt');
+    if(!r.ok){ el.innerHTML=`<div class="vazio">${esc(r.msg)}</div>`; $('#peRenRes').textContent=''; bt.disabled=true; return; }
+    const s=r.dados.resumo, l=r.dados.itens; $('#peRenRes').textContent=`${s.total} item(ns) · ${s.mudam} vão mudar${s.erros?` · ${s.erros} com problema`:''}${s.total>l.length?` · mostrando ${l.length}`:''}`;
+    bt.disabled=!s.mudam; bt.textContent=s.mudam?`Renomear ${s.mudam} item(ns)`:'Renomear';
+    el.innerHTML=l.length?`<table><thead><tr><th class="e">Nome atual</th><th class="e">Nome novo</th><th class="e">Situação</th></tr></thead><tbody>${l.map(x=>`<tr${x.muda?'':' class="mut"'}><td class="e">${x.pasta?'📁 ':''}${esc(x.antigo)}</td><td class="e">${x.muda?`<b>${esc(x.novo)}</b>`:'—'}</td><td class="e">${x.erro?`<span style="color:var(--perigo)">${esc(x.erro)}</span>`:x.muda?'<span style="color:var(--ok)">ok</span>':'não muda'}</td></tr>`).join('')}</tbody></table>`:'<div class="vazio">Nenhum arquivo passou no filtro.</div>'; },350); }
+function peTeclado(){ const e=PERS.est, tk=e.teclas;
+  const ops=v=>tk.map(([n,t])=>`<option value="${esc(n)}" ${n===v?'selected':''}>${esc(t)}</option>`).join('');
+  const rec=(k,v)=>`<input type="text" class="atalho-rm" data-rmk="${k}" value="${esc(v||'')}" placeholder="clique e aperte (ou escreva, ex.: win+e)" style="width:230px">`;
+  return `<p class="mut2" style="margin-top:0">Troque o que uma tecla ou atalho faz, em todos os programas ou só em um. Vale enquanto o ícone do CNT Monitor estiver aberto.${e.remapear_erro?` <span style="color:var(--perigo)">${esc(e.remapear_erro)}</span>`:''}</p>`
+    +PERS.remap.map((r,i)=>`<div class="painel pad vt" data-rm="${i}"><div class="vt-linha"><b>Quando eu apertar</b>
+      <select data-rmk="_de"><option value="tecla" ${r._de==='tecla'?'selected':''}>a tecla</option><option value="atalho" ${r._de==='atalho'?'selected':''}>o atalho</option></select>
+      ${r._de==='tecla'?`<select data-rmk="de">${ops(r.de)}</select>`:rec('de',r.de)}<b>→</b>
+      <select data-rmk="_para">${[['tecla','vira a tecla'],['atalho','vira o atalho'],['desativar','não faz nada'],['abrir','abre o programa']].map(([v,t])=>`<option value="${v}" ${r._para===v?'selected':''}>${t}</option>`).join('')}</select>
+      ${r._para==='tecla'?`<select data-rmk="para">${ops(r.para)}</select>`:r._para==='atalho'?rec('para',r.para):r._para==='abrir'?`<input type="text" data-rmk="abrir" value="${esc(r.abrir||'')}" placeholder="caminho completo" style="width:260px"><button class="btn" data-escolher="programa" data-rmalvo="${i}">Escolher…</button>`:''}</div>
+      <div class="vt-linha"><label>Só no programa <input type="text" data-rmk="programa" value="${esc(r.programa||'')}" placeholder="ex.: chrome.exe (vazio = todos)" style="width:220px"></label>${AJ(AJUDA_PE.programa)}
+      ${peSw('data-rmk="ativo"',r.ativo!==false)}<span class="mut2">ativo</span><button class="btn" data-pe="rm_remover">Remover</button></div></div>`).join('')
+    +`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-pe="rm_tecla">+ Remapear uma tecla</button><button class="btn" data-pe="rm_atalho">+ Remapear um atalho</button><button class="btn pri" data-pe="rm_salvar">Salvar</button></div>
+    <p class="mut2">A tecla Win não chega ao navegador: para atalhos com ela, escreva no campo (ex.: <code>win+e</code>). Num jogo com antitrapaça, prefira não remapear teclas usadas na partida.</p>`; }
+function peLigarAtalhos(){
+  const gravar=(inp, cb)=>{ const antes=inp.value; inp.onfocus=()=>{ inp.value=''; inp.placeholder='aperte as teclas…'; }; inp.onblur=()=>{ if(!inp.dataset.ok) inp.value=antes; };
+    inp.onkeydown=e=>{ if(e.key==='Escape'){ inp.blur(); return; } const v=teclaAtalho(e); e.preventDefault(); e.stopPropagation(); if(!v) return; inp.dataset.ok=1; inp.value=v; inp.blur(); cb(v); }; };
+  const la=$('#peLancAt'); if(la) gravar(la, async v=>{ if(await persCfg({pers_lancador_atalho:v},null)) toast(`Atalho ${CFG.pers_lancador_atalho} salvo.`); else { toast(`“${v}” não pode ser usado: letras e números precisam de Ctrl, Alt ou Win.`,1); } setTimeout(vPersonalizar,800); });
+  document.querySelectorAll('#persCorpo [data-perfil] input.atalho').forEach(inp=>gravar(inp, v=>{ PERS.perfis[+inp.closest('[data-perfil]').dataset.perfil].atalho=v; toast('Clique em “Salvar perfis” para gravar.'); }));
+  document.querySelectorAll('#persCorpo input.atalho-rm').forEach(inp=>inp.onkeydown=e=>{ const v=teclaRemap(e); if(!v) return; e.preventDefault(); inp.value=v; PERS.remap[+inp.closest('[data-rm]').dataset.rm][inp.dataset.rmk]=v; }); }
+function pePerfilLer(card){ const p=PERS.perfis[+card.dataset.perfil]; card.querySelectorAll('[data-pp]').forEach(x=>{ const k=x.dataset.pp; if(k==='atalho') return;
+  p[k]=x.type==='checkbox'?x.checked:k==='abrir'?x.value.split('\n').map(s=>s.trim()).filter(Boolean):x.value; }); }
+async function peSalvarPerfis(msg){ document.querySelectorAll('#persCorpo [data-perfil]').forEach(pePerfilLer);
+  const ok=await persCfg({pers_perfis:PERS.perfis},msg===undefined?'Perfis salvos.':msg); if(!ok) return false;
+  const descart=PERS.perfis.length-CFG.pers_perfis.length; PERS.perfis=JSON.parse(JSON.stringify(CFG.pers_perfis));
+  if(descart>0) toast(`${descart} perfil(is) sem nome foram descartados.`,1); return true; }
+$('#peAbas').addEventListener('click',e=>{ const b=e.target.closest('[data-pa]'); if(!b) return; PERS.aba=b.dataset.pa; ir('personalizar/'+PERS.aba); });
+$('#persCorpo').addEventListener('click',async e=>{ const b=e.target.closest('button'); if(!b||b.disabled) return;
+  if(b.dataset.sis&&b.dataset.val!=null){ const x=PERS.est.sistema.find(s=>s.id===b.dataset.sis); const v=x.opcoes.map(o=>o[0]).find(o=>String(o)===b.dataset.val);
+    const r=await persAcao('pers_sistema',{ident:x.id,valor:v}); toast(r.msg,!r.ok); return vPersonalizar(); }
+  if(b.dataset.tema){ const r=await persAcao('pers_tema',{modo:b.dataset.tema}); toast(r.msg,!r.ok); return vPersonalizar(); }
+  if(b.dataset.copiar){ navigator.clipboard.writeText(b.dataset.copiar).then(()=>toast('Copiado.')); return; }
+  if(b.dataset.limpa){ await persCfg({[b.dataset.limpa]:''}); return peRender(); }
+  if(b.dataset.escolher){ const r=await persAcao('pers_escolher',{para:b.dataset.escolher},2400); if(!r.ok){ if(r.msg!=='Cancelado.') toast(r.msg,1); return; } const c=r.dados.caminho;
+    if(b.dataset.alvo==='ren'){ PERS.ren.pasta=c; return peRender(); }
+    if(b.dataset.alvo){ await persCfg({[b.dataset.alvo]:c}); return vPersonalizar(); }
+    if(b.dataset.ppalvo){ const card=b.closest('[data-perfil]'); pePerfilLer(card); const p=PERS.perfis[+card.dataset.perfil]; if(b.dataset.ppalvo==='abrir') p.abrir=[...(p.abrir||[]),c]; else p.papel=c; return peRender(); }
+    if(b.dataset.rmalvo!=null){ PERS.remap[+b.dataset.rmalvo].abrir=c; return peRender(); } return; }
+  const k=b.dataset.pe; if(!k) return; const card=b.closest('[data-perfil]'), rm=b.closest('[data-rm]');
+  if(k==='explorer'){ if(!await confirmar('Reiniciar o Explorer?','A barra de tarefas e as janelas de pastas abertas fecham e voltam em seguida. Os programas continuam abertos.','Reiniciar')) return; const r=await persAcao('pers_explorer'); toast(r.msg,!r.ok); return; }
+  if(k==='papel_proximo'||k==='lancador'){ const r=await persAcao('pers_'+(k==='lancador'?'lancador':'papel_proximo')); if(!r.ok||k!=='lancador') toast(r.msg,!r.ok); return; }
+  if(k==='novo_perfil'){ document.querySelectorAll('#persCorpo [data-perfil]').forEach(pePerfilLer); PERS.perfis.push({id:'',nome:'Novo perfil',atalho:'',tema:'',jogo:'',mini:'',barra:'',icones_area:'',papel:'',plano:'',acordado:false,abrir:[]}); return peRender(); }
+  if(k==='remover'&&card){ document.querySelectorAll('#persCorpo [data-perfil]').forEach(pePerfilLer); PERS.perfis.splice(+card.dataset.perfil,1); return peRender(); }
+  if(k==='salvar_perfis'){ if(await peSalvarPerfis()) peRender(); return; }
+  if(k==='aplicar'&&card){ const nome=PERS.perfis[+card.dataset.perfil].nome; if(!await peSalvarPerfis(null)) return; const p=CFG.pers_perfis.find(x=>x.nome===nome); if(!p) return;
+    b.disabled=true; const r=await persAcao('pers_perfil',{perfil:p.id}); toast(r.msg,!r.ok); return vPersonalizar(); }
+  if(k==='ren_aplicar'){ if(!await confirmar('Renomear os arquivos?',`${b.textContent.replace('Renomear ','')} na pasta ${PERS.ren.pasta}. Dá para desfazer depois com “Desfazer a última”.`,'Renomear')) return;
+    b.disabled=true; const r=await persAcao('pers_ren_aplicar',{pasta:PERS.ren.pasta.trim(),regras:PERS.ren.r}); toast(r.msg,!r.ok); if(r.dados&&r.dados.erros&&r.dados.erros.length) toast(r.dados.erros.slice(0,3).join(' · '),1); return vPersonalizar(); }
+  if(k==='ren_desfazer'){ if(!await confirmar('Desfazer a última renomeação?',`${PERS.est.desfazer.n} item(ns) em ${PERS.est.desfazer.pasta} voltam ao nome anterior.`,'Desfazer')) return; const r=await persAcao('pers_ren_desfazer'); toast(r.msg,!r.ok); return vPersonalizar(); }
+  if(k==='rm_tecla'||k==='rm_atalho'){ PERS.remap.push(k==='rm_tecla'?{de:'CapsLock',para:'Ctrl',abrir:'',programa:'',ativo:true,_de:'tecla',_para:'tecla'}:{de:'',para:'',abrir:'',programa:'',ativo:true,_de:'atalho',_para:'atalho'}); return peRender(); }
+  if(k==='rm_remover'&&rm){ PERS.remap.splice(+rm.dataset.rm,1); return peRender(); }
+  if(k==='rm_salvar'){ const ruim=PERS.remap.findIndex(r=>!r.de||(r._para==='atalho'&&!r.para)||(r._para==='abrir'&&!r.abrir)||(r._para==='tecla'&&!r.para));
+    if(ruim>=0){ toast(`Complete a regra ${ruim+1}: falta a tecla, o atalho ou o programa.`,1); return; }
+    const lista=PERS.remap.map(r=>({de:r.de,para:r._para==='tecla'||r._para==='atalho'?r.para:'',abrir:r._para==='abrir'?r.abrir:'',programa:r.programa,ativo:r.ativo!==false}));
+    if(!await persCfg({pers_remapear:lista},null)) return; const n=lista.length-CFG.pers_remapear.length;
+    toast(n>0?`${n} regra(s) não foram aceitas (tecla ou atalho inválido, repetido ou caminho que não é completo).`:'Remapeamentos salvos.',n>0);
+    PERS.remap=null; return vPersonalizar(); } });
+$('#persCorpo').addEventListener('change',async e=>{ const t=e.target;
+  if(t.id==='peVerIcones'){ PERS.verIcones=t.checked; return peRender(); }
+  if(t.dataset.sis&&t.type==='checkbox'){ const r=await persAcao('pers_sistema',{ident:t.dataset.sis,valor:t.checked}); toast(r.msg,!r.ok); return vPersonalizar(); }
+  if(t.dataset.icone){ const r=await persAcao('pers_icone',{icone:t.dataset.icone,visivel:t.checked}); toast(r.msg,!r.ok); return; }
+  if(t.dataset.pcfg){ const k=t.dataset.pcfg, v=t.type==='checkbox'?t.checked:t.tagName==='SELECT'&&/^\d+$/.test(t.value)?+t.value:t.value.trim();
+    if(await persCfg({[k]:v})) { if(k==='pers_papel_pasta'||k==='pers_lancador_ativo') vPersonalizar(); } else peRender(); return; }
+  if(t.dataset.rr){ const k=t.dataset.rr; PERS.ren.r[k]=t.type==='checkbox'?t.checked:t.type==='number'?+t.value:t.value; if(k==='numerar') return peRender(); return peRenPrevia(); }
+  const rm=t.closest('[data-rm]'); if(rm&&t.dataset.rmk){ const r=PERS.remap[+rm.dataset.rm], k=t.dataset.rmk; r[k]=t.type==='checkbox'?t.checked:t.value;
+    if(k==='_de'){ r.de=r._de==='tecla'?'CapsLock':''; return peRender(); } if(k==='_para'){ r.para=r._para==='tecla'?'Ctrl':''; r.abrir=''; return peRender(); } return; } });
+$('#persCorpo').addEventListener('input',e=>{ const t=e.target; if(t.id==='peRenPasta'){ PERS.ren.pasta=t.value; return peRenPrevia(); }
+  if(t.dataset.rr&&t.type!=='checkbox'){ PERS.ren.r[t.dataset.rr]=t.type==='number'?+t.value:t.value; return peRenPrevia(); }
+  const rm=t.closest('[data-rm]'); if(rm&&t.dataset.rmk&&t.type==='text') PERS.remap[+rm.dataset.rm][t.dataset.rmk]=t.value; });
 
 /* =================== SERVIÇOS =================== */
 let SVC=[], filtroSvc='terceiros';

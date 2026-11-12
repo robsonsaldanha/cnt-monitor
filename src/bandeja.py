@@ -5,6 +5,7 @@ da sessão do usuário (mostrar janela de um programa, abrir pasta, fechar janel
 
   MonitorPC.exe            -> abre a janela (e o ícone, se ainda não estiver aberto)
   MonitorPC.exe --bandeja  -> só o ícone (usado ao ligar o Windows)
+  MonitorPC.exe --lancador -> só o lançador rápido (para um atalho do sistema; no Linux/Wayland é o jeito de abrir)
   MonitorPC.exe --ferramenta NOME "arquivo"  -> enviar, editor, fixar, ocr, qr, hash, embelezar, imprimir,
                                                copiar_arquivo (menu do botão direito do Explorer)
 """
@@ -239,6 +240,8 @@ def executar_linux(tipo, a):
 
 def executar(a):
     tipo = a.get("tipo")
+    if str(tipo).startswith("pers_"):
+        return executar_pers(tipo, a)
     if not WIN:
         return executar_linux(tipo, a)
     if tipo == "mostrar":
@@ -476,6 +479,142 @@ def loop_captura():
             print("captura:", e)
         n += 1
         time.sleep(1 if CAP.gravador.gravando else 3)
+
+
+# ------------------------------------------------------------------ personalizar
+PERS = None         # tema e papel automáticos, perfis
+LANC = None         # lançador rápido
+REMAP = None        # remapear teclas (Windows)
+ATALHOS_PERS = None  # atalhos do lançador e dos perfis (Windows)
+
+
+def arq_desfazer():
+    return os.path.join(PASTA_USUARIO, "renomear_desfazer.json")
+
+
+def perfil_por_id(pid):
+    return next((p for p in cfg(True).get("pers_perfis") or [] if p["id"] == pid), None)
+
+
+def aplicar_perfil(pid, avisar=False):
+    p = perfil_por_id(pid)
+    if not p or PERS is None:
+        return False, "Perfil não encontrado."
+    ok, msg = PERS.aplicar_perfil(p)
+    if avisar:
+        notificar(msg, "Perfil")
+    atualizar_icone_agora()
+    return ok, msg
+
+
+def estado_pers():
+    from monitorpc import personalizar, remapear, renomear
+    c = cfg()
+    return {"so": "windows" if WIN else "linux", "sistema": personalizar.ler_sistema(),
+            "icones": personalizar.icones_bandeja(), "tema": personalizar.tema_atual(),
+            "perfil": PERS.perfil_ativo() if PERS else None,
+            "atalhos": ATALHOS_PERS.estado if ATALHOS_PERS else {},
+            "remapear_erro": REMAP.erro if REMAP else "", "desfazer": renomear.ha_desfazer(arq_desfazer()),
+            "teclas": remapear.TECLAS_UI,
+            "papeis": len(personalizar.imagens_da_pasta(c.get("pers_papel_pasta") or "")),
+            "lancador_cmd": "" if WIN else f"{os.path.join(config.pasta_programa(), config.EXE_ICONE)} --lancador"}
+
+
+def executar_pers(tipo, a):
+    from monitorpc import personalizar, renomear, captura
+    if tipo == "pers_estado":
+        return True, "ok", estado_pers()
+    if tipo == "pers_sistema":
+        return personalizar.aplicar_sistema(str(a.get("ident", "")), a.get("valor"))
+    if tipo == "pers_icone":
+        return personalizar.definir_icone(str(a.get("icone", "")), bool(a.get("visivel")))
+    if tipo == "pers_explorer":
+        return personalizar.reiniciar_explorer()
+    if tipo == "pers_tema":
+        return personalizar.aplicar_tema("escuro" if a.get("modo") == "escuro" else "claro")
+    if tipo == "pers_papel_proximo":
+        return PERS.proximo_papel(cfg(True)) if PERS else (False, "Ainda iniciando.")
+    if tipo == "pers_perfil":
+        return aplicar_perfil(str(a.get("perfil", "")))
+    if tipo == "pers_lancador":
+        if LANC is None:
+            return False, "Ainda iniciando."
+        LANC.mostrar()
+        return True, "ok"
+    if tipo == "pers_escolher":
+        para = a.get("para")
+        if para == "pasta":
+            c = captura._dialogo("askdirectory", title="Escolha a pasta", mustexist=True)
+        elif para == "imagem":
+            c = captura._dialogo("askopenfilename", title="Escolha a imagem",
+                                 filetypes=[("Imagens", "*.jpg *.jpeg *.png *.bmp")])
+        elif para == "programa":
+            c = captura._dialogo("askopenfilename", title="Escolha o programa ou arquivo")
+        else:
+            return False, "Pedido inválido."
+        return (True, "ok", {"caminho": os.path.normpath(c)}) if c else (False, "Cancelado.")
+    if tipo in ("pers_ren_previa", "pers_ren_aplicar"):
+        pasta = str(a.get("pasta") or "")
+        if not personalizar.caminho_valido(pasta) or not os.path.isdir(pasta):
+            return False, "Escolha uma pasta que exista (caminho completo)."
+        try:
+            if tipo == "pers_ren_aplicar":
+                return renomear.aplicar(pasta, a.get("regras"), arq_desfazer())
+            plano = renomear.planejar(renomear.listar(pasta), a.get("regras"))
+        except (ValueError, OSError) as e:
+            return False, str(e)
+        return True, "ok", {"resumo": renomear.resumo(plano), "itens": plano[:500]}
+    if tipo == "pers_ren_desfazer":
+        return renomear.desfazer(arq_desfazer())
+    return False, "Ação desconhecida."
+
+
+def abrir_pelo_atalho(caminho):
+    from monitorpc import personalizar
+    ok, msg = personalizar.abrir_programa(caminho)
+    if not ok:
+        notificar(f"{os.path.basename(caminho)}: {msg}", "Remapear teclas")
+
+
+def ao_atalho_pers(acao):
+    if acao == "lancador" and LANC is not None:
+        LANC.mostrar()
+    elif acao.startswith("perfil:"):
+        aplicar_perfil(acao[7:], avisar=True)
+
+
+def loop_personalizar():
+    """Tema por horário, rotação do papel, atalhos do lançador e dos perfis e remapeamentos (conforme a config)."""
+    aplicado = None
+    while True:
+        try:
+            c = cfg()
+            if c:
+                PERS.tick(c)
+                if ATALHOS_PERS is not None:
+                    mapa = {f"perfil:{p['id']}": p["atalho"] for p in c.get("pers_perfis") or [] if p.get("atalho")}
+                    if c.get("pers_lancador_ativo", True) and c.get("pers_lancador_atalho"):
+                        mapa["lancador"] = c["pers_lancador_atalho"]
+                    chave = json.dumps(mapa, sort_keys=True)
+                    if chave != aplicado:
+                        aplicado = chave
+                        ATALHOS_PERS.definir(mapa)
+                if REMAP is not None:
+                    REMAP.definir(c.get("pers_remapear") or [])
+        except Exception as e:  # noqa: BLE001
+            print("personalizar:", e)
+        time.sleep(5)
+
+
+def iniciar_personalizar():
+    global PERS, LANC, REMAP, ATALHOS_PERS
+    from monitorpc import personalizar, lancador, remapear, captura
+    PERS = personalizar.Personalizador(PASTA_USUARIO, api_post, notificar)
+    LANC = lancador.Lancador(PASTA_USUARIO, abrir_janela, listar_janelas, trazer_para_frente, monitores, notificar)
+    if WIN:
+        REMAP = remapear.Gancho(abrir_pelo_atalho)
+        ATALHOS_PERS = captura.Atalhos(ao_atalho_pers)
+    threading.Thread(target=loop_personalizar, daemon=True).start()
 
 
 def fechar_icone():
@@ -1065,6 +1204,11 @@ def main():
     _log()
     from monitorpc import aviso
     AVISOS = aviso.Avisos(cfg, notificar_windows) if WIN else None
+    if "--lancador" in sys.argv:     # atalho do sistema (Linux/Wayland) ou de quem preferir: abre, escolhe e sai
+        from monitorpc import captura, lancador
+        captura.dpi_por_monitor()
+        return lancador.Lancador(PASTA_USUARIO, abrir_janela, listar_janelas, trazer_para_frente, monitores,
+                                 notificar_windows).uma_vez()
     cli = linha_de_comando()
     if cli:
         from monitorpc import capturador
@@ -1084,6 +1228,7 @@ def main():
     if WIN:
         CAP = capturador.Capturador(api_post, cfg, notificar, abrir_janela, esconder_janela, PASTA_USUARIO, AVISOS)
         threading.Thread(target=loop_captura, daemon=True).start()
+    iniciar_personalizar()
     from monitorpc import teclado_remoto
     teclado_remoto.Gancho().iniciar()   # atalhos do Windows para a janela da sessão do técnico (Linux: só no X11)
     for alvo in (loop_fila, loop_janelas, atualizar_icone, loop_extras):
@@ -1237,6 +1382,35 @@ def main():
         opcao("Abrir URL", "captura_envio_abrir"), opcao("Mostrar janela de código QR", "captura_envio_qr"),
         opcao("Mostrar aviso", "captura_envio_notificar", True),
     )
+    def item_perfil(p):
+        return pystray.MenuItem(p["nome"] + (f"  ({p['atalho']})" if p.get("atalho") else ""),
+                                lambda *_: threading.Thread(target=aplicar_perfil, args=(p["id"], True), daemon=True).start(),
+                                radio=True, checked=lambda *_: bool(PERS and PERS.perfil_ativo() == p["id"]))
+
+    def pers_rodar(acao):
+        def tarefa():
+            ok, msg, *_ = executar_pers(acao[0], acao[1])
+            if not ok or acao[0] != "pers_lancador":
+                notificar(msg, "Personalizar")
+        threading.Thread(target=tarefa, daemon=True).start()
+
+    menu_pers = pystray.Menu(lambda: [
+        pystray.MenuItem("Lançador rápido" + (f"  ({_cfg['v'].get('pers_lancador_atalho')})"
+                                               if _cfg["v"].get("pers_lancador_ativo", True) and _cfg["v"].get("pers_lancador_atalho") else ""),
+                         lambda *_: LANC and LANC.mostrar()),
+        pystray.Menu.SEPARATOR,
+        *[item_perfil(p) for p in _cfg["v"].get("pers_perfis") or []],
+        pystray.Menu.SEPARATOR,
+        pystray.MenuItem("Tema claro", lambda *_: pers_rodar(("pers_tema", {"modo": "claro"}))),
+        pystray.MenuItem("Tema escuro", lambda *_: pers_rodar(("pers_tema", {"modo": "escuro"}))),
+        pystray.MenuItem("Próximo papel de parede", lambda *_: pers_rodar(("pers_papel_proximo", {})),
+                         visible=bool(_cfg["v"].get("pers_papel_pasta"))),
+        pystray.Menu.SEPARATOR,
+        pystray.MenuItem("Renomear arquivos em massa…", lambda *_: abrir_janela("personalizar/renomear")),
+        pystray.MenuItem("Remapear teclas…", lambda *_: abrir_janela("personalizar/teclado"), visible=WIN),
+        pystray.MenuItem("Personalizar…", lambda *_: abrir_janela("personalizar")),
+    ])
+
     menu_recentes = pystray.Menu(lambda: [item_recente(x) for x in ESTADO["recentes"]] or
                                  [pystray.MenuItem("nenhuma captura ainda", None, enabled=False)])
 
@@ -1270,6 +1444,7 @@ def main():
         pystray.MenuItem("Plano de energia", pystray.Menu(lambda: [item_plano(p) for p in ESTADO["planos"]] or
                                                           [pystray.MenuItem("carregando…", None, enabled=False)])),
         pystray.MenuItem("Mini painel", alternar_mini, checked=lambda *_: bool(_cfg["v"].get("mini_ativo"))),
+        pystray.MenuItem("Personalizar", menu_pers),
         pystray.MenuItem("Otimizar", lambda *_: abrir_janela("otimizar")),
         pystray.MenuItem("Relatório", lambda *_: abrir_janela("relatorio")),
         pystray.MenuItem("Encerrar conexão do técnico", encerrar_tecnico, visible=lambda *_: AJUDA["ativa"]),

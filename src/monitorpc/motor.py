@@ -23,6 +23,10 @@ from . import qualidade
 
 WIN = os.name == "nt"
 NCPU = psutil.cpu_count() or 1
+# personalizar: ações feitas pelo ícone (na sessão do usuário) e os campos que passam para ele
+ACOES_PERS = {"pers_estado", "pers_sistema", "pers_icone", "pers_explorer", "pers_tema", "pers_papel_proximo",
+              "pers_perfil", "pers_lancador", "pers_escolher", "pers_ren_previa", "pers_ren_aplicar", "pers_ren_desfazer"}
+CAMPOS_PERS = ("ident", "valor", "modo", "perfil", "icone", "visivel", "pasta", "regras", "para")
 EU = "CNT Monitor"
 
 RAIZES = {
@@ -1412,6 +1416,8 @@ class Motor:
             if modo not in captura.ACOES and modo not in ("parar", "ffmpeg") and not str(modo).startswith("fluxo:"):
                 return {"ok": False, "msg": "Tipo de captura desconhecido."}
             return self._enfileirar({"tipo": "captura", "modo": modo})
+        if tipo in ACOES_PERS:   # personalizar: registro, papel de parede e arquivos do usuário são do ícone
+            return self._enfileirar({"tipo": tipo, **{k: a[k] for k in CAMPOS_PERS if k in a}})
         if tipo in ("captura_escolher_pasta", "captura_abrir_pasta"):   # quem abre o diálogo/Explorer é o ícone
             return self._enfileirar({"tipo": tipo})
         if tipo == "captura_tarefa":   # ferramentas sem arquivo: rodam no ícone, na sessão do usuário
