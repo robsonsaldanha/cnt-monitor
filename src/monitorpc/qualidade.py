@@ -793,9 +793,9 @@ class Velocidade:
 # ================================================================ TCP e UDP até um destino
 # Eco UDP do servidor da CNT: devolve o datagrama que começa com "CNTE" (até 64 bytes). Só é usado quando o destino
 # não devolve nada, e a medida aparece separada: o caminho até o servidor não é o caminho até o destino.
-# IP fixo da VPS: os nomes cntoficial.com.br passam pelo proxy da Cloudflare, que só repassa HTTP (UDP não chega).
-# Se a VPS mudar de IP, troque aqui (ou use um nome "DNS only").
-ECO_UDP = (os.environ.get("MONITORPC_ECO_HOST") or "143.95.209.35", int(os.environ.get("MONITORPC_ECO_PORTA") or 48790))
+# turn.cntoficial.com.br é "DNS only" na Cloudflare (aponta direto para a VPS). Os outros nomes cntoficial.com.br
+# passam pelo proxy, que só repassa HTTP (UDP não chega): não troque por eles.
+ECO_UDP = (os.environ.get("MONITORPC_ECO_HOST") or "turn.cntoficial.com.br", int(os.environ.get("MONITORPC_ECO_PORTA") or 48790))
 ECO_PREFIXO = b"CNTE"
 
 
