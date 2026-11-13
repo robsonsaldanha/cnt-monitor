@@ -378,6 +378,10 @@ class Motor:
                 if r[0]:
                     self._abrir_icone()      # o aviso e o "Encerrar conexão do técnico" são do ícone: garante que está aberto
                 return estado(*r)
+            if tipo == "ajuda_testar":
+                r = self.ajuda.testar(self.encontro.turn_atual())
+                r["servidor"] = self.encontro.estado().get("situacao") == "online"
+                return {"ok": True, "msg": "", "dados": {**r, "conclusao": remoto.conclusao_teste(r)}}
             if tipo == "ajuda_arquivos":
                 return {"ok": True, "msg": "", "dados": {"itens": remoto.historico()}}
             if tipo == "ajuda_encerrar":
@@ -1146,7 +1150,7 @@ class Motor:
                 inicializacao.alterar(item, bool(a.get("ativo")))
             except OSError as e:
                 return {"ok": False, "msg": f"Não consegui alterar: {e}"}
-            return {"ok": True, "msg": f'"{item["nome"]}" {"vai" if a.get("ativo") else "não vai mais"} iniciar com o Windows.'}
+            return {"ok": True, "msg": f'"{item["nome"]}" {"vai" if a.get("ativo") else "não vai mais"} iniciar com o {"Windows" if WIN else "Linux"}.'}
 
         if isinstance(tipo, str) and tipo.startswith("rede_"):
             return self._acao_rede(tipo, a)

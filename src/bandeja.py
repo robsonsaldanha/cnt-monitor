@@ -1152,6 +1152,24 @@ def loop_extras():
         time.sleep(4)
 
 
+def carregar_pystray():
+    """No Linux, o ícone vai pelo AppIndicator (D-Bus: Ubuntu, Mint, KDE, XFCE) ou, sem ele, pelo GTK. Nunca pelo
+    modo X11 do pystray: ele congela o servidor gráfico inteiro (XGrabServer) a cada tentativa de entrar na bandeja
+    e usa a mesma conexão X em várias threads. Ao bloquear a tela a bandeja some e volta, e o Linux travava."""
+    if WIN:
+        import pystray
+        return pystray
+    for nome in ("appindicator", "gtk"):
+        os.environ["PYSTRAY_BACKEND"] = nome
+        try:
+            import pystray
+            return pystray
+        except Exception as e:  # noqa: BLE001  (falta o GTK, o typelib do AppIndicator ou a tela)
+            print(f"ícone ({nome}):", e)
+            sys.modules.pop("pystray", None)
+    print("ícone: sem AppIndicator nem GTK; o CNT Monitor abre pelo menu de aplicativos.")
+    return None
+
 def instancia_unica():
     if not WIN:     # Linux: trava num arquivo da pasta do usuário (some sozinha quando o processo acaba)
         import fcntl
@@ -1235,7 +1253,9 @@ def main():
         threading.Thread(target=alvo, daemon=True).start()
     MiniPainel().iniciar()
     PedidoAjuda().iniciar()
-    import pystray
+    pystray = carregar_pystray()
+    if pystray is None:      # Linux sem AppIndicator nem GTK: sem ícone; o resto (janela, avisos, pedido de acesso) segue
+        threading.Event().wait()
 
     def alternar_jogo(*_):
         def tarefa():
@@ -1426,17 +1446,19 @@ def main():
             *[escolha(t, "captura_destino", k, "catbox") for k, t in envio.DESTINOS.items()]), visible=WIN),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Configurações…", lambda *_: abrir_janela("config")),
-        pystray.MenuItem("Configuração de tarefas…", lambda *_: abrir_janela("capturas/opcoes")),
-        pystray.MenuItem("Teclas de atalho…", lambda *_: abrir_janela("capturas/opcoes")),
-        pystray.MenuItem("Desativar atalhos", lambda *_: item_tarefa_rodar("atalhos"),
+        # captura de tela: só no Windows
+        pystray.MenuItem("Configuração de tarefas…", lambda *_: abrir_janela("capturas/opcoes"), visible=WIN),
+        pystray.MenuItem("Teclas de atalho…", lambda *_: abrir_janela("capturas/opcoes"), visible=WIN),
+        pystray.MenuItem("Desativar atalhos", lambda *_: item_tarefa_rodar("atalhos"), visible=WIN,
                          checked=lambda *_: not _cfg["v"].get("captura_ativa", True)),
-        pystray.MenuItem("Destinos e uploader personalizado…", lambda *_: abrir_janela("capturas/opcoes")),
+        pystray.MenuItem("Destinos e uploader personalizado…", lambda *_: abrir_janela("capturas/opcoes"), visible=WIN),
         pystray.Menu.SEPARATOR,
-        pystray.MenuItem("Pasta das capturas", lambda *_: CAP and threading.Thread(target=CAP.abrir_pasta, daemon=True).start()),
-        pystray.MenuItem("Escolher a pasta das capturas…", pasta_capturas),
-        pystray.MenuItem("Histórico", lambda *_: abrir_janela("capturas")),
-        pystray.MenuItem("Itens recentes", menu_recentes),
-        pystray.MenuItem("Estatísticas…", lambda *_: abrir_janela("capturas/estatisticas")),
+        pystray.MenuItem("Pasta das capturas", lambda *_: CAP and threading.Thread(target=CAP.abrir_pasta, daemon=True).start(),
+                         visible=WIN),
+        pystray.MenuItem("Escolher a pasta das capturas…", pasta_capturas, visible=WIN),
+        pystray.MenuItem("Histórico", lambda *_: abrir_janela("capturas"), visible=WIN),
+        pystray.MenuItem("Itens recentes", menu_recentes, visible=WIN),
+        pystray.MenuItem("Estatísticas…", lambda *_: abrir_janela("capturas/estatisticas"), visible=WIN),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Abrir CNT Monitor", lambda *_: abrir_janela(), default=True),
         pystray.MenuItem("Programas", lambda *_: abrir_janela("programas")),

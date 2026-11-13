@@ -9,3 +9,4 @@ maxminddb==3.2.0
 mss==10.2.0
 python-xlib==0.33
 jeepney==0.9.0
+PyGObject==3.50.0
