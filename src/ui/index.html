@@ -252,6 +252,7 @@ input[type=range]{width:220px;max-width:100%;accent-color:var(--acento)}
 .aj-num{font:700 34px/1.15 Consolas,"Cascadia Mono",monospace;letter-spacing:1px;user-select:all}
 .aj-sit{margin:0;font-weight:600}.aj-sit.ok{color:var(--ok,#2e9d62)}.aj-sit.fora{color:var(--perigo)}
 .aj-bts{display:flex;gap:8px;flex-wrap:wrap}
+.aj-teste{margin:0;padding:0;list-style:none;display:grid;gap:4px}.aj-teste .ok{color:var(--ok,#2e9d62)}.aj-teste .fora{color:var(--perigo)}
 .aj-campo{display:flex;flex-direction:column;gap:4px;font-weight:600;max-width:260px}
 .aj-campo input{font:600 20px Consolas,"Cascadia Mono",monospace;padding:8px 10px;letter-spacing:1px;background:var(--painel2);color:var(--txt);border:1px solid var(--borda);border-radius:8px}
 .aj-outro .btn.pri{align-self:flex-start}
@@ -263,6 +264,7 @@ input[type=range]{width:220px;max-width:100%;accent-color:var(--acento)}
 .rs-barra{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 10px;background:#141b23;border-bottom:1px solid #26313d;font-size:13px;min-height:44px}
 .rs-id{display:flex;align-items:center;gap:8px;padding:4px 10px;background:#1d2732;border-radius:8px;margin-right:4px}
 .rs-id b{font:700 14px Consolas,"Cascadia Mono",monospace;letter-spacing:.5px} .rs-id span:last-child{color:#9fb0c0;font-variant-numeric:tabular-nums}
+.rs-rota{font-size:12px;color:#9fb0c0;border:1px solid #33414f;border-radius:6px;padding:1px 6px}.rs-rota:empty{display:none}
 .rs-ponto{width:8px;height:8px;border-radius:50%;background:#2ecc71;box-shadow:0 0 0 3px rgba(46,204,113,.2)}
 .rs-bt{background:#1d2732;color:#e6edf3;border:1px solid #2b3846;border-radius:7px;padding:5px 10px;font:inherit;cursor:pointer;white-space:nowrap}
 .rs-bt:hover{background:#26323f} .rs-bt:focus-visible{outline:2px solid #5aa9e6;outline-offset:1px} .rs-bt.on{background:#1f6fb2;border-color:#1f6fb2}
@@ -914,7 +916,8 @@ function ajRender(){ const el=$('#ajCorpo'); ajTag(); if(AJU.modo==='pedir') ret
       <div class="aj-cred"><div><small>ID</small><div class="aj-num" id="ajMeuId">…</div></div><div><small>Senha</small><div class="aj-num" id="ajMeuSenha">…</div></div></div>
       <p class="aj-sit" id="ajSit" role="status"></p>
       <div class="aj-bts"><button class="btn pri" id="ajCopTxt">Copiar como texto</button><button class="btn" id="ajCopImg">Copiar como imagem</button></div>
-      <p class="mut">A senha muda sozinha depois de cada acesso, e o ID quando o computador reinicia.</p></div>
+      <p class="mut">A senha muda sozinha depois de cada acesso, e o ID quando o computador reinicia.</p>
+      <div class="aj-bts"><button class="btn" id="ajTestar">Testar conexão</button></div><div id="ajTeste" role="status"></div></div>
     <div class="painel aj-outro"><b>Acessar outro computador</b><p class="mut2">Digite o ID e a senha que a pessoa passou. Cada acesso abre numa janela própria: dá para atender vários computadores ao mesmo tempo.</p>
       <label class="aj-campo">ID<input id="ajIdT" inputmode="numeric" placeholder="000 000 000" autocomplete="off" maxlength="13"></label>
       <label class="aj-campo">Senha<input id="ajSenhaId" placeholder="XXXX-XXXX" autocomplete="off" spellcheck="false" maxlength="12"></label>
@@ -923,11 +926,18 @@ function ajRender(){ const el=$('#ajCorpo'); ajTag(); if(AJU.modo==='pedir') ret
     <div class="aj-arq" id="ajArq"></div>`;
   ajMeuAtualizar(); ajArquivos();
   $('#ajCopTxt').onclick=()=>{ if(AJU.meu) ajCopiar(AJU.meu.texto); };
-  $('#ajCopImg').onclick=ajCopiarImagem;
+  $('#ajCopImg').onclick=ajCopiarImagem; $('#ajTestar').onclick=ajTestar;
   const id=$('#ajIdT'), sn=$('#ajSenhaId'), go=()=>ajAbrirSessao(id.value, sn.value);
   id.oninput=()=>{ const d=id.value.replace(/\D/g,'').slice(0,9); id.value=d.replace(/(\d{3})(?=\d)/g,'$1 '); };
   sn.oninput=()=>{ const d=sn.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8); sn.value=d.length>4?d.slice(0,4)+'-'+d.slice(4):d; };
   id.onkeydown=sn.onkeydown=e=>{ if(e.key==='Enter') go(); }; $('#ajConectarId').onclick=go; }
+// confere se este PC alcança o servidor do ID e o retransmissor (UDP e TCP): mostra por que o acesso falharia
+async function ajTestar(){ const b=$('#ajTestar'), el=$('#ajTeste'); if(!b||b.disabled) return;
+  b.disabled=true; b.textContent='Testando…'; el.innerHTML='<p class="mut">Conferindo o servidor e o retransmissor (até 30 segundos)…</p>';
+  const r=await ajAcao('ajuda_testar'), e=$('#ajTeste'), bt=$('#ajTestar'); if(bt){ bt.disabled=false; bt.textContent='Testar conexão'; } if(!e) return;
+  if(!r.ok||!r.dados){ e.innerHTML=`<p class="aj-sit fora">${esc(r.msg||'Não consegui testar a conexão.')}</p>`; return; }
+  const d=r.dados, item=(nome,v)=>`<li class="${v==null?'mut':v?'ok':'fora'}">${v==null?'—':v?'✓':'✗'} ${nome}${v==null?' (não testado)':v?'':': sem resposta'}</li>`;
+  e.innerHTML=`<ul class="aj-teste">${item('Servidor do acesso remoto',d.servidor)}${item('Endereço público (STUN, UDP)',d.stun)}${item('Retransmissor por UDP (porta 3478)',d.turn_udp)}${item('Retransmissor por TCP (porta 3478)',d.turn_tcp)}</ul><p>${esc(d.conclusao||'')}</p>`; }
 // histórico do que técnicos mandaram para este computador ou levaram dele (90 dias, gravado pelo serviço)
 async function ajArquivos(){ const r=await ajAcao('ajuda_arquivos'), el=$('#ajArq'); if(!el||!r.ok||!r.dados) return; const l=r.dados.itens||[];
   el.innerHTML=`<h2 class="secao" style="margin-bottom:8px">Arquivos transferidos no acesso remoto</h2><div class="painel">${l.length?`<div class="tw" style="max-height:360px"><table><thead><tr><th>Quando</th><th>Sentido</th><th>Arquivo</th><th>Tamanho</th><th>Técnico</th></tr></thead><tbody>${l.map(x=>`<tr><td>${esc(quando(x.ts))}</td><td>${x.sentido==='recebido'?'Recebido do técnico':'Levado pelo técnico'}</td><td title="${esc(x.caminho)}${x.sha256?' · SHA-256 '+esc(x.sha256):''}">${esc(x.nome)}<br><small>${esc(x.caminho)}</small></td><td>${fB(x.tamanho)}</td><td>${esc(x.tecnico||'—')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="vazio">Nenhum arquivo transferido nos últimos 90 dias.</div>'}</div>`; }
@@ -1080,7 +1090,14 @@ function rsAtivar(m){ const lista=Array.isArray(m.monitores)&&m.monitores.length
   rsTitulos();
   try{ const c=RS.dados=AJU.pc.createDataChannel('dados'); c.binaryType='arraybuffer'; c.bufferedAmountLowThreshold=MB; c.onmessage=rsDados; }catch(_){ }
   rsEnv({t:'ola',tecnico:AJU.tecId||''}); rsEnv({t:'area_modo',modo:RS.area});
+  const rs=RS; ajRota(AJU.pc).then(t=>{ if(RS!==rs) return; rs.rota=t; const e=$('#rsRota'); if(e) e.textContent=t; });
   AJU.fase='ativa'; ajRender(); }
+// Pelo par de endereços que o navegador escolheu: "Retransmitida" quando um dos lados é o retransmissor da CNT.
+async function ajRota(pc){ try{ const st=await pc.getStats(); let par=null;
+    st.forEach(x=>{ if(!par&&x.type==='transport'&&x.selectedCandidatePairId) par=st.get(x.selectedCandidatePairId); });
+    st.forEach(x=>{ if(!par&&x.type==='candidate-pair'&&x.nominated&&x.state==='succeeded') par=x; });
+    if(!par) return ''; const l=st.get(par.localCandidateId), r=st.get(par.remoteCandidateId);
+    return [l,r].some(c=>c&&c.candidateType==='relay')?'Retransmitida':'Direta'; }catch(_){ return ''; } }
 function rsAbrir(el){ document.body.classList.add('rs-ativo');
   el.innerHTML=`<div class="rs" id="rs"><div class="rs-barra" id="rsBarra"></div><div class="rs-corpo"><div class="rs-palco" id="rsPalco" tabindex="0" aria-label="Tela do outro computador"><div class="rs-mapa"></div></div><aside class="rs-arq" id="rsArq" hidden></aside></div><div class="rs-menu" id="rsMenu" hidden></div></div>`;
   rsLigar($('#rsPalco')); rsMontar(); RS.timer=setInterval(()=>{ const t=$('#rsTempo'); if(t&&RS) t.textContent=rsDur(Date.now()-RS.inicio); },1000);
@@ -1089,7 +1106,7 @@ addEventListener('resize',()=>rsDimensionarTudo()); addEventListener('focus',()=
 document.addEventListener('mousedown',e=>{ const mn=$('#rsMenu'); if(mn&&!mn.hidden&&!e.target.closest('#rsMenu,[data-menu]')) mn.hidden=true; },true);
 const rsMostrando=i=>RS.layout==='lado'||i===RS.sel||(RS.layout==='janelas'&&RS.janelas.has(i));
 function rsBarra(){ const b=$('#rsBarra'); if(!b||!RS) return; const varios=RS.mons.length>1;
-  b.innerHTML=`<div class="rs-id"><span class="rs-ponto"></span><b>${esc(AJU.alvo?ajFmtId(AJU.alvo):'Sessão remota')}</b><span id="rsTempo">${rsDur(Date.now()-RS.inicio)}</span></div>
+  b.innerHTML=`<div class="rs-id"><span class="rs-ponto"></span><b>${esc(AJU.alvo?ajFmtId(AJU.alvo):'Sessão remota')}</b><span id="rsRota" class="rs-rota" title="Direta: os dois computadores falam entre si. Retransmitida: passa pelo servidor da CNT (rede que bloqueia conexão direta), com um pouco mais de atraso.">${esc(RS.rota||'')}</span><span id="rsTempo">${rsDur(Date.now()-RS.inicio)}</span></div>
     ${varios?`<div class="rs-grupo" role="group" aria-label="Monitores">${RS.mons.map(m=>`<button class="rs-bt${rsMostrando(m.i)?' on':''}" data-mon="${m.i}" title="Monitor ${m.n}${m.w?' · '+m.w+'×'+m.h:''}">${m.n}</button>`).join('')}</div><button class="rs-bt" data-menu="layout">${RS_LAYOUT[RS.layout]} ▾</button>`:''}
     <button class="rs-bt" id="rsAjuste" title="Ajustar: reduz a tela do outro computador até caber (nunca amplia). Tamanho real: um pixel lá é um pixel aqui, com rolagem.">${RS.ajuste?'Ajustar à janela':'Tamanho real'}</button>
     <button class="rs-bt" id="rsCheia" title="Segure Esc para sair da tela cheia.">Tela cheia</button><span class="rs-sep"></span>
@@ -1162,16 +1179,21 @@ async function rsColar(cd){ const fs=[...((cd&&cd.files)||[])];
   else if(img){ const b=img.getAsFile(); if(b){ RS.ultAreaImg='i:'+b.size; const r=await rsEnviar(b,'imagem.png',{area:'imagem'},true); if(!r||!r.ok) return; } }
   rsEnv({t:'atalho',n:'colar'}); }
 // Copiou algo aqui e voltou para a janela da sessão: vai para o outro computador (o navegador pede permissão uma vez)
-async function rsFoco(){ if(!RS||AJU.fase!=='ativa') return; if(RS.pendente&&document.hasFocus()){ const p=RS.pendente; RS.pendente=null; rsPorNaArea(p); }
-  if(!rsPode('para_atendido')||!navigator.clipboard||!navigator.clipboard.read) return;
-  try{ for(const it of await navigator.clipboard.read()){
+// O navegador só lê e escreve a área de transferência pela janela em foco: a principal ou a de um monitor.
+function rsJanelaEmFoco(){ if(document.hasFocus()) return window; if(!RS) return null;
+  for(const j of RS.janelas.values()){ try{ if(j.palco&&!j.w.closed&&j.w.document.hasFocus()) return j.w; }catch(_){ } } return null; }
+async function rsFoco(){ if(!RS||AJU.fase!=='ativa') return; const w=rsJanelaEmFoco(); if(!w) return;
+  if(RS.pendente){ const p=RS.pendente; RS.pendente=null; rsPorNaArea(p); }
+  const cb=w.navigator.clipboard; if(!rsPode('para_atendido')||!cb||!cb.read) return;
+  try{ for(const it of await cb.read()){
       if(it.types.includes('text/plain')){ const t=await (await it.getType('text/plain')).text(); if(t&&'t:'+t!==RS.ultArea){ RS.ultArea='t:'+t; rsEnv({t:'area',texto:t.slice(0,100000)}); rsNota('Texto enviado para o outro computador'); } return; }
       const tipo=it.types.find(x=>x.startsWith('image/')); if(tipo){ const b=await it.getType(tipo); if('i:'+b.size!==RS.ultAreaImg){ RS.ultAreaImg='i:'+b.size; if(await rsEnviar(b,'imagem.png',{area:'imagem'},true)) rsNota('Imagem enviada para o outro computador'); } return; } }
     RS.semPermLer=false; }catch(_){ RS.semPermLer=true; } }
-function rsPorNaArea(p){ if(!RS) return; if(!document.hasFocus()){ RS.pendente=p; return; }   // o navegador só escreve com a janela em foco
-  if(p.texto!=null) navigator.clipboard.writeText(p.texto).then(()=>rsNota('Texto copiado do outro computador'),()=>{ RS.pendente=p; });
-  else navigator.clipboard.write([new ClipboardItem({'image/png':p.img})]).then(async()=>{ rsNota('Imagem copiada do outro computador');
-    try{ const it=(await navigator.clipboard.read())[0], tp=it.types.find(x=>x.startsWith('image/')); if(tp) RS.ultAreaImg='i:'+(await it.getType(tp)).size; }catch(_){ } },()=>{ RS.pendente=p; }); }
+function rsPorNaArea(p){ if(!RS) return; const w=rsJanelaEmFoco(); if(!w){ RS.pendente=p; return; }   // sem janela da sessão em foco: grava quando voltar
+  const cb=w.navigator.clipboard;
+  if(p.texto!=null) cb.writeText(p.texto).then(()=>rsNota('Texto copiado do outro computador'),()=>{ RS.pendente=p; });
+  else cb.write([new w.ClipboardItem({'image/png':p.img})]).then(async()=>{ rsNota('Imagem copiada do outro computador');
+    try{ const it=(await cb.read())[0], tp=it.types.find(x=>x.startsWith('image/')); if(tp) RS.ultAreaImg='i:'+(await it.getType(tp)).size; }catch(_){ } },()=>{ RS.pendente=p; }); }
 function rsAreaChegou(texto){ if(!rsPode('para_tecnico')) return; RS.ultArea='t:'+texto; rsPorNaArea({texto}); }
 function rsMenu(qual, bt){ const mn=$('#rsMenu'); if(!mn.hidden&&mn.dataset.q===qual){ mn.hidden=true; return; } mn.dataset.q=qual; let h='';
   if(qual==='opcoes') h=`<button data-op="atalhos" role="switch" aria-checked="${RS.atalhos}" class="${RS.atalhos?'on':''}">Atalhos do Windows no outro computador: <b>${RS.atalhos?'ligado':'desligado'}</b></button><p class="mut">Ligado: com uma tela deste acesso na frente, Win, Alt+Tab, Alt+F4, Ctrl+Esc, Ctrl+Shift+Esc, Print Screen e os outros atalhos vão só para o outro computador. Clicou em outro programa daqui (Bloco de Notas, por exemplo): os atalhos voltam a ser deste computador. Desligado: ficam sempre neste computador. Precisa do ícone do CNT Monitor aberto perto do relógio. O padrão fica em Configurações → Acesso remoto.</p><hr><button data-at="ctrl_alt_del">Enviar Ctrl+Alt+Del</button><p class="mut">O Windows não deixa nenhum programa pegar Ctrl+Alt+Del do teclado: ela sempre abre a tela deste computador. Para mandar ao outro, use este botão.</p>`;
@@ -1306,8 +1328,15 @@ async function cicloStatus(){ try{ STATUS=await API('status'); definirSO(); avis
 // Linux: os textos que falam deste computador dizem "Linux" e o que não existe lá (Captura de tela, ajustes e modo
 // de energia do Windows) some. O que fala do outro computador da sessão remota continua como está.
 function definirSO(){ if(!STATUS||STATUS.sistema!=='linux'||SO==='Linux') return; SO='Linux'; document.body.dataset.so='linux';
-  const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT), ns=[]; while(w.nextNode()) if(w.currentNode.nodeValue.includes('Windows')) ns.push(w.currentNode);
-  ns.forEach(n=>{ n.nodeValue=n.nodeValue.replace(/Windows/g,'Linux'); }); if(vista==='capturas') location.hash='#geral'; }
+  trocarWindows(document.body);
+  // as telas montadas depois (Configurações, Inicialização...) também: menos a da sessão remota, que fala do outro computador
+  new MutationObserver(ms=>{ for(const m of ms) for(const n of m.addedNodes) trocarWindows(n); }).observe(document.body,{childList:true,subtree:true});
+  if(vista==='capturas') location.hash='#geral'; }
+function trocarWindows(raiz){
+  const el=raiz.nodeType===Node.TEXT_NODE?raiz.parentElement:raiz; if(!el||el.closest?.('#rs')) return;
+  const ns=[]; if(raiz.nodeType===Node.TEXT_NODE) ns.push(raiz);
+  else if(raiz.nodeType===Node.ELEMENT_NODE){ const w=document.createTreeWalker(raiz,NodeFilter.SHOW_TEXT); while(w.nextNode()) ns.push(w.currentNode); }
+  for(const n of ns) if(n.nodeValue.includes('Windows') && !n.parentElement?.closest('#rs')) n.nodeValue=n.nodeValue.replace(/Windows/g,'Linux'); }
 function avisos(){ const a=[]; if(!STATUS) return;
   if(!STATUS.admin) a.push(['erro','O serviço não está rodando como administrador — rede por programa e temperatura ficam limitadas.']);
   if(STATUS.admin && CFG.rede_por_programa && !STATUS.rede_ok) a.push(['','A medição de rede por programa não iniciou: '+esc(STATUS.rede_erro||'')]);
@@ -2987,7 +3016,7 @@ function capOpcoesHtml(){ const c=CFG, sel=(k,op)=>`<select data-cfg="${k}">${Ob
     ${it('Marca d’água (texto)',txt('captura_marca_texto','ex.: © Seu nome',220),'Vazio: sem marca d’água.')}
     ${it('Posição e opacidade da marca',`${sel('captura_marca_canto',{inf_dir:'Embaixo, à direita',inf_esq:'Embaixo, à esquerda',sup_dir:'Em cima, à direita',sup_esq:'Em cima, à esquerda',centro:'No centro'})} ${num('captura_marca_opacidade',10,100)}<span class="mut2">%</span>`)}</div>
   <h2 class="secao">Seleção de região</h2><div class="painel">
-    ${it('Ferramentas de anotação antes de capturar',sw('captura_anotar'),'Depois de escolher a área aparece uma barra para desenhar por cima: seta, retângulo, elipse, linha, caneta, texto, texto com fundo, números, marca-texto, desfocar, pixelar, tarja e cursor. Com ✥ dá para mover as anotações e ajustar as bordas da área. Enter, clique duplo ou ✓ captura; Esc cancela. Desligado: a captura sai assim que você solta o mouse.')}
+    ${it('Ferramentas de anotação antes de capturar',sw('captura_anotar'),'Depois de escolher a área aparece uma barra para desenhar por cima: seta, retângulo, elipse, linha, caneta, texto, texto com fundo, números, marca-texto, desfocar, pixelar, tarja e cursor. Com ✥ dá para mover as anotações e ajustar as bordas da área. Enter, clique duplo ou ✓ captura; Ctrl+C ou ⧉ só copia, sem salvar; Esc fecha sem salvar (o que foi copiado continua copiado). Desligado: a captura sai assim que você solta o mouse.')}
     ${it('Lupa com posição e cor do pixel',sw('captura_lupa'),'As setas do teclado movem o mouse 1 pixel (Shift: 10) para acertar a seleção.')}
     ${it('Escurecer fora da área',sw('captura_escurecer'),'Desligado: a tela fica com o brilho normal enquanto você escolhe.')}
     ${it('Linhas-guia e cruz no centro',sw('captura_cruz'),'Linhas que seguem o mouse de ponta a ponta e uma cruz no meio da área.')}

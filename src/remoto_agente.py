@@ -8,6 +8,8 @@ na saída padrão:
             | {"cmd": "area_permitir", "valor": true} | {"cmd": "encerrar"}
   saída:    {"estado": "convite", "convite": "MPCC...", "senha": "ABCD-EFGH-JKLM", ...}
             {"arquivo": {...}}   (uma transferência concluída, para o histórico)
+            {"log": "..."}       (negociação da conexão, para o servico.log)
+  --testar: só confere se alcança o STUN e o retransmissor (UDP e TCP), imprime uma linha JSON e sai.
 
 Com o técnico são dois canais: "controle" (criado aqui; mouse, teclado, atalhos, texto da área de
 transferência) e "dados" (criado pelo técnico depois do aceite; arquivos e imagens, em pedaços binários
@@ -44,6 +46,7 @@ QUADROS_ESCONDIDO = 1      # monitor que o técnico não está vendo: 1 quadro p
 TAXAS = {"vpx": (800_000, 2_500_000, 6_000_000), "h264": (1_000_000, 3_000_000, 10_000_000)}   # mínimo, inicial, máximo
 MANTER_CAMINHO_S = 20       # roteadores esquecem um caminho UDP parado em 30 s ou mais
 VIGIAR_AREA_S = 0.7
+LER_AREA_TENTATIVAS = 6     # ~4 s tentando ler uma cópia nova antes de desistir dela
 _MAX_MENSAGEM = 300000
 _MAX_AREA = remoto.MAX_TEXTO_AREA
 _BUFFER_MAX = 4 * 1024 * 1024     # bytes na fila do canal antes de esperar (não enche a memória com um arquivo grande)
@@ -769,7 +772,7 @@ def _quadro_de_espera():
 
 class Agente:
     def __init__(self, ao_estado, stun=STUN_PADRAO, capturar=None, entrada=None, agora=time.time, turn=None,
-                 monitores=None, ler_area=True, area=None, pastas=None, ao_arquivo=None):
+                 monitores=None, ler_area=True, area=None, pastas=None, ao_arquivo=None, ao_log=None):
         self.sessao = remoto.Sessao(agora)
         self.area = area or AreaWindows()
         self.entrada = entrada or (Entrada(area=self.area.texto) if WIN else Entrada(
@@ -778,6 +781,7 @@ class Agente:
         self._historico = ao_arquivo or (lambda item: ao_estado({"arquivo": item}))
         self._stun = list(stun or [])
         self._turn = turn            # (urls, usuário, senha) do retransmissor de reserva
+        self._log = ao_log or (lambda msg: print("remoto:", msg, file=sys.stderr))
         if monitores is None:
             try:
                 monitores = listar_monitores()
@@ -824,7 +828,8 @@ class Agente:
         from aiortc import RTCConfiguration, RTCIceServer, RTCPeerConnection
         servidores = [RTCIceServer(urls=u) for u in self._stun]
         if self._turn:
-            servidores.append(RTCIceServer(urls=list(self._turn[0]), username=self._turn[1], credential=self._turn[2]))
+            servidores.append(RTCIceServer(urls=turn_por_tcp(self._turn[0]), username=self._turn[1],
+                                           credential=self._turn[2]))
         self.pc = RTCPeerConnection(RTCConfiguration(iceServers=servidores))
         self.canal = self.pc.createDataChannel("controle")
         self.canal.on("message", lambda msg: asyncio.ensure_future(self._mensagem(msg)))
@@ -841,14 +846,35 @@ class Agente:
 
         @self.pc.on("connectionstatechange")
         async def _mudou():
+            self._log(f"conexão: {self.pc.connectionState}" + (f" ({self.rota()})" if self.pc.connectionState == "connected" else ""))
             if self.pc.connectionState in ("failed", "closed"):
                 await self.encerrar("A conexão caiu.")
 
+        @self.pc.on("iceconnectionstatechange")
+        def _ice():
+            self._log(f"ICE: {self.pc.iceConnectionState}")
+
         await self.pc.setLocalDescription(await self.pc.createOffer())    # já sai com os endereços (ICE completo)
-        self._convite = remoto.convite(self.pc.localDescription.sdp)
+        sdp = self.pc.localDescription.sdp
+        self._log(f"convite: {remoto.resumo_candidatos(sdp)}; retransmissor: "
+                  + (_transporte(turn_por_tcp(self._turn[0])[0]) if self._turn else "nenhum"))
+        if self._turn and "typ relay" not in sdp:
+            self._log("o retransmissor não deu endereço: porta 3478 bloqueada ou credencial vencida")
+        self._convite = remoto.convite(sdp)
         self._vigia = asyncio.ensure_future(self._vigiar())
         self._caminho = asyncio.ensure_future(self._manter_caminho())
         self._avisar()
+
+    def rota(self):
+        """"direta" ou "retransmitida", pelo par que o ICE escolheu ("" se ainda não há par)."""
+        try:
+            for t in self.pc._RTCPeerConnection__iceTransports:
+                for par in t._connection._nominated.values():
+                    return f"{remoto.rota(par.local_candidate.type, par.remote_candidate.type)}: " \
+                           f"{par.local_candidate.type} → {par.remote_candidate.type}"
+        except Exception:  # noqa: BLE001  (campos internos do aiortc; só serve para o log)
+            pass
+        return ""
 
     async def _manter_caminho(self):
         """O convite leva o endereço público que o roteador deu a este PC, mas a resposta do técnico demora
@@ -895,6 +921,7 @@ class Agente:
             sdp = self.sessao.receber_resposta(c.get("codigo"))
             try:
                 await self.pc.setRemoteDescription(RTCSessionDescription(sdp=sdp, type="answer"))
+                self._log(f"resposta do técnico: {remoto.resumo_candidatos(sdp)}")
             except Exception:  # noqa: BLE001  (SDP que o WebRTC não aceita)
                 await self.encerrar("O código de resposta não serve para este convite. Gere outro convite.")
                 raise remoto.Erro(self.sessao.motivo) from None
@@ -997,16 +1024,26 @@ class Agente:
             ultimo = await loop.run_in_executor(self._pool, self.area.seq)
         except Exception:  # noqa: BLE001
             return
+        falhas = 0
         while self.sessao.ativa:
             await asyncio.sleep(VIGIAR_AREA_S)
             try:
                 seq = await loop.run_in_executor(self._pool, self.area.seq)
                 if seq == ultimo:
                     continue
-                ultimo = seq
                 if seq == self._seq_proprio or not remoto.area_permite(self.modo_area, "para_tecnico", self.ler_area):
+                    ultimo = seq
                     continue
-                conteudo = await loop.run_in_executor(self._pool, self.area.ler)
+                try:
+                    conteudo = await loop.run_in_executor(self._pool, self.area.ler)
+                except Exception:  # noqa: BLE001
+                    # quem copiou ainda está com ela aberta (Excel, Office): tenta de novo na próxima volta
+                    falhas += 1
+                    if falhas < LER_AREA_TENTATIVAS:
+                        continue
+                    ultimo, falhas = seq, 0
+                    raise
+                ultimo, falhas = seq, 0
                 if not conteudo:
                     continue
                 tipo, dado = conteudo
@@ -1097,6 +1134,49 @@ def _taxas():
         mod.MIN_BITRATE, mod.DEFAULT_BITRATE, mod.MAX_BITRATE = minimo, inicial, maximo
 
 
+def _transporte(url):
+    return "tcp" if "transport=tcp" in url.lower() else "udp"
+
+
+def turn_por_tcp(urls):
+    """O aiortc só usa o primeiro endereço TURN da lista. Pelo TCP o retransmissor funciona também onde o UDP
+    é bloqueado (4G de algumas operadoras, redes de empresa); onde o UDP passa, os caminhos diretos e o
+    retransmissor do técnico continuam valendo, então o TCP só carrega a sessão quando não há outro jeito."""
+    return sorted(urls, key=lambda u: _transporte(u) != "tcp")
+
+
+async def testar(stun, turn, prazo=10):
+    """Este PC alcança o STUN (UDP) e o retransmissor por UDP e por TCP? Cada um pede um endereço ao servidor
+    como numa conexão de verdade. Devolve {stun, turn_udp, turn_tcp} (None: não havia o que testar)."""
+    from aioice import Connection
+    from aiortc.rtcicetransport import parse_stun_turn_uri
+
+    async def tipo_obtido(tipo, **k):
+        c = Connection(ice_controlling=True, **k)
+        try:
+            await asyncio.wait_for(c.gather_candidates(), prazo)
+            return any(x.type == tipo for x in c.local_candidates)
+        except Exception:  # noqa: BLE001  (porta bloqueada, nome que não resolve, credencial recusada)
+            return False
+        finally:
+            await c.close()
+
+    def servidor(u):
+        p = parse_stun_turn_uri(u)
+        return p["host"], p["port"]
+
+    provas = {"stun": None, "turn_udp": None, "turn_tcp": None}
+    if stun:
+        provas["stun"] = tipo_obtido("srflx", stun_server=servidor(stun[0]))
+    for url in (turn[0] if turn else []):
+        chave = "turn_" + _transporte(url)
+        if provas.get(chave) is None:
+            provas[chave] = tipo_obtido("relay", turn_server=servidor(url), turn_username=turn[1],
+                                        turn_password=turn[2], turn_transport=_transporte(url))
+    feitas = {k: v for k, v in provas.items() if v is not None}
+    return {**provas, **dict(zip(feitas, await asyncio.gather(*feitas.values())))}
+
+
 async def _principal(stun, turn=None, ler_area=True):
     _taxas()
     loop = asyncio.get_running_loop()
@@ -1105,7 +1185,7 @@ async def _principal(stun, turn=None, ler_area=True):
         sys.stdout.write(json.dumps(d) + "\n")
         sys.stdout.flush()
 
-    agente = Agente(estado, stun, turn=turn, ler_area=ler_area)
+    agente = Agente(estado, stun, turn=turn, ler_area=ler_area, ao_log=lambda msg: estado({"log": msg}))
 
     def ler():
         for linha in sys.stdin:
@@ -1159,6 +1239,9 @@ def main():
             turn = (urls, a[a.index("--turn-usuario") + 1], a[a.index("--turn-senha") + 1]) if urls else None
         except (ValueError, IndexError):
             turn = None
+    if "--testar" in sys.argv:
+        print(json.dumps(asyncio.run(testar(stun, turn))), flush=True)
+        return
     asyncio.run(_principal(stun, turn, ler_area="--sem-ler-area" not in sys.argv))
 
 

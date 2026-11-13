@@ -250,8 +250,8 @@ def monitor_do_mouse():
     return m.left, m.top, m.right, m.bottom
 
 
-def janelas_visiveis():
-    """Retângulos das janelas visíveis, da que está na frente para a de trás (para o "imã" da seleção)."""
+def _janelas_com_handle():
+    """[(hwnd, retângulo)] das janelas visíveis, da que está na frente para a de trás."""
     out = []
 
     def cb(h, _l):
@@ -263,13 +263,156 @@ def janelas_visiveis():
                 return True
             r = _ret_janela(h)
             if r[2] - r[0] >= 20 and r[3] - r[1] >= 20:
-                out.append(r)
+                out.append((h, r))
         except Exception:
             pass
         return True
 
     _u.EnumWindows(_ENUM(cb), 0)
     return out
+
+
+# ---------------------------------------------------------------- partes das janelas (UI Automation)
+# Chamadas COM direto pela vtable (índices conferidos no UIAutomationClient.h do Windows SDK), sem dependência nova.
+_UIA_CLSID = "{ff48dba4-60ef-4201-aa87-54103eef594e}"    # CUIAutomation
+_UIA_IID = "{30cbe57d-d9d0-452a-ab13-7ac5ac4825ee}"      # IUIAutomation
+_UIA_RECT, _UIA_FORA = 30001, 30022                      # BoundingRectangle, IsOffscreen
+_PARTES_MAX = 6000                                       # por janela: página enorme não trava a leitura
+
+
+def _vt(obj, i, *args):
+    """Método `i` da vtable do objeto COM `obj` (HRESULT de erro vira OSError)."""
+    fn = ctypes.cast(obj, ctypes.POINTER(ctypes.POINTER(ctypes.c_void_p))).contents[i]
+    tipos = (type(a) if isinstance(a, ctypes._SimpleCData) else ctypes.c_void_p for a in args)   # byref -> ponteiro
+    return ctypes.WINFUNCTYPE(ctypes.HRESULT, ctypes.c_void_p, *tipos)(fn)(obj, *args)
+
+
+def _soltar(obj):
+    if obj:
+        fn = ctypes.cast(obj, ctypes.POINTER(ctypes.POINTER(ctypes.c_void_p))).contents[2]
+        ctypes.WINFUNCTYPE(ctypes.c_ulong, ctypes.c_void_p)(fn)(obj)
+
+
+def _guid(txt):
+    g = (ctypes.c_byte * 16)()
+    ctypes.oledll.ole32.CLSIDFromString(ctypes.c_wchar_p(txt), ctypes.byref(g))
+    return g
+
+
+class _UIA:
+    """Lê os retângulos dos elementos (painéis, barras, botões, regiões de página…) de uma janela."""
+
+    def __init__(self):
+        ole = ctypes.oledll.ole32
+        ole.CoInitializeEx(None, 0)   # COINIT_MULTITHREADED, nesta thread
+        self.p = self.cache = self.cond = None
+        try:
+            p = ctypes.c_void_p()
+            ole.CoCreateInstance(ctypes.byref(_guid(_UIA_CLSID)), None, 1, ctypes.byref(_guid(_UIA_IID)), ctypes.byref(p))
+            self.p = p
+            cache, cond = ctypes.c_void_p(), ctypes.c_void_p()
+            _vt(p, 20, ctypes.byref(cache))              # CreateCacheRequest
+            self.cache = cache
+            for prop in (_UIA_RECT, _UIA_FORA):
+                _vt(cache, 3, ctypes.c_int(prop))        # AddProperty
+            _vt(cache, 11, ctypes.c_int(0))              # put_AutomationElementMode(None): só o que está no cache
+            _vt(p, 18, ctypes.byref(cond))               # get_ControlViewCondition (sem os nós internos)
+            self.cond = cond
+        except OSError:
+            self.fechar()
+            raise
+
+    def partes(self, hwnd):
+        el, arr, n = ctypes.c_void_p(), ctypes.c_void_p(), ctypes.c_int()
+        _vt(self.p, 6, wt.HWND(hwnd), ctypes.byref(el))   # ElementFromHandle
+        try:
+            _vt(el, 8, ctypes.c_int(4), self.cond, self.cache, ctypes.byref(arr))   # FindAllBuildCache(Descendants)
+        finally:
+            _soltar(el)
+        out = []
+        try:
+            if not arr:
+                return out
+            _vt(arr, 3, ctypes.byref(n))                  # get_Length
+            for i in range(min(n.value, _PARTES_MAX)):
+                e, r, fora = ctypes.c_void_p(), wt.RECT(), wt.BOOL()
+                try:
+                    _vt(arr, 4, ctypes.c_int(i), ctypes.byref(e))   # GetElement
+                    _vt(e, 70, ctypes.byref(fora))                  # get_CachedIsOffscreen
+                    _vt(e, 75, ctypes.byref(r))                     # get_CachedBoundingRectangle
+                except OSError:
+                    continue
+                finally:
+                    _soltar(e)
+                if not fora.value:
+                    out.append((r.left, r.top, r.right, r.bottom))
+        finally:
+            _soltar(arr)
+        return out
+
+    def fechar(self):
+        for o in (self.cond, self.cache, self.p):
+            _soltar(o)
+        self.p = self.cache = self.cond = None
+        ctypes.oledll.ole32.CoUninitialize()
+
+
+def recortar_partes(janela, partes, minimo=8):
+    """Partes limitadas à janela, sem as minúsculas, sem repetidas e sem a própria janela."""
+    wl, wt_, wr, wb = janela
+    out = set()
+    for l, t, r, b in partes:
+        l, t, r, b = max(l, wl), max(t, wt_), min(r, wr), min(b, wb)
+        if r - l >= minimo and b - t >= minimo and (l, t, r, b) != tuple(janela):
+            out.add((l, t, r, b))
+    return list(out)
+
+
+class AreasDaTela:
+    """O que a seleção de área reconhece debaixo do mouse: as janelas visíveis e as partes de cada uma (painel lateral,
+    barra de abas, conteúdo da página, botões…), como no ShareX. As partes vêm da UI Automation do Windows numa
+    thread: a seleção abre na hora e elas aparecem quando ficam prontas, a janela da frente primeiro."""
+
+    def __init__(self, janelas=None, partes=True):
+        self.janelas = list(janelas) if janelas is not None else _janelas_com_handle()   # [(hwnd, (l, t, r, b))]
+        self.partes = {}            # índice da janela -> [(l, t, r, b)]
+        self.parar = threading.Event()
+        self.pronto = threading.Event()
+        if partes and WIN:
+            threading.Thread(target=self._ler, daemon=True, name="partes-da-tela").start()
+        else:
+            self.pronto.set()
+
+    def no_ponto(self, px, py):
+        """Áreas que contêm o ponto, da menor para a maior; a última é a janela inteira. Só a janela da frente conta."""
+        for i, (_h, w) in enumerate(self.janelas):
+            if w[0] <= px < w[2] and w[1] <= py < w[3]:
+                achadas = {r for r in self.partes.get(i, ()) if r[0] <= px < r[2] and r[1] <= py < r[3]}
+                return sorted(achadas, key=lambda r: ((r[2] - r[0]) * (r[3] - r[1]), r)) + [tuple(w)]
+        return []
+
+    def _ler(self):
+        try:
+            uia = _UIA()
+        except OSError:
+            self.pronto.set()
+            return
+        try:
+            pid = os.getpid()
+            for i, (h, w) in enumerate(self.janelas):
+                if self.parar.is_set():
+                    break
+                dono = wt.DWORD()
+                _u.GetWindowThreadProcessId(h, ctypes.byref(dono))
+                if dono.value == pid:   # janelas deste processo: a thread dona pode estar ocupada (risco de travar)
+                    continue
+                try:
+                    self.partes[i] = recortar_partes(w, uia.partes(h))
+                except OSError:
+                    continue
+        finally:
+            uia.fechar()
+            self.pronto.set()
 
 
 CANTOS_MOUSE = {"sup_esq": (0, 0), "sup_dir": (1, 0), "inf_esq": (0, 1), "inf_dir": (1, 1)}
@@ -539,11 +682,15 @@ def selecionar(img, ox, oy, modo="regiao", janelas=(), anotar=False, lupa=True, 
     regiao -> (l, t, r, b, formas) relativo à imagem; formas = anotações (vazio com `anotar` desligado)
     regioes -> [[l, t, r, b], ...] (várias áreas; Enter ou clique duplo termina)
     cor -> (r, g, b) | regua -> (dx, dy) | None se cancelou (Esc / botão direito).
+    `janelas`: AreasDaTela ou lista de retângulos (só as janelas inteiras).
     `estilo` (dict) guarda a ferramenta, a cor e a espessura escolhidas para a próxima vez."""
+    if not isinstance(janelas, AreasDaTela):
+        janelas = AreasDaTela([(None, tuple(r)) for r in janelas], partes=False)
     try:
         return _Selecao(img, ox, oy, modo, janelas, anotar, lupa, estilo if isinstance(estilo, dict) else {},
                         escurecer, cruz).rodar()
     finally:
+        janelas.parar.set()
         coletar_tk()
 
 
@@ -583,6 +730,7 @@ class _Selecao:
         self.res, self.fase, self.reg = None, 1, None
         self.formas, self.desf, self.ref, self.num = [], [], [], 1
         self.ini = self.hover = self.arr = self.temp = self.acao = self.sel = self.entrada = None
+        self.fixo = self.mouse = None   # área escolhida com a roda do mouse; última posição do mouse
         self.barra, self.barra_id, self.bts, self.fotos, self._pend, self._cursor = None, None, {}, {}, None, "crosshair"
 
         self.root = root = tk.Tk()
@@ -618,7 +766,10 @@ class _Selecao:
         cv.bind("<ButtonRelease-1>", self.soltar)
         cv.bind("<Double-Button-1>", self.duplo)
         cv.bind("<ButtonPress-3>", self.direito)
+        cv.bind("<MouseWheel>", self.roda)
         root.bind("<Escape>", lambda _e: self.cancelar())
+        for k in ("<Control-c>", "<Control-C>"):
+            root.bind(k, lambda _e: self.copiar())
         for k in ("<Return>", "<KP_Enter>"):
             root.bind(k, lambda _e: None if self.entrada else self.confirmar())
         for k in ("<Delete>", "<BackSpace>"):
@@ -634,6 +785,8 @@ class _Selecao:
     # ------------------------------------------------------------ geral
     def rodar(self):
         self.root.after(30, self.focar)
+        if self.area_modo and not self.janelas.pronto.is_set():
+            self.root.after(150, self._partes_chegando)
         self.root.mainloop()
         return self.res
 
@@ -655,13 +808,13 @@ class _Selecao:
         if self.modo == "regioes":
             n = len(self.regs)
             return ((f"{n} área{'s' if n > 1 else ''} marcada{'s' if n > 1 else ''}  ·  " if n else "") +
-                    "Arraste para marcar cada área  ·  clique numa janela para pegá-la  ·  Enter ou clique duplo captura  ·  "
-                    "botão direito desfaz a última  ·  Esc cancela")
+                    "Arraste para marcar cada área  ·  clique para pegar a parte realçada (roda do mouse: maior / menor)  ·  "
+                    "Enter ou clique duplo captura  ·  botão direito desfaz a última  ·  Esc cancela")
         if self.fase == 1:
-            return ("Arraste para escolher a área  ·  clique numa janela para pegá-la inteira  ·  "
+            return ("Arraste para escolher a área  ·  clique para pegar a parte realçada (roda do mouse: maior / menor)  ·  "
                     "setas movem o mouse 1 px (Shift: 10)  ·  Esc cancela")
-        return ("Desenhe por cima  ·  Enter, clique duplo ou ✓ captura  ·  com ✥ arraste as bordas para ajustar  ·  "
-                "Ctrl+Z desfaz  ·  botão direito escolhe outra área  ·  Esc cancela")
+        return ("Desenhe por cima  ·  Enter, clique duplo ou ✓ captura  ·  Ctrl+C só copia  ·  com ✥ arraste as bordas "
+                "para ajustar  ·  Ctrl+Z desfaz  ·  botão direito escolhe outra área  ·  Esc fecha sem salvar")
 
     def dica(self, txt=None):
         cv = self.cv
@@ -709,11 +862,41 @@ class _Selecao:
             self.cv.itemconfigure(i, state="hidden")
 
     def janela_em(self, x, y):
-        px, py = x + self.ox, y + self.oy
-        r = next((r for r in self.janelas if r[0] <= px < r[2] and r[1] <= py < r[3]), None)
-        if not r:
+        """Parte da tela debaixo do mouse: a menor, ou a que a roda do mouse escolheu (se ainda contém o ponto)."""
+        alvos = self.janelas.no_ponto(x + self.ox, y + self.oy)
+        if not alvos:
             return None
+        if self.fixo not in alvos:
+            self.fixo = None
+        r = self.fixo or alvos[0]
         return [max(0, r[0] - self.ox), max(0, r[1] - self.oy), min(self.W, r[2] - self.ox), min(self.H, r[3] - self.oy)]
+
+    def roda(self, e):
+        """Roda do mouse escolhendo a parte: para cima a maior seguinte (até a janela inteira), para baixo a menor."""
+        if self.fase != 1 or not self.area_modo or self.ini is not None:
+            return
+        alvos = self.janelas.no_ponto(e.x + self.ox, e.y + self.oy)
+        if not alvos:
+            return
+        i = alvos.index(self.fixo) if self.fixo in alvos else 0
+        self.fixo = alvos[max(0, min(len(alvos) - 1, i + (1 if e.delta > 0 else -1)))]
+        self._realcar_alvo(e.x, e.y)
+
+    def _realcar_alvo(self, x, y):
+        alvo = self.janela_em(x, y)
+        if alvo != self.hover:
+            self.hover = alvo
+            if alvo:
+                self.realce(*alvo)
+
+    def _partes_chegando(self):
+        """As partes das janelas chegam aos poucos: atualiza o realce sem esperar o mouse mexer."""
+        if self.fase == 1 and self.ini is None and self.mouse:
+            self._realcar_alvo(*self.mouse)
+        if not self.janelas.pronto.is_set():
+            self.root.after(150, self._partes_chegando)
+        elif self.fase == 1 and self.ini is None and self.mouse:
+            self._realcar_alvo(*self.mouse)
 
     def realce(self, l, t, r, b, formas=False):
         """Área clara (sem o escurecido) com a borda e o tamanho."""
@@ -771,11 +954,8 @@ class _Selecao:
             if self.com_lupa:
                 self.mostrar_lupa(e.x, e.y)
             if self.area_modo and self.ini is None:
-                alvo = self.janela_em(e.x, e.y)
-                if alvo != self.hover:
-                    self.hover = alvo
-                    if alvo:
-                        self.realce(*alvo)
+                self.mouse = (e.x, e.y)
+                self._realcar_alvo(e.x, e.y)
             return
         ferr = self.estilo["ferr"]
         if ferr == "mover":
@@ -1154,6 +1334,24 @@ class _Selecao:
         self.res = (l, t, r, b, [dict(f) for f in self.formas])
         self.root.destroy()
 
+    def copiar(self):
+        """Ctrl+C: copia a área com as anotações e deixa a tela aberta (Enter ainda salva; Esc fecha sem salvar)."""
+        if self.entrada or self.fase != 2:
+            return
+        l, t, r, b = self.normal(self.reg)
+        if r - l < 1 or b - t < 1:
+            return
+        recorte = self.img.crop((l, t, r, b))
+        if self.formas:
+            recorte = desenhar_formas(recorte, self.formas, l, t)
+        try:
+            copiar_imagem(recorte)
+            msg = "Copiada para a área de transferência  ·  Enter ou ✓ também salva  ·  Esc fecha sem salvar"
+        except (RuntimeError, OSError) as e:
+            msg = f"Não consegui copiar: {e}"
+        self.dica(msg)
+        self.root.after(3500, lambda: self.dica() if self.cv.itemcget(self.ajuda, "text") == msg else None)
+
     # ------------------------------------------------------------ texto
     def abrir_entrada(self, x, y, tipo):
         tk, cor, esp = self.tk, self.estilo["cor"], self.estilo["esp"]
@@ -1234,8 +1432,9 @@ class _Selecao:
         botao(None, "↶", "Desfazer  (Ctrl+Z)", self.desfazer)
         botao(None, "↷", "Refazer  (Ctrl+Y)", self.refazer)
         separador()
+        botao(None, "⧉", "Só copiar, sem salvar  (Ctrl+C)", self.copiar)
         botao(None, "✓", "Capturar  (Enter ou clique duplo na área)", self.confirmar, bg="#2e7d32", fg="#ffffff")
-        botao(None, "✕", "Cancelar  (Esc)", self.cancelar, bg="#c62828", fg="#ffffff")
+        botao(None, "✕", "Fechar sem salvar  (Esc)", self.cancelar, bg="#c62828", fg="#ffffff")
         self.barra = f
         self.barra_id = self.cv.create_window(0, 0, window=f, anchor="nw")
         self.realcar_barra()

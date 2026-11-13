@@ -219,6 +219,8 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq xvfb xclip openbox x11-utils python3-tk iproute2
+          # ícone do Linux (PyGObject compilado aqui + AppIndicator), empacotado junto pelo PyInstaller
+          sudo apt-get install -y -qq libgirepository1.0-dev libcairo2-dev pkg-config gir1.2-ayatanaappindicator3-0.1
 
       - name: Dependências Python
         run: python -m pip install --disable-pip-version-check -r build/requirements-linux.txt

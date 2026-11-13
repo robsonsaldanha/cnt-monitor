@@ -326,6 +326,27 @@ def teste_turn_vai_para_o_agente():
             pass
 
 
+def teste_credencial_do_turn_renovada():
+    """A credencial do retransmissor vence em 12 h: perto disso o serviço pega outra antes de abrir o pedido."""
+    assert encontro.validade_turn(None) == 0 and encontro.validade_turn({"username": "x:y"}) == 0
+    p, url = _servidor()
+    try:
+        relogio = [time.time()]
+        e = encontro.Encontro(GerenteFalso(), url=url, arquivo=os.path.join(DADOS, "id-turn.json"), agora=lambda: relogio[0])
+        e._registrar()
+        primeira = e.turn
+        assert encontro.validade_turn(primeira) > relogio[0] + 11 * 3600
+        assert any("transport=tcp" in u for u in primeira["urls"])
+        assert e.turn_atual() is primeira                   # longe de vencer: nada muda
+        relogio[0] += 11.5 * 3600                            # falta menos de 1 h
+        nova = e.turn_atual()
+        assert nova is not primeira and nova["username"].endswith(":cntmonitor")
+        e.url = "http://127.0.0.1:9/api"                     # servidor fora do ar: segue com a que tem
+        relogio[0] += 3600
+        assert e.turn_atual() is nova
+    finally:
+        p.kill()
+
 def teste_ponta_a_ponta_pelo_id():
     """Serviço com o agente de verdade (outro processo) e um técnico em aiortc, como faz o navegador."""
     import asyncio

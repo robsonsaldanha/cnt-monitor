@@ -27,6 +27,7 @@ SERVIDOR = "https://monitor.cntoficial.com.br/api"
 ARQUIVO = os.path.join(config.BASE, "remoto_id.json")
 ESPERA_RESPOSTA = 60        # do convite entregue até a resposta do técnico chegar
 ERROS_PARA_TROCAR = 3
+RENOVAR_TURN = 3600         # credencial do retransmissor que vence antes disto é trocada por outra
 _ESPERA_LONGA = 40          # o servidor devolve vazio em 25 s
 CONECTAR = 5                # por endereço: um IPv6 quebrado não segura cada pedido por 20 s ou mais
 _familia_boa = [socket.AF_INET]
@@ -93,6 +94,14 @@ def formatar_id(i):
 
 def texto_para_copiar(i, senha):
     return f"CNT Monitor — acesso remoto\nID: {formatar_id(i)}\nSenha: {senha}"
+
+
+def validade_turn(turn):
+    """Quando a credencial do retransmissor vence (segundos desde 1970). O usuário é "<validade>:cntmonitor"."""
+    try:
+        return int(str(turn["username"]).split(":")[0])
+    except (TypeError, KeyError, ValueError):
+        return 0
 
 
 def _boot():
@@ -210,6 +219,21 @@ class Encontro:
                     raise
                 self._gerar_id()         # ID sorteado já existe lá: sorteia outro
 
+    def turn_atual(self):
+        """A credencial do retransmissor chega no registro e vence em 12 h, mas o registro só se repete quando o
+        servidor esquece o ID: num PC ligado há mais tempo, o retransmissor recusava a credencial sem aviso.
+        Perto de vencer, registra de novo e pega outra."""
+        with self._lock:
+            turn = self.turn
+        if validade_turn(turn) - self._agora() < RENOVAR_TURN:
+            try:
+                self._registrar()
+            except Exception:  # noqa: BLE001  (sem servidor agora: segue com a que tem)
+                pass
+            with self._lock:
+                turn = self.turn
+        return turn
+
     def _esperar(self):
         with self._lock:
             q = urllib.parse.urlencode({"id": self.id, "chave": self.chave})
@@ -281,8 +305,9 @@ class Encontro:
             livre = self.gerente.estado().get("estado") in ("parada", "encerrada")
             if not livre:
                 return self._enviar(pedido, {"tipo": "erro", "msg": "Esse computador já está em outro atendimento. Tente daqui a pouco."})
+            turn = self.turn_atual()
             with self._lock:
-                turn, senha = self.turn, self.senha
+                senha = self.senha
             ok, msg = self.gerente.pedir(turn=turn)
             if ok:
                 ok, msg = self.gerente.ordem("senha", senha=senha)

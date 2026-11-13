@@ -537,6 +537,76 @@ def teste_afastar_mouse_opcoes():
     assert "" in config.OPCOES["captura_afastar_mouse"]
 
 
+def teste_areas_da_tela():
+    janela = (0, 0, 1000, 800)
+    partes = [(-50, 0, 70, 800), (0, 0, 70, 800), (70, 0, 330, 800), (80, 100, 300, 140), (5, 5, 9, 9), janela]
+    assert sorted(captura.recortar_partes(janela, partes)) == [(0, 0, 70, 800), (70, 0, 330, 800), (80, 100, 300, 140)]
+    a = captura.AreasDaTela([(None, janela), (None, (0, 0, 2000, 1000))], partes=False)
+    a.partes[0] = captura.recortar_partes(janela, partes)
+    assert a.no_ponto(100, 120) == [(80, 100, 300, 140), (70, 0, 330, 800), janela]   # menor primeiro, janela por último
+    assert a.no_ponto(20, 20) == [(0, 0, 70, 800), janela]
+    assert a.no_ponto(1500, 50) == [(0, 0, 2000, 1000)]   # janela de trás só onde a da frente não cobre
+    assert a.no_ponto(5000, 5000) == []
+
+
+def _selecao_com_teclas(teclas, anotar=True):
+    """Abre a seleção numa imagem falsa, escolhe uma área e aperta as teclas. Devolve (resultado, imagens copiadas)."""
+    from PIL import Image
+    img = Image.new("RGB", (400, 300), (40, 80, 120))
+    areas = captura.AreasDaTela([(None, (0, 0, 400, 300))], partes=False)
+    areas.partes[0] = [(10, 10, 110, 60)]
+    copiadas, original = [], captura.copiar_imagem
+    captura.copiar_imagem = copiadas.append
+    s = captura._Selecao(img, 0, 0, "regiao", areas, anotar, False, {}, True, True)
+    try:
+        s._realcar_alvo(50, 30)                       # mouse sobre a parte (10, 10, 110, 60)
+        s.ini = (50, 30)
+        s.soltar_fase1(type("E", (), {"x": 50, "y": 30})())   # clique: pega a parte realçada
+        if anotar:
+            s.formas.append({"t": "ret", "x0": 20, "y0": 20, "x1": 60, "y1": 50, "cor": "#e53935", "esp": 4})
+        for i, k in enumerate(teclas):
+            s.root.after(50 + 30 * i, lambda k=k: s.root.event_generate(k))
+        s.root.after(3000, s.root.destroy)            # segurança: não fica aberto se a tecla não fizer nada
+        return s.rodar(), copiadas
+    finally:
+        captura.copiar_imagem = original
+        captura.coletar_tk()
+
+
+def teste_selecao_teclado():
+    res, cop = _selecao_com_teclas(["<Control-c>", "<Escape>"])
+    assert res is None and len(cop) == 1 and cop[0].size == (100, 50)   # Esc não salva, mas a cópia ficou
+    assert cop[0].getpixel((25, 10)) != (40, 80, 120)                    # com a anotação desenhada
+    res, cop = _selecao_com_teclas(["<Return>"])
+    assert res[:4] == (10, 10, 110, 60) and len(res[4]) == 1 and not cop  # Enter = ✓
+    res, cop = _selecao_com_teclas(["<Control-c>", "<Return>"])
+    assert res[:4] == (10, 10, 110, 60) and len(cop) == 1
+    res, cop = _selecao_com_teclas(["<Escape>"])
+    assert res is None and not cop
+
+
+def teste_selecao_roda_do_mouse():
+    from PIL import Image
+    areas = captura.AreasDaTela([(None, (0, 0, 400, 300))], partes=False)
+    areas.partes[0] = [(10, 10, 110, 60), (0, 0, 200, 300)]
+    s = captura._Selecao(Image.new("RGB", (400, 300)), 0, 0, "regiao", areas, False, False, {}, True, True)
+    try:
+        e = type("E", (), {"x": 50, "y": 30, "delta": 120})()
+        assert s.janela_em(50, 30) == [10, 10, 110, 60]
+        s.roda(e)
+        assert s.hover == [0, 0, 200, 300]
+        s.roda(e)
+        s.roda(e)                                     # passa do topo: fica na janela inteira
+        assert s.hover == [0, 0, 400, 300]
+        e.delta = -120
+        s.roda(e)
+        assert s.janela_em(60, 40) == [0, 0, 200, 300]   # mexer o mouse dentro da escolhida mantém a escolha
+        assert s.janela_em(300, 40) == [0, 0, 400, 300]  # fora dela volta à menor do ponto
+    finally:
+        s.root.destroy()
+        captura.coletar_tk()
+
+
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
         if nome.startswith("teste_"):

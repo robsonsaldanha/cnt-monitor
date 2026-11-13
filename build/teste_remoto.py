@@ -565,12 +565,25 @@ def teste_agente_arquivos_e_area_de_transferencia():
             mandar(11, "imagem.png", b"\x89PNG-de-mentira", area="imagem")
             await _ate(lambda: json_de(rec["dados"], "recebido", 11))
             assert area.escritos[-1] == ("imagem", b"\x89PNG-de-mentira")
+            # o programa que copiou ainda segura a área (Excel): a cópia não se perde, sai quando der para ler
+            ler, ocupada = area.ler, [2]
+
+            def ler_ocupada():
+                if ocupada[0]:
+                    ocupada[0] -= 1
+                    raise OSError("OpenClipboard: acesso negado")
+                return ler()
+            area.ler = ler_ocupada
+            area.copiar(("texto", "do Excel"))
+            await _ate(lambda: [m for m in rec["controle"] if m.get("texto") == "do Excel"])
+            assert ocupada[0] == 0
+            area.ler = ler
             # quem \u00e9 atendido desliga a leitura (teto): nem com \"ambos\" sai mais nada
             await agente.comando({"cmd": "area_permitir", "valor": False})
             await _ate(lambda: [m for m in rec["controle"] if m["t"] == "area_teto"])
             area.copiar(("texto", "outra senha"))
             await asyncio.sleep(2 * ra.VIGIAR_AREA_S + 0.3)
-            assert len([m for m in rec["controle"] if m["t"] == "area"]) == 1
+            assert len([m for m in rec["controle"] if m["t"] == "area"]) == 2
             # monitor escondido anda devagar; o \"ver\" s\u00f3 aceita monitores que existem
             ctl.send(json.dumps({"t": "ver", "m": [1, 7, True, "0"]}))
             await _ate(lambda: agente.visiveis == {1})
@@ -660,6 +673,59 @@ def teste_agente_mantem_o_caminho_enquanto_espera_a_resposta():
     finally:
         ra.MANTER_CAMINHO_S = antes
 
+
+def teste_diagnostico_da_conexao():
+    sdp = ("m=video 9 UDP/TLS/RTP/SAVPF 96\r\n"
+           "a=candidate:1 1 udp 2130706431 192.168.0.5 50000 typ host\r\n"
+           "a=candidate:2 1 udp 1694498815 200.1.2.3 50000 typ srflx raddr 192.168.0.5 rport 50000\r\n"
+           "a=candidate:3 1 udp 16777215 198.51.100.7 49200 typ relay raddr 0.0.0.0 rport 0\r\n"
+           "m=application 9 UDP/DTLS/SCTP webrtc-datachannel\r\n"
+           "a=candidate:1 1 udp 2130706431 192.168.0.5 50000 typ host\r\n"
+           "a=candidate:4 1 TCP 1518280447 192.168.0.5 9 typ host tcptype active\r\n")
+    assert remoto.resumo_candidatos(sdp) == "host/tcp 1, host/udp 1, relay/udp 1, srflx/udp 1"
+    assert remoto.resumo_candidatos("") == "nenhum endereço" and "192.168" not in remoto.resumo_candidatos(sdp)
+    assert remoto.rota("srflx", "host") == "direta" and remoto.rota("host", "relay") == "retransmitida"
+    c = remoto.conclusao_teste
+    assert "servidor" in c({"servidor": False, "turn_udp": True, "turn_tcp": True})
+    assert "credencial" in c({"servidor": True, "turn_udp": None, "turn_tcp": None})
+    assert c({"servidor": True, "turn_udp": True, "turn_tcp": True}).startswith("Tudo certo")
+    assert "bloqueia UDP" in c({"servidor": True, "turn_udp": False, "turn_tcp": True})
+    assert "TCP não respondeu" in c({"servidor": True, "turn_udp": True, "turn_tcp": False})
+    assert "não alcança" in c({"servidor": True, "turn_udp": False, "turn_tcp": False})
+
+def teste_agente_usa_o_retransmissor_por_tcp():
+    """O aiortc só usa o primeiro TURN da lista: o TCP vai na frente, senão rede que bloqueia UDP fica sem saída."""
+    import remoto_agente as ra
+    from aiortc import RTCIceServer
+    from aiortc.rtcicetransport import connection_kwargs
+    urls = ["turn:t.exemplo:3478?transport=udp", "turn:t.exemplo:3478?transport=tcp"]
+    assert ra.turn_por_tcp(urls) == urls[::-1] and ra.turn_por_tcp(urls[:1]) == urls[:1]
+    assert connection_kwargs([RTCIceServer(urls=urls, username="u", credential="c")])["turn_transport"] == "udp"
+    assert connection_kwargs([RTCIceServer(urls=ra.turn_por_tcp(urls), username="u", credential="c")])["turn_transport"] == "tcp"
+
+def teste_testar_conexao_sem_retransmissor():
+    import asyncio
+    import time
+    import remoto_agente as ra
+    nada = (["turn:127.0.0.1:9?transport=udp", "turn:127.0.0.1:9?transport=tcp"], "1:u", "c")
+    t = time.time()
+    assert asyncio.run(ra.testar((), nada, prazo=3)) == {"stun": None, "turn_udp": False, "turn_tcp": False}
+    assert time.time() - t < 8                       # UDP e TCP em paralelo, cada um com o seu prazo
+    assert asyncio.run(ra.testar((), None)) == {"stun": None, "turn_udp": None, "turn_tcp": None}
+
+def teste_log_do_agente_vai_para_o_servico():
+    import io
+    import contextlib
+    g = remoto.Gerente()
+
+    class Proc:
+        stdout = ['{"log": "ICE: checking"}\n', '{"estado": "convite", "convite": "MPCCx"}\n']
+
+    p = g._proc = Proc()
+    err = io.StringIO()
+    with contextlib.redirect_stderr(err):
+        g._ler(p)
+    assert "remoto: ICE: checking" in err.getvalue() and "log" not in g.estado()
 
 def teste_gerente_e_acoes_do_motor():
     """O serviço liga o agente de verdade (outro processo), o lado do técnico usa só as ações do motor."""

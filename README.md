@@ -72,10 +72,11 @@ nativo injetado no Explorer.
 
 ### Captura e gravação de tela
 
-- **Capturas por atalho:** região (lupa, linhas-guia e “ímã” de janela), várias regiões numa imagem, janela ativa,
+- **Capturas por atalho:** região (lupa, linhas-guia e “ímã” que reconhece a janela e as partes dela, como painéis, barras e áreas da página; a roda do mouse escolhe a parte maior ou menor), várias regiões numa imagem, janela ativa,
   monitor, tela inteira, repetir a última região, com atraso e **com rolagem** até o fim da página (ou até “Parar e salvar”).
 - **Anotação antes de capturar**, na própria seleção, com barra móvel: setas, retângulo, elipse, linha, caneta, texto,
-  números, marca-texto, desfocar, pixelar, tarja e cursor. Opção de afastar o mouse antes da foto.
+  números, marca-texto, desfocar, pixelar, tarja e cursor. Enter salva, Ctrl+C só copia (sem salvar) e Esc fecha sem salvar.
+  Opção de afastar o mouse antes da foto.
 - **Aviso próprio** do programa: o clique abre a imagem, a pasta, o editor ou o link; botões de copiar, editar e enviar no aviso.
 - **Tarefas após a captura:** copiar, salvar, salvar como, menu de tarefas rápidas, janela pós-captura, embelezar,
   borda e marca d’água, fixar na tela, imprimir, miniatura, copiar arquivo/caminho/pasta, OCR (do próprio Windows),

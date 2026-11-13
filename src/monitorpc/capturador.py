@@ -188,7 +188,7 @@ class Capturador:
         if acao in ("regiao", "atraso", "rolagem", "ocr", "video", "gif", "cor", "regua", "regioes", "qr", "fixar"):
             img, ox, oy = self._foto(c)
             modo = acao if acao in ("cor", "regua", "regioes") else "regiao"
-            sel = captura.selecionar(img, ox, oy, modo, captura.janelas_visiveis() if modo in ("regiao", "regioes") else (),
+            sel = captura.selecionar(img, ox, oy, modo, captura.AreasDaTela() if modo in ("regiao", "regioes") else (),
                                      anotar=acao in ("regiao", "atraso") and c.get("captura_anotar", True),
                                      lupa=c.get("captura_lupa", True), estilo=self.estilo,
                                      escurecer=c.get("captura_escurecer", True), cruz=c.get("captura_cruz", True))

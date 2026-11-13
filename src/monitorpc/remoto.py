@@ -310,6 +310,45 @@ def conferir_atendido(senha, sdp_convite, sdp_tecnico, mac):
     return confere(chave(senha, sdp_convite, sdp_tecnico), "atendido", mac)
 
 
+# ---------------------------------------------------------------- diagnóstico da conexão
+_RE_CANDIDATO = re.compile(r"^a=candidate:\S+ \d+ (\w+) \d+ (\S+) (\d+) typ (\w+)", re.M | re.I)
+
+
+def resumo_candidatos(sdp):
+    """Quantos endereços de cada tipo o SDP oferece, sem mostrar os endereços ("host/udp 2, relay/udp 1").
+    O mesmo endereço repetido em cada parte do SDP (vídeo, controle) conta uma vez."""
+    vistos = {(p.lower(), t.lower(), ip, porta) for p, ip, porta, t in _RE_CANDIDATO.findall(sdp or "")}
+    contas = {}
+    for p, t, _ip, _porta in vistos:
+        contas[f"{t}/{p}"] = contas.get(f"{t}/{p}", 0) + 1
+    return ", ".join(f"{k} {n}" for k, n in sorted(contas.items())) or "nenhum endereço"
+
+
+def rota(tipo_local, tipo_remoto):
+    """Pelo par de endereços que o ICE escolheu: se um dos lados é o retransmissor, nada vai direto."""
+    return "retransmitida" if "relay" in (tipo_local, tipo_remoto) else "direta"
+
+
+def conclusao_teste(r):
+    """Uma frase para quem testou a conexão. r: {servidor, stun, turn_udp, turn_tcp} (None = não testado)."""
+    if not r.get("servidor"):
+        return ("Sem contato com o servidor do acesso remoto. Confira a internet e se o firewall libera "
+                "HTTPS para monitor.cntoficial.com.br.")
+    udp, tcp = r.get("turn_udp"), r.get("turn_tcp")
+    if udp is None and tcp is None:
+        return "O servidor não mandou a credencial do retransmissor: só a conexão direta vai funcionar."
+    if udp and tcp:
+        return "Tudo certo: este computador alcança o retransmissor por UDP e por TCP."
+    if tcp:
+        return ("Esta rede bloqueia UDP. O acesso remoto vai pelo retransmissor por TCP: funciona, "
+                "com um pouco mais de atraso.")
+    if udp:
+        return ("O retransmissor por TCP não respondeu (porta 3478). Funciona aqui, mas pode falhar se "
+                "o UDP for bloqueado.")
+    return ("Este computador não alcança o retransmissor (porta 3478 bloqueada em UDP e TCP). Só a "
+            "conexão direta é possível, e ela costuma falhar em 4G/5G e em redes de empresa.")
+
+
 # ---------------------------------------------------------------- atalhos, área de transferência e arquivos
 MAX_MONITORES = 4           # uma trilha de vídeo por monitor
 # Combinações que o técnico manda pela barra (fora da tela cheia o navegador fica com Win, Alt+Tab e afins).
@@ -513,6 +552,9 @@ class Gerente:
                 continue
             if not isinstance(d, dict):
                 continue
+            if isinstance(d.get("log"), str):      # negociação da conexão: vai para o servico.log
+                print("remoto:", d["log"][:500], file=sys.stderr, flush=True)
+                continue
             with self._cond:
                 if p is not self._proc:
                     return
@@ -574,6 +616,24 @@ class Gerente:
     def estado(self):
         with self._cond:
             return dict(self._estado)
+
+    def testar(self, turn=None, prazo=30):
+        """Confere se este PC alcança o STUN e o retransmissor (UDP e TCP). Roda o agente com --testar,
+        fora da sessão de quem usa o PC: não precisa de tela. Devolve {stun, turn_udp, turn_tcp}."""
+        cmd = self._linha_de_comando(True, turn) + ["--testar"]
+        try:
+            p = subprocess.run(cmd, stdin=subprocess.DEVNULL, capture_output=True, text=True, encoding="utf-8",
+                               timeout=prazo, creationflags=0x08000000 if os.name == "nt" else 0)
+        except (OSError, subprocess.TimeoutExpired) as e:
+            raise Erro(f"Não consegui testar a conexão: {e}") from None
+        for linha in reversed((p.stdout or "").splitlines()):
+            try:
+                d = json.loads(linha)
+            except ValueError:
+                continue
+            if isinstance(d, dict) and "stun" in d:
+                return {k: d.get(k) for k in ("stun", "turn_udp", "turn_tcp")}
+        raise Erro("O teste de conexão não respondeu.")
 
     def parar(self):
         self.ordem("encerrar")

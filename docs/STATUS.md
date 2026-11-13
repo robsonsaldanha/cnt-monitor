@@ -1,10 +1,10 @@
 # Estado do projeto: CNT Monitor
 
-Atualizado em 2026-11-11. As funcionalidades completas estão no [README](../README.md); a API está em [API.md](API.md).
+Atualizado em 2026-11-13. As funcionalidades completas estão no [README](../README.md); a API está em [API.md](API.md).
 
 ## Versão atual
 
-- **3.1.0** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.1.0`. A release no GitHub traz
+- **3.2.0** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.2.0`. A release no GitHub traz
   `CNTMonitor-Setup-<versão>.exe`, `MonitorDoPC-Setup-<versão>.exe` (nome antigo, para instalações antigas) e
   `cnt-monitor_<versão>_amd64.deb`.
 - Repositório: `robsonsaldanha/cnt-monitor` (público, GPL v3 ou posterior).
@@ -21,6 +21,7 @@ Atualizado em 2026-11-11. As funcionalidades completas estão no [README](../REA
 | 2.8.0 – 2.9.2 | Estatísticas de rede por IP, aba Análise de rede, monitoramento por programa (RTP/MOS), vários monitores no acesso remoto, transferência de arquivos |
 | 3.0.0 | Versão Linux nativa (.deb para Ubuntu 22.04+, Debian 12+, Mint 21+; X11 e Wayland) |
 | 3.1.0 | Página Personalizar: barra e relógio do Windows, ícones ao lado do relógio, tema e papel automáticos, perfis, lançador rápido, renomear em massa e remapear teclas (tudo em Python) |
+| 3.2.0 | Acesso remoto: retransmissor também por TCP, credencial renovada sozinha, botão "Testar conexão", selo Direta/Retransmitida e Ctrl+C que não se perde; captura: partes das janelas (UI Automation) e Ctrl+C/Enter/Esc na seleção; Linux: ícone por AppIndicator/GTK (sem travar a tela) e textos "com o Linux" |
 
 ## Como publicar uma versão
 
@@ -48,8 +49,9 @@ Push na `main` sem tag **não** gera release.
 - Personalizar (3.1.0): nenhuma janela vista funcionando (lançador, página nova) e o gancho de remapear teclas não foi
   exercitado com teclado real; a gravação no registro só é testada no CI. A grade de ícones do Windhawk ficou de fora
   (exige código nativo no Explorer).
-- O git desta pasta não tem `user.name`/`user.email`; os commits usam o autor dos commits anteriores.
-- A pasta é sincronizada pelo OneDrive com outro PC: antes de mexer, conferir `git status` e comparar com `origin/main`.
+- 3.2.0 não testada em uso real: acesso remoto em 4G/5G, Ctrl+C com Excel num PC atendido, partes da janela fora do
+  Chrome e o ícone AppIndicator em Ubuntu/Mint/KDE reais (Super+L e uso longo). Redes que só liberam 80/443 ficam de fora.
+- A pasta de trabalho é `D:\monitor-pc` (a antiga, no OneDrive, não deve ser usada).
 
 ## Onde está cada coisa
 
