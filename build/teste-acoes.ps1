@@ -161,7 +161,7 @@ Tenta "firewall" { (Get-NetFirewallRule -DisplayName "Monitor do PC (acesso pelo
 Post "config" @{ acesso_remoto = $false } | Out-Null
 Start-Sleep 1
 Tenta "firewall_removido" { "regra existe: $([bool](Get-NetFirewallRule -DisplayName 'Monitor do PC (acesso pelo celular)' -ErrorAction SilentlyContinue)) (esperado False)" }
-Tenta "fontes" { $x = Invoke-WebRequest "http://127.0.0.1:48731/fontes/barlow-latin-400-normal.woff2" -UseBasicParsing; "$($x.StatusCode) $($x.Headers['Content-Type'])" }
+Tenta "base_cnt" { $x = Invoke-WebRequest "http://127.0.0.1:48731/cnt/cnt.css" -UseBasicParsing; "$($x.StatusCode) $($x.Headers['Content-Type'])" }
 Tenta "navegar" { Post "ui/navegar" @{ aba = "otimizar" } | Out-Null; (Invoke-RestMethod "$base/agora").navegar.aba }
 Tenta "icone_driverstore" { $e = Get-ChildItem C:\Windows\System32\DriverStore\FileRepository -Recurse -Filter *.exe -ErrorAction SilentlyContinue | Select-Object -First 3; ($e | ForEach-Object { $x = Invoke-WebRequest "$base/icone?exe=$([uri]::EscapeDataString($_.FullName))" -UseBasicParsing -SkipHttpErrorCheck; "$($_.Name)=$($x.StatusCode)" }) -join " " }
 "--- v2.3 ---"

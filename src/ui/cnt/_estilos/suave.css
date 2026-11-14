@@ -1,0 +1,9 @@
+/* Tema de estilo "Suave". Gerado por _escolhas/estilos.mjs; não edite à mão. */
+@import "../base-botoes/modelo-suave/nucleo/botoes.css";
+@import "../base-campos/modelo-preenchido/nucleo/campos.css";
+@import "../base-filtros/modelo-chips/nucleo/filtros.css";
+@import "../base-selos/modelo-suave/nucleo/selos.css";
+@import "../base-cartoes/modelo-elevado/nucleo/cartoes.css";
+@import "../base-tabelas/modelo-zebrada/nucleo/tabelas.css";
+@import "../base-abas/modelo-pilula/nucleo/abas.css";
+@import "../base-avisos/modelo-suave/nucleo/avisos.css";

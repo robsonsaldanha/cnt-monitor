@@ -1,0 +1,57 @@
+/* Tokens que não mudam com o tema. Cores ficam em temas/. */
+:root {
+  /* Tipografia */
+  --cnt-fonte-base: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --cnt-fonte-mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, "Liberation Mono", monospace;
+
+  --cnt-texto-xs: 0.75rem;
+  --cnt-texto-sm: 0.875rem;
+  --cnt-texto-md: 1rem;
+  --cnt-texto-lg: 1.125rem;
+  --cnt-texto-xl: 1.375rem;
+  --cnt-texto-2xl: 1.75rem;
+  --cnt-texto-3xl: 2.25rem;
+
+  --cnt-linha-compacta: 1.25;
+  --cnt-linha-base: 1.5;
+
+  --cnt-peso-normal: 400;
+  --cnt-peso-medio: 500;
+  --cnt-peso-forte: 600;
+
+  /* Espaçamento */
+  --cnt-espaco-1: 0.25rem;
+  --cnt-espaco-2: 0.5rem;
+  --cnt-espaco-3: 0.75rem;
+  --cnt-espaco-4: 1rem;
+  --cnt-espaco-5: 1.5rem;
+  --cnt-espaco-6: 2rem;
+  --cnt-espaco-7: 3rem;
+  --cnt-espaco-8: 4rem;
+
+  /* Raio */
+  --cnt-raio-pq: 4px;
+  --cnt-raio-md: 8px;
+  --cnt-raio-gd: 12px;
+  --cnt-raio-total: 999px;
+
+  /* Altura de controles (botão, input, select) */
+  --cnt-altura-controle-pq: 2rem;
+  --cnt-altura-controle-md: 2.5rem;
+  --cnt-altura-controle-gd: 3rem;
+
+  /* Foco */
+  --cnt-foco-largura: 2px;
+  --cnt-foco-distancia: 2px;
+
+  /* Movimento */
+  --cnt-duracao-rapida: 120ms;
+  --cnt-duracao-base: 200ms;
+  --cnt-curva: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Camadas */
+  --cnt-z-fixo: 100;
+  --cnt-z-flutuante: 200;
+  --cnt-z-modal: 300;
+  --cnt-z-aviso: 400;
+}

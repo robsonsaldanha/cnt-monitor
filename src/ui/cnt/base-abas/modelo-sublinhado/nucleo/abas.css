@@ -1,0 +1,31 @@
+/* Abas, modelo sublinhado: linha na cor da marca sob a aba selecionada. */
+.cnt-abas { font-family: var(--cnt-fonte-base); color: var(--cnt-cor-texto); }
+
+.cnt-abas__lista { display: flex; gap: var(--cnt-espaco-1); overflow-x: auto; border-bottom: 1px solid var(--cnt-cor-borda); }
+
+.cnt-abas__aba {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cnt-espaco-2);
+  flex: none;
+  height: var(--cnt-altura-controle-md);
+  padding: 0 var(--cnt-espaco-3);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--cnt-cor-texto-suave);
+  font-family: inherit;
+  font-size: var(--cnt-texto-sm);
+  font-weight: var(--cnt-peso-medio);
+  cursor: pointer;
+  transition: color var(--cnt-duracao-rapida) var(--cnt-curva), border-color var(--cnt-duracao-rapida) var(--cnt-curva);
+}
+
+.cnt-abas__aba:hover { color: var(--cnt-cor-texto); border-bottom-color: var(--cnt-cor-borda-forte); }
+.cnt-abas__aba[aria-selected="true"] { color: var(--cnt-cor-primaria); border-bottom-color: var(--cnt-cor-primaria); font-weight: var(--cnt-peso-forte); }
+.cnt-abas__aba:focus-visible { outline: var(--cnt-foco-largura) solid var(--cnt-cor-primaria); outline-offset: calc(var(--cnt-foco-largura) * -1); }
+.cnt-abas__aba:disabled { color: var(--cnt-cor-texto-desativado); border-bottom-color: transparent; cursor: not-allowed; }
+
+.cnt-abas__contador { padding: 0 var(--cnt-espaco-2); border-radius: var(--cnt-raio-total); background: var(--cnt-cor-superficie-2); color: var(--cnt-cor-texto-suave); font-size: var(--cnt-texto-xs); }
+
+.cnt-abas__painel { padding: var(--cnt-espaco-4) var(--cnt-espaco-3); font-size: var(--cnt-texto-sm); }

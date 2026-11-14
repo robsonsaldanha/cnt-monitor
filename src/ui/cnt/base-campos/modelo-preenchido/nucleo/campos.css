@@ -1,0 +1,51 @@
+/* Campos, modelo preenchido: fundo cinza e linha embaixo, rótulo em cima. */
+.cnt-campo { display: grid; gap: var(--cnt-espaco-1); font-family: var(--cnt-fonte-base); }
+.cnt-campo__caixa { display: grid; gap: var(--cnt-espaco-1); }
+
+.cnt-campo__rotulo { font-size: var(--cnt-texto-sm); font-weight: var(--cnt-peso-medio); color: var(--cnt-cor-texto); }
+
+.cnt-campo__controle {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--cnt-altura-controle-md);
+  padding: 0 var(--cnt-espaco-3);
+  border: 0;
+  border-bottom: 2px solid var(--cnt-cor-borda-forte);
+  border-radius: var(--cnt-raio-md) var(--cnt-raio-md) 0 0;
+  background-color: var(--cnt-cor-superficie-2);
+  color: var(--cnt-cor-texto);
+  font-family: inherit;
+  font-size: var(--cnt-texto-sm);
+  transition: border-color var(--cnt-duracao-rapida) var(--cnt-curva);
+}
+
+.cnt-campo__controle::placeholder { color: var(--cnt-cor-texto-suave); opacity: 1; }
+.cnt-campo__controle:hover { border-bottom-color: var(--cnt-cor-texto); }
+
+.cnt-campo__controle:focus-visible {
+  outline: var(--cnt-foco-largura) solid var(--cnt-cor-primaria);
+  outline-offset: var(--cnt-foco-distancia);
+  border-bottom-color: var(--cnt-cor-primaria);
+}
+
+.cnt-campo__controle--area { height: auto; min-height: calc(var(--cnt-altura-controle-md) * 2); padding: var(--cnt-espaco-2) var(--cnt-espaco-3); line-height: var(--cnt-linha-base); resize: vertical; }
+
+/* Seta do select desenhada com gradiente para usar o token de cor. */
+.cnt-campo__controle--select {
+  appearance: none;
+  padding-right: var(--cnt-espaco-6);
+  background-image: linear-gradient(45deg, transparent 50%, var(--cnt-cor-texto-suave) 50%), linear-gradient(135deg, var(--cnt-cor-texto-suave) 50%, transparent 50%);
+  background-position: right 1.0625rem center, right 0.75rem center;
+  background-size: 0.3125rem 0.3125rem;
+  background-repeat: no-repeat;
+}
+
+.cnt-campo__controle[aria-invalid="true"] { border-bottom-color: var(--cnt-cor-perigo); background-color: var(--cnt-cor-perigo-suave); }
+
+.cnt-campo__controle:disabled { border-bottom-color: var(--cnt-cor-borda); color: var(--cnt-cor-texto-desativado); cursor: not-allowed; }
+
+.cnt-campo__ajuda { margin: 0; font-size: var(--cnt-texto-xs); color: var(--cnt-cor-texto-suave); }
+.cnt-campo__ajuda--erro { color: var(--cnt-cor-perigo); }
+
+/* Lista aberta do select: fundo e texto dos tokens. Sem isto o navegador pode abrir a lista clara com o texto claro do tema escuro. */
+.cnt-campo__controle--select option { background-color: var(--cnt-cor-superficie); color: var(--cnt-cor-texto); }

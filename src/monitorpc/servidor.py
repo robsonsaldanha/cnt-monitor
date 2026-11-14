@@ -24,7 +24,7 @@ HOSTS_OK = {f"127.0.0.1:{config.PORTA}", f"localhost:{config.PORTA}"}
 ORIGENS_OK = {f"http://127.0.0.1:{config.PORTA}", f"http://localhost:{config.PORTA}"}
 WIN = os.name == "nt"
 SEM_JANELA = 0x08000000 if WIN else 0
-TIPOS_ARQ = {".woff2": "font/woff2", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8",
+TIPOS_ARQ = {".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8",
              ".png": "image/png", ".svg": "image/svg+xml"}
 POST_GRANDE = {"/api/capturas/conteudo", "/api/capturas/editada"}   # imagens inteiras (até 64 MB)
 
@@ -98,17 +98,39 @@ def mini_jpeg(b64):
     except ValueError:
         return None
     return dados if dados[:3] == b"\xff\xd8\xff" and len(dados) <= 300_000 else None
+
+
+def arquivo_cnt(ui, rota):
+    """Caminho do arquivo da base de front-end (ui/cnt/...) pedido em /cnt/...; None se sair da pasta ou não puder ser servido."""
+    base = os.path.realpath(os.path.join(ui, "cnt"))
+    arq = os.path.realpath(os.path.join(base, *unquote(rota[len("/cnt/"):]).replace("\\", "/").split("/")))
+    try:
+        dentro = os.path.commonpath([base, arq]) == base
+    except ValueError:      # outra unidade (C: x D:)
+        return None
+    if not dentro or os.path.splitext(arq)[1] not in TIPOS_ARQ or not os.path.isfile(arq):
+        return None
+    return arq
+
+
 LOGIN_HTML = """<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CNT Monitor — entrar</title><style>
-:root{--bg:#101418;--p:#171c22;--b:#29313b;--t:#e6ebf0;--t2:#9aa6b2;--a:#5aa9e6;--r:#ef5f5f}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--t);font:15px/1.5 "Segoe UI",system-ui,sans-serif;padding:16px}
-form{background:var(--p);border:1px solid var(--b);border-radius:14px;padding:26px 24px;width:min(360px,100%)}
-h1{font-size:20px;margin:0 0 4px}p{color:var(--t2);margin:0 0 18px;font-size:13.5px}
-input{width:100%;background:#1e252d;border:1px solid var(--b);color:var(--t);border-radius:9px;padding:11px 12px;font:inherit;margin-bottom:12px}
-button{width:100%;background:var(--a);border:0;color:#081018;font-weight:600;border-radius:9px;padding:11px;font:inherit;cursor:pointer}
-.e{color:var(--r);font-size:13px;margin-bottom:10px}</style></head><body>
-<form method="post" action="/login"><h1>CNT Monitor</h1><p>Digite a senha de acesso configurada no computador.</p>__ERRO__
-<input type="password" name="senha" placeholder="Senha" autofocus autocomplete="current-password"><button>Entrar</button></form></body></html>"""
+<title>CNT Monitor — entrar</title>
+<link rel="stylesheet" href="/cnt/cnt.css"><link rel="stylesheet" href="/cnt/_estilos/personalizado.css" data-cnt-estilo>
+<script src="/cnt/_estilos/estilos.js"></script><script src="/cnt/tema.js"></script><style>
+body{min-height:100vh;display:grid;place-items:center;padding:var(--cnt-espaco-4)}
+.login{width:min(380px,100%)}.login .cnt-cartao__corpo{display:grid;gap:var(--cnt-espaco-4)}
+.login .cnt-botao{width:100%}</style></head><body>
+<form class="cnt-cartao login" method="post" action="/login"><header class="cnt-cartao__topo"><h1 class="cnt-cartao__titulo">CNT Monitor</h1></header>
+<div class="cnt-cartao__corpo"><p class="cnt-cartao__texto">Digite a senha de acesso configurada no computador.</p>__ERRO__
+<div class="cnt-campo"><div class="cnt-campo__caixa"><label class="cnt-campo__rotulo" for="senha">Senha</label>
+<input class="cnt-campo__controle" id="senha" type="password" name="senha" autofocus autocomplete="current-password"></div></div>
+<button class="cnt-botao cnt-botao--primario">Entrar</button></div></form></body></html>"""
+
+
+def login_html(erro=""):
+    if erro:
+        erro = f'<div class="cnt-aviso cnt-aviso--perigo" role="alert"><div class="cnt-aviso__corpo">{erro}</div></div>'
+    return LOGIN_HTML.replace("__ERRO__", erro)
 
 
 # ---------------------------------------------------------------- firewall (só rede privada)
@@ -309,8 +331,15 @@ def fabrica(motor, TOKEN, remoto=False):
             q = {k: v[0] for k, v in parse_qs(u.query).items()}
             r = u.path
             try:
+                if r.startswith("/cnt/"):     # base de front-end: CSS/JS públicos, servidos também antes do login
+                    arq = arquivo_cnt(ui, r)
+                    if not arq:
+                        return self._json({"erro": "não encontrado"}, 404)
+                    with open(arq, "rb") as f:
+                        dados = f.read()
+                    return self._env(200, dados, TIPOS_ARQ[os.path.splitext(arq)[1]], {"Cache-Control": "no-cache"})
                 if remoto and r == "/login":
-                    return self._env(200, LOGIN_HTML.replace("__ERRO__", "").encode(), "text/html; charset=utf-8")
+                    return self._env(200, login_html().encode(), "text/html; charset=utf-8")
                 if r.startswith("/api/v1"):
                     if not self._pode_ler(q, v1=True):
                         return self._json({"erro": "não autorizado — use a chave da API (X-API-Key)"}, 401)
@@ -326,9 +355,9 @@ def fabrica(motor, TOKEN, remoto=False):
                         tok = b"" if remoto and configuracao.obter("acesso_somente_ver") else TOKEN.encode()
                         html = f.read().replace(b"__TOKEN__", tok).replace(b"__REMOTO__", b"1" if remoto else b"0")
                     return self._env(200, html, "text/html; charset=utf-8")
-                if r.startswith("/fontes/") or r.startswith("/estatico/"):
+                if r.startswith("/estatico/"):
                     nome = os.path.basename(r)
-                    arq = os.path.join(ui, r.strip("/").split("/")[0], nome)
+                    arq = os.path.join(ui, "estatico", nome)
                     if os.path.isfile(arq) and os.path.splitext(nome)[1] in TIPOS_ARQ:
                         with open(arq, "rb") as f:
                             dados = f.read()
@@ -661,7 +690,7 @@ def fabrica(motor, TOKEN, remoto=False):
             ts = [x for x in TENTATIVAS.get(ip, []) if t - x < 300]
             TENTATIVAS[ip] = ts
             if len(ts) >= 5:
-                html = LOGIN_HTML.replace("__ERRO__", '<div class="e">Muitas tentativas. Espere 5 minutos.</div>')
+                html = login_html("Muitas tentativas. Espere 5 minutos.")
                 return self._env(429, html.encode(), "text/html; charset=utf-8")
             senha = parse_qs(bruto.decode("utf-8", "replace")).get("senha", [""])[0]
             guardado = configuracao.obter("acesso_senha")
@@ -671,7 +700,7 @@ def fabrica(motor, TOKEN, remoto=False):
                 return self._env(302, b"", "text/plain", {"Location": "/", "Set-Cookie":
                                  f"mpc_sessao={tok}; HttpOnly; SameSite=Strict; Path=/; Max-Age={7 * 86400}"})
             ts.append(t)
-            html = LOGIN_HTML.replace("__ERRO__", '<div class="e">Senha incorreta.</div>')
+            html = login_html("Senha incorreta.")
             return self._env(401, html.encode(), "text/html; charset=utf-8")
 
     return H

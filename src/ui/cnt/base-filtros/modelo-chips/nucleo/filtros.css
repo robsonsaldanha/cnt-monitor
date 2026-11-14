@@ -1,0 +1,47 @@
+/* Filtros, modelo chips: busca em cima e botões de liga/desliga com contagem. */
+.cnt-filtro { display: grid; gap: var(--cnt-espaco-3); font-family: var(--cnt-fonte-base); }
+
+.cnt-filtro__busca { position: relative; max-width: 28rem; }
+.cnt-filtro__lupa { position: absolute; top: 50%; left: var(--cnt-espaco-3); width: 1rem; height: 1rem; transform: translateY(-50%); color: var(--cnt-cor-texto-suave); pointer-events: none; }
+
+.cnt-filtro__controle {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--cnt-altura-controle-md);
+  padding: 0 var(--cnt-espaco-4) 0 var(--cnt-espaco-6);
+  border: 1px solid var(--cnt-cor-borda-forte);
+  border-radius: var(--cnt-raio-total);
+  background: var(--cnt-cor-superficie);
+  color: var(--cnt-cor-texto);
+  font-family: inherit;
+  font-size: var(--cnt-texto-sm);
+}
+
+.cnt-filtro__controle::placeholder { color: var(--cnt-cor-texto-suave); opacity: 1; }
+.cnt-filtro__controle:hover { border-color: var(--cnt-cor-texto); }
+.cnt-filtro__controle:focus-visible { outline: var(--cnt-foco-largura) solid var(--cnt-cor-primaria); outline-offset: 0; border-color: var(--cnt-cor-primaria); }
+
+.cnt-filtro__chips { display: flex; flex-wrap: wrap; gap: var(--cnt-espaco-2); }
+
+.cnt-filtro__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cnt-espaco-2);
+  height: var(--cnt-altura-controle-pq);
+  padding: 0 var(--cnt-espaco-3);
+  border: 1px solid var(--cnt-cor-borda-forte);
+  border-radius: var(--cnt-raio-total);
+  background: var(--cnt-cor-superficie);
+  color: var(--cnt-cor-texto);
+  font-family: inherit;
+  font-size: var(--cnt-texto-sm);
+  cursor: pointer;
+  transition: background var(--cnt-duracao-rapida) var(--cnt-curva), border-color var(--cnt-duracao-rapida) var(--cnt-curva);
+}
+
+.cnt-filtro__chip:hover { background: var(--cnt-cor-superficie-2); }
+.cnt-filtro__chip[aria-pressed="true"] { background: var(--cnt-cor-primaria); border-color: var(--cnt-cor-primaria); color: var(--cnt-cor-primaria-contraste); font-weight: var(--cnt-peso-medio); }
+.cnt-filtro__chip[aria-pressed="true"]:hover { background: var(--cnt-cor-primaria-hover); }
+.cnt-filtro__chip:focus-visible { outline: var(--cnt-foco-largura) solid var(--cnt-cor-primaria); outline-offset: var(--cnt-foco-distancia); }
+
+.cnt-filtro__contagem { font-size: var(--cnt-texto-xs); font-variant-numeric: tabular-nums; opacity: 0.85; }

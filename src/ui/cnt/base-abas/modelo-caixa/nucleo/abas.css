@@ -1,0 +1,43 @@
+/* Abas, modelo caixa: a aba selecionada se liga ao painel, como pasta de arquivo. */
+.cnt-abas { font-family: var(--cnt-fonte-base); color: var(--cnt-cor-texto); }
+
+.cnt-abas__lista { display: flex; gap: var(--cnt-espaco-1); overflow-x: auto; padding: 0 var(--cnt-espaco-2); }
+
+.cnt-abas__aba {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cnt-espaco-2);
+  flex: none;
+  height: var(--cnt-altura-controle-md);
+  padding: 0 var(--cnt-espaco-4);
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: var(--cnt-raio-md) var(--cnt-raio-md) 0 0;
+  background: transparent;
+  color: var(--cnt-cor-texto-suave);
+  font-family: inherit;
+  font-size: var(--cnt-texto-sm);
+  font-weight: var(--cnt-peso-medio);
+  cursor: pointer;
+  transition: background var(--cnt-duracao-rapida) var(--cnt-curva), color var(--cnt-duracao-rapida) var(--cnt-curva);
+}
+
+.cnt-abas__aba:hover { background: var(--cnt-cor-superficie-2); color: var(--cnt-cor-texto); }
+
+/* A aba selecionada desce 1px por cima da borda do painel para parecer uma peça só. */
+.cnt-abas__aba[aria-selected="true"] {
+  position: relative;
+  top: 1px;
+  background: var(--cnt-cor-superficie);
+  border-color: var(--cnt-cor-borda);
+  color: var(--cnt-cor-texto);
+  font-weight: var(--cnt-peso-forte);
+  box-shadow: inset 0 2px 0 0 var(--cnt-cor-primaria);
+}
+
+.cnt-abas__aba:focus-visible { outline: var(--cnt-foco-largura) solid var(--cnt-cor-primaria); outline-offset: calc(var(--cnt-foco-largura) * -1); }
+.cnt-abas__aba:disabled { background: transparent; color: var(--cnt-cor-texto-desativado); cursor: not-allowed; }
+
+.cnt-abas__contador { padding: 0 var(--cnt-espaco-2); border-radius: var(--cnt-raio-pq); background: var(--cnt-cor-superficie-2); color: var(--cnt-cor-texto-suave); font-size: var(--cnt-texto-xs); }
+
+.cnt-abas__painel { padding: var(--cnt-espaco-4); border: 1px solid var(--cnt-cor-borda); border-radius: var(--cnt-raio-md); background: var(--cnt-cor-superficie); font-size: var(--cnt-texto-sm); }

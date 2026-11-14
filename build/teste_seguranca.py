@@ -427,6 +427,21 @@ def teste_atualizacao_acha_o_instalador_pelo_nome_novo_e_antigo():
     assert a._avaliar({**base, "assets": [{"name": "outro.exe", "browser_download_url": "x", "size": 1}]}) is None
 
 
+def teste_base_cnt_nao_sai_da_pasta():
+    """/cnt/ é servido antes do login: só arquivos da base, dentro de ui/cnt, com extensão permitida."""
+    ui = tempfile.mkdtemp(prefix="mpc-ui-")
+    try:
+        os.makedirs(os.path.join(ui, "cnt", "temas"))
+        for nome in ("cnt/temas/claro.css", "cnt/notas.txt", "segredo.css", "index.html"):
+            with open(os.path.join(ui, *nome.split("/")), "w") as f:
+                f.write("x")
+        assert servidor.arquivo_cnt(ui, "/cnt/temas/claro.css") == os.path.realpath(os.path.join(ui, "cnt", "temas", "claro.css"))
+        for rota in ("/cnt/../segredo.css", "/cnt/%2e%2e/segredo.css", "/cnt/..\\segredo.css", "/cnt/temas/../../segredo.css",
+                     "/cnt/notas.txt", "/cnt/../index.html", "/cnt/nao-existe.css", "/cnt/", "/cnt/" + ui.replace("\\", "/") + "/segredo.css"):
+            assert servidor.arquivo_cnt(ui, rota) is None, rota
+    finally:
+        shutil.rmtree(ui, ignore_errors=True)
+
 if __name__ == "__main__":
     try:
         for nome, f in list(globals().items()):

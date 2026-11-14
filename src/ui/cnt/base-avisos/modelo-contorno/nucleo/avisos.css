@@ -1,0 +1,43 @@
+/* Avisos, modelo contorno: borda na cor do aviso, ícone num círculo de fundo claro. */
+.cnt-aviso {
+  --cnt-aviso-cor: var(--cnt-cor-info);
+  --cnt-aviso-fundo: var(--cnt-cor-info-suave);
+  display: flex;
+  align-items: center;
+  gap: var(--cnt-espaco-3);
+  padding: var(--cnt-espaco-3);
+  border: 1px solid var(--cnt-aviso-cor);
+  border-radius: var(--cnt-raio-gd);
+  background: var(--cnt-cor-superficie);
+  color: var(--cnt-cor-texto);
+  font-family: var(--cnt-fonte-base);
+  font-size: var(--cnt-texto-sm);
+  line-height: var(--cnt-linha-base);
+}
+
+.cnt-aviso--sucesso { --cnt-aviso-cor: var(--cnt-cor-sucesso); --cnt-aviso-fundo: var(--cnt-cor-sucesso-suave); }
+.cnt-aviso--alerta { --cnt-aviso-cor: var(--cnt-cor-alerta); --cnt-aviso-fundo: var(--cnt-cor-alerta-suave); }
+.cnt-aviso--perigo { --cnt-aviso-cor: var(--cnt-cor-perigo); --cnt-aviso-fundo: var(--cnt-cor-perigo-suave); }
+
+.cnt-aviso__icone { box-sizing: border-box; flex: none; width: 2rem; height: 2rem; padding: 0.375rem; border-radius: var(--cnt-raio-total); background: var(--cnt-aviso-fundo); color: var(--cnt-aviso-cor); }
+.cnt-aviso__corpo { flex: 1; min-width: 0; }
+.cnt-aviso__titulo { margin: 0; font-weight: var(--cnt-peso-forte); }
+.cnt-aviso__texto { margin: 0; color: var(--cnt-cor-texto-suave); }
+
+.cnt-aviso__fechar {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--cnt-raio-total);
+  background: transparent;
+  color: var(--cnt-cor-texto-suave);
+  cursor: pointer;
+}
+
+.cnt-aviso__fechar > svg { width: 1rem; height: 1rem; }
+.cnt-aviso__fechar:hover { background: var(--cnt-cor-superficie-2); color: var(--cnt-cor-texto); }
+.cnt-aviso__fechar:focus-visible { outline: var(--cnt-foco-largura) solid var(--cnt-cor-primaria); outline-offset: var(--cnt-foco-distancia); }

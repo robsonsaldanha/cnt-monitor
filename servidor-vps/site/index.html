@@ -6,40 +6,33 @@
 <title>CNT Monitor — monitor do computador e acesso remoto</title>
 <meta name="description" content="CNT Monitor: monitor do computador para Windows e Linux, captura de tela e acesso remoto com ID e senha, ponta a ponta.">
 <link rel="icon" type="image/png" href="/estatico/cnt-icone.png">
+<!-- Base de front-end CNT: o nginx serve /cnt/ de src/ui/cnt (mesma cópia usada pelo programa). -->
+<link rel="stylesheet" href="/cnt/cnt.css">
+<link rel="stylesheet" href="/cnt/_estilos/personalizado.css" data-cnt-estilo>
+<script src="/cnt/_estilos/estilos.js"></script>
+<script src="/cnt/tema.js"></script>
 <style>
-@font-face{font-family:Barlow;font-weight:400;font-display:swap;src:url(/fontes/barlow-latin-400-normal.woff2) format("woff2")}
-@font-face{font-family:Barlow;font-weight:600;font-display:swap;src:url(/fontes/barlow-latin-600-normal.woff2) format("woff2")}
-@font-face{font-family:Barlow;font-weight:700;font-display:swap;src:url(/fontes/barlow-latin-700-normal.woff2) format("woff2")}
-:root{--azul:#08263d;--azul2:#0d3655;--ouro:#d9a85b;--ouro2:#f4d79c;--txt:#eef3f8;--mut:#a9b8c7}
-*{box-sizing:border-box}
-body{margin:0;font:400 17px/1.55 Barlow,system-ui,sans-serif;color:var(--txt);background:linear-gradient(160deg,var(--azul) 0%,#051726 100%);min-height:100vh}
-main{max-width:980px;margin:0 auto;padding:48px 24px 64px}
-header{display:flex;align-items:center;gap:14px}
+main{max-width:980px;margin:0 auto;padding:var(--cnt-espaco-7) var(--cnt-espaco-5) var(--cnt-espaco-8)}
+header{display:flex;align-items:center;gap:var(--cnt-espaco-3)}
 header img{height:44px;width:auto}
-header span{font:700 26px/1 Barlow,sans-serif;letter-spacing:.3px}
-h1{font:700 clamp(30px,5vw,46px)/1.12 Barlow,sans-serif;margin:56px 0 14px;max-width:760px}
-h1 em{font-style:normal;color:var(--ouro2)}
-.lead{color:var(--mut);max-width:680px;margin:0 0 30px;font-size:19px}
-.btn{display:inline-flex;align-items:center;gap:10px;padding:14px 24px;border-radius:10px;font:700 18px Barlow,sans-serif;text-decoration:none;color:#1d1405;background:linear-gradient(90deg,var(--ouro),var(--ouro2));box-shadow:0 6px 24px rgba(217,168,91,.25)}
-.btn:hover{filter:brightness(1.06)}
-.btn:focus-visible{outline:3px solid #fff;outline-offset:3px}
-.nota{color:var(--mut);font-size:14px;margin-top:10px}
-.so .nota{margin:10px 0 0}
-.dica{color:var(--ouro2);font-size:15px;font-weight:600;margin:0 0 10px}
+header span{font-size:var(--cnt-texto-2xl);font-weight:var(--cnt-peso-forte);line-height:1}
+h1{font-size:clamp(1.875rem,5vw,2.875rem);font-weight:700;line-height:1.12;margin:var(--cnt-espaco-8) 0 var(--cnt-espaco-3);max-width:760px}
+h1 em{font-style:normal;color:var(--cnt-cor-primaria)}
+.lead{color:var(--cnt-cor-texto-suave);max-width:680px;margin:0 0 var(--cnt-espaco-6);font-size:var(--cnt-texto-lg)}
+.cnt-botao.botao-grande{height:var(--cnt-altura-controle-gd);font-size:var(--cnt-texto-md)}
+.nota{color:var(--cnt-cor-texto-suave);font-size:var(--cnt-texto-sm);margin-top:var(--cnt-espaco-3)}
+.so .nota{margin:var(--cnt-espaco-3) 0 0}
+.dica{color:var(--cnt-cor-primaria);font-weight:var(--cnt-peso-forte);margin:0 0 var(--cnt-espaco-3)}
 .dica:empty{display:none}
-.tambem{color:var(--mut);font-size:15px;margin:30px 0 8px;padding-top:18px;border-top:1px solid rgba(255,255,255,.08);max-width:680px}
-.outro .btn{padding:10px 18px;font-size:16px;color:var(--ouro2);background:transparent;border:1px solid rgba(244,215,156,.45);box-shadow:none}
-.outro .btn:hover{filter:none;background:rgba(244,215,156,.08)}
-.grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:56px}
-.cartao{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:20px}
-.cartao b{display:block;font:700 19px Barlow,sans-serif;color:var(--ouro2);margin-bottom:6px}
-.cartao p{margin:0;color:var(--mut)}
-h2{font:700 24px Barlow,sans-serif;margin:56px 0 12px}
-ol{margin:0;padding-left:22px;color:var(--mut)}
+.tambem{color:var(--cnt-cor-texto-suave);font-size:var(--cnt-texto-sm);margin:var(--cnt-espaco-6) 0 var(--cnt-espaco-2);padding-top:var(--cnt-espaco-4);border-top:1px solid var(--cnt-cor-borda);max-width:680px}
+.grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:var(--cnt-espaco-4);margin-top:var(--cnt-espaco-8)}
+h2{font-size:var(--cnt-texto-xl);font-weight:var(--cnt-peso-forte);margin:var(--cnt-espaco-8) 0 var(--cnt-espaco-3)}
+ol{margin:0;padding-left:22px;color:var(--cnt-cor-texto-suave)}
 ol li{margin:6px 0}
-ol b{color:var(--txt)}
-footer{margin-top:64px;color:var(--mut);font-size:14px;border-top:1px solid rgba(255,255,255,.08);padding-top:18px}
-footer a{color:var(--ouro2)}
+ol b{color:var(--cnt-cor-texto)}
+code{font-family:var(--cnt-fonte-mono);font-size:.9em;background:var(--cnt-cor-superficie-2);padding:1px 5px;border-radius:var(--cnt-raio-pq)}
+footer{margin-top:var(--cnt-espaco-8);color:var(--cnt-cor-texto-suave);font-size:var(--cnt-texto-sm);border-top:1px solid var(--cnt-cor-borda);padding-top:var(--cnt-espaco-4)}
+footer a{color:var(--cnt-cor-primaria)}
 </style>
 </head>
 <body>
@@ -51,12 +44,12 @@ footer a{color:var(--ouro2)}
   <div id="baixar">
     <p class="dica" id="dica" aria-live="polite"></p>
     <div class="so" id="so-windows">
-      <a class="btn" href="/baixar?so=windows">Baixar o CNT Monitor para Windows</a>
+      <a class="cnt-botao cnt-botao--primario botao-grande" href="/baixar?so=windows">Baixar o CNT Monitor para Windows</a>
       <p class="nota">Windows 10 e 11, 64 bits: a instalação pede permissão de administrador.</p>
     </div>
     <p class="tambem">Também disponível para:</p>
     <div class="so outro" id="so-linux">
-      <a class="btn" href="/baixar?so=linux">Baixar o CNT Monitor para Linux (.deb)</a>
+      <a class="cnt-botao cnt-botao--secundario" href="/baixar?so=linux">Baixar o CNT Monitor para Linux (.deb)</a>
       <p class="nota">Ubuntu 22.04 ou mais novo, Debian 12+ e Mint 21+, 64 bits. Instale com <code>sudo apt install ./cnt-monitor_*_amd64.deb</code>.</p>
     </div>
   </div>
@@ -70,11 +63,17 @@ footer a{color:var(--ouro2)}
     var linux = !celular && !/Android|CrOS|Chrome OS/i.test(plat + ' ' + ua) && /Linux|X11|Ubuntu|Debian/i.test(plat || ua);
     var windows = !celular && /Windows/i.test(plat || ua);
     var dica = document.getElementById('dica');
+    function principal(bloco, sim) {
+      var botao = bloco.querySelector('.cnt-botao');
+      bloco.classList.toggle('outro', !sim);
+      botao.classList.toggle('cnt-botao--primario', sim); botao.classList.toggle('botao-grande', sim);
+      botao.classList.toggle('cnt-botao--secundario', !sim);
+    }
     if (linux) {
       var w = document.getElementById('so-windows'), l = document.getElementById('so-linux'), t = document.querySelector('.tambem');
       l.parentNode.insertBefore(l, dica.nextSibling);
       t.parentNode.insertBefore(w, t.nextSibling);
-      l.classList.remove('outro'); w.classList.add('outro');
+      principal(l, true); principal(w, false);
       dica.textContent = 'Recomendado para o seu sistema: Linux';
     } else if (windows) {
       dica.textContent = 'Recomendado para o seu sistema: Windows';
@@ -85,9 +84,9 @@ footer a{color:var(--ouro2)}
   </script>
 
   <div class="grade">
-    <div class="cartao"><b>Acesso remoto</b><p>ID e senha temporários, aceite de quem está no computador e conexão criptografada de ponta a ponta.</p></div>
-    <div class="cartao"><b>Monitor do computador</b><p>CPU, memória, disco, rede, temperatura e GPU por programa, com histórico e alertas.</p></div>
-    <div class="cartao"><b>Captura e gravação</b><p>Prints com rolagem, edição, envio por link e gravação da tela em MP4 ou GIF.</p></div>
+    <article class="cnt-cartao"><header class="cnt-cartao__topo"><h3 class="cnt-cartao__titulo">Acesso remoto</h3></header><div class="cnt-cartao__corpo"><p class="cnt-cartao__texto">ID e senha temporários, aceite de quem está no computador e conexão criptografada de ponta a ponta.</p></div></article>
+    <article class="cnt-cartao"><header class="cnt-cartao__topo"><h3 class="cnt-cartao__titulo">Monitor do computador</h3></header><div class="cnt-cartao__corpo"><p class="cnt-cartao__texto">CPU, memória, disco, rede, temperatura e GPU por programa, com histórico e alertas.</p></div></article>
+    <article class="cnt-cartao"><header class="cnt-cartao__topo"><h3 class="cnt-cartao__titulo">Captura e gravação</h3></header><div class="cnt-cartao__corpo"><p class="cnt-cartao__texto">Prints com rolagem, edição, envio por link e gravação da tela em MP4 ou GIF.</p></div></article>
   </div>
 
   <h2>Como receber ajuda</h2>
