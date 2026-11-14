@@ -1,0 +1,632 @@
+/* Topbar (barra de topo). Usa só tokens da fundação (_fundacao/nucleo). */
+.cnt-topbar {
+  /* Mesma altura do topo da sidebar (4rem + borda), para as duas linhas de borda se encontrarem. */
+  --cnt-topbar-altura: calc(4rem + 1px);
+
+  position: sticky;
+  top: 0;
+  z-index: var(--cnt-z-fixo);
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--cnt-espaco-3);
+  box-sizing: border-box;
+  height: var(--cnt-topbar-altura);
+  padding: 0 var(--cnt-espaco-5);
+  background: var(--cnt-cor-superficie);
+  background: color-mix(in srgb, var(--cnt-cor-superficie) 88%, transparent);
+  -webkit-backdrop-filter: saturate(1.4) blur(10px);
+  backdrop-filter: saturate(1.4) blur(10px);
+  border-block-end: 1px solid var(--cnt-cor-borda);
+  color: var(--cnt-cor-texto);
+  font-family: var(--cnt-fonte-base);
+  font-size: var(--cnt-texto-sm);
+  line-height: var(--cnt-linha-compacta);
+  transition: box-shadow var(--cnt-duracao-base) var(--cnt-curva);
+}
+
+/* Página rolada: a barra ganha sombra para se separar do conteúdo. */
+.cnt-topbar.is-rolada {
+  box-shadow: var(--cnt-sombra-2);
+}
+
+/* Some da tela, continua para leitor de tela. */
+.cnt-topbar__oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- Botões de ícone ---------- */
+.cnt-topbar__botao {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--cnt-altura-controle-md);
+  height: var(--cnt-altura-controle-md);
+  padding: 0;
+  border: 0;
+  border-radius: var(--cnt-raio-md);
+  background: transparent;
+  color: var(--cnt-cor-texto-suave);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--cnt-duracao-rapida) var(--cnt-curva), color var(--cnt-duracao-rapida) var(--cnt-curva);
+}
+
+.cnt-topbar__botao:hover,
+.cnt-topbar__botao[aria-expanded="true"] {
+  background: var(--cnt-cor-superficie-2);
+  color: var(--cnt-cor-texto);
+}
+
+.cnt-topbar__botao > svg,
+.cnt-topbar__icone > svg {
+  display: block;
+  width: 1.25rem;
+  height: 1.25rem;
+  transition: transform var(--cnt-duracao-rapida) var(--cnt-curva);
+}
+
+.cnt-topbar__botao:active > svg {
+  transform: scale(0.9);
+}
+
+.cnt-topbar__icone {
+  display: inline-flex;
+}
+
+.cnt-topbar__botao:focus-visible,
+.cnt-topbar__usuario:focus-visible,
+.cnt-topbar__trilha-link:focus-visible,
+.cnt-topbar__opcao:focus-visible {
+  outline: var(--cnt-foco-largura) solid var(--cnt-cor-primaria);
+  outline-offset: calc(var(--cnt-foco-distancia) * -1);
+}
+
+/* Abre a gaveta da sidebar: só em tela estreita. */
+.cnt-topbar__abrir-menu {
+  display: none;
+}
+
+/* ---------- Trilha e título ---------- */
+.cnt-topbar__titulos {
+  display: grid;
+  flex: 1;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.cnt-topbar__trilha-lista {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--cnt-espaco-1);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+  color: var(--cnt-cor-texto-suave);
+  font-size: var(--cnt-texto-xs);
+  white-space: nowrap;
+}
+
+.cnt-topbar__trilha-item {
+  display: flex;
+  align-items: center;
+  gap: var(--cnt-espaco-1);
+  min-width: 0;
+}
+
+.cnt-topbar__trilha-item + .cnt-topbar__trilha-item::before {
+  content: "/";
+  color: var(--cnt-cor-borda-forte);
+}
+
+.cnt-topbar__trilha-link {
+  border-radius: var(--cnt-raio-pq);
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--cnt-duracao-rapida) var(--cnt-curva);
+}
+
+.cnt-topbar__trilha-link:hover {
+  color: var(--cnt-cor-primaria);
+}
+
+.cnt-topbar__trilha-atual {
+  overflow: hidden;
+  color: var(--cnt-cor-texto);
+  text-overflow: ellipsis;
+}
+
+.cnt-topbar__titulo {
+  margin: 0;
+  overflow: hidden;
+  color: var(--cnt-cor-texto);
+  font-size: var(--cnt-texto-md);
+  font-weight: var(--cnt-peso-forte);
+  line-height: var(--cnt-linha-compacta);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Busca ---------- */
+.cnt-topbar__busca {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--cnt-espaco-2);
+  width: clamp(12rem, 26vw, 22rem);
+  margin: 0;
+}
+
+.cnt-topbar__busca-icone {
+  position: absolute;
+  inset-inline-start: var(--cnt-espaco-3);
+  display: inline-flex;
+  color: var(--cnt-cor-texto-suave);
+  pointer-events: none;
+}
+
+.cnt-topbar__busca-icone > svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.cnt-topbar__busca-campo {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--cnt-altura-controle-md);
+  margin: 0;
+  padding: 0 3.75rem 0 2.25rem;
+  border: 1px solid transparent;
+  border-radius: var(--cnt-raio-md);
+  background: var(--cnt-cor-superficie-2);
+  color: var(--cnt-cor-texto);
+  font: inherit;
+  transition: background var(--cnt-duracao-rapida) var(--cnt-curva), border-color var(--cnt-duracao-rapida) var(--cnt-curva);
+}
+
+.cnt-topbar__busca-campo::placeholder {
+  color: var(--cnt-cor-texto-suave);
+  opacity: 1;
+}
+
+.cnt-topbar__busca-campo:hover {
+  border-color: var(--cnt-cor-borda);
+}
+
+.cnt-topbar__busca-campo:focus {
+  border-color: var(--cnt-cor-primaria);
+  background: var(--cnt-cor-superficie);
+  outline: var(--cnt-foco-largura) solid var(--cnt-cor-primaria);
+  outline-offset: -1px;
+}
+
+.cnt-topbar__atalho {
+  position: absolute;
+  inset-inline-end: var(--cnt-espaco-2);
+  padding: 0.125rem var(--cnt-espaco-1);
+  border: 1px solid var(--cnt-cor-borda);
+  border-radius: var(--cnt-raio-pq);
+  background: var(--cnt-cor-superficie);
+  color: var(--cnt-cor-texto-suave);
+  font-family: var(--cnt-fonte-mono);
+  font-size: var(--cnt-texto-xs);
+  line-height: 1.2;
+  pointer-events: none;
+  transition: opacity var(--cnt-duracao-rapida) var(--cnt-curva);
+}
+
+.cnt-topbar__busca-campo:focus ~ .cnt-topbar__atalho,
+.cnt-topbar__busca-campo:not(:placeholder-shown) ~ .cnt-topbar__atalho {
+  opacity: 0;
+}
+
+/* Botões que só existem em tela estreita: abrir e fechar a busca. */
+.cnt-topbar__busca-abrir,
+.cnt-topbar__busca-fechar {
+  display: none;
+}
+
+/* ---------- Ações ---------- */
+.cnt-topbar__acoes {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--cnt-espaco-1);
+}
+
+.cnt-topbar__grupo {
+  position: relative;
+  display: flex;
+}
+
+/* Contador no canto do ícone. Pulsa quando o número muda. */
+.cnt-topbar__selo {
+  position: absolute;
+  top: 0.25rem;
+  inset-inline-end: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  padding: 0 0.25rem;
+  border-radius: var(--cnt-raio-total);
+  background: var(--cnt-cor-perigo);
+  box-shadow: 0 0 0 2px var(--cnt-cor-superficie);
+  color: var(--cnt-cor-perigo-contraste);
+  font-size: 0.6875rem;
+  font-weight: var(--cnt-peso-forte);
+  line-height: 1;
+  pointer-events: none;
+}
+
+.cnt-topbar__selo--ponto {
+  top: 0.5rem;
+  inset-inline-end: 0.5rem;
+  min-width: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  padding: 0;
+}
+
+.cnt-topbar__selo.is-mudou {
+  animation: cnt-topbar-pulso 420ms var(--cnt-curva);
+}
+
+@keyframes cnt-topbar-pulso {
+  0% { transform: scale(0.5); }
+  55% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+/* Tema: o ícone mostra para onde o clique leva (sol no escuro, lua no claro). */
+.cnt-topbar__botao > .cnt-topbar__tema-sol {
+  display: none;
+}
+
+[data-cnt-tema="escuro"] .cnt-topbar__botao > .cnt-topbar__tema-sol {
+  display: block;
+}
+
+[data-cnt-tema="escuro"] .cnt-topbar__botao > .cnt-topbar__tema-lua {
+  display: none;
+}
+
+.cnt-topbar__tema-sol,
+.cnt-topbar__tema-lua {
+  animation: cnt-topbar-girar var(--cnt-duracao-base) var(--cnt-curva);
+}
+
+@keyframes cnt-topbar-girar {
+  from { opacity: 0; transform: rotate(-90deg) scale(0.6); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------- Usuário ---------- */
+.cnt-topbar__usuario {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cnt-espaco-2);
+  box-sizing: border-box;
+  height: var(--cnt-altura-controle-md);
+  margin-inline-start: var(--cnt-espaco-1);
+  padding: 0 var(--cnt-espaco-2) 0 var(--cnt-espaco-1);
+  border: 0;
+  border-radius: var(--cnt-raio-md);
+  background: transparent;
+  color: var(--cnt-cor-texto);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: background var(--cnt-duracao-rapida) var(--cnt-curva);
+}
+
+.cnt-topbar__usuario:hover,
+.cnt-topbar__usuario[aria-expanded="true"] {
+  background: var(--cnt-cor-superficie-2);
+}
+
+.cnt-topbar__avatar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  overflow: hidden;
+  border-radius: var(--cnt-raio-total);
+  background: var(--cnt-cor-primaria-suave);
+  color: var(--cnt-cor-primaria);
+  font-size: var(--cnt-texto-xs);
+  font-weight: var(--cnt-peso-forte);
+}
+
+.cnt-topbar__avatar-foto {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cnt-topbar__usuario-texto {
+  display: grid;
+  min-width: 0;
+  max-width: 10rem;
+}
+
+.cnt-topbar__usuario-nome,
+.cnt-topbar__usuario-detalhe {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cnt-topbar__usuario-nome {
+  font-weight: var(--cnt-peso-medio);
+}
+
+.cnt-topbar__usuario-detalhe {
+  color: var(--cnt-cor-texto-suave);
+  font-size: var(--cnt-texto-xs);
+}
+
+.cnt-topbar__seta {
+  display: inline-flex;
+  color: var(--cnt-cor-texto-suave);
+  transition: transform var(--cnt-duracao-base) var(--cnt-curva);
+}
+
+.cnt-topbar__seta > svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.cnt-topbar__usuario[aria-expanded="true"] .cnt-topbar__seta {
+  transform: rotate(180deg);
+}
+
+/* ---------- Menu suspenso ---------- */
+.cnt-topbar__menu {
+  position: absolute;
+  top: calc(100% + var(--cnt-espaco-2));
+  inset-inline-end: 0;
+  z-index: var(--cnt-z-flutuante);
+  box-sizing: border-box;
+  width: max-content;
+  min-width: 14rem;
+  max-width: min(20rem, calc(100vw - 1.5rem));
+  overflow: hidden;
+  border: 1px solid var(--cnt-cor-borda);
+  border-radius: var(--cnt-raio-gd);
+  background: var(--cnt-cor-superficie);
+  box-shadow: var(--cnt-sombra-3);
+  color: var(--cnt-cor-texto);
+  opacity: 0;
+  transform: translateY(-6px) scale(0.97);
+  transform-origin: top right;
+  visibility: hidden;
+  transition: opacity var(--cnt-duracao-base) var(--cnt-curva), transform var(--cnt-duracao-base) var(--cnt-curva), visibility 0s linear var(--cnt-duracao-base);
+}
+
+.cnt-topbar__menu.is-aberto {
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  transition: opacity var(--cnt-duracao-base) var(--cnt-curva), transform var(--cnt-duracao-base) var(--cnt-curva);
+}
+
+.cnt-topbar__menu-cabeca {
+  display: grid;
+  gap: 0.125rem;
+  padding: var(--cnt-espaco-3) var(--cnt-espaco-4);
+  border-block-end: 1px solid var(--cnt-cor-borda);
+}
+
+.cnt-topbar__menu-titulo {
+  font-weight: var(--cnt-peso-forte);
+}
+
+.cnt-topbar__menu-detalhe {
+  color: var(--cnt-cor-texto-suave);
+  font-size: var(--cnt-texto-xs);
+}
+
+.cnt-topbar__lista {
+  display: grid;
+  gap: 0.125rem;
+  max-height: 22rem;
+  margin: 0;
+  padding: var(--cnt-espaco-1);
+  overflow-y: auto;
+  list-style: none;
+}
+
+.cnt-topbar__opcao {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--cnt-espaco-3);
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--cnt-espaco-2) var(--cnt-espaco-3);
+  border: 0;
+  border-radius: var(--cnt-raio-md);
+  background: transparent;
+  color: var(--cnt-cor-texto);
+  font: inherit;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--cnt-duracao-rapida) var(--cnt-curva);
+}
+
+.cnt-topbar__opcao:hover,
+.cnt-topbar__opcao:focus {
+  background: var(--cnt-cor-superficie-2);
+}
+
+.cnt-topbar__opcao:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.cnt-topbar__opcao .cnt-topbar__icone {
+  color: var(--cnt-cor-texto-suave);
+}
+
+.cnt-topbar__opcao .cnt-topbar__icone > svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.cnt-topbar__opcao-texto {
+  display: grid;
+  flex: 1;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.cnt-topbar__opcao-descricao {
+  color: var(--cnt-cor-texto-suave);
+  font-size: var(--cnt-texto-xs);
+}
+
+/* Não lida: rótulo mais forte e ponto da marca à direita. */
+.cnt-topbar__opcao--novo .cnt-topbar__opcao-rotulo {
+  font-weight: var(--cnt-peso-forte);
+}
+
+.cnt-topbar__opcao--novo::after {
+  content: "";
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-block-start: 0.375rem;
+  border-radius: var(--cnt-raio-total);
+  background: var(--cnt-cor-primaria);
+}
+
+.cnt-topbar__opcao--perigo,
+.cnt-topbar__opcao--perigo .cnt-topbar__icone {
+  color: var(--cnt-cor-perigo);
+}
+
+.cnt-topbar__opcao--perigo:hover,
+.cnt-topbar__opcao--perigo:focus {
+  background: var(--cnt-cor-perigo-suave);
+}
+
+.cnt-topbar__separador {
+  height: 1px;
+  margin: var(--cnt-espaco-1) var(--cnt-espaco-2);
+  background: var(--cnt-cor-borda);
+}
+
+/* ---------- Tela estreita ---------- */
+@media (max-width: 767.98px) {
+  .cnt-topbar {
+    gap: var(--cnt-espaco-2);
+    padding: 0 var(--cnt-espaco-3);
+  }
+
+  .cnt-topbar__abrir-menu,
+  .cnt-topbar__busca-abrir {
+    display: inline-flex;
+  }
+
+  /* Com título, a trilha sai para sobrar espaço. */
+  .cnt-topbar__trilha:has(+ .cnt-topbar__titulo) {
+    display: none;
+  }
+
+  .cnt-topbar__busca {
+    display: none;
+  }
+
+  /* Busca aberta: cobre a barra inteira. */
+  .cnt-topbar.is-buscando .cnt-topbar__busca {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    width: auto;
+    padding: 0 var(--cnt-espaco-3);
+    background: var(--cnt-cor-superficie);
+    animation: cnt-topbar-entrar var(--cnt-duracao-base) var(--cnt-curva);
+  }
+
+  .cnt-topbar.is-buscando .cnt-topbar__busca-fechar {
+    display: inline-flex;
+  }
+
+  .cnt-topbar__busca-icone,
+  .cnt-topbar__atalho {
+    display: none;
+  }
+
+  .cnt-topbar__busca-campo {
+    padding: 0 var(--cnt-espaco-3);
+  }
+
+  .cnt-topbar__usuario {
+    margin: 0;
+    padding: 0 var(--cnt-espaco-1);
+  }
+
+  .cnt-topbar__usuario-texto,
+  .cnt-topbar__usuario .cnt-topbar__seta {
+    display: none;
+  }
+
+  /* O menu se alinha à barra, não ao botão: ocupa a largura toda com margem. */
+  .cnt-topbar__grupo {
+    position: static;
+  }
+
+  .cnt-topbar__menu {
+    top: calc(100% + var(--cnt-espaco-1));
+    inset-inline: var(--cnt-espaco-3);
+    width: auto;
+    min-width: 0;
+    max-width: none;
+  }
+}
+
+@keyframes cnt-topbar-entrar {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cnt-topbar,
+  .cnt-topbar__botao,
+  .cnt-topbar__botao > svg,
+  .cnt-topbar__busca-campo,
+  .cnt-topbar__usuario,
+  .cnt-topbar__seta,
+  .cnt-topbar__menu,
+  .cnt-topbar__menu.is-aberto,
+  .cnt-topbar__opcao {
+    transition: none;
+  }
+
+  .cnt-topbar__selo.is-mudou,
+  .cnt-topbar__tema-sol,
+  .cnt-topbar__tema-lua,
+  .cnt-topbar.is-buscando .cnt-topbar__busca {
+    animation: none;
+  }
+}

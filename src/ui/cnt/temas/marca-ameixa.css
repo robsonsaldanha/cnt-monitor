@@ -1,0 +1,17 @@
+/* Marca ameixa (roxo). Só troca a cor primária; vale no claro e no escuro.
+   Os dois atributos ficam no mesmo elemento. Carregue depois de claro.css e escuro.css. */
+[data-cnt-marca="ameixa"] {
+  --cnt-cor-primaria: #7c3aed;
+  --cnt-cor-primaria-hover: #6a2bd6;
+  --cnt-cor-primaria-ativa: #5822b3;
+  --cnt-cor-primaria-suave: #f0e9fd;
+  --cnt-cor-primaria-contraste: #ffffff;
+}
+
+[data-cnt-tema="escuro"][data-cnt-marca="ameixa"] {
+  --cnt-cor-primaria: #b79bff;
+  --cnt-cor-primaria-hover: #c8b2ff;
+  --cnt-cor-primaria-ativa: #d8c9ff;
+  --cnt-cor-primaria-suave: #2a1f47;
+  --cnt-cor-primaria-contraste: #160d2e;
+}

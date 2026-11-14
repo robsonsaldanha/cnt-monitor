@@ -1,0 +1,55 @@
+/* Botões, modelo suave: sem contorno, secundário em tom claro da marca, cantos maiores. */
+.cnt-botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cnt-espaco-2);
+  height: var(--cnt-altura-controle-md);
+  padding: 0 var(--cnt-espaco-4);
+  border: 0;
+  border-radius: var(--cnt-raio-gd);
+  background: transparent;
+  color: var(--cnt-cor-texto);
+  font-family: var(--cnt-fonte-base);
+  font-size: var(--cnt-texto-sm);
+  font-weight: var(--cnt-peso-forte);
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--cnt-duracao-rapida) var(--cnt-curva), box-shadow var(--cnt-duracao-rapida) var(--cnt-curva);
+}
+
+.cnt-botao:focus-visible {
+  outline: var(--cnt-foco-largura) solid var(--cnt-cor-primaria);
+  outline-offset: var(--cnt-foco-distancia);
+}
+
+.cnt-botao__icone { flex: none; width: 1rem; height: 1rem; }
+
+.cnt-botao--primario { background: var(--cnt-cor-primaria); color: var(--cnt-cor-primaria-contraste); }
+.cnt-botao--primario:hover { background: var(--cnt-cor-primaria-hover); }
+.cnt-botao--primario:active { background: var(--cnt-cor-primaria-ativa); }
+
+.cnt-botao--secundario { background: var(--cnt-cor-primaria-suave); color: var(--cnt-cor-primaria); }
+.cnt-botao--secundario:hover { box-shadow: inset 0 0 0 1px var(--cnt-cor-primaria); }
+.cnt-botao--secundario:active { box-shadow: inset 0 0 0 2px var(--cnt-cor-primaria); }
+
+.cnt-botao--discreto { color: var(--cnt-cor-texto-suave); }
+.cnt-botao--discreto:hover { background: var(--cnt-cor-superficie-2); color: var(--cnt-cor-texto); }
+.cnt-botao--discreto:active { box-shadow: inset 0 0 0 1px var(--cnt-cor-borda-forte); }
+
+.cnt-botao--perigo { background: var(--cnt-cor-perigo-suave); color: var(--cnt-cor-perigo); }
+.cnt-botao--perigo:hover { box-shadow: inset 0 0 0 1px var(--cnt-cor-perigo); }
+.cnt-botao--perigo:active { box-shadow: inset 0 0 0 2px var(--cnt-cor-perigo); }
+
+.cnt-botao--pq { height: var(--cnt-altura-controle-pq); padding: 0 var(--cnt-espaco-3); border-radius: var(--cnt-raio-md); font-size: var(--cnt-texto-xs); }
+.cnt-botao--so-icone { width: var(--cnt-altura-controle-md); padding: 0; }
+
+.cnt-botao:disabled,
+.cnt-botao[aria-disabled="true"] {
+  background: var(--cnt-cor-superficie-2);
+  box-shadow: none;
+  color: var(--cnt-cor-texto-desativado);
+  cursor: not-allowed;
+}

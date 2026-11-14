@@ -1,0 +1,91 @@
+/* Filtros, modelo painel: recolhível, campos com rótulo em grade e botão Aplicar. */
+.cnt-filtro {
+  border: 1px solid var(--cnt-cor-borda);
+  border-radius: var(--cnt-raio-gd);
+  background: var(--cnt-cor-superficie);
+  color: var(--cnt-cor-texto);
+  font-family: var(--cnt-fonte-base);
+}
+
+.cnt-filtro__topo {
+  display: flex;
+  align-items: center;
+  gap: var(--cnt-espaco-2);
+  padding: var(--cnt-espaco-3) var(--cnt-espaco-4);
+  border-radius: var(--cnt-raio-gd);
+  font-size: var(--cnt-texto-sm);
+  font-weight: var(--cnt-peso-forte);
+  list-style: none;
+  cursor: pointer;
+}
+
+.cnt-filtro__topo::-webkit-details-marker { display: none; }
+.cnt-filtro__topo:hover { background: var(--cnt-cor-superficie-2); }
+.cnt-filtro__topo:focus-visible { outline: var(--cnt-foco-largura) solid var(--cnt-cor-primaria); outline-offset: calc(var(--cnt-foco-largura) * -1); }
+
+.cnt-filtro__seta { flex: none; width: 1rem; height: 1rem; color: var(--cnt-cor-texto-suave); transition: transform var(--cnt-duracao-base) var(--cnt-curva); }
+.cnt-filtro[open] .cnt-filtro__seta { transform: rotate(90deg); }
+
+.cnt-filtro__ativos { margin-left: auto; padding: 0 var(--cnt-espaco-2); border-radius: var(--cnt-raio-total); background: var(--cnt-cor-primaria-suave); color: var(--cnt-cor-primaria); font-size: var(--cnt-texto-xs); }
+
+.cnt-filtro__corpo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  align-items: end;
+  gap: var(--cnt-espaco-3);
+  padding: var(--cnt-espaco-4);
+  border-top: 1px solid var(--cnt-cor-borda);
+}
+
+.cnt-filtro__campo { display: grid; gap: var(--cnt-espaco-1); }
+.cnt-filtro__rotulo { font-size: var(--cnt-texto-xs); font-weight: var(--cnt-peso-medio); color: var(--cnt-cor-texto-suave); }
+
+.cnt-filtro__controle {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--cnt-altura-controle-md);
+  padding: 0 var(--cnt-espaco-3);
+  border: 1px solid var(--cnt-cor-borda-forte);
+  border-radius: var(--cnt-raio-md);
+  background-color: var(--cnt-cor-superficie);
+  color: var(--cnt-cor-texto);
+  font-family: inherit;
+  font-size: var(--cnt-texto-sm);
+}
+
+.cnt-filtro__controle::placeholder { color: var(--cnt-cor-texto-suave); opacity: 1; }
+.cnt-filtro__controle:hover { border-color: var(--cnt-cor-texto); }
+.cnt-filtro__controle:focus-visible { outline: var(--cnt-foco-largura) solid var(--cnt-cor-primaria); outline-offset: 0; border-color: var(--cnt-cor-primaria); }
+
+/* Seta do select desenhada com gradiente para usar o token de cor. */
+.cnt-filtro__controle--select {
+  appearance: none;
+  padding-right: var(--cnt-espaco-6);
+  background-image: linear-gradient(45deg, transparent 50%, var(--cnt-cor-texto-suave) 50%), linear-gradient(135deg, var(--cnt-cor-texto-suave) 50%, transparent 50%);
+  background-position: right 1.0625rem center, right 0.75rem center;
+  background-size: 0.3125rem 0.3125rem;
+  background-repeat: no-repeat;
+}
+
+.cnt-filtro__acoes { display: flex; gap: var(--cnt-espaco-2); }
+
+.cnt-filtro__botao {
+  height: var(--cnt-altura-controle-md);
+  padding: 0 var(--cnt-espaco-4);
+  border: 1px solid var(--cnt-cor-borda-forte);
+  border-radius: var(--cnt-raio-md);
+  background: var(--cnt-cor-superficie);
+  color: var(--cnt-cor-texto);
+  font-family: inherit;
+  font-size: var(--cnt-texto-sm);
+  font-weight: var(--cnt-peso-medio);
+  cursor: pointer;
+}
+
+.cnt-filtro__botao:hover { background: var(--cnt-cor-superficie-2); }
+.cnt-filtro__botao--aplicar { border-color: var(--cnt-cor-primaria); background: var(--cnt-cor-primaria); color: var(--cnt-cor-primaria-contraste); }
+.cnt-filtro__botao--aplicar:hover { background: var(--cnt-cor-primaria-hover); }
+.cnt-filtro__botao:focus-visible { outline: var(--cnt-foco-largura) solid var(--cnt-cor-primaria); outline-offset: var(--cnt-foco-distancia); }
+
+/* Lista aberta do select: fundo e texto dos tokens. Sem isto o navegador pode abrir a lista clara com o texto claro do tema escuro. */
+.cnt-filtro__controle--select option { background-color: var(--cnt-cor-superficie); color: var(--cnt-cor-texto); }

@@ -1,0 +1,9 @@
+/* Tema de estilo "Relevo". Gerado por _escolhas/estilos.mjs; não edite à mão. */
+@import "../base-botoes/modelo-relevo/nucleo/botoes.css";
+@import "../base-campos/modelo-rotulo-embutido/nucleo/campos.css";
+@import "../base-filtros/modelo-painel/nucleo/filtros.css";
+@import "../base-selos/modelo-solido/nucleo/selos.css";
+@import "../base-cartoes/modelo-elevado/nucleo/cartoes.css";
+@import "../base-tabelas/modelo-blocos/nucleo/tabelas.css";
+@import "../base-abas/modelo-caixa/nucleo/abas.css";
+@import "../base-avisos/modelo-faixa/nucleo/avisos.css";

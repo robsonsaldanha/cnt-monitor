@@ -1,0 +1,23 @@
+/* Selos, modelo sólido: fundo na cor da situação, texto em contraste, cantos pequenos. */
+.cnt-selo {
+  --cnt-selo-fundo: var(--cnt-cor-texto-suave);
+  --cnt-selo-cor: var(--cnt-cor-superficie);
+  display: inline-flex;
+  align-items: center;
+  height: 1.5rem;
+  padding: 0 var(--cnt-espaco-2);
+  border-radius: var(--cnt-raio-pq);
+  background: var(--cnt-selo-fundo);
+  color: var(--cnt-selo-cor);
+  font-family: var(--cnt-fonte-base);
+  font-size: var(--cnt-texto-xs);
+  font-weight: var(--cnt-peso-forte);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.cnt-selo--sucesso { --cnt-selo-fundo: var(--cnt-cor-sucesso); --cnt-selo-cor: var(--cnt-cor-sucesso-contraste); }
+.cnt-selo--alerta { --cnt-selo-fundo: var(--cnt-cor-alerta); --cnt-selo-cor: var(--cnt-cor-alerta-contraste); }
+.cnt-selo--perigo { --cnt-selo-fundo: var(--cnt-cor-perigo); --cnt-selo-cor: var(--cnt-cor-perigo-contraste); }
+.cnt-selo--info { --cnt-selo-fundo: var(--cnt-cor-info); --cnt-selo-cor: var(--cnt-cor-info-contraste); }
+.cnt-selo--primario { --cnt-selo-fundo: var(--cnt-cor-primaria); --cnt-selo-cor: var(--cnt-cor-primaria-contraste); }

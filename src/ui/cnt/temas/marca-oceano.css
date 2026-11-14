@@ -1,0 +1,17 @@
+/* Marca oceano (verde-azulado). Só troca a cor primária; vale no claro e no escuro.
+   Os dois atributos ficam no mesmo elemento. Carregue depois de claro.css e escuro.css. */
+[data-cnt-marca="oceano"] {
+  --cnt-cor-primaria: #0f766e;
+  --cnt-cor-primaria-hover: #0c625b;
+  --cnt-cor-primaria-ativa: #094f49;
+  --cnt-cor-primaria-suave: #dff3f0;
+  --cnt-cor-primaria-contraste: #ffffff;
+}
+
+[data-cnt-tema="escuro"][data-cnt-marca="oceano"] {
+  --cnt-cor-primaria: #4fd1c5;
+  --cnt-cor-primaria-hover: #6fdcd2;
+  --cnt-cor-primaria-ativa: #8fe6de;
+  --cnt-cor-primaria-suave: #0f2f2c;
+  --cnt-cor-primaria-contraste: #06201d;
+}

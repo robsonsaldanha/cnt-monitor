@@ -1,0 +1,23 @@
+/* Selos, modelo contorno: borda e texto na cor da situação, sobre a superfície. */
+.cnt-selo {
+  --cnt-selo-cor: var(--cnt-cor-texto-suave);
+  display: inline-flex;
+  align-items: center;
+  height: 1.5rem;
+  padding: 0 var(--cnt-espaco-2);
+  border: 1px solid var(--cnt-selo-cor);
+  border-radius: var(--cnt-raio-pq);
+  background: var(--cnt-cor-superficie);
+  color: var(--cnt-selo-cor);
+  font-family: var(--cnt-fonte-base);
+  font-size: var(--cnt-texto-xs);
+  font-weight: var(--cnt-peso-forte);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.cnt-selo--sucesso { --cnt-selo-cor: var(--cnt-cor-sucesso); }
+.cnt-selo--alerta { --cnt-selo-cor: var(--cnt-cor-alerta); }
+.cnt-selo--perigo { --cnt-selo-cor: var(--cnt-cor-perigo); }
+.cnt-selo--info { --cnt-selo-cor: var(--cnt-cor-info); }
+.cnt-selo--primario { --cnt-selo-cor: var(--cnt-cor-primaria); }

@@ -42,6 +42,7 @@ PADRAO = {
     "iniciar_com_windows": True,
     "abrir_janela_ao_iniciar": False,
     "tema": "auto",
+    "estilo": "personalizado",   # tema de estilo da base de front-end CNT (ui/cnt/_estilos)
     "tela_inicial": "ajuda",     # tela que abre primeiro (Acesso remoto)
     # acesso remoto: como o técnico vê vários monitores e a área de transferência compartilhada
     "remoto_layout": "lado",          # lado a lado | um (um ou outro) | janelas (uma janela por monitor)
@@ -192,6 +193,7 @@ PADRAO = {
 OPCOES = {
     "intervalo_ms": [250, 500, 1000, 2000, 5000],
     "tema": ["auto", "escuro", "claro"],
+    "estilo": ["personalizado", "classico", "suave", "relevo"],
     "remoto_layout": ["lado", "um", "janelas"],
     "remoto_area": ["ambos", "para_atendido", "para_tecnico", "desligada"],
     "tela_inicial": ["ajuda", "geral", "programas", "processos", "capturas", "hardware", "rede", "historico", "vps",
