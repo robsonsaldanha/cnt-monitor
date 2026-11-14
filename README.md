@@ -95,7 +95,7 @@ nativo injetado no Explorer.
 ### Acesso remoto
 
 - Tela inicial do programa (dá para trocar nas Configurações). Cada PC mostra um **ID de 9 números** e uma
-  **senha temporária**, com botões para copiar como texto (o principal) ou como imagem.
+  **senha temporária**, com o botão **Copiar informações** para enviar os dados por texto.
 - O técnico digita os dois e quem está no computador recebe um **pop-up na frente das outras janelas** para
   **Aceitar** ou **Recusar**, com um código de conferência.
 - Vários atendimentos ao mesmo tempo, cada um numa janela que abre ocupando a tela. A tela remota fica embaixo de uma
