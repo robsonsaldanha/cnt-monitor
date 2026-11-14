@@ -29,7 +29,13 @@
   --cnt-altura-controle-pq:1.75rem; --cnt-altura-controle-md:2.125rem; --cnt-altura-controle-gd:2.625rem;
   --cnt-espaco-3:.625rem; --cnt-espaco-4:.875rem; --cnt-espaco-5:1.25rem; --cnt-espaco-6:1.5rem;
 }
-.cnt-sidebar{--cnt-altura-controle-md:1.875rem}
+.cnt-sidebar{--cnt-altura-controle-md:1.625rem}
+/* Menu compacto: 22 itens + 6 seções cabem sem rolagem numa janela de ~900 px de altura. */
+.cnt-sidebar__nav{padding:var(--cnt-espaco-2)}
+.cnt-sidebar__lista{gap:0}
+.cnt-sidebar__secao{margin:var(--cnt-espaco-2) 0 .125rem}
+.cnt-sidebar__secao:first-child{margin-block-start:0}
+.cnt-sidebar__rodape{padding:var(--cnt-espaco-2) var(--cnt-espaco-3)}
 /* Topo da sidebar = altura da topbar (logo 1.75rem + 2×espaço-1 + 2×espaço-2 + borda), para as bordas se encontrarem. */
 .cnt-sidebar__topo{padding:var(--cnt-espaco-2);box-sizing:border-box;min-height:calc(3.25rem + 1px)}
 @media (min-width:768px){.cnt-sidebar:not(.cnt-sidebar--compacta) .cnt-sidebar__topo{height:calc(3.25rem + 1px)}}
@@ -246,18 +252,19 @@ input[type=checkbox],input[type=radio]{accent-color:var(--cnt-cor-primaria)}
 .atu-ok{color:var(--cnt-cor-sucesso)}
 .aj-vivo{background:var(--cnt-cor-perigo-suave);border:1px solid var(--cnt-cor-perigo);border-radius:var(--cnt-raio-md);padding:14px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:space-between}
 .aj-arq{margin-top:16px} .aj-arq td small{color:var(--cnt-cor-texto-suave)}
-.aj-home{grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start}
-.aj-meu,.aj-outro{padding:18px;gap:10px}
+.aj-home{grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:stretch}
+.aj-meu,.aj-outro{padding:18px;gap:10px;text-align:center;align-items:center}
+#ajTeste{align-self:stretch;text-align:left}
 .aj-meu>b,.aj-outro>b{font-size:var(--cnt-texto-lg);font-weight:700;line-height:1.2}
-.aj-cred{display:flex;gap:28px;flex-wrap:wrap}
+.aj-cred{display:flex;gap:28px;flex-wrap:wrap;justify-content:center}
 .aj-cred small{display:block;color:var(--cnt-cor-texto-suave);font-weight:600;text-transform:uppercase;letter-spacing:.6px}
 .aj-num{font:700 34px/1.15 var(--cnt-fonte-mono);letter-spacing:1px;user-select:all}
 .aj-sit{margin:0;font-weight:600}.aj-sit.ok{color:var(--cnt-cor-sucesso)}.aj-sit.fora{color:var(--cnt-cor-perigo)}
-.aj-bts{display:flex;gap:8px;flex-wrap:wrap}
+.aj-bts{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:auto}
 .aj-teste{margin:0;padding:0;list-style:none;display:grid;gap:4px}.aj-teste .ok{color:var(--cnt-cor-sucesso)}.aj-teste .fora{color:var(--cnt-cor-perigo)}
-.aj-campo{display:flex;flex-direction:column;gap:4px;font-weight:600;max-width:260px}
-.aj-campo input.cnt-campo__controle{font:600 20px var(--cnt-fonte-mono);letter-spacing:1px}
-.aj-outro .cnt-botao--primario{align-self:flex-start}
+.aj-campo{display:flex;flex-direction:column;gap:4px;width:100%;max-width:260px;color:var(--cnt-cor-texto-suave);font-size:var(--cnt-texto-xs);font-weight:600;text-transform:uppercase;letter-spacing:.6px}
+.aj-campo input.cnt-campo__controle{font:600 20px var(--cnt-fonte-mono);letter-spacing:1px;text-align:center}
+.aj-outro .cnt-botao--primario{margin-top:auto}
 .so-sessao .app{display:block}.so-sessao .cnt-sidebar,.so-sessao .cnt-sidebar__fundo,.so-sessao .cnt-topbar,.so-sessao #v-ajuda>h1,.so-sessao #v-ajuda>.sub{display:none}
 .so-sessao main,.so-sessao .conteudo{padding:8px}
 /* sessão do técnico: moldura com barra em cima e a tela remota embaixo, sem nada por cima dela.
@@ -865,7 +872,7 @@ function Tabela(el, cols, opts={}){
 }
 
 /* =================== gráficos =================== */
-function prep(cv,h){ const dpr=devicePixelRatio||1, w=cv.clientWidth; h=h||+cv.getAttribute('height'); cv.style.height=h+'px'; cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr); const c=cv.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0); return {c,w,h}; }
+function prep(cv,h){ const dpr=devicePixelRatio||1, w=cv.clientWidth; if(!cv.dataset.h) cv.dataset.h=cv.getAttribute('height')||150; h=h||+cv.dataset.h; /* cv.height abaixo sobrescreve o atributo: a altura CSS vem da original, senão cresce a cada zoom */ cv.style.height=h+'px'; cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr); const c=cv.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0); return {c,w,h}; }
 function spark(cv, vals, max, cor){ if(!cv||!cv.clientWidth) return; const {c,w,h}=prep(cv,36); c.clearRect(0,0,w,h); vals=vals.filter(v=>v!=null); if(vals.length<2) return;
   const mx=max||Math.max(1,...vals)*1.15, X=i=>i/(vals.length-1)*w, Y=v=>h-2-(Math.min(v,mx)/mx)*(h-4);
   c.beginPath(); vals.forEach((v,i)=>i?c.lineTo(X(i),Y(v)):c.moveTo(X(i),Y(v))); c.strokeStyle=cor; c.lineWidth=1.6; c.stroke(); c.lineTo(w,h); c.lineTo(0,h); c.closePath(); c.globalAlpha=.13; c.fillStyle=cor; c.fill(); c.globalAlpha=1; }
@@ -947,9 +954,8 @@ function ajRender(){ const el=$('#ajCorpo'); ajTag(); if(AJU.modo==='pedir') ret
     <div class="cnt-cartao aj-meu"><b>Este computador</b><p class="mut2">Passe o ID e a senha para quem vai ajudar você. O acesso só começa depois que você permitir, e você encerra quando quiser.</p>
       <div class="aj-cred"><div><small>ID</small><div class="aj-num" id="ajMeuId">…</div></div><div><small>Senha</small><div class="aj-num" id="ajMeuSenha">…</div></div></div>
       <p class="aj-sit" id="ajSit" role="status"></p>
-      <div class="aj-bts"><button class="cnt-botao cnt-botao--pq cnt-botao--primario" id="ajCopTxt">Copiar como texto</button><button class="cnt-botao cnt-botao--pq cnt-botao--secundario" id="ajCopImg">Copiar como imagem</button></div>
       <p class="mut">A senha muda sozinha depois de cada acesso, e o ID quando o computador reinicia.</p>
-      <div class="aj-bts"><button class="cnt-botao cnt-botao--pq cnt-botao--secundario" id="ajTestar">Testar conexão</button></div><div id="ajTeste" role="status"></div></div>
+      <div class="aj-bts"><button class="cnt-botao cnt-botao--pq cnt-botao--primario" id="ajCopTxt">Copiar informações</button><button class="cnt-botao cnt-botao--pq cnt-botao--secundario" id="ajTestar">Testar conexão</button></div><div id="ajTeste" role="status"></div></div>
     <div class="cnt-cartao aj-outro"><b>Acessar outro computador</b><p class="mut2">Digite o ID e a senha que a pessoa passou. Cada acesso abre numa janela própria: dá para atender vários computadores ao mesmo tempo.</p>
       <label class="aj-campo">ID<input id="ajIdT" inputmode="numeric" placeholder="000 000 000" autocomplete="off" maxlength="13" class="cnt-campo__controle"></label>
       <label class="aj-campo">Senha<input id="ajSenhaId" placeholder="XXXX-XXXX" autocomplete="off" spellcheck="false" maxlength="12" class="cnt-campo__controle"></label>
@@ -958,7 +964,7 @@ function ajRender(){ const el=$('#ajCorpo'); ajTag(); if(AJU.modo==='pedir') ret
     <div class="aj-arq" id="ajArq"></div>`;
   ajMeuAtualizar(); ajArquivos();
   $('#ajCopTxt').onclick=()=>{ if(AJU.meu) ajCopiar(AJU.meu.texto); };
-  $('#ajCopImg').onclick=ajCopiarImagem; $('#ajTestar').onclick=ajTestar;
+  $('#ajTestar').onclick=ajTestar;
   const id=$('#ajIdT'), sn=$('#ajSenhaId'), go=()=>ajAbrirSessao(id.value, sn.value);
   id.oninput=()=>{ const d=id.value.replace(/\D/g,'').slice(0,9); id.value=d.replace(/(\d{3})(?=\d)/g,'$1 '); };
   sn.oninput=()=>{ const d=sn.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8); sn.value=d.length>4?d.slice(0,4)+'-'+d.slice(4):d; };
@@ -973,16 +979,6 @@ async function ajTestar(){ const b=$('#ajTestar'), el=$('#ajTeste'); if(!b||b.di
 // histórico do que técnicos mandaram para este computador ou levaram dele (90 dias, gravado pelo serviço)
 async function ajArquivos(){ const r=await ajAcao('ajuda_arquivos'), el=$('#ajArq'); if(!el||!r.ok||!r.dados) return; const l=r.dados.itens||[];
   el.innerHTML=`<h2 class="secao" style="margin-bottom:8px">Arquivos transferidos no acesso remoto</h2><div class="cnt-cartao">${l.length?`<div class="tw" style="max-height:360px"><table class="cnt-tabela"><thead><tr class="cnt-tabela__linha"><th class="cnt-tabela__cab">Quando</th><th class="cnt-tabela__cab">Sentido</th><th class="cnt-tabela__cab">Arquivo</th><th class="cnt-tabela__cab">Tamanho</th><th class="cnt-tabela__cab">Técnico</th></tr></thead><tbody>${l.map(x=>`<tr class="cnt-tabela__linha"><td class="cnt-tabela__cel">${esc(quando(x.ts))}</td><td class="cnt-tabela__cel">${x.sentido==='recebido'?'Recebido do técnico':'Levado pelo técnico'}</td><td title="${esc(x.caminho)}${x.sha256?' · SHA-256 '+esc(x.sha256):''}" class="cnt-tabela__cel">${esc(x.nome)}<br><small>${esc(x.caminho)}</small></td><td class="cnt-tabela__cel">${fB(x.tamanho)}</td><td class="cnt-tabela__cel">${esc(x.tecnico||'—')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="vazio">Nenhum arquivo transferido nos últimos 90 dias.</div>'}</div>`; }
-async function ajCopiarImagem(){ const m=AJU.meu; if(!m||!m.id) return;
-  const c=document.createElement('canvas'); c.width=720; c.height=340; const g=c.getContext('2d');
-  const f=g.createLinearGradient(0,0,720,340); f.addColorStop(0,'#0b3150'); f.addColorStop(1,'#061a2b'); g.fillStyle=f; g.fillRect(0,0,720,340);
-  const logo=new Image(); logo.src='/estatico/cnt-logo.png'; try{ await logo.decode(); g.drawImage(logo,40,34,117,40); }catch(_){ }
-  g.fillStyle='#eef3f8'; g.font='600 26px system-ui, "Segoe UI", sans-serif'; g.fillText('Monitor · acesso remoto',172,64);
-  g.fillStyle='#a9b8c7'; g.font='600 20px system-ui, "Segoe UI", sans-serif'; g.fillText('ID',40,136); g.fillText('Senha',40,240);
-  g.fillStyle='#f4d79c'; g.font='700 54px Consolas, "Cascadia Mono", monospace'; g.fillText(m.id,40,190); g.fillText(m.senha,40,294);
-  const png=await new Promise(ok=>c.toBlob(ok,'image/png'));
-  try{ await navigator.clipboard.write([new ClipboardItem({'image/png':png,'text/plain':new Blob([m.texto],{type:'text/plain'})})]); toast('Imagem copiada. Cole na conversa com Ctrl+V.'); }
-  catch(_){ toast('Não consegui copiar a imagem. Use “Copiar como texto”.',1); } }
 const AJU_JANELAS=new Map();
 function ajAbrirSessao(id, senha){ id=String(id||'').replace(/\D/g,''); senha=String(senha||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
   if(id.length!==9) return toast('O ID tem 9 números.',1); if(senha.length!==8) return toast('A senha tem 8 letras e números.',1);
