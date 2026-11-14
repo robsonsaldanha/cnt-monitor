@@ -24,6 +24,12 @@ h1 em{font-style:normal;color:var(--ouro2)}
 .btn:hover{filter:brightness(1.06)}
 .btn:focus-visible{outline:3px solid #fff;outline-offset:3px}
 .nota{color:var(--mut);font-size:14px;margin-top:10px}
+.so .nota{margin:10px 0 0}
+.dica{color:var(--ouro2);font-size:15px;font-weight:600;margin:0 0 10px}
+.dica:empty{display:none}
+.tambem{color:var(--mut);font-size:15px;margin:30px 0 8px;padding-top:18px;border-top:1px solid rgba(255,255,255,.08);max-width:680px}
+.outro .btn{padding:10px 18px;font-size:16px;color:var(--ouro2);background:transparent;border:1px solid rgba(244,215,156,.45);box-shadow:none}
+.outro .btn:hover{filter:none;background:rgba(244,215,156,.08)}
 .grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:56px}
 .cartao{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:20px}
 .cartao b{display:block;font:700 19px Barlow,sans-serif;color:var(--ouro2);margin-bottom:6px}
@@ -42,11 +48,41 @@ footer a{color:var(--ouro2)}
 
   <h1>Suporte remoto simples e o seu computador <em>sob controle</em>.</h1>
   <p class="lead">O CNT Monitor mostra o que pesa no computador (Windows ou Linux), otimiza com segurança, captura e grava a tela e deixa um técnico ajudar você com um ID e uma senha, direto de um computador ao outro.</p>
-  <a class="btn" href="/baixar?so=windows">Baixar o CNT Monitor para Windows</a>
-  <a class="btn" href="/baixar?so=linux">Baixar para Linux (.deb)</a>
-  <p class="nota">Windows 10 e 11, 64 bits: a instalação pede permissão de administrador.<br>
-  Linux: Ubuntu 22.04 ou mais novo, Debian 12+ e Mint 21+, 64 bits. Instale com <code>sudo apt install ./cnt-monitor_*_amd64.deb</code>.
-  O acesso remoto funciona entre Windows e Linux, nos dois sentidos.</p>
+  <div id="baixar">
+    <p class="dica" id="dica" aria-live="polite"></p>
+    <div class="so" id="so-windows">
+      <a class="btn" href="/baixar?so=windows">Baixar o CNT Monitor para Windows</a>
+      <p class="nota">Windows 10 e 11, 64 bits: a instalação pede permissão de administrador.</p>
+    </div>
+    <p class="tambem">Também disponível para:</p>
+    <div class="so outro" id="so-linux">
+      <a class="btn" href="/baixar?so=linux">Baixar o CNT Monitor para Linux (.deb)</a>
+      <p class="nota">Ubuntu 22.04 ou mais novo, Debian 12+ e Mint 21+, 64 bits. Instale com <code>sudo apt install ./cnt-monitor_*_amd64.deb</code>.</p>
+    </div>
+  </div>
+  <p class="nota">O acesso remoto funciona entre Windows e Linux, nos dois sentidos.</p>
+  <script>
+  // Mesma regra do /baixar (encontro.js, sistemaDe): Linux de computador fica em primeiro; o resto vê o Windows em primeiro.
+  (function () {
+    var d = navigator.userAgentData, plat = (d && d.platform) || '', ua = navigator.userAgent;
+    var celular = /Android|iPhone|iPad|iPod/i.test(plat + ' ' + ua) || (d && d.mobile);
+    var mac = /mac/i.test(plat) || /Macintosh/i.test(ua);
+    var linux = !celular && !/Android|CrOS|Chrome OS/i.test(plat + ' ' + ua) && /Linux|X11|Ubuntu|Debian/i.test(plat || ua);
+    var windows = !celular && /Windows/i.test(plat || ua);
+    var dica = document.getElementById('dica');
+    if (linux) {
+      var w = document.getElementById('so-windows'), l = document.getElementById('so-linux'), t = document.querySelector('.tambem');
+      l.parentNode.insertBefore(l, dica.nextSibling);
+      t.parentNode.insertBefore(w, t.nextSibling);
+      l.classList.remove('outro'); w.classList.add('outro');
+      dica.textContent = 'Recomendado para o seu sistema: Linux';
+    } else if (windows) {
+      dica.textContent = 'Recomendado para o seu sistema: Windows';
+    } else if (celular || mac) {
+      dica.textContent = 'O CNT Monitor é para computadores com Windows ou Linux. Abra esta página no computador que vai usá-lo.';
+    }
+  })();
+  </script>
 
   <div class="grade">
     <div class="cartao"><b>Acesso remoto</b><p>ID e senha temporários, aceite de quem está no computador e conexão criptografada de ponta a ponta.</p></div>
