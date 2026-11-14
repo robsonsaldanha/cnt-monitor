@@ -1,10 +1,10 @@
 # Estado do projeto: CNT Monitor
 
-Atualizado em 2026-11-13. As funcionalidades completas estão no [README](../README.md); a API está em [API.md](API.md).
+Atualizado em 2026-11-14. As funcionalidades completas estão no [README](../README.md); a API está em [API.md](API.md).
 
 ## Versão atual
 
-- **3.2.0** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.2.0`. A release no GitHub traz
+- **3.3.0** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.3.0`. A release no GitHub traz
   `CNTMonitor-Setup-<versão>.exe`, `MonitorDoPC-Setup-<versão>.exe` (nome antigo, para instalações antigas) e
   `cnt-monitor_<versão>_amd64.deb`.
 - Repositório: `robsonsaldanha/cnt-monitor` (público, GPL v3 ou posterior).
@@ -22,6 +22,7 @@ Atualizado em 2026-11-13. As funcionalidades completas estão no [README](../REA
 | 3.0.0 | Versão Linux nativa (.deb para Ubuntu 22.04+, Debian 12+, Mint 21+; X11 e Wayland) |
 | 3.1.0 | Página Personalizar: barra e relógio do Windows, ícones ao lado do relógio, tema e papel automáticos, perfis, lançador rápido, renomear em massa e remapear teclas (tudo em Python) |
 | 3.2.0 | Acesso remoto: retransmissor também por TCP, credencial renovada sozinha, botão "Testar conexão", selo Direta/Retransmitida e Ctrl+C que não se perde; captura: partes das janelas (UI Automation) e Ctrl+C/Enter/Esc na seleção; Linux: ícone por AppIndicator/GTK (sem travar a tela) e textos "com o Linux" |
+| 3.3.0 | Interface com a base de front-end CNT (`src/ui/cnt`): sidebar recolhível, topbar, componentes e temas da base, opção "Estilo da interface"; relatório, sessão remota, login pela rede e site da VPS no mesmo visual; fonte Barlow removida |
 
 ## Como publicar uma versão
 
