@@ -4,7 +4,7 @@ Atualizado em 2026-11-14. As funcionalidades completas estão no [README](../REA
 
 ## Versão atual
 
-- **3.3.0** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.3.0`. A release no GitHub traz
+- **3.4.0** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.4.0`. A release no GitHub traz
   `CNTMonitor-Setup-<versão>.exe`, `MonitorDoPC-Setup-<versão>.exe` (nome antigo, para instalações antigas) e
   `cnt-monitor_<versão>_amd64.deb`.
 - Repositório: `robsonsaldanha/cnt-monitor` (público, GPL v3 ou posterior).
@@ -23,6 +23,7 @@ Atualizado em 2026-11-14. As funcionalidades completas estão no [README](../REA
 | 3.1.0 | Página Personalizar: barra e relógio do Windows, ícones ao lado do relógio, tema e papel automáticos, perfis, lançador rápido, renomear em massa e remapear teclas (tudo em Python) |
 | 3.2.0 | Acesso remoto: retransmissor também por TCP, credencial renovada sozinha, botão "Testar conexão", selo Direta/Retransmitida e Ctrl+C que não se perde; captura: partes das janelas (UI Automation) e Ctrl+C/Enter/Esc na seleção; Linux: ícone por AppIndicator/GTK (sem travar a tela) e textos "com o Linux" |
 | 3.3.0 | Interface com a base de front-end CNT (`src/ui/cnt`): sidebar recolhível, topbar, componentes e temas da base, opção "Estilo da interface"; relatório, sessão remota, login pela rede e site da VPS no mesmo visual; fonte Barlow removida |
+| 3.4.0 | Interface mais compacta (texto, controles, menu e topbar menores); visão em fluxo (editor de fluxos da base, só leitura) em Alertas, Regras por programa e Fluxos de trabalho da Captura |
 
 ## Como publicar uma versão
 

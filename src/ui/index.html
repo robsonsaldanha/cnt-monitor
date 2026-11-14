@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="/cnt/sidebar.css">
 <link rel="stylesheet" href="/cnt/topbar.css">
 <link rel="stylesheet" href="/cnt/modal.css">
+<link rel="stylesheet" href="/cnt/fluxo.css">
 <script src="/cnt/_estilos/estilos.js"></script>
 <script src="/cnt/tema.js"></script>
 <style>
@@ -21,6 +22,26 @@
   /* Paleta das séries dos gráficos (dado, não tema): tons que se distinguem entre si nos dois temas. */
   --c1:#2456d6; --c2:#c46a12; --c3:#17794a; --c4:#a83a86; --c5:#8a7400; --c6:#0b6b99; --c7:#6b52d6; --c8:#c0282d;
 }
+/* Densidade do CNT Monitor: a base é pensada para telas com pouco dado; aqui cabe mais por tela. */
+:root{
+  --cnt-texto-sm:.8125rem; --cnt-texto-md:.9375rem; --cnt-texto-lg:1.0625rem; --cnt-texto-xl:1.25rem;
+  --cnt-texto-2xl:1.5rem; --cnt-texto-3xl:1.875rem;
+  --cnt-altura-controle-pq:1.75rem; --cnt-altura-controle-md:2.125rem; --cnt-altura-controle-gd:2.625rem;
+  --cnt-espaco-3:.625rem; --cnt-espaco-4:.875rem; --cnt-espaco-5:1.25rem; --cnt-espaco-6:1.5rem;
+}
+.cnt-sidebar{--cnt-altura-controle-md:1.875rem}
+/* Topo da sidebar = altura da topbar (logo 1.75rem + 2×espaço-1 + 2×espaço-2 + borda), para as bordas se encontrarem. */
+.cnt-sidebar__topo{padding:var(--cnt-espaco-2);box-sizing:border-box;min-height:calc(3.25rem + 1px)}
+@media (min-width:768px){.cnt-sidebar:not(.cnt-sidebar--compacta) .cnt-sidebar__topo{height:calc(3.25rem + 1px)}}
+.cnt-sidebar__logo{width:1.75rem;height:1.75rem}
+.cnt-topbar{--cnt-topbar-altura:calc(3.25rem + 1px)}
+/* Visão em fluxo (Captura, Regras, Alertas): quadro só leitura; o clique num passo abre o editor da regra. */
+.fluxo-app{--cnt-fluxo-no-largura:11.5rem;margin:var(--cnt-espaco-3)}
+.fluxo-app .cnt-fluxo__no{cursor:pointer}
+.fluxo-app .cnt-fluxo__no.fluxo-desligado{opacity:.45}
+@keyframes fluxo-alvo{from{box-shadow:0 0 0 3px var(--cnt-cor-primaria)}to{box-shadow:0 0 0 3px transparent}}
+.fluxo-alvo{animation:fluxo-alvo 1.6s var(--cnt-curva)}
+@media (prefers-reduced-motion:reduce){.fluxo-alvo{animation:none;outline:2px solid var(--cnt-cor-primaria)}}
 [data-cnt-tema="escuro"]{
   --c1:#7aa2ff; --c2:#f0a050; --c3:#4cc38a; --c4:#e07ac8; --c5:#d9c45a; --c6:#5cc0ec; --c7:#a28cff; --c8:#ff7b7b;
 }
@@ -607,6 +628,7 @@ body:not([data-so="linux"]) .so-lin{display:none!important}
   <h1>Alertas</h1><p class="sub">Avisos que aparecem no canto da tela (pelo ícone perto do relógio) quando algo passa do limite. Cada um liga e desliga separado.</p>
   <div class="cnt-cartao"><div class="cnt-cartao__topo"><h2>Alertas ligados</h2><div class="dir"><button class="cnt-botao cnt-botao--pq cnt-botao--secundario" id="alTeste">Testar notificação</button><label class="sw"><input type="checkbox" id="alGeral"><span></span></label></div></div><div id="alRegras"></div>
     <div class="cnt-cartao__topo" style="border-top:1px solid var(--cnt-cor-borda);border-bottom:0"><h2>Novo alerta</h2><select id="alTipo" class="cnt-campo__controle cnt-campo__controle--select"></select><select id="alProg" hidden class="cnt-campo__controle cnt-campo__controle--select"></select><span id="alLimWrap">acima de <input type="number" id="alLim" style="width:80px" class="cnt-campo__controle"> <span id="alUn"></span></span><span id="alDurWrap">por <input type="number" id="alDur" value="30" style="width:70px" class="cnt-campo__controle"> s</span><button class="cnt-botao cnt-botao--pq cnt-botao--primario" id="alAdd">Adicionar</button></div></div>
+  <div class="cnt-cartao secao" data-fluxo-caixa><div class="cnt-cartao__topo"><h2>Visão em fluxo</h2><span class="cnt-cartao__apoio">clique num passo para editar o alerta</span></div><div class="fluxo-app" id="alFluxo"></div></div>
   <div class="cnt-cartao secao"><div class="cnt-cartao__topo"><h2>Últimos alertas</h2></div><div class="tw curta" id="alHist"></div></div>
 </section>
 
@@ -633,6 +655,7 @@ body:not([data-so="linux"]) .so-lin{display:none!important}
 <section id="v-regras" hidden>
   <h1>Regras por programa</h1><p class="sub">Diga o que fazer automaticamente com um programa sempre que ele estiver aberto: prioridade, quais núcleos ele pode usar, não deixar abrir, avisar quando abrir ou quando passar de um limite de memória. Programas do Windows nunca são alterados.</p>
   <div class="cnt-cartao"><div class="cnt-cartao__topo"><h2>Suas regras</h2><span class="cnt-cartao__apoio" id="regInfo"></span></div><div id="regLista"></div></div>
+  <div class="cnt-cartao secao" data-fluxo-caixa hidden><div class="cnt-cartao__topo"><h2>Visão em fluxo</h2><span class="cnt-cartao__apoio">clique num passo para editar a regra</span></div><div class="fluxo-app" id="regFluxo"></div></div>
   <div class="cnt-cartao secao"><div class="cnt-cartao__topo"><h2 id="regFormTit">Nova regra</h2></div>
     <div class="form" id="regForm">
       <label class="campo">Programa<input type="text" id="rgProg" list="rgProgs" placeholder="Ex.: Google Chrome" class="cnt-campo__controle"><datalist id="rgProgs"></datalist></label>
@@ -704,6 +727,7 @@ body:not([data-so="linux"]) .so-lin{display:none!important}
 <div class="toasts" id="toasts"></div>
 <script src="/cnt/sidebar.js"></script>
 <script src="/cnt/topbar.js"></script>
+<script src="/cnt/fluxo.js"></script>
 
 <script>
 'use strict';
@@ -2095,8 +2119,36 @@ async function vServicos(){ $('#svcInfo').textContent='carregando…'; try{ SVC=
 function renderSvc(){ const f=$('#bSvc').value.trim().toLowerCase(); let l=SVC; if(filtroSvc==='terceiros') l=l.filter(x=>!x.protegido); if(filtroSvc==='rodando') l=l.filter(x=>x.status==='running');
   if(f) l=l.filter(x=>[x.nome,x.exibicao,x.descricao].some(y=>(y||'').toLowerCase().includes(f))); tSvc.def(l); $('#svcInfo').textContent=`${l.length} de ${SVC.length} serviços`; }
 
+/* =================== VISÃO EM FLUXO (base cnt/fluxo.js, só leitura) =================== */
+// cadeias: [{passos:[{tipo,titulo,descricao}], desligada}]; uma linha por regra. Clique num passo chama aoAbrir(índice da regra).
+function quadroFluxo(el, rotulo, cadeias, aoAbrir){ if(!el) return; const caixa=el.closest('[data-fluxo-caixa]')||el;
+  if(el.cntFluxo) el.cntFluxo.destruir(); if(el._ro) el._ro.disconnect();
+  caixa.hidden=!cadeias.length; if(!cadeias.length) return;
+  const nos=[], conexoes=[];
+  cadeias.forEach((c,i)=>c.passos.forEach((p,j)=>{ const id=`${i}-${j}`; nos.push({...p,id,x:j*236,y:i*108}); if(j) conexoes.push({de:`${i}-${j-1}`,para:id}); }));
+  el.style.setProperty('--cnt-fluxo-altura',Math.min(680,cadeias.length*108+110)+'px');
+  const f=cntFluxo.criar(el,{nos,conexoes,somenteLeitura:true,rotulo});
+  el.querySelectorAll('.cnt-fluxo__no').forEach(n=>{ n.title='Clique para editar'; if(cadeias[+n.dataset.id.split('-')[0]].desligada) n.classList.add('fluxo-desligado'); });
+  el._aoAbrir=aoAbrir;
+  if(!el._ligado){ el._ligado=1; let ini=null;
+    // Sem Ctrl a roda rola a página (a base usaria para mover o quadro); com Ctrl continua sendo zoom.
+    el.addEventListener('wheel',e=>{ if(!e.ctrlKey&&!e.metaKey) e.stopPropagation(); },{capture:true});
+    const abrir=n=>{ if(n&&el._aoAbrir) el._aoAbrir(+n.dataset.id.split('-')[0]); };
+    el.addEventListener('pointerdown',e=>{ ini=[e.clientX,e.clientY]; });
+    el.addEventListener('click',e=>{ const n=e.target.closest('.cnt-fluxo__no'); if(n&&ini&&Math.hypot(e.clientX-ini[0],e.clientY-ini[1])<5) abrir(n); });
+    el.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.classList.contains('cnt-fluxo__no')) abrir(e.target); }); }
+  // Montado com a tela escondida o quadro mede 0: reenquadra quando ganhar tamanho.
+  let w=0; el._ro=new ResizeObserver(()=>{ const q=el.querySelector('.cnt-fluxo__quadro'); if(q&&q.clientWidth&&q.clientWidth!==w){ w=q.clientWidth; f.ajustar(); } }); el._ro.observe(el); }
+function destacar(el){ if(!el) return; el.scrollIntoView({behavior:'smooth',block:'center'}); el.classList.remove('fluxo-alvo'); void el.offsetWidth; el.classList.add('fluxo-alvo'); }
+
 /* =================== ALERTAS =================== */
 let AL=null;
+const AL_GATILHO={mem:'Memória do PC',cpu:'CPU do PC',temp_cpu:'Temperatura do processador',temp_gpu:'Temperatura da placa de vídeo',disco_cheio:'Uso do disco'};
+function cadeiasAlertas(a){ return a.regras.map(r=>{ const t=a.tipos[r.tipo]||{titulo:r.tipo,unidade:''}, prog=r.tipo.startsWith('prog_');
+  const p=[{tipo:'gatilho',titulo:prog?r.programa:(AL_GATILHO[r.tipo]||t.titulo),descricao:prog?{prog_mem:'memória do programa',prog_cpu:'CPU do programa',prog_aberto:'quando abrir'}[r.tipo]:undefined}];
+  if(r.tipo!=='prog_aberto') p.push({tipo:'condicao',titulo:`Acima de ${r.limite}${t.unidade?' '+t.unidade:''}`,descricao:r.tipo!=='disco_cheio'&&r.duracao_s?`por ${r.duracao_s} s seguidos`:'na hora'});
+  p.push({tipo:'acao',titulo:'Avisar na tela',descricao:'no máximo 1 vez a cada 15 min'});
+  return {passos:p,desligada:!(r.ativo&&a.ativos)}; }); }
 async function vAlertas(){ try{ AL=await API('alertas'); }catch(_){ return; } const a=AL;
   $('#alGeral').checked=a.ativos;
   $('#alRegras').innerHTML=a.regras.map((r,i)=>{ const t=a.tipos[r.tipo]; return `<div class="regra" data-i="${i}"><label class="sw"><input type="checkbox" data-al="ativo" ${r.ativo?'checked':''}><span></span></label><div><b style="font-weight:500">${esc(r.descricao)}</b></div>
@@ -2104,6 +2156,7 @@ async function vAlertas(){ try{ AL=await API('alertas'); }catch(_){ return; } co
   $('#alTipo').innerHTML=Object.entries(a.tipos).map(([k,t])=>`<option value="${k}">${esc(t.titulo)}</option>`).join('');
   $('#alProg').innerHTML=(E?.programas||[]).filter(g=>!g.outros).map(g=>`<option>${esc(g.nome)}</option>`).join('');
   atualizarFormAlerta();
+  quadroFluxo($('#alFluxo'),'Alertas em fluxo',cadeiasAlertas(a),i=>{ const d=$(`#alRegras .regra[data-i="${i}"]`); destacar(d); d?.querySelector('input[type=number]')?.focus({preventScroll:true}); });
   Tabela($('#alHist'),[{k:'ts',t:'Quando',f:r=>quando(r.ts)},{k:'titulo',t:'Alerta',e:1,texto:1},{k:'msg',t:'Detalhe',e:1,texto:1}],{ordem:'ts',vazio:'Nenhum alerta disparou ainda.'}).def(a.historico); }
 function atualizarFormAlerta(){ const tp=$('#alTipo').value, t=AL?.tipos[tp]; if(!t) return; $('#alProg').hidden=!tp.startsWith('prog_'); $('#alUn').textContent=t.unidade; $('#alLimWrap').hidden=tp==='prog_aberto'; $('#alDurWrap').hidden=tp==='prog_aberto'||tp==='disco_cheio';
   $('#alLim').value={mem:90,cpu:90,temp_cpu:90,temp_gpu:85,disco_cheio:95,prog_mem:2,prog_cpu:50}[tp]??80; }
@@ -2508,7 +2561,16 @@ async function vRegras(){ try{ REG=await API('regras'); }catch(_){ return; }
   $('#rgProgs').innerHTML=(E?.programas||[]).filter(g=>!g.outros&&!g.protegido).map(g=>`<option value="${esc(g.nome)}">`).join('');
   $('#rgNuc').innerHTML=Array.from({length:REG.nucleos},(_,i)=>`<label class="chip"><input type="checkbox" data-nuc="${i}"> ${i}</label>`).join('');
   formRegra(REG_EDIT?REG.regras.find(r=>r.id===REG_EDIT):null);
+  quadroFluxo($('#regFluxo'),'Regras em fluxo',cadeiasRegras(REG),i=>{ formRegra(REG.regras[i]); destacar($('#regForm').closest('.cnt-cartao')); });
   $('#regLog').innerHTML=REG.log.length?'<table class="cnt-tabela"><tbody>'+REG.log.map(l=>`<tr class="cnt-tabela__linha"><td class="cnt-tabela__cel e mut" style="width:140px">${quando(l.ts)}</td><td class="cnt-tabela__cel e">${esc(l.msg)}</td></tr>`).join('')+'</tbody></table>':'<div class="vazio">Nada ainda.</div>'; }
+function cadeiasRegras(R){ return R.regras.map(r=>{ const p=[{tipo:'gatilho',titulo:r.programa,descricao:'quando estiver aberto'}];
+  if(r.bloquear) p.push({tipo:'acao',titulo:'Encerrar na hora',descricao:'não deixa abrir'});
+  else { if(r.avisar_ao_abrir) p.push({tipo:'acao',titulo:'Avisar que abriu'});
+    if(r.prioridade) p.push({tipo:'acao',titulo:`Prioridade ${(R.prioridades[r.prioridade]||r.prioridade).toLowerCase()}`});
+    if(r.nucleos.length) p.push({tipo:'acao',titulo:'Limitar núcleos',descricao:`só nos núcleos ${r.nucleos.join(', ')}`});
+    if(r.limite_mem_gb){ p.push({tipo:'condicao',titulo:`Memória acima de ${r.limite_mem_gb} GB?`}); p.push({tipo:'acao',titulo:r.acao_limite==='encerrar'?'Encerrar o programa':'Avisar',descricao:'quando passar do limite'}); } }
+  if(p.length===1) p.push({tipo:'acao',titulo:'Nenhuma ação marcada'});
+  return {passos:p,desligada:!r.ativo}; }); }
 function formRegra(r){ REG_EDIT=r?r.id:null; $('#regFormTit').textContent=r?`Editar regra: ${r.programa}`:'Nova regra'; $('#rgCancelar').hidden=!r;
   $('#rgProg').value=r?r.programa:''; $('#rgPri').value=r?r.prioridade:''; $('#rgLim').value=r?r.limite_mem_gb:0; $('#rgAcao').value=r?r.acao_limite:'avisar';
   $('#rgAvisar').checked=!!(r&&r.avisar_ao_abrir); $('#rgBloq').checked=!!(r&&r.bloquear);
@@ -3066,6 +3128,12 @@ function renderFluxos(){ const el=$('#cfgFluxos'), D=CAP_META||CAPS; if(!el||!D)
       ${Object.entries(tar).map(([k,t])=>`<label class="chip"><input type="checkbox" data-t="${k}" ${f.tarefas[k]?'checked':''} ${k in f.tarefas?'':'data-vazio="1"'}> ${t}</label>`).join('')}
       <button class="cnt-botao cnt-botao--pq cnt-botao--perigo" data-f="apagar">Apagar</button></div><small></small></div>`).join('')
     +`<div class="item"><div class="ctl"><button class="cnt-botao cnt-botao--pq cnt-botao--secundario" id="fluxoNovo">Novo fluxo</button></div></div>`;
+  el.firstElementChild.insertAdjacentHTML('afterend','<div class="item" data-fluxo-caixa><div class="fluxo-app" id="cfgFluxoQuadro" style="grid-column:1/-1"></div></div>');
+  quadroFluxo($('#cfgFluxoQuadro'),'Fluxos de trabalho em fluxo',l.map(f=>{ const p=[{tipo:'gatilho',titulo:f.nome,descricao:f.atalho?`atalho ${f.atalho}`:'sem atalho'}],
+      off=Object.entries(tar).filter(([k])=>f.tarefas[k]===false).map(([,t])=>t.toLowerCase());
+    p.push({tipo:'acao',titulo:D.acoes[f.acao]||f.acao,descricao:off.length?`sem: ${off.join(', ')}`:undefined});
+    Object.entries(tar).forEach(([k,t])=>{ if(f.tarefas[k]) p.push({tipo:'acao',titulo:t,descricao:k==='captura_enviar'?(D.destinos[f.destino]||'destino padrão'):undefined}); });
+    return {passos:p}; }),i=>{ const d=el.querySelector(`[data-fluxo="${i}"]`); destacar(d); d?.querySelector('[data-f=nome]')?.focus({preventScroll:true}); });
   const ler=()=>[...el.querySelectorAll('[data-fluxo]')].map(d=>{ const f={...l[+d.dataset.fluxo], tarefas:{}}; f.nome=d.querySelector('[data-f=nome]').value; f.acao=d.querySelector('[data-f=acao]').value; f.atalho=d.querySelector('[data-f=atalho]').value; f.destino=d.querySelector('[data-f=destino]').value;
     d.querySelectorAll('[data-t]').forEach(c=>{ if(c.checked) f.tarefas[c.dataset.t]=true; else if(!c.dataset.vazio) f.tarefas[c.dataset.t]=false; }); return f; });
   el.querySelectorAll('[data-fluxo] input[data-f=nome],[data-fluxo] select').forEach(i=>i.onchange=ev=>{ ev.stopPropagation(); salvarCfgLista('captura_fluxos',ler()); });
