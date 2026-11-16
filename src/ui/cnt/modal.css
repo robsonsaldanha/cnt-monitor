@@ -1,0 +1,302 @@
+/* Janela modal CNT: janela central, confirmação e gaveta lateral.
+   Usa <dialog> nativo (foco preso, Esc e camada superior vêm do navegador).
+   O próprio <dialog> ocupa a tela e pinta a sobreposição, para não depender do ::backdrop. */
+
+.cnt-modal {
+  --cnt-modal-largura: 32rem;
+  position: fixed;
+  inset: 0;
+  z-index: var(--cnt-z-modal);
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: var(--cnt-espaco-4);
+  border: 0;
+  background: var(--cnt-cor-sobreposicao);
+  color: var(--cnt-cor-texto);
+  font-family: var(--cnt-fonte-base);
+  font-size: var(--cnt-texto-md);
+  line-height: var(--cnt-linha-base);
+  opacity: 0;
+  transition: opacity var(--cnt-duracao-base) var(--cnt-curva);
+  overscroll-behavior: contain;
+}
+
+.cnt-modal[open] {
+  display: grid;
+  place-items: center;
+}
+
+.cnt-modal::backdrop {
+  background: transparent;
+}
+
+.cnt-modal.is-aberto {
+  opacity: 1;
+}
+
+.cnt-modal--pq { --cnt-modal-largura: 24rem; }
+.cnt-modal--gd { --cnt-modal-largura: 48rem; }
+.cnt-modal--cheia { --cnt-modal-largura: 72rem; }
+
+.cnt-modal__caixa {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, var(--cnt-modal-largura));
+  max-height: calc(100dvh - 2 * var(--cnt-espaco-4));
+  background: var(--cnt-cor-superficie);
+  border: 1px solid var(--cnt-cor-borda);
+  border-radius: var(--cnt-raio-gd);
+  box-shadow: var(--cnt-sombra-3);
+  overflow: hidden;
+  transform: translateY(12px) scale(0.97);
+  transition: transform var(--cnt-duracao-base) var(--cnt-curva);
+}
+
+.cnt-modal.is-aberto .cnt-modal__caixa {
+  transform: none;
+}
+
+.cnt-modal__topo {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--cnt-espaco-3);
+  padding: var(--cnt-espaco-4) var(--cnt-espaco-5);
+  border-bottom: 1px solid var(--cnt-cor-borda);
+}
+
+.cnt-modal__icone {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--cnt-raio-total);
+  background: var(--cnt-cor-primaria-suave);
+  color: var(--cnt-cor-primaria);
+}
+
+.cnt-modal__icone svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.cnt-modal--perigo .cnt-modal__icone {
+  background: var(--cnt-cor-perigo-suave);
+  color: var(--cnt-cor-perigo);
+}
+
+.cnt-modal__cabeca {
+  flex: 1;
+  min-width: 0;
+}
+
+.cnt-modal__titulo {
+  margin: 0;
+  font-size: var(--cnt-texto-lg);
+  font-weight: var(--cnt-peso-forte);
+  line-height: var(--cnt-linha-compacta);
+}
+
+.cnt-modal__subtitulo {
+  margin: var(--cnt-espaco-1) 0 0;
+  color: var(--cnt-cor-texto-suave);
+  font-size: var(--cnt-texto-sm);
+}
+
+.cnt-modal__fechar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--cnt-altura-controle-pq);
+  height: var(--cnt-altura-controle-pq);
+  margin: calc(-1 * var(--cnt-espaco-1)) calc(-1 * var(--cnt-espaco-2)) 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--cnt-raio-md);
+  background: transparent;
+  color: var(--cnt-cor-texto-suave);
+  cursor: pointer;
+  transition: background var(--cnt-duracao-rapida) var(--cnt-curva), color var(--cnt-duracao-rapida) var(--cnt-curva);
+}
+
+.cnt-modal__fechar:hover {
+  background: var(--cnt-cor-superficie-2);
+  color: var(--cnt-cor-texto);
+}
+
+.cnt-modal__fechar svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.cnt-modal__corpo {
+  flex: 1;
+  min-height: 0;
+  padding: var(--cnt-espaco-5);
+  overflow-y: auto;
+}
+
+.cnt-modal__corpo > :first-child { margin-top: 0; }
+.cnt-modal__corpo > :last-child { margin-bottom: 0; }
+
+.cnt-modal__rodape {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--cnt-espaco-2);
+  padding: var(--cnt-espaco-3) var(--cnt-espaco-5);
+  border-top: 1px solid var(--cnt-cor-borda);
+  background: var(--cnt-cor-superficie-2);
+}
+
+/* Botões próprios do modal: funcionam sem base-botoes. Com base-botoes carregada, use as classes dela. */
+.cnt-modal__botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--cnt-altura-controle-md);
+  padding: 0 var(--cnt-espaco-4);
+  border: 1px solid var(--cnt-cor-borda);
+  border-radius: var(--cnt-raio-md);
+  background: var(--cnt-cor-superficie);
+  color: var(--cnt-cor-texto);
+  font: inherit;
+  font-size: var(--cnt-texto-sm);
+  font-weight: var(--cnt-peso-medio);
+  cursor: pointer;
+  transition: background var(--cnt-duracao-rapida) var(--cnt-curva), border-color var(--cnt-duracao-rapida) var(--cnt-curva);
+}
+
+.cnt-modal__botao:hover {
+  background: var(--cnt-cor-superficie-2);
+  border-color: var(--cnt-cor-borda-forte);
+}
+
+.cnt-modal__botao--primario {
+  border-color: var(--cnt-cor-primaria);
+  background: var(--cnt-cor-primaria);
+  color: var(--cnt-cor-primaria-contraste);
+}
+
+.cnt-modal__botao--primario:hover {
+  border-color: var(--cnt-cor-primaria-hover);
+  background: var(--cnt-cor-primaria-hover);
+}
+
+.cnt-modal__botao--perigo {
+  border-color: var(--cnt-cor-perigo);
+  background: var(--cnt-cor-perigo);
+  color: var(--cnt-cor-perigo-contraste);
+}
+
+.cnt-modal__botao--perigo:hover {
+  border-color: var(--cnt-cor-perigo);
+  background: var(--cnt-cor-perigo);
+  filter: brightness(0.92);
+}
+
+.cnt-modal__fechar:focus-visible,
+.cnt-modal__botao:focus-visible {
+  outline: var(--cnt-foco-largura) solid var(--cnt-cor-primaria);
+  outline-offset: var(--cnt-foco-distancia);
+}
+
+/* Confirmação: texto centralizado com o ícone. */
+.cnt-modal--confirmacao .cnt-modal__topo {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.cnt-modal--confirmacao .cnt-modal__corpo {
+  padding-top: var(--cnt-espaco-2);
+  padding-left: calc(var(--cnt-espaco-5) + 2.5rem + var(--cnt-espaco-3));
+  color: var(--cnt-cor-texto-suave);
+}
+
+.cnt-modal--confirmacao .cnt-modal__rodape {
+  border-top: 0;
+  background: transparent;
+  padding-bottom: var(--cnt-espaco-4);
+}
+
+/* Gaveta lateral: encosta na direita e ocupa a altura toda. */
+.cnt-modal--gaveta {
+  --cnt-modal-largura: 28rem;
+  padding: 0;
+}
+
+.cnt-modal--gaveta[open] {
+  place-items: stretch end;
+}
+
+.cnt-modal--gaveta .cnt-modal__caixa {
+  height: 100%;
+  max-height: none;
+  border-width: 0 0 0 1px;
+  border-radius: var(--cnt-raio-gd) 0 0 var(--cnt-raio-gd);
+  transform: translateX(100%);
+}
+
+.cnt-modal--gaveta.is-aberto .cnt-modal__caixa {
+  transform: none;
+}
+
+/* Rolagem da página travada enquanto há modal aberto. */
+.cnt-modal-travado {
+  overflow: hidden;
+}
+
+/* Tela estreita: a janela vira folha que sobe de baixo. */
+@media (max-width: 639.98px) {
+  .cnt-modal {
+    padding: 0;
+  }
+
+  .cnt-modal[open] {
+    place-items: end stretch;
+  }
+
+  .cnt-modal__caixa {
+    width: 100%;
+    max-height: calc(100dvh - var(--cnt-espaco-6));
+    border-width: 1px 0 0;
+    border-radius: var(--cnt-raio-gd) var(--cnt-raio-gd) 0 0;
+    transform: translateY(100%);
+  }
+
+  .cnt-modal--gaveta[open] {
+    place-items: stretch;
+  }
+
+  .cnt-modal--gaveta .cnt-modal__caixa {
+    width: min(100%, 22rem);
+    justify-self: end;
+    height: 100%;
+    max-height: none;
+    border-width: 0 0 0 1px;
+    border-radius: 0;
+    transform: translateX(100%);
+  }
+
+  .cnt-modal--confirmacao .cnt-modal__corpo {
+    padding-left: var(--cnt-espaco-5);
+  }
+
+  .cnt-modal__rodape {
+    padding-bottom: calc(var(--cnt-espaco-3) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .cnt-modal__rodape .cnt-modal__botao {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cnt-modal,
+  .cnt-modal__caixa {
+    transition: none;
+  }
+}

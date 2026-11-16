@@ -1,0 +1,56 @@
+/* Botões, modelo sólido: primário cheio, secundário com contorno, cantos médios. */
+.cnt-botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cnt-espaco-2);
+  height: var(--cnt-altura-controle-md);
+  padding: 0 var(--cnt-espaco-4);
+  border: 1px solid transparent;
+  border-radius: var(--cnt-raio-md);
+  background: transparent;
+  color: var(--cnt-cor-texto);
+  font-family: var(--cnt-fonte-base);
+  font-size: var(--cnt-texto-sm);
+  font-weight: var(--cnt-peso-medio);
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--cnt-duracao-rapida) var(--cnt-curva), border-color var(--cnt-duracao-rapida) var(--cnt-curva);
+}
+
+.cnt-botao:focus-visible {
+  outline: var(--cnt-foco-largura) solid var(--cnt-cor-primaria);
+  outline-offset: var(--cnt-foco-distancia);
+}
+
+.cnt-botao__icone { flex: none; width: 1rem; height: 1rem; }
+
+.cnt-botao--primario { background: var(--cnt-cor-primaria); color: var(--cnt-cor-primaria-contraste); }
+.cnt-botao--primario:hover { background: var(--cnt-cor-primaria-hover); }
+.cnt-botao--primario:active { background: var(--cnt-cor-primaria-ativa); }
+
+.cnt-botao--secundario { background: var(--cnt-cor-superficie); border-color: var(--cnt-cor-borda-forte); }
+.cnt-botao--secundario:hover { background: var(--cnt-cor-superficie-2); }
+.cnt-botao--secundario:active { border-color: var(--cnt-cor-texto); }
+
+.cnt-botao--discreto { color: var(--cnt-cor-primaria); }
+.cnt-botao--discreto:hover { background: var(--cnt-cor-primaria-suave); }
+.cnt-botao--discreto:active { box-shadow: inset 0 0 0 1px var(--cnt-cor-primaria); }
+
+.cnt-botao--perigo { background: var(--cnt-cor-perigo); color: var(--cnt-cor-perigo-contraste); }
+.cnt-botao--perigo:hover { box-shadow: inset 0 0 0 2px var(--cnt-cor-perigo-contraste); }
+.cnt-botao--perigo:active { box-shadow: inset 0 0 0 3px var(--cnt-cor-perigo-contraste); }
+
+.cnt-botao--pq { height: var(--cnt-altura-controle-pq); padding: 0 var(--cnt-espaco-3); font-size: var(--cnt-texto-xs); }
+.cnt-botao--so-icone { width: var(--cnt-altura-controle-md); padding: 0; }
+
+.cnt-botao:disabled,
+.cnt-botao[aria-disabled="true"] {
+  background: var(--cnt-cor-superficie-2);
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--cnt-cor-texto-desativado);
+  cursor: not-allowed;
+}

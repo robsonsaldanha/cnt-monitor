@@ -1,0 +1,9 @@
+/* Tema de estilo "Clássico". Gerado por _escolhas/estilos.mjs; não edite à mão. */
+@import "../base-botoes/modelo-solido/nucleo/botoes.css";
+@import "../base-campos/modelo-contorno/nucleo/campos.css";
+@import "../base-filtros/modelo-barra/nucleo/filtros.css";
+@import "../base-selos/modelo-contorno/nucleo/selos.css";
+@import "../base-cartoes/modelo-borda/nucleo/cartoes.css";
+@import "../base-tabelas/modelo-linhas/nucleo/tabelas.css";
+@import "../base-abas/modelo-sublinhado/nucleo/abas.css";
+@import "../base-avisos/modelo-contorno/nucleo/avisos.css";

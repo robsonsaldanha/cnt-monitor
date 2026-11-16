@@ -1,0 +1,33 @@
+/* Selos, modelo ponto: bolinha na cor da situação e texto neutro. */
+.cnt-selo {
+  --cnt-selo-cor: var(--cnt-cor-texto-suave);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cnt-espaco-2);
+  height: 1.5rem;
+  padding: 0 var(--cnt-espaco-3) 0 var(--cnt-espaco-2);
+  border: 1px solid var(--cnt-cor-borda);
+  border-radius: var(--cnt-raio-total);
+  background: var(--cnt-cor-superficie);
+  color: var(--cnt-cor-texto);
+  font-family: var(--cnt-fonte-base);
+  font-size: var(--cnt-texto-xs);
+  font-weight: var(--cnt-peso-medio);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.cnt-selo::before {
+  content: "";
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--cnt-raio-total);
+  background: var(--cnt-selo-cor);
+}
+
+.cnt-selo--sucesso { --cnt-selo-cor: var(--cnt-cor-sucesso); }
+.cnt-selo--alerta { --cnt-selo-cor: var(--cnt-cor-alerta); }
+.cnt-selo--perigo { --cnt-selo-cor: var(--cnt-cor-perigo); }
+.cnt-selo--info { --cnt-selo-cor: var(--cnt-cor-info); }
+.cnt-selo--primario { --cnt-selo-cor: var(--cnt-cor-primaria); }

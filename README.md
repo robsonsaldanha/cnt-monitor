@@ -229,4 +229,4 @@ Ele é distribuído na esperança de ser útil, mas **sem nenhuma garantia**; ve
 Componentes de terceiros mantêm as próprias licenças: LibreHardwareMonitor (MPL-2.0), PawnIO, PresentMon (MIT),
 ffmpeg (baixado à parte, GPL), aiortc e PyAV (BSD), paramiko e pystray (LGPL), python-xlib (LGPL), mss (MIT), jeepney (MIT), Pillow, psutil, pywin32, qrcode,
 zxing-cpp (Apache-2.0), maxminddb (Apache-2.0), a base de países e operadoras [IP Geolocation by DB-IP](https://db-ip.com)
-(CC BY 4.0, embutida e consultada no próprio PC) e a fonte Barlow ([SIL OFL 1.1](src/ui/fontes/OFL-LICENSE.txt)).
+(CC BY 4.0, embutida e consultada no próprio PC).

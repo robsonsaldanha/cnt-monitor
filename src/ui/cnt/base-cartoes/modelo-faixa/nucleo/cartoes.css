@@ -1,0 +1,25 @@
+/* Cartões, modelo faixa: faixa na cor da marca no topo, cabeçalho separado por linha. */
+.cnt-cartao {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--cnt-cor-borda);
+  border-top: 3px solid var(--cnt-cor-primaria);
+  border-radius: var(--cnt-raio-md);
+  background: var(--cnt-cor-superficie);
+  color: var(--cnt-cor-texto);
+  font-family: var(--cnt-fonte-base);
+}
+
+.cnt-cartao__topo { display: flex; align-items: baseline; justify-content: space-between; gap: var(--cnt-espaco-3); padding: var(--cnt-espaco-3) var(--cnt-espaco-4); border-bottom: 1px solid var(--cnt-cor-borda); }
+.cnt-cartao__titulo { margin: 0; font-size: var(--cnt-texto-sm); font-weight: var(--cnt-peso-forte); line-height: var(--cnt-linha-compacta); }
+.cnt-cartao__apoio { font-size: var(--cnt-texto-xs); color: var(--cnt-cor-texto-suave); }
+
+.cnt-cartao__corpo { flex: 1; padding: var(--cnt-espaco-4); }
+.cnt-cartao__valor { margin: 0; font-size: var(--cnt-texto-2xl); font-weight: var(--cnt-peso-forte); line-height: var(--cnt-linha-compacta); color: var(--cnt-cor-primaria); }
+.cnt-cartao__texto { margin: 0; font-size: var(--cnt-texto-sm); line-height: var(--cnt-linha-base); color: var(--cnt-cor-texto-suave); }
+
+.cnt-cartao__rodape { padding: var(--cnt-espaco-3) var(--cnt-espaco-4); background: var(--cnt-cor-superficie-2); border-radius: 0 0 var(--cnt-raio-md) var(--cnt-raio-md); }
+
+.cnt-cartao__link { font-size: var(--cnt-texto-sm); font-weight: var(--cnt-peso-medio); color: var(--cnt-cor-primaria); text-decoration: underline; text-underline-offset: 0.2em; }
+.cnt-cartao__link:hover { color: var(--cnt-cor-primaria-hover); }
+.cnt-cartao__link:focus-visible { outline: var(--cnt-foco-largura) solid var(--cnt-cor-primaria); outline-offset: var(--cnt-foco-distancia); border-radius: var(--cnt-raio-pq); }

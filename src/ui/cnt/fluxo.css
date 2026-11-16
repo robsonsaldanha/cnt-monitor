@@ -1,0 +1,380 @@
+/* Editor de fluxos: quadro com nós e conexões. Usa só tokens da fundação (_fundacao/nucleo). */
+.cnt-fluxo {
+  --cnt-fluxo-altura: 32rem;
+  --cnt-fluxo-no-largura: 15rem;
+
+  position: relative;
+  box-sizing: border-box;
+  height: var(--cnt-fluxo-altura);
+  overflow: hidden;
+  background: var(--cnt-cor-fundo);
+  border: 1px solid var(--cnt-cor-borda);
+  border-radius: var(--cnt-raio-gd);
+  color: var(--cnt-cor-texto);
+  font-family: var(--cnt-fonte-base);
+  font-size: var(--cnt-texto-sm);
+  line-height: var(--cnt-linha-compacta);
+}
+
+/* Fundo pontilhado que acompanha o movimento e o zoom. */
+.cnt-fluxo__quadro {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background-image: radial-gradient(circle, var(--cnt-cor-borda-forte) 1px, transparent 1.5px);
+  background-position: var(--cnt-fluxo-x, 0) var(--cnt-fluxo-y, 0);
+  /* Com zoom baixo a malha para de encolher, para não virar um borrão. */
+  background-size: max(14px, calc(24px * var(--cnt-fluxo-z, 1))) max(14px, calc(24px * var(--cnt-fluxo-z, 1)));
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.cnt-fluxo__quadro.is-movendo {
+  cursor: grabbing;
+}
+
+.cnt-fluxo__palco {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+/* Conexões */
+.cnt-fluxo__linhas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.cnt-fluxo__linha {
+  fill: none;
+  stroke: var(--cnt-cor-borda-forte);
+  stroke-width: 2;
+}
+
+/* Pontilhada: os traços correm da origem para o destino (o sentido é o do próprio traçado). */
+.cnt-fluxo__linha--pontilhada {
+  stroke-dasharray: 6 6;
+  animation: cnt-fluxo-correr 0.6s linear infinite;
+}
+
+/* Sólida: pontos pequenos percorrem a linha da origem para o destino. */
+.cnt-fluxo__pulso {
+  fill: none;
+  stroke: var(--cnt-cor-primaria);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 0 48;
+  animation: cnt-fluxo-pulsar 1.6s linear infinite;
+}
+
+@keyframes cnt-fluxo-correr {
+  to { stroke-dashoffset: -12; }
+}
+
+@keyframes cnt-fluxo-pulsar {
+  to { stroke-dashoffset: -48; }
+}
+
+/* Área de clique e de foco da conexão, mais larga que a linha. */
+.cnt-fluxo__alvo {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 16;
+  outline: none;
+  cursor: pointer;
+  pointer-events: stroke;
+}
+
+.cnt-fluxo__conexao.is-selecionado .cnt-fluxo__linha,
+.cnt-fluxo__alvo:focus-visible + .cnt-fluxo__linha {
+  stroke: var(--cnt-cor-primaria);
+  stroke-width: 3;
+}
+
+.cnt-fluxo__seta {
+  fill: var(--cnt-cor-borda-forte);
+}
+
+.cnt-fluxo__seta--selecionada {
+  fill: var(--cnt-cor-primaria);
+}
+
+.cnt-fluxo__rotulo {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  height: 1.25rem;
+  padding: 0 var(--cnt-espaco-2);
+  background: var(--cnt-cor-superficie);
+  border: 1px solid var(--cnt-cor-borda);
+  border-radius: var(--cnt-raio-total);
+  color: var(--cnt-cor-texto-suave);
+  font-size: var(--cnt-texto-xs);
+  font-weight: var(--cnt-peso-medio);
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* Nós */
+.cnt-fluxo__no {
+  position: absolute;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--cnt-espaco-3);
+  box-sizing: border-box;
+  width: var(--cnt-fluxo-no-largura);
+  padding: var(--cnt-espaco-3);
+  background: var(--cnt-cor-superficie);
+  border: 1px solid var(--cnt-cor-borda);
+  border-radius: var(--cnt-raio-gd);
+  box-shadow: var(--cnt-sombra-1);
+  cursor: grab;
+}
+
+.cnt-fluxo--leitura .cnt-fluxo__no {
+  cursor: default;
+}
+
+.cnt-fluxo__no:hover {
+  border-color: var(--cnt-cor-borda-forte);
+}
+
+.cnt-fluxo__no.is-selecionado {
+  border-color: var(--cnt-cor-primaria);
+  box-shadow: 0 0 0 1px var(--cnt-cor-primaria), var(--cnt-sombra-2);
+}
+
+.cnt-fluxo__no:focus-visible,
+.cnt-fluxo__botao:focus-visible,
+.cnt-fluxo__porta:focus-visible {
+  outline: var(--cnt-foco-largura) solid var(--cnt-cor-primaria);
+  outline-offset: var(--cnt-foco-distancia);
+}
+
+.cnt-fluxo__icone {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--cnt-raio-md);
+  background: var(--cnt-cor-superficie-2);
+  color: var(--cnt-cor-texto-suave);
+}
+
+.cnt-fluxo__icone > svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.cnt-fluxo__no--gatilho .cnt-fluxo__icone {
+  background: var(--cnt-cor-alerta-suave);
+  color: var(--cnt-cor-alerta);
+}
+
+.cnt-fluxo__no--condicao .cnt-fluxo__icone {
+  background: var(--cnt-cor-info-suave);
+  color: var(--cnt-cor-info);
+}
+
+.cnt-fluxo__no--acao .cnt-fluxo__icone {
+  background: var(--cnt-cor-primaria-suave);
+  color: var(--cnt-cor-primaria);
+}
+
+.cnt-fluxo__no--pessoa .cnt-fluxo__icone {
+  border-radius: var(--cnt-raio-total);
+}
+
+.cnt-fluxo__texto {
+  display: grid;
+  flex: 1;
+  gap: var(--cnt-espaco-1);
+  min-width: 0;
+}
+
+.cnt-fluxo__tipo {
+  color: var(--cnt-cor-texto-suave);
+  font-size: var(--cnt-texto-xs);
+  font-weight: var(--cnt-peso-forte);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cnt-fluxo__titulo {
+  font-weight: var(--cnt-peso-forte);
+  overflow-wrap: anywhere;
+}
+
+.cnt-fluxo__descricao {
+  color: var(--cnt-cor-texto-suave);
+  font-size: var(--cnt-texto-xs);
+  overflow-wrap: anywhere;
+}
+
+.cnt-fluxo__estado {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  height: 1.25rem;
+  margin-block-start: var(--cnt-espaco-1);
+  padding: 0 var(--cnt-espaco-2);
+  border-radius: var(--cnt-raio-total);
+  background: var(--cnt-cor-superficie-2);
+  color: var(--cnt-cor-texto-suave);
+  font-size: var(--cnt-texto-xs);
+  font-weight: var(--cnt-peso-medio);
+}
+
+.cnt-fluxo__estado--concluido {
+  background: var(--cnt-cor-sucesso-suave);
+  color: var(--cnt-cor-sucesso);
+}
+
+.cnt-fluxo__estado--andamento {
+  background: var(--cnt-cor-info-suave);
+  color: var(--cnt-cor-info);
+}
+
+.cnt-fluxo__estado--pendente {
+  background: var(--cnt-cor-alerta-suave);
+  color: var(--cnt-cor-alerta);
+}
+
+.cnt-fluxo__estado--erro {
+  background: var(--cnt-cor-perigo-suave);
+  color: var(--cnt-cor-perigo);
+}
+
+/* Portas: entrada à esquerda e saída à direita; no fluxo vertical, em cima e embaixo. */
+.cnt-fluxo__porta {
+  position: absolute;
+  top: 50%;
+  box-sizing: border-box;
+  width: 0.75rem;
+  height: 0.75rem;
+  padding: 0;
+  background: var(--cnt-cor-superficie);
+  border: 2px solid var(--cnt-cor-borda-forte);
+  border-radius: var(--cnt-raio-total);
+  transform: translateY(-50%);
+}
+
+.cnt-fluxo__porta--entrada {
+  left: -0.375rem;
+}
+
+.cnt-fluxo__porta--saida {
+  right: -0.375rem;
+}
+
+.cnt-fluxo--vertical .cnt-fluxo__porta {
+  top: auto;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+
+.cnt-fluxo--vertical .cnt-fluxo__porta--entrada {
+  top: -0.375rem;
+}
+
+.cnt-fluxo--vertical .cnt-fluxo__porta--saida {
+  bottom: -0.375rem;
+}
+
+/* Só leitura: sem portas; as linhas chegam direto na borda do nó. */
+.cnt-fluxo--leitura .cnt-fluxo__porta {
+  display: none;
+}
+
+.cnt-fluxo__botao-porta {
+  cursor: crosshair;
+}
+
+/* Aumenta a área de toque da porta de saída. */
+.cnt-fluxo__botao-porta::after {
+  position: absolute;
+  inset: -0.625rem;
+  content: "";
+}
+
+.cnt-fluxo__botao-porta:hover,
+.cnt-fluxo__botao-porta:focus-visible,
+.cnt-fluxo.is-ligando .cnt-fluxo__porta--entrada {
+  background: var(--cnt-cor-primaria);
+  border-color: var(--cnt-cor-primaria);
+}
+
+/* Barra de zoom */
+.cnt-fluxo__barra {
+  position: absolute;
+  bottom: var(--cnt-espaco-3);
+  inset-inline-start: var(--cnt-espaco-3);
+  display: flex;
+  align-items: center;
+  gap: var(--cnt-espaco-1);
+  padding: var(--cnt-espaco-1);
+  background: var(--cnt-cor-superficie);
+  border: 1px solid var(--cnt-cor-borda);
+  border-radius: var(--cnt-raio-md);
+  box-shadow: var(--cnt-sombra-2);
+}
+
+.cnt-fluxo__botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--cnt-altura-controle-pq);
+  height: var(--cnt-altura-controle-pq);
+  padding: 0 var(--cnt-espaco-2);
+  background: transparent;
+  border: 0;
+  border-radius: var(--cnt-raio-pq);
+  color: var(--cnt-cor-texto);
+  font: inherit;
+  cursor: pointer;
+}
+
+.cnt-fluxo__botao:hover {
+  background: var(--cnt-cor-superficie-2);
+}
+
+.cnt-fluxo__zoom {
+  min-width: 3rem;
+  color: var(--cnt-cor-texto-suave);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* Avisos para leitor de tela */
+.cnt-fluxo__aviso {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Sem animação: a pontilhada fica parada e a seta na chegada indica o sentido. */
+@media (prefers-reduced-motion: reduce) {
+  .cnt-fluxo__linha--pontilhada {
+    animation: none;
+  }
+
+  .cnt-fluxo__pulso {
+    display: none;
+  }
+}

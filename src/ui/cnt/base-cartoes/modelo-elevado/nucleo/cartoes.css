@@ -1,0 +1,24 @@
+/* Cartões, modelo elevado: sem borda, com sombra e mais respiro. */
+.cnt-cartao {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--cnt-raio-gd);
+  background: var(--cnt-cor-superficie);
+  box-shadow: var(--cnt-sombra-2);
+  color: var(--cnt-cor-texto);
+  font-family: var(--cnt-fonte-base);
+}
+
+.cnt-cartao__topo { display: flex; align-items: baseline; justify-content: space-between; gap: var(--cnt-espaco-3); padding: var(--cnt-espaco-5) var(--cnt-espaco-5) 0; }
+.cnt-cartao__titulo { margin: 0; font-size: var(--cnt-texto-md); font-weight: var(--cnt-peso-forte); line-height: var(--cnt-linha-compacta); }
+.cnt-cartao__apoio { font-size: var(--cnt-texto-xs); color: var(--cnt-cor-texto-suave); }
+
+.cnt-cartao__corpo { flex: 1; padding: var(--cnt-espaco-3) var(--cnt-espaco-5) var(--cnt-espaco-5); }
+.cnt-cartao__valor { margin: 0; font-size: var(--cnt-texto-3xl); font-weight: var(--cnt-peso-forte); line-height: var(--cnt-linha-compacta); }
+.cnt-cartao__texto { margin: 0; font-size: var(--cnt-texto-sm); line-height: var(--cnt-linha-base); color: var(--cnt-cor-texto-suave); }
+
+.cnt-cartao__rodape { padding: 0 var(--cnt-espaco-5) var(--cnt-espaco-5); }
+
+.cnt-cartao__link { font-size: var(--cnt-texto-sm); font-weight: var(--cnt-peso-medio); color: var(--cnt-cor-primaria); text-decoration: none; }
+.cnt-cartao__link:hover { text-decoration: underline; }
+.cnt-cartao__link:focus-visible { outline: var(--cnt-foco-largura) solid var(--cnt-cor-primaria); outline-offset: var(--cnt-foco-distancia); border-radius: var(--cnt-raio-pq); }

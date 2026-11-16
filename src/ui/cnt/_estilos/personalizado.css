@@ -1,0 +1,9 @@
+/* Tema de estilo "Personalizado". Gerado por _escolhas/estilos.mjs; não edite à mão. */
+@import "../base-botoes/modelo-pilula/nucleo/botoes.css";
+@import "../base-campos/modelo-sublinhado/nucleo/campos.css";
+@import "../base-filtros/modelo-chips/nucleo/filtros.css";
+@import "../base-selos/modelo-ponto/nucleo/selos.css";
+@import "../base-cartoes/modelo-faixa/nucleo/cartoes.css";
+@import "../base-tabelas/modelo-zebrada/nucleo/tabelas.css";
+@import "../base-abas/modelo-pilula/nucleo/abas.css";
+@import "../base-avisos/modelo-contorno/nucleo/avisos.css";

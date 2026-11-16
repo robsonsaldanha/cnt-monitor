@@ -1,0 +1,7 @@
+/* Entrada única da fundação. A ordem importa: marcas depois dos temas. */
+@import "./tokens.css";
+@import "./temas/claro.css";
+@import "./temas/escuro.css";
+@import "./temas/marca-oceano.css";
+@import "./temas/marca-ameixa.css";
+@import "./base.css";

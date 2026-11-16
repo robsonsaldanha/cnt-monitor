@@ -1,0 +1,63 @@
+/* Filtros, modelo barra: busca e selects numa linha só; quebra em tela estreita. */
+.cnt-filtro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cnt-espaco-2);
+  padding: var(--cnt-espaco-2);
+  border: 1px solid var(--cnt-cor-borda);
+  border-radius: var(--cnt-raio-gd);
+  background: var(--cnt-cor-superficie);
+  font-family: var(--cnt-fonte-base);
+}
+
+.cnt-filtro__busca { position: relative; flex: 1 1 14rem; }
+.cnt-filtro__lupa { position: absolute; top: 50%; left: var(--cnt-espaco-3); width: 1rem; height: 1rem; transform: translateY(-50%); color: var(--cnt-cor-texto-suave); pointer-events: none; }
+
+.cnt-filtro__controle {
+  box-sizing: border-box;
+  height: var(--cnt-altura-controle-md);
+  padding: 0 var(--cnt-espaco-3);
+  border: 1px solid var(--cnt-cor-borda-forte);
+  border-radius: var(--cnt-raio-md);
+  background-color: var(--cnt-cor-superficie);
+  color: var(--cnt-cor-texto);
+  font-family: inherit;
+  font-size: var(--cnt-texto-sm);
+}
+
+.cnt-filtro__controle::placeholder { color: var(--cnt-cor-texto-suave); opacity: 1; }
+.cnt-filtro__controle:hover { border-color: var(--cnt-cor-texto); }
+.cnt-filtro__controle:focus-visible { outline: var(--cnt-foco-largura) solid var(--cnt-cor-primaria); outline-offset: 0; border-color: var(--cnt-cor-primaria); }
+
+.cnt-filtro__controle--busca { width: 100%; padding-left: var(--cnt-espaco-6); }
+
+/* Seta do select desenhada com gradiente para usar o token de cor. */
+.cnt-filtro__controle--select {
+  flex: 1 1 10rem;
+  appearance: none;
+  padding-right: var(--cnt-espaco-6);
+  background-image: linear-gradient(45deg, transparent 50%, var(--cnt-cor-texto-suave) 50%), linear-gradient(135deg, var(--cnt-cor-texto-suave) 50%, transparent 50%);
+  background-position: right 1.0625rem center, right 0.75rem center;
+  background-size: 0.3125rem 0.3125rem;
+  background-repeat: no-repeat;
+}
+
+.cnt-filtro__limpar {
+  height: var(--cnt-altura-controle-md);
+  padding: 0 var(--cnt-espaco-3);
+  border: 0;
+  border-radius: var(--cnt-raio-md);
+  background: transparent;
+  color: var(--cnt-cor-primaria);
+  font-family: inherit;
+  font-size: var(--cnt-texto-sm);
+  font-weight: var(--cnt-peso-medio);
+  cursor: pointer;
+}
+
+.cnt-filtro__limpar:hover { background: var(--cnt-cor-primaria-suave); }
+.cnt-filtro__limpar:focus-visible { outline: var(--cnt-foco-largura) solid var(--cnt-cor-primaria); outline-offset: var(--cnt-foco-distancia); }
+
+/* Lista aberta do select: fundo e texto dos tokens. Sem isto o navegador pode abrir a lista clara com o texto claro do tema escuro. */
+.cnt-filtro__controle--select option { background-color: var(--cnt-cor-superficie); color: var(--cnt-cor-texto); }

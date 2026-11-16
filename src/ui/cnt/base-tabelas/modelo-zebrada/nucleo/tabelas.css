@@ -1,0 +1,29 @@
+/* Tabelas, modelo zebrada: linhas alternadas, cabeçalho com fundo, moldura arredondada. */
+.cnt-tabela__rolagem { overflow-x: auto; border: 1px solid var(--cnt-cor-borda); border-radius: var(--cnt-raio-md); }
+.cnt-tabela__rolagem:focus-visible { outline: var(--cnt-foco-largura) solid var(--cnt-cor-primaria); outline-offset: var(--cnt-foco-distancia); }
+
+.cnt-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--cnt-cor-superficie);
+  color: var(--cnt-cor-texto);
+  font-family: var(--cnt-fonte-base);
+  font-size: var(--cnt-texto-sm);
+}
+
+.cnt-tabela__cab {
+  padding: var(--cnt-espaco-3);
+  background: var(--cnt-cor-superficie-2);
+  border-bottom: 1px solid var(--cnt-cor-borda);
+  font-weight: var(--cnt-peso-forte);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.cnt-tabela__cel { padding: var(--cnt-espaco-2) var(--cnt-espaco-3); white-space: nowrap; }
+
+.cnt-tabela__cab--numero,
+.cnt-tabela__cel--numero { text-align: right; font-variant-numeric: tabular-nums; }
+
+.cnt-tabela__linha:nth-child(even) .cnt-tabela__cel { background: var(--cnt-cor-fundo); }
+.cnt-tabela__linha:hover .cnt-tabela__cel { background: var(--cnt-cor-primaria-suave); }

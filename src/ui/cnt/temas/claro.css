@@ -1,0 +1,42 @@
+/* Tema claro. É o padrão quando não há data-cnt-tema. */
+:root,
+[data-cnt-tema="claro"] {
+  color-scheme: light;
+
+  --cnt-cor-fundo: #f6f7f9;
+  --cnt-cor-superficie: #ffffff;
+  --cnt-cor-superficie-2: #eef0f3;
+  --cnt-cor-borda: #dfe3e8;
+  --cnt-cor-borda-forte: #788291;
+  --cnt-cor-sobreposicao: rgba(15, 18, 22, 0.5);
+
+  --cnt-cor-texto: #161a20;
+  --cnt-cor-texto-suave: #556070;
+  --cnt-cor-texto-desativado: #98a1ae;
+
+  --cnt-cor-primaria: #2456d6;
+  --cnt-cor-primaria-hover: #1c47b8;
+  --cnt-cor-primaria-ativa: #163a99;
+  --cnt-cor-primaria-suave: #e8eefc;
+  --cnt-cor-primaria-contraste: #ffffff;
+
+  --cnt-cor-sucesso: #17794a;
+  --cnt-cor-sucesso-suave: #e3f4ea;
+  --cnt-cor-sucesso-contraste: #ffffff;
+
+  --cnt-cor-alerta: #9a5b00;
+  --cnt-cor-alerta-suave: #fdf0d9;
+  --cnt-cor-alerta-contraste: #ffffff;
+
+  --cnt-cor-perigo: #c0282d;
+  --cnt-cor-perigo-suave: #fde8e8;
+  --cnt-cor-perigo-contraste: #ffffff;
+
+  --cnt-cor-info: #0b6b99;
+  --cnt-cor-info-suave: #e2f1f9;
+  --cnt-cor-info-contraste: #ffffff;
+
+  --cnt-sombra-1: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.1);
+  --cnt-sombra-2: 0 4px 8px -2px rgba(16, 24, 40, 0.1), 0 2px 4px -2px rgba(16, 24, 40, 0.06);
+  --cnt-sombra-3: 0 16px 32px -8px rgba(16, 24, 40, 0.18), 0 4px 8px -4px rgba(16, 24, 40, 0.08);
+}
