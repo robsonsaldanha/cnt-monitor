@@ -463,6 +463,8 @@ def fabrica(motor, TOKEN, remoto=False):
                 return self._json(energia.planos())
             if r == "/api/energia":
                 return self._json(energia.estado())
+            if r == "/api/audio":
+                return self._json(m.audio.estado())
             if r == "/api/servicos":
                 with m.lock:
                     procs = {p: (d["mem"], d["cpu"]) for p, d in m.procs.items()}
