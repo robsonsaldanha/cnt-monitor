@@ -181,5 +181,28 @@ def abrir_como_sistema(comando):
         raise OSError(f"Não consegui abrir o acesso remoto na tela do usuário: {e}") from None
 
 
+def abrir_como_usuario(comando):
+    """Abre `comando` (lista) com a conta de quem está usando o PC, na sessão dele, ligado a este processo por
+    dois canos. Serve para o que é da pessoa e o SYSTEM não enxerga (o mixer de som, por exemplo).
+    Só funciona de dentro do serviço. Levanta OSError com a mensagem pronta."""
+    try:
+        import win32profile
+        import win32ts
+        sessao = win32ts.WTSGetActiveConsoleSessionId()
+        try:
+            token = win32ts.WTSQueryUserToken(sessao)
+        except Exception:  # noqa: BLE001
+            raise OSError("Ninguém está usando este computador.") from None
+        try:
+            return _abrir_com_token(token, comando, win32profile.CreateEnvironmentBlock(token, False))
+        finally:
+            token.Close()
+    except OSError:
+        raise
+    except Exception as e:  # noqa: BLE001
+        raise OSError(f"Não consegui abrir na sessão do usuário: {e}") from None
+
+
 if not WIN:     # Linux: loginctl e a sessão gráfica (X11 ou Wayland) de quem está usando o PC
     from .linux.sessao import abrir_na_tela_do_usuario, em_servico, abrir_como_sistema, sessao_grafica  # noqa: E402,F401
+    abrir_como_usuario = abrir_como_sistema      # no Linux o "como sistema" já roda com a conta da pessoa

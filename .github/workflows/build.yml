@@ -55,6 +55,9 @@ jobs:
       - name: Testes dos leitores do Linux (os que rodam em qualquer sistema)
         run: python build/teste_linux.py
 
+      - name: Testes do controle de som
+        run: python build/teste_audio.py
+
       - name: LibreHardwareMonitor (sensores)
         shell: pwsh
         run: ./build/baixar-lhm.ps1
@@ -228,8 +231,8 @@ jobs:
       - name: Testes das partes Linux (como root, para a captura de pacotes e o ping ICMP)
         run: sudo -E env "PATH=$PATH" python build/teste_linux.py
 
-      - name: Testes de rede, rede por programa, segurança, ventoinhas, FPS e Personalizar
-        run: for t in rede rede_programa seguranca ventoinhas jogo personalizar; do python build/teste_$t.py || exit 1; done
+      - name: Testes de rede, rede por programa, segurança, ventoinhas, FPS, Personalizar e som
+        run: for t in rede rede_programa seguranca ventoinhas jogo personalizar audio; do python build/teste_$t.py || exit 1; done
 
       - name: Testes do acesso remoto (numa tela virtual X11)
         run: xvfb-run -a -s "-screen 0 1600x900x24" python build/teste_remoto.py

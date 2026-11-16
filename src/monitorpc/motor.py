@@ -17,7 +17,7 @@ from collections import deque, defaultdict
 import psutil
 
 from . import config, configuracao, banco, rede, temperatura, nt, gpu, discos, inicializacao
-from . import alertas, jogo, energia, servicos, atualizacao, sessao, regras, limpeza, vps, captura, ventoinhas, remoto, encontro
+from . import alertas, jogo, energia, servicos, atualizacao, sessao, regras, limpeza, vps, captura, ventoinhas, remoto, encontro, audio
 from . import rede_programa
 from . import qualidade
 
@@ -166,6 +166,7 @@ class Motor:
         self._url_encontro = os.environ.get("MONITORPC_ENCONTRO") or encontro.SERVIDOR
         self.encontro = encontro.Encontro(self.ajuda, self._url_encontro)
         self.vps = vps.Gerenciador()
+        self.audio = audio.Audio()
         self.vazamentos = []
         self._ult_vaz = 0
         self._vaz_avisados = {}
@@ -228,6 +229,7 @@ class Motor:
         self.parar_ev.set()
         self.encontro.parar()
         self.ajuda.parar()
+        self.audio.parar()
         self.vent.liberar()
         self.rede.parar()
         self.jogo.fps.parar()
@@ -1395,6 +1397,8 @@ class Motor:
             return res(self.vps.testar(item, a.get("segredo"), esperado))
         if isinstance(tipo, str) and tipo.startswith("ajuda_"):
             return self._acao_ajuda(tipo, a)
+        if isinstance(tipo, str) and tipo.startswith("audio_"):
+            return self.audio.acao(a)
         if tipo == "vps_esquecer":
             vid = a.get("id")
             configuracao.salvar({"vps": [dict(v, fingerprint="") if v["id"] == vid else v for v in configuracao.obter("vps")]})

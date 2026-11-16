@@ -392,6 +392,46 @@ input.atalho{width:170px;text-align:center;cursor:pointer}
 }
 body[data-so="linux"] .so-win{display:none!important}
 body:not([data-so="linux"]) .so-lin{display:none!important}
+/* Áudio */
+.au-topo{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+.au-topo small{color:var(--cnt-cor-texto-suave);font-size:12.5px}
+.au-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:10px}
+.au-disp{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.au-disp.on{border-color:var(--cnt-cor-primaria);box-shadow:inset 0 0 0 1px var(--cnt-cor-primaria)}
+.au-cab{display:flex;align-items:center;gap:8px;min-width:0}
+.au-cab b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.au-linha{display:grid;grid-template-columns:auto minmax(0,1fr) 3.2em;gap:10px;align-items:center}
+.au-linha input[type=range]{width:100%}
+.au-linha output{font-variant-numeric:tabular-nums;text-align:right;font-weight:600}
+.au-linha--canal{grid-template-columns:7.5em minmax(0,1fr) 3.2em;font-size:var(--cnt-texto-sm)}
+.au-mudo{width:32px;height:32px;display:grid;place-items:center;border-radius:var(--cnt-raio-md);border:1px solid var(--cnt-cor-borda);background:var(--cnt-cor-superficie);color:var(--cnt-cor-texto);cursor:pointer;padding:0}
+.au-mudo svg{width:18px;height:18px}
+.au-mudo:hover{border-color:var(--cnt-cor-primaria)}
+.au-mudo[aria-pressed="true"]{background:var(--cnt-cor-perigo-suave);color:var(--cnt-cor-perigo);border-color:var(--cnt-cor-perigo)}
+.au-nivel{height:4px;border-radius:2px;background:var(--cnt-cor-superficie-2);overflow:hidden}
+.au-nivel i{display:block;height:100%;width:0;background:var(--cnt-cor-sucesso);transition:width .15s linear}
+.au-meta{color:var(--cnt-cor-texto-suave);font-size:12.5px;line-height:1.45;margin:0}
+.au-bts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.au-liga{display:inline-flex;gap:8px;align-items:center;margin-left:auto;font-size:var(--cnt-texto-sm);cursor:pointer}
+.au-db{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:var(--cnt-texto-sm)}
+.au-db input{width:6.5em}
+.au-canais summary{cursor:pointer;font-size:var(--cnt-texto-sm);color:var(--cnt-cor-texto-suave)}
+.au-canais[open] summary{margin-bottom:8px}
+.au-canais .au-linha{margin-top:6px}
+.au-mix{padding:4px 14px;margin-bottom:10px}
+.au-mix-tit{font-weight:600;padding:10px 0 4px}
+.au-app{display:grid;grid-template-columns:minmax(110px,1fr) auto minmax(140px,2fr) 3.2em;gap:6px 10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--cnt-cor-borda)}
+.au-app:last-child{border-bottom:0}
+.au-app input[type=range]{width:100%}
+.au-app output{font-variant-numeric:tabular-nums;text-align:right;font-weight:600}
+.au-app .au-nivel{grid-column:3/5}
+.au-app-nome{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:640px){.au-app{grid-template-columns:minmax(0,1fr) auto}.au-app input[type=range]{grid-column:1}.au-app .au-nivel{grid-column:1/3}}
+@media (prefers-reduced-motion:reduce){.au-nivel i{transition:none}}
+/* Dicas (balão ao parar o mouse ou focar pelo teclado) */
+.balao{position:fixed;z-index:10000;max-width:320px;padding:7px 10px;border-radius:var(--cnt-raio-md);background:var(--cnt-cor-texto);color:var(--cnt-cor-fundo);font-size:12.5px;line-height:1.45;pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:0 4px 14px rgba(0,0,0,.25);white-space:pre-line}
+.balao.on{opacity:1}
+@media (prefers-reduced-motion:reduce){.balao{transition:none}}
 </style>
 </head>
 <body>
@@ -423,6 +463,7 @@ body:not([data-so="linux"]) .so-lin{display:none!important}
       <li><button class="cnt-sidebar__item" type="button" data-v="regras"><span class="cnt-sidebar__icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M4 12h7M4 18h10"/><circle cx="18" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></span><span class="cnt-sidebar__rotulo">Regras por programa</span></button></li>
       <li><button class="cnt-sidebar__item" type="button" data-v="inicializacao"><span class="cnt-sidebar__icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v9"/><path d="M6.3 7.5a8 8 0 1 0 11.4 0"/></svg></span><span class="cnt-sidebar__rotulo">Inicialização</span></button></li>
       <li><button class="cnt-sidebar__item" type="button" data-v="energia"><span class="cnt-sidebar__icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></span><span class="cnt-sidebar__rotulo">Energia e Windows</span></button></li>
+      <li><button class="cnt-sidebar__item" type="button" data-v="audio"><span class="cnt-sidebar__icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg></span><span class="cnt-sidebar__rotulo">Áudio</span></button></li>
       <li><button class="cnt-sidebar__item" type="button" data-v="personalizar"><span class="cnt-sidebar__icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4.5l5 5L10 19H5v-5z"/><path d="M12.5 6.5l5 5"/></svg></span><span class="cnt-sidebar__rotulo">Personalizar</span></button></li>
       <li><button class="cnt-sidebar__item" type="button" data-v="servicos"><span class="cnt-sidebar__icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01"/></svg></span><span class="cnt-sidebar__rotulo">Serviços</span></button></li>
     </ul>
@@ -616,6 +657,12 @@ body:not([data-so="linux"]) .so-lin{display:none!important}
 <section id="v-energia" hidden>
   <h1>Energia e Windows</h1><p class="sub">Plano de energia e ajustes do Windows sem precisar abrir as Configurações. As mudanças valem na hora.</p>
   <div id="enCorpo"><div class="vazio">Carregando…</div></div>
+</section>
+
+<section id="v-audio" hidden>
+  <h1>Áudio</h1><p class="sub">Volume de cada caixa de som, fone e microfone, e quanto som cada programa faz. As mudanças valem na hora.</p>
+  <div class="au-topo"><div class="seg" id="auModo" role="group" aria-label="Modo da tela de áudio"><button type="button" data-modo="basico" aria-pressed="true" data-dica="O essencial: volume, silenciar, qual saída e qual microfone usar e o volume de cada programa">Básico</button><button type="button" data-modo="avancado" aria-pressed="false" data-dica="Tudo do Básico e mais: nível em dB, balanço entre canais, formato, dispositivo de chamadas, ligar e desligar dispositivos">Avançado</button></div><small id="auModoTxt"></small></div>
+  <div id="auCorpo"><div class="vazio">Carregando…</div></div>
 </section>
 
 <section id="v-servicos" hidden>
@@ -908,7 +955,7 @@ const eixoPct=v=>nf0.format(v)+'%', eixoB=v=>v>=GB?nf1.format(v/GB)+' GB':nf0.fo
 const eixoN=v=>CFG.rede_em_bits?(v*8>=1e6?nf1.format(v*8/1e6)+' Mb/s':nf0.format(v*8/1e3)+' Kb/s'):eixoR(v);
 
 /* =================== navegação =================== */
-const VISTAS=['geral','recurso','programas','processos','capturas','editor','jogo','otimizar','regras','inicializacao','energia','personalizar','servicos','rede','hardware','ventoinhas','historico','lentidao','alertas','relatorio','comparar','vps','ajuda','config'];
+const VISTAS=['geral','recurso','programas','processos','capturas','editor','jogo','otimizar','regras','inicializacao','energia','audio','personalizar','servicos','rede','hardware','ventoinhas','historico','lentidao','alertas','relatorio','comparar','vps','ajuda','config'];
 let vista='geral', recurso='cpu', ED_ID=0, CAP_ABA='capturar';
 function ir(h){ h=(h||'geral').replace(/^#/,''); let v=h, r=null; if(h.startsWith('recurso/')){ v='recurso'; r=h.split('/')[1]; }
   if(h==='capturas'||h.startsWith('capturas/')){ v='capturas'; CAP_ABA=h==='capturas/opcoes'?'opcoes':h==='capturas/estatisticas'?'estatisticas':'capturar'; }
@@ -1353,7 +1400,7 @@ function entrar(){ fecharMenu();
   if(vista==='inicializacao') vIni(); if(vista==='rede') vRede(); if(vista==='hardware') vHardware(true); if(vista==='ventoinhas') vVentoinhas(true);
   if(vista==='personalizar') vPersonalizar();
   if(vista==='historico') vHistorico(); if(vista==='lentidao') vLentidao(); if(vista==='relatorio') vRelatorio(); if(vista==='config') vConfig();
-  if(vista==='jogo') vJogo(true); if(vista==='energia') vEnergia(); if(vista==='servicos') vServicos(); if(vista==='alertas') vAlertas();
+  if(vista==='jogo') vJogo(true); if(vista==='energia') vEnergia(); if(vista==='audio') vAudio(); if(vista==='servicos') vServicos(); if(vista==='alertas') vAlertas();
   if(vista==='otimizar') vOtimizar(); if(vista==='regras') vRegras(); if(vista==='vps') vVps(true); if(vista==='ajuda') vAjuda(); if(vista==='comparar') vComparar();
   if(vista==='capturas'){ abaCaptura(CAP_ABA); vCapturas(true); } if(vista==='editor') vEditor(); }
 async function cicloStatus(){ try{ STATUS=await API('status'); definirSO(); avisos(); $('#rodInfo').innerHTML=`v${esc(STATUS.versao)} · histórico de ${STATUS.banco.desde?dur(Date.now()/1000-STATUS.banco.desde):'0 min'}<br>${fB(STATUS.banco.tamanho)} em disco`; }catch(_){} }
@@ -1856,6 +1903,265 @@ $('#enCorpo').addEventListener('change',async e=>{ const s=e.target.closest('[da
   const w=e.target.closest('[data-win]'); if(w){ const r=await POST('acao',{tipo:'windows_ajuste',chave:w.dataset.win,ativo:w.checked}).catch(()=>null); if(r) toast(r.ok?'Salvo.':r.msg,!r.ok); vEnergia(); return; }
   if(e.target.id==='brilho'){ const r=await POST('acao',{tipo:'brilho',nivel:+e.target.value}).catch(()=>null); if(r&&!r.ok) toast(r.msg,1); } });
 $('#enCorpo').addEventListener('input',e=>{ if(e.target.id==='brilho') $('#brilhoV').textContent=e.target.value+'%'; });
+
+/* =================== ÁUDIO =================== */
+// O serviço repassa tudo a um ajudante aberto na sessão de quem usa o PC (o mixer é da pessoa, não do SYSTEM).
+// A tela é redesenhada só quando muda a lista (dispositivos, programas, modo); volume e nível são atualizados no lugar.
+let AU=null, AU_CHAVE='', AU_TIMER=0, AU_ATIVO=null, AU_MEXEU=0, AU_MODO=(()=>{ try{ return localStorage.getItem('mpc_audio_modo')==='avancado'?'avancado':'basico'; }catch(_){ return 'basico'; } })();
+const AU_ABERTOS=new Set();
+const AU_ICO={som:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>',
+  mudo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>'};
+const AU_CANAIS={4:['Frontal esq.','Frontal dir.','Traseiro esq.','Traseiro dir.'],6:['Frontal esq.','Frontal dir.','Centro','Subwoofer','Traseiro esq.','Traseiro dir.'],
+  8:['Frontal esq.','Frontal dir.','Centro','Subwoofer','Traseiro esq.','Traseiro dir.','Lateral esq.','Lateral dir.']};
+const AU_PULSE={'front-left':'Frontal esq.','front-right':'Frontal dir.','front-center':'Centro','lfe':'Subwoofer','rear-left':'Traseiro esq.','rear-right':'Traseiro dir.','side-left':'Lateral esq.','side-right':'Lateral dir.','mono':'Mono'};
+function auCanal(d,i){ if(d.canais.length===2) return i?'Direito':'Esquerdo'; const n=(d.nomes_canais||[])[i]; if(n) return AU_PULSE[n]||n; return (AU_CANAIS[d.canais.length]||[])[i]||'Canal '+(i+1); }
+function auModoTxt(){ $('#auModoTxt').textContent=AU_MODO==='avancado'?'Mostrando tudo, inclusive os dispositivos desligados.':'Mostrando o essencial. Use “Avançado” para dB, canais e formato.'; }
+async function vAudio(){ document.querySelectorAll('#auModo [data-modo]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.modo===AU_MODO))); auModoTxt();
+  await auLer(true); clearInterval(AU_TIMER);
+  AU_TIMER=setInterval(()=>{ if(vista!=='audio'){ clearInterval(AU_TIMER); return; } if(!document.hidden) auLer(false); },1000); }
+async function auLer(forcar){ let a; try{ a=await API('audio'); }catch(_){ if(forcar){ AU_CHAVE=''; $('#auCorpo').innerHTML='<div class="vazio">Não consegui falar com o serviço do CNT Monitor.</div>'; } return; }
+  AU=a; auDesenhar(forcar); }
+function auDesenhar(forcar){ const a=AU, c=$('#auCorpo');
+  if(a.erro){ AU_CHAVE=''; c.innerHTML=`<div class="vazio">${esc(a.erro)}</div>`; return; }
+  const chave=AU_MODO+JSON.stringify([...a.saidas,...a.entradas].map(d=>[d.id,d.estado,d.padrao,d.comunicacao,(d.canais||[]).length]))+JSON.stringify(a.programas.map(p=>[p.dispositivo,p.app,p.nome]));
+  if(!forcar&&(chave===AU_CHAVE||Date.now()-AU_MEXEU<1500)) return auAtualizar();   // não redesenha no meio de um arraste
+  AU_CHAVE=chave; c.innerHTML=auHtml(a,AU_MODO==='avancado'); auAtualizar(); }
+function auHtml(a,av){ const r=a.recursos||{};
+  const sec=(tit,sub,l,vazio)=>`<h2 class="secao">${tit}</h2><p class="au-meta" style="margin-bottom:8px">${sub}</p><div class="au-grade">${(av?l:l.filter(d=>d.estado==='ativo')).map(d=>auCartao(d,av,r,l===a.entradas)).join('')||`<div class="vazio">${vazio}</div>`}</div>`;
+  let h=sec('Saída de som','Por onde o som sai: caixas, fones e monitores com som. '+(av&&r.comunicacao?'“Padrão” é o que os programas usam; “Chamadas”, o que Teams, Discord e parecidos usam.':'O marcado “'+(av?'Padrão':'Em uso')+'” é o que os programas usam.'),a.saidas,'Nenhuma saída de som ligada.')
+   +sec('Microfones','Por onde o som entra. O volume aqui é o quanto o microfone capta.',a.entradas,'Nenhum microfone ligado.');
+  const saidas=a.saidas.filter(d=>d.estado==='ativo'), pad=saidas.find(d=>d.padrao)||saidas[0];
+  const grupos=av?saidas.filter(d=>d===pad||a.programas.some(p=>p.dispositivo===d.id)):(pad?[pad]:[]);
+  h+=`<h2 class="secao">Volume de cada programa</h2><p class="au-meta" style="margin-bottom:8px">Abaixe ou silencie um programa sem mexer nos outros. Só aparecem os programas que estão com o som aberto${av?'':' na saída em uso'}.</p>`;
+  h+=grupos.map(d=>{ const ps=a.programas.filter(p=>p.dispositivo===d.id);
+    return `<div class="cnt-cartao au-mix">${av?`<div class="au-mix-tit">${esc(d.nome)}</div>`:''}${ps.map(p=>auApp(p,d,r)).join('')||'<div class="vazio">Nenhum programa com som aberto agora.</div>'}</div>`; }).join('')||'<div class="vazio">Nenhuma saída de som ligada.</div>';
+  if(av&&r.reducao) h+=`<h2 class="secao">Chamadas</h2><div class="cnt-cartao cfg" style="max-width:none"><div class="item"><b>Quando o Windows detectar uma chamada</b><div class="ctl"><select data-a="reducao" class="cnt-campo__controle cnt-campo__controle--select" aria-label="Quando o Windows detectar uma chamada">${(a.reducoes||[]).map((t,i)=>`<option value="${i}" ${i===a.reducao?'selected':''}>${esc(t)}</option>`).join('')}</select></div><small>O que acontece com o som dos outros programas durante uma ligação (Teams, Discord, WhatsApp…). Vale a partir da próxima chamada.</small></div></div>`;
+  return h; }
+function auCartao(d,av,r,entrada){ const id=esc(d.id), nome=esc(d.nome), ativo=d.estado==='ativo', tem=ativo&&d.volume!=null;
+  const selos=(d.padrao?`<span class="cnt-selo cnt-selo--sucesso" data-dica="${av?'Dispositivo padrão: os programas usam este':'É por aqui que o som está passando agora'}">${av?'Padrão':'Em uso'}</span>`:'')
+    +(av&&r.comunicacao&&d.comunicacao?'<span class="cnt-selo cnt-selo--primario" data-dica="Usado em chamadas (Teams, Discord, WhatsApp…)">Chamadas</span>':'')
+    +(ativo?'':`<span class="cnt-selo" data-dica="${d.estado==='desativado'?'Desligado no Windows. Use a chave “Ligado” para voltar a usar.':'O aparelho não está conectado agora.'}">${d.estado==='desativado'?'Desligado':'Desconectado'}</span>`);
+  let h=`<div class="cnt-cartao au-disp${d.padrao?' on':''}"><div class="au-cab"><b data-dica="${nome}">${nome}</b>${selos}</div>`;
+  if(tem) h+=`<div class="au-linha"><button type="button" class="au-mudo" data-a="mudo" data-id="${id}" aria-pressed="${d.mudo}"></button><input type="range" min="0" max="100" step="1" value="${d.volume}" data-a="volume" data-id="${id}" aria-label="Volume de ${nome}" data-dica="Arraste para mudar o volume (as setas do teclado também funcionam)"><output data-id="${id}">${d.volume}%</output></div>`
+    +(r.nivel?`<div class="au-nivel" data-dica="${entrada?'Se a barra mexe quando você fala, o microfone está captando':'Se a barra mexe, o som está saindo por aqui'}"><i data-n="1" data-id="${id}"></i></div>`:'');
+  if(av){ const meta=[d.placa&&('Placa: '+d.placa), d.formato_texto&&('Formato: '+d.formato_texto)].filter(Boolean).join(' · ');
+    if(meta) h+=`<p class="au-meta" data-dica="Placa de som e formato que o sistema usa para mixar o som deste dispositivo">${esc(meta)}</p>`;
+    if(tem&&r.db&&d.db!=null) h+=`<label class="au-db" data-dica="O mesmo volume, medido em decibéis (0 dB = sem redução). Digite o valor e aperte Enter.">Nível em dB <input type="number" class="cnt-campo__controle" step="0.5" ${d.db_min!=null?`min="${d.db_min}" max="${d.db_max}"`:''} value="${d.db}" data-a="db" data-id="${id}">${d.db_min!=null?`<span class="au-meta">de ${d.db_min} a ${d.db_max} dB</span>`:''}</label>`;
+    if(tem&&d.canais.length>1) h+=`<details class="au-canais" data-id="${id}" ${AU_ABERTOS.has(d.id)?'open':''}><summary data-dica="Volume separado de cada lado ou caixa (para acertar o balanço)">Balanço entre canais (${d.canais.length})</summary>${d.canais.map((v,i)=>`<div class="au-linha au-linha--canal"><span>${auCanal(d,i)}</span><input type="range" min="0" max="100" value="${v}" data-a="canal" data-canal="${i}" data-id="${id}" aria-label="${auCanal(d,i)}: ${nome}" data-dica="Volume do canal ${auCanal(d,i).toLowerCase()}"><output data-id="${id}" data-canal="${i}">${v}%</output></div>`).join('')}</details>`; }
+  const bts=[];
+  if(ativo&&!d.padrao) bts.push(`<button type="button" class="cnt-botao cnt-botao--pq cnt-botao--secundario" data-a="padrao" data-papel="${av&&r.comunicacao?'padrao':'tudo'}" data-id="${id}" data-dica="${av&&r.comunicacao?'Os programas passam a usar este dispositivo (as chamadas continuam onde estão)':'Passa a usar este dispositivo para tudo, inclusive chamadas'}">${av?'Tornar padrão':'Usar este'}</button>`);
+  if(av&&ativo&&r.comunicacao&&!d.comunicacao) bts.push(`<button type="button" class="cnt-botao cnt-botao--pq cnt-botao--secundario" data-a="padrao" data-papel="comunicacao" data-id="${id}" data-dica="Teams, Discord, WhatsApp e outros programas de chamada passam a usar este dispositivo">Usar em chamadas</button>`);
+  if(av&&r.ativar&&d.estado!=='desconectado') bts.push(`<label class="au-liga" data-dica="Desligado, o Windows esconde o dispositivo de todos os programas (como em Configurações > Som)">Ligado <span class="sw"><input type="checkbox" data-a="ativar" data-id="${id}" ${ativo?'checked':''} aria-label="${nome} ligado"><span></span></span></label>`);
+  if(bts.length) h+=`<div class="au-bts">${bts.join('')}</div>`;
+  return h+'</div>'; }
+function auApp(p,d,r){ const id=esc(d.id), app=esc(p.app), nome=esc(p.nome);
+  return `<div class="au-app"><span class="au-app-nome" data-dica="${p.app==='sis'?'Avisos e alertas do sistema':nome}">${nome}</span><button type="button" class="au-mudo" data-a="app_mudo" data-id="${id}" data-app="${app}" aria-pressed="${p.mudo}"></button><input type="range" min="0" max="100" value="${p.volume}" data-a="app_volume" data-id="${id}" data-app="${app}" aria-label="Volume de ${nome}" data-dica="Volume só deste programa (proporcional ao volume da saída)"><output data-id="${id}" data-app="${app}">${p.volume}%</output>${r.nivel?`<div class="au-nivel" data-dica="Se a barra mexe, este programa está tocando som agora"><i data-n="1" data-id="${id}" data-app="${app}"></i></div>`:''}</div>`; }
+function auAtualizar(){ const a=AU, disp=new Map([...a.saidas,...a.entradas].map(d=>[d.id,d])), apps=new Map(a.programas.map(p=>[p.dispositivo+'\n'+p.app,p]));
+  const mexendo=Date.now()-AU_MEXEU<1500;
+  for(const el of $('#auCorpo').querySelectorAll('[data-id]')){ const x=el.dataset.app?apps.get(el.dataset.id+'\n'+el.dataset.app):disp.get(el.dataset.id); if(!x) continue;
+    const canal=el.dataset.canal!=null?+el.dataset.canal:null, alvo=el.tagName==='OUTPUT'?el.previousElementSibling:el;
+    if(el.dataset.n){ el.style.width=Math.min(100,x.nivel||0)+'%'; continue; }
+    if(mexendo&&alvo===AU_ATIVO) continue;
+    const t=el.dataset.a, vol=canal!=null?(x.canais||[])[canal]:x.volume;
+    if(el.tagName==='OUTPUT') el.textContent=vol+'%';
+    else if(t==='volume'||t==='app_volume'||t==='canal'){ if(+el.value!==vol) el.value=vol; }
+    else if(t==='db'){ if(document.activeElement!==el&&x.db!=null) el.value=x.db; }
+    else if(t==='mudo'||t==='app_mudo'){ const m=String(!!x.mudo); if(el.getAttribute('aria-pressed')!==m||!el.firstChild){ el.setAttribute('aria-pressed',m); el.innerHTML=x.mudo?AU_ICO.mudo:AU_ICO.som;
+        el.setAttribute('aria-label',(x.mudo?'Ligar o som de ':'Silenciar ')+x.nome); el.dataset.dica=x.mudo?'Sem som agora. Clique para ligar de novo.':'Clique para silenciar (o volume fica guardado)'; } } } }
+async function auAcao(el){ const t=el.dataset.a, d={tipo:'audio_'+t};
+  if(el.dataset.id) d.id=el.dataset.id; if(el.dataset.app) d.app=el.dataset.app; if(el.dataset.canal!=null) d.canal=+el.dataset.canal;
+  if(t==='volume'||t==='app_volume'||t==='canal'||t==='db'||t==='reducao') d.valor=+el.value;
+  if(t==='mudo'||t==='app_mudo'){ d.mudo=el.getAttribute('aria-pressed')!=='true'; el.setAttribute('aria-pressed',String(d.mudo)); el.innerHTML=d.mudo?AU_ICO.mudo:AU_ICO.som; }
+  if(t==='padrao') d.papel=el.dataset.papel; if(t==='ativar') d.ativo=el.checked;
+  const r=await POST('acao',d).catch(()=>null);
+  if(!r) return toast('Não consegui falar com o serviço.',true);
+  if(!r.ok) toast(r.msg,true); else if(['padrao','ativar','reducao'].includes(t)) toast(r.msg);
+  if(!['volume','app_volume','canal'].includes(t)) auLer(false); }
+$('#auModo').addEventListener('click',e=>{ const b=e.target.closest('[data-modo]'); if(!b) return; AU_MODO=b.dataset.modo; try{ localStorage.setItem('mpc_audio_modo',AU_MODO); }catch(_){}
+  document.querySelectorAll('#auModo [data-modo]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); auModoTxt(); if(AU) auDesenhar(true); });
+$('#auCorpo').addEventListener('input',e=>{ const el=e.target; if(!['volume','app_volume','canal'].includes(el.dataset.a)) return;
+  AU_ATIVO=el; AU_MEXEU=Date.now(); const o=el.nextElementSibling; if(o&&o.tagName==='OUTPUT') o.textContent=el.value+'%';
+  clearTimeout(el._t); const env=()=>{ el._ult=Date.now(); auAcao(el); };            // no máximo um pedido a cada 120 ms; o último sempre vai
+  if(!el._ult||Date.now()-el._ult>120) env(); else el._t=setTimeout(env,120); });
+$('#auCorpo').addEventListener('change',e=>{ const el=e.target; if(['db','ativar','reducao'].includes(el.dataset.a)) auAcao(el); });
+$('#auCorpo').addEventListener('click',e=>{ const b=e.target.closest('button[data-a]'); if(b) auAcao(b); });
+$('#auCorpo').addEventListener('toggle',e=>{ const d=e.target; if(d.matches&&d.matches('details[data-id]')){ if(d.open) AU_ABERTOS.add(d.dataset.id); else AU_ABERTOS.delete(d.dataset.id); } },true);
+
+/* =================== DICAS (balões em toda a interface) =================== */
+// Texto: data-dica > title (vira data-dica, para não aparecer o balão nativo junto) > menu (o subtítulo da tela) >
+// seletores > texto do botão (DICA_TEXTO; os verbos genéricos ganham o título do bloco onde estão) > a descrição do
+// item das Configurações > aria-label. Aparece ao parar o mouse (0,45 s) ou ao focar pelo teclado; Esc fecha.
+const DICA_MENU={geral:'Resumo do PC agora: processador, memória, disco, rede e os programas que mais estão usando',
+  hardware:'Sensores de temperatura, uso, frequência, ventoinhas e consumo de energia',
+  lentidao:'Momentos em que o PC ficou lento e o que estava pesando em cada um',
+  relatorio:'Relatório completo do PC para salvar em HTML ou PDF e enviar a quem vai ajudar',
+  comparar:'Compara o uso do PC entre dois períodos (hoje × ontem, semana × semana…)',
+  config:'Preferências do CNT Monitor: atualização, acesso pelo celular, avisos, aparência e mais'};
+const DICA_SELETOR=[
+  ['[data-cnt-topbar-tema]','Troca entre o tema claro e o escuro'],
+  ['[data-cnt-sidebar-abrir]','Abre o menu'],
+  ['#vivo','Ligação com o serviço do CNT Monitor. “Ao vivo” quer dizer que os números estão chegando agora.'],
+  ['[data-ir^="recurso/"]','Clique para ver o gráfico e os detalhes'],
+  ['li[data-prog]','Clique para ver os detalhes do programa. Botão direito: ações (encerrar, abrir a pasta…)'],
+  ['tr[data-tipo],tr[data-pid]','Botão direito: ações deste item'],
+  ['input[type=search],input[placeholder^="Procurar"],input[placeholder^="Buscar"],input[placeholder^="Filtrar"]','Digite para filtrar a lista'],
+  ['input[placeholder="000 000 000"]','ID do outro computador (a pessoa vê o dela na tela Acesso remoto)'],
+  ['input[placeholder="XXXX-XXXX"]','Senha que a pessoa passou junto com o ID'],
+  ['input[type=range]','Arraste para ajustar (as setas do teclado também funcionam)'],
+  ['input[type=color]','Clique para escolher a cor'],
+  ['input[type=file]','Escolha o arquivo no computador'],
+];
+const DICA_TEXTO=[
+  [/^\+ Criar plano “Alto desempenho”$/,'Cria um plano de energia que deixa o processador sempre rápido (gasta um pouco mais de energia)'],
+  [/^\+ Criar plano “Desempenho máximo”$/,'Cria o plano de energia sem nenhuma economia, para jogos e trabalho pesado'],
+  [/^\+ Novo perfil$/,'Cria um perfil novo'],
+  [/^\+ Ponto$/,'Acrescenta um ponto na curva (temperatura × velocidade)'],
+  [/^\+ Remapear um atalho$/,'Faz uma combinação de teclas executar outra'],
+  [/^\+ Remapear uma tecla$/,'Faz uma tecla funcionar como outra'],
+  [/^\+ Novo fluxo$|^Novo fluxo$/,'Cria uma sequência de passos automática'],
+  [/^\+$/,'Acrescentar'],
+  [/^[×✕]$/,'Fechar ou remover'],
+  [/^(\d+) (min|h|hora|horas|dias)$/,m=>`Mostra o período: ${m[0]}`],
+  [/^(Hoje|Ontem|Últimas 24 h|Últimos 7 dias)$/,m=>`Mostra o período: ${m[0].toLowerCase()}`],
+  [/×/,'Compara os dois períodos lado a lado'],
+  [/^Personalizado$/,'Escolhe datas e horários à mão'],
+  [/^(Todas|Todos)$/,'Mostra tudo, sem filtro'],
+  [/^Não são do Windows$/,'Mostra só o que foi instalado por outros programas'],
+  [/^Em execução$/,'Mostra só o que está rodando agora'],
+  [/^Início$/,'Volta para a primeira pasta'],
+  [/^Acima$/,'Sobe uma pasta'],
+  [/^Abrir as opções de captura$/,'Mostra os modos de captura (região, janela, tela, gravação…) e as opções'],
+  [/^Abrir o lançador$/,'Abre a busca rápida para achar e abrir programas'],
+  [/^Abrir$/,'Abre',1],
+  [/^Ligar Modo Jogo$/,'Aplica agora as opções marcadas nesta tela; ao desligar, tudo volta como estava'],
+  [/^Desligar Modo Jogo$/,'Desfaz o que o Modo Jogo mudou'],
+  [/^Adicionar servidor$/,'Cadastra um servidor (VPS) para acompanhar por SSH'],
+  [/^Remover servidor$/,'Tira o servidor da lista (não mexe no servidor)'],
+  [/^Adicionar$/,'Adiciona',1],
+  [/^Analisar de novo$|^Iniciar análise$/,'Faz a análise de novo com os dados de agora'],
+  [/^Análise de rede$/,'Testes de rede: velocidade, perda de pacotes, rota e DNS'],
+  [/^Apagar$/,'Apaga',1],
+  [/^Aplicar agora$|^Aplicar$/,'Aplica a mudança agora',1],
+  [/^Arquivos…?$/,'Envia e recebe arquivos com o outro computador'],
+  [/^Atalhos do Windows no outro computador/,'Liga ou desliga o envio de atalhos como Win, Alt+Tab e Alt+F4 para o outro computador'],
+  [/^Atalhos e opções$/,'Atalhos de teclado e opções da captura'],
+  [/^Atualizar$/,'Lê os dados de novo'],
+  [/^Baixar \(HTML\)$|^Baixar relatório completo \(HTML\)$/,'Salva o relatório num arquivo HTML que abre em qualquer navegador'],
+  [/^Baixar agora$/,'Baixa e instala a versão nova agora'],
+  [/^Baixar arquivo$|^Baixar$/,'Salva no seu computador',1],
+  [/^Cadastrar ou trocar…$/,'Guarda ou troca a chave (ela fica protegida neste PC)'],
+  [/^Cancelar edição$/,'Desfaz o que foi mudado e sai da edição'],
+  [/^Cancelar$/,'Desiste sem salvar'],
+  [/^Capturar e histórico$/,'Fazer capturas e ver as que já foram feitas'],
+  [/^Opções$/,'Mais opções'],
+  [/^Estatísticas$/,'Números das suas capturas e gravações'],
+  [/^Claro$/,'Usa o tema claro'],
+  [/^Escuro$/,'Usa o tema escuro'],
+  [/^Com a internet\/rede$/,'Testa a conexão com a internet e com a rede local'],
+  [/^Comparar$/,'Compara os períodos escolhidos'],
+  [/^Conectar$/,'Conecta ao outro computador com o ID e a senha'],
+  [/^Confirmar$/,'Confirma e faz a ação'],
+  [/^Copiar comando$/,'Copia o comando para colar no terminal'],
+  [/^Copiar como imagem$/,'Copia uma imagem pronta para colar em conversa ou documento'],
+  [/^Copiar como texto$/,'Copia em texto, para colar em conversa ou chamado'],
+  [/^Copiar$/,'Copia para a área de transferência',1],
+  [/^Desfazer a última/,'Desfaz a última mudança feita por aqui'],
+  [/^Desfazer$/,'Desfaz a última mudança'],
+  [/^Refazer$/,'Refaz o que foi desfeito'],
+  [/^Detalhes do IP$/,'Dono, país e reputação deste endereço'],
+  [/^Detalhes$|detalhes ›$/,'Mostra mais informações'],
+  [/^Editar$/,'Edita',1],
+  [/^Encerrar agora$|^Encerrar$/,'Fecha à força. O que não foi salvo nele se perde.',1],
+  [/^Enviar Ctrl\+Alt\+Del$/,'Abre a tela de segurança do outro computador (bloquear, trocar usuário, Gerenciador de Tarefas)'],
+  [/^Enviar minha área de transferência agora$/,'Manda o que você copiou aqui para o outro computador'],
+  [/^Área de transferência:/,'Escolhe para que lado o copiar e colar funciona na sessão'],
+  [/^Escolher arquivos…$/,'Escolhe arquivos do seu computador para enviar'],
+  [/^Escolher pasta…$|^Escolher…$/,'Escolhe a pasta no computador'],
+  [/^Usar a padrão$/,'Volta a salvar na pasta padrão'],
+  [/^Esquecer identidade$/,'Esquece a identidade (fingerprint) do servidor. Use só se ele foi reinstalado.'],
+  [/^Executar$/,'Executa agora',1],
+  [/^Expandir tudo$/,'Abre todos os grupos'],
+  [/^Recolher tudo$/,'Fecha todos os grupos'],
+  [/^Exportar \.log$/,'Salva o registro completo num arquivo de texto'],
+  [/^Exportar CSV$/,'Salva os dados numa planilha (abre no Excel)'],
+  [/^Fechar$/,'Fecha esta janela'],
+  [/^Gerar chave$/,'Cria uma chave de acesso para outro programa ler os dados pela API'],
+  [/^Iniciar$|^Parar$|^Reiniciar$/,'Muda o estado deste item',1],
+  [/^Limpar cache agora$/,'Libera a memória que o sistema guarda em cache (não fecha nenhum programa)'],
+  [/^Limpar cache dos selecionados$/,'Apaga o cache dos navegadores marcados (você continua logado nos sites)'],
+  [/^Limpar selecionados$/,'Apaga os itens marcados'],
+  [/^Limpar$/,'Limpa',1],
+  [/^Medir$/,'Mede quanto tempo o site leva para responder'],
+  [/^Path MTU$/,'Descobre o maior pacote que passa até o destino sem ser quebrado'],
+  [/^Traçar rota$/,'Mostra o caminho (cada roteador) até o destino'],
+  [/^Monitorar em detalhe$/,'Acompanha a rede só deste programa (chamadas, jogos, travadas)'],
+  [/^Parar e salvar$/,'Para a gravação e salva o vídeo'],
+  [/^Ver a gravação atual$/,'Mostra a gravação que está em andamento'],
+  [/^Permitir acesso$/,'Deixa o técnico ver e controlar este computador'],
+  [/^Recusar$/,'Não deixa o técnico entrar'],
+  [/^Procurar agora$/,'Procura uma versão nova do CNT Monitor agora'],
+  [/^Próximo papel$/,'Troca para o próximo papel de parede da pasta'],
+  [/^Recarregar$/,'Recarrega a tela para usar a versão nova'],
+  [/^Reiniciar o Explorer$/,'Reinicia a barra de tarefas e as pastas para aplicar a mudança (os programas abertos continuam)'],
+  [/^Remover$/,'Remove',1],
+  [/^Renomear$/,'Troca o nome',1],
+  [/^Salvar PDF$/,'Salva o relatório em PDF'],
+  [/^Salvar como nova$/,'Salva uma cópia, sem mexer na original'],
+  [/^Salvar e enviar$/,'Salva e envia pelo destino configurado'],
+  [/^Salvar perfis$/,'Guarda os perfis'],
+  [/^Salvar regra$/,'Guarda a regra; ela passa a valer na hora'],
+  [/^Salvar senha$/,'Guarda a senha (fica protegida neste PC)'],
+  [/^Salvar$/,'Guarda as mudanças',1],
+  [/^Tela cheia$/,'Mostra em tela cheia (Esc sai)'],
+  [/^Testar DNS$/,'Compara a velocidade dos servidores de DNS'],
+  [/^Testar conexão$/,'Confere se o acesso remoto consegue sair por esta rede (servidor, retransmissor UDP e TCP)'],
+  [/^Testar notificação$/,'Mostra um aviso de teste na tela'],
+  [/^Testar velocidade$/,'Mede a velocidade de download e upload da internet'],
+  [/^Testar$/,'Testa',1],
+  [/^Voltar$/,'Volta para a tela anterior'],
+  [/^Comparar períodos$|^Histórico$|^Lentidão$|^Alertas$|^Relatório$|^Configurações$|^Processos$|^Programas$|^Otimizar$|^Inicialização$|^Personalizar$|^Serviços$|^Rede e IPs$|^Visão geral$|^Ventoinhas$|^Temperatura e hardware$|^Energia e Windows$|^Regras por programa$|^Servidores \(VPS\)$|^IPs e conexões$|^Portas abertas$/,m=>`Abre: ${m[0]}`],
+  [/^Opções… ▾$|▾$/,'Mostra mais opções'],
+];
+function dicaContexto(el){ const box=el.closest('.item,tr,li,.cnt-cartao,.linha,.cnt-modal,section'); if(!box) return '';
+  const t=[...box.querySelectorAll('b,h2,h3,.tit,td')].find(x=>!x.contains(el)&&!el.contains(x)&&x.textContent.trim());
+  return t?t.textContent.replace(/\s+/g,' ').trim().slice(0,80):''; }
+function dicaDe(el){
+  if(el.hasAttribute('title')){ const t=el.getAttribute('title'); el.removeAttribute('title'); if(t) el.dataset.dica=t; }
+  if(el.dataset.dica) return el.dataset.dica;
+  const v=el.closest('#nav [data-v]'); if(v){ const s=document.querySelector('#v-'+v.dataset.v+' .sub'); if(DICA_MENU[v.dataset.v]) return DICA_MENU[v.dataset.v]; if(s&&s.textContent.trim()) return s.textContent.trim(); }
+  for(const [sel,t] of DICA_SELETOR) if(el.matches(sel)) return t;
+  const txt=(el.textContent||'').replace(/\s+/g,' ').trim();
+  if(txt&&(/^(BUTTON|A|SUMMARY)$/.test(el.tagName)||el.getAttribute('role')==='button'||el.getAttribute('role')==='tab'))
+    for(const [re,t,ctx] of DICA_TEXTO){ const m=txt.match(re); if(!m) continue; const base=typeof t==='function'?t(m,el):t;
+      if(!ctx) return base; const c=dicaContexto(el); return c?`${base}: ${c}`:base; }
+  const item=el.closest('.cfg .item'); if(item){ const s=item.querySelector('small'); if(s&&s.textContent.trim()) return s.textContent.trim(); }
+  const al=el.getAttribute('aria-label'); if(al&&al!==txt) return al;
+  const rot=el.id&&document.querySelector(`label[for="${CSS.escape(el.id)}"]`); if(rot&&rot.textContent.trim()) return rot.textContent.trim();
+  const lab=el.closest('label'); if(lab){ const t=[...lab.childNodes].filter(n=>!(n.nodeType===1&&n.matches('select,input,textarea,.sw'))).map(n=>n.textContent).join(' ').replace(/\s+/g,' ').trim(); if(t&&t!==txt) return t; }
+  const td=el.closest('td'); if(td&&td.parentElement){ const tab=td.closest('table'), th=tab&&tab.querySelectorAll('thead th')[td.cellIndex], c0=td.parentElement.cells[0];
+    const t=[c0&&c0!==td?c0.textContent.trim():'',th?th.textContent.trim():''].filter(Boolean).join(' — '); if(t) return t; }
+  if(/^(INPUT|SELECT|TEXTAREA|LABEL)$/.test(el.tagName)){ const c=dicaContexto(el); if(c) return c; }
+  if(txt&&el.scrollWidth>el.clientWidth+1) return txt;          // texto cortado: o balão mostra inteiro
+  return txt&&el.tagName==='BUTTON'?(dicaContexto(el)?`${txt}: ${dicaContexto(el)}`:''):'';
+}
+const BALAO=Object.assign(document.createElement('div'),{className:'balao',id:'balao'}); BALAO.setAttribute('role','tooltip'); document.body.append(BALAO);
+const DICA_ALVO='[data-dica],[title],button,a[href],[role=button],[role=tab],input,select,textarea,summary,label.sw,.cnt-selo,li[data-prog],tr[data-tipo],tr[data-pid],[data-ir],#vivo';
+let balaoEl=null, balaoT=0;
+function balaoMostrar(el){ const t=dicaDe(el); if(!t||!el.isConnected) return; BALAO.textContent=t; BALAO.classList.add('on');
+  if(!el.getAttribute('aria-describedby')) el.setAttribute('aria-describedby','balao');
+  const r=el.getBoundingClientRect(), b=BALAO.getBoundingClientRect(), m=8;
+  let y=r.bottom+m; if(y+b.height>innerHeight-m) y=Math.max(m,r.top-b.height-m);
+  BALAO.style.left=Math.round(Math.min(Math.max(m,r.left+r.width/2-b.width/2),innerWidth-b.width-m))+'px'; BALAO.style.top=Math.round(y)+'px'; }
+function balaoEsconder(){ clearTimeout(balaoT); if(balaoEl&&balaoEl.getAttribute('aria-describedby')==='balao') balaoEl.removeAttribute('aria-describedby'); balaoEl=null; BALAO.classList.remove('on'); }
+document.addEventListener('pointerover',e=>{ if(e.pointerType==='touch') return; const el=e.target.closest&&e.target.closest(DICA_ALVO);
+  if(el===balaoEl) return; balaoEsconder(); if(!el||el.closest('.rs-palco,canvas')) return;
+  balaoEl=el; balaoT=setTimeout(()=>balaoMostrar(el),450); });
+document.addEventListener('focusin',e=>{ const el=e.target.closest&&e.target.closest(DICA_ALVO); balaoEsconder(); if(!el) return;
+  let teclado=false; try{ teclado=e.target.matches(':focus-visible'); }catch(_){} if(!teclado) return; balaoEl=el; balaoMostrar(el); });
+document.addEventListener('focusout',balaoEsconder);
+document.addEventListener('pointerdown',balaoEsconder,true);
+document.addEventListener('scroll',balaoEsconder,true);
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&BALAO.classList.contains('on')) balaoEsconder(); });
 
 /* =================== VENTOINHAS =================== */
 let VT=null, VT_SIG='';

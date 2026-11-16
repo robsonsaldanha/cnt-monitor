@@ -3,6 +3,7 @@
   MonitorPCServico.exe                 -> chamado pelo Windows ao iniciar o serviço
   MonitorPCServico.exe --console       -> roda no terminal (teste)
   MonitorPCServico.exe --console --segundos 60 --saida teste.json
+  MonitorPCServico.exe --audio         -> ajudante do controle de som (o serviço abre na sessão do usuário)
 """
 import os
 import sys
@@ -150,6 +151,10 @@ def modo_console():
 
 
 def main():
+    if "--audio" in sys.argv:      # ajudante do controle de som, aberto pelo serviço na sessão de quem usa o PC
+        from monitorpc import audio
+        audio.ajudante()
+        return
     if not WIN and "--console" not in sys.argv:
         os.umask(0o022)
         preparar_log()          # Linux: unidade systemd cnt-monitor.service (o journal também guarda o que sair)
