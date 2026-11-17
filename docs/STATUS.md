@@ -1,10 +1,10 @@
 # Estado do projeto: CNT Monitor
 
-Atualizado em 2026-11-16. As funcionalidades completas estão no [README](../README.md); a API está em [API.md](API.md).
+Atualizado em 2026-11-17. As funcionalidades completas estão no [README](../README.md); a API está em [API.md](API.md).
 
 ## Versão atual
 
-- **3.5.0** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.5.0`. A release no GitHub traz
+- **3.5.1** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.5.1`. A release no GitHub traz
   `CNTMonitor-Setup-<versão>.exe`, `MonitorDoPC-Setup-<versão>.exe` (nome antigo, para instalações antigas) e
   `cnt-monitor_<versão>_amd64.deb`.
 - Repositório: `robsonsaldanha/cnt-monitor` (público, GPL v3 ou posterior).
@@ -25,6 +25,7 @@ Atualizado em 2026-11-16. As funcionalidades completas estão no [README](../REA
 | 3.3.0 | Interface com a base de front-end CNT (`src/ui/cnt`): sidebar recolhível, topbar, componentes e temas da base, opção "Estilo da interface"; relatório, sessão remota, login pela rede e site da VPS no mesmo visual; fonte Barlow removida |
 | 3.4.0 | Interface mais compacta (texto, controles, menu e topbar menores); visão em fluxo (editor de fluxos da base, só leitura) em Alertas, Regras por programa e Fluxos de trabalho da Captura |
 | 3.5.0 | Página Áudio (modo Básico e Avançado): volume, silenciar e troca de aparelho, mixer por programa, dB, balanço por canal, formato, aparelho de chamadas, ligar/desligar aparelho (ajudante na sessão do usuário; `pactl` no Linux); dicas (balões) em todos os botões e campos da interface |
+| 3.5.1 | Gráficos não crescem nem encolhem sozinhos com zoom do navegador (Ctrl +/−) ou escala de tela diferente de 100%; gráficos limitados à largura do painel em telas pequenas |
 
 ## Como publicar uma versão
 

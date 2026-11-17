@@ -166,7 +166,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--cnt-cor-primaria)}
 .tt .v{font-size:var(--cnt-texto-2xl);font-weight:var(--cnt-peso-forte);line-height:1.1}
 .tt .r{color:var(--cnt-cor-texto-suave);font-size:12.5px}
 .graf{padding:12px 14px}
-.graf canvas{width:100%;display:block;cursor:crosshair}
+.graf canvas{width:100%;max-width:100%;display:block;cursor:crosshair}
 .leg{display:flex;flex-wrap:wrap;gap:3px 14px;margin:4px 0 8px;font-size:12.5px;color:var(--cnt-cor-texto-suave)}
 .leg span::before{content:"";display:inline-block;width:10px;height:3px;border-radius:2px;background:var(--c);margin-right:6px;vertical-align:middle}
 .dica{position:fixed;pointer-events:none;background:var(--cnt-cor-superficie);border:1px solid var(--cnt-cor-borda);box-shadow:var(--cnt-sombra-2);border-radius:var(--cnt-raio-md);padding:8px 10px;font-size:12.5px;min-width:180px;display:none;z-index:var(--cnt-z-flutuante)}
@@ -912,7 +912,7 @@ function Tabela(el, cols, opts={}){
 }
 
 /* =================== gráficos =================== */
-function prep(cv,h){ const dpr=devicePixelRatio||1, w=cv.clientWidth; h=h||+cv.getAttribute('height'); cv.style.height=h+'px'; cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr); const c=cv.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0); return {c,w,h}; }
+function prep(cv,h){ const dpr=devicePixelRatio||1, w=cv.clientWidth; if(!h){ if(!cv.dataset.h) cv.dataset.h=cv.getAttribute('height'); h=+cv.dataset.h; } cv.style.height=h+'px'; cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr); const c=cv.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0); return {c,w,h}; }
 function spark(cv, vals, max, cor){ if(!cv||!cv.clientWidth) return; const {c,w,h}=prep(cv,36); c.clearRect(0,0,w,h); vals=vals.filter(v=>v!=null); if(vals.length<2) return;
   const mx=max||Math.max(1,...vals)*1.15, X=i=>i/(vals.length-1)*w, Y=v=>h-2-(Math.min(v,mx)/mx)*(h-4);
   c.beginPath(); vals.forEach((v,i)=>i?c.lineTo(X(i),Y(v)):c.moveTo(X(i),Y(v))); c.strokeStyle=cor; c.lineWidth=1.6; c.stroke(); c.lineTo(w,h); c.lineTo(0,h); c.closePath(); c.globalAlpha=.13; c.fillStyle=cor; c.fill(); c.globalAlpha=1; }
