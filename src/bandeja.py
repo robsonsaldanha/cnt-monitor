@@ -182,9 +182,10 @@ def abrir_janela(aba=""):
     nav = navegador()
     if nav:
         perfil = os.path.join(PASTA_USUARIO, "janela")
+        classe = [] if WIN else ["--class=cnt-monitor"]   # Linux: o dock junta a janela ao atalho do CNT Monitor (StartupWMClass)
         subprocess.Popen([nav, f"--app={url}", f"--user-data-dir={perfil}", "--window-size=1480,920",
                           "--no-first-run", "--no-default-browser-check", "--disable-extensions",
-                          "--disable-sync"], close_fds=True)
+                          "--disable-sync", *classe], close_fds=True)
     else:
         webbrowser.open(url)
 
