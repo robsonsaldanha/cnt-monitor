@@ -248,7 +248,7 @@ def teste_aceitar_acesso_so_pelo_icone():
         servidor.exe_do_icone = lambda: os.path.normcase(r"C:\Program Files\CNT Monitor\MonitorPC.exe")
         assert _post(p, {"tipo": "ajuda_aceitar"}, cab) == 403          # o python do teste faz o papel do script
         assert not m.recebidas
-        servidor.exe_do_icone = lambda: os.path.normcase(sys.executable)
+        servidor.exe_do_icone = lambda: os.path.normcase(os.path.realpath(sys.executable))
         assert _post(p, {"tipo": "ajuda_aceitar"}, cab) == 200          # o "ícone" legítimo passa
         assert m.recebidas.pop() == {"tipo": "ajuda_aceitar"}
     finally:
