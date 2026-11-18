@@ -1,5 +1,6 @@
 """Configurações do CNT Monitor (gravadas em ProgramData\\MonitorPC\\config.json)."""
 import os
+import sys
 import json
 import threading
 
@@ -172,6 +173,15 @@ def obter(chave=None):
     if _atual is None:
         carregar()
     return _atual[chave] if chave else dict(_atual)
+
+
+def depurar(*partes):
+    """Modo debug (desligado por padrão): uma linha 'debug:' no log. Nunca recebe senha nem token."""
+    try:
+        if obter("modo_debug"):
+            print("debug:", *partes, file=sys.stderr, flush=True)
+    except Exception:  # noqa: BLE001 — log de diagnóstico nunca derruba quem chamou
+        pass
 
 
 def salvar(novos):
