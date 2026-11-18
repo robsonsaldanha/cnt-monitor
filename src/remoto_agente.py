@@ -1193,7 +1193,7 @@ async def testar(stun, turn, prazo=10):
     return {**provas, **dict(zip(feitas, await asyncio.gather(*feitas.values())))}
 
 
-async def _principal(stun, turn=None, ler_area=True):
+async def _principal(stun, turn=None, ler_area=True, debug=False):
     _taxas()
     loop = asyncio.get_running_loop()
 
@@ -1202,6 +1202,8 @@ async def _principal(stun, turn=None, ler_area=True):
         sys.stdout.flush()
 
     agente = Agente(estado, stun, turn=turn, ler_area=ler_area, ao_log=lambda msg: estado({"log": msg}))
+    if debug:
+        _log_das_bibliotecas(lambda msg: estado({"log": msg}))
 
     def ler():
         for linha in sys.stdin:
@@ -1217,6 +1219,28 @@ async def _principal(stun, turn=None, ler_area=True):
     await agente.fim.wait()
     if not WIN:
         _linux_tela().fechar()          # Wayland: fecha a sessão do portal (o aviso de compartilhamento some)
+
+
+def _log_das_bibliotecas(ao_log):
+    """Modo debug: o que o aioice e o aiortc registram (cada teste de caminho, o retransmissor) e os erros que o
+    asyncio engoliria vão para o servico.log. As bibliotecas não registram a senha do retransmissor."""
+    import logging
+
+    class ParaOLog(logging.Handler):
+        def emit(self, r):
+            try:
+                texto = f"{r.name}: {r.getMessage()}"
+                if r.exc_info and r.exc_info[1] is not None:
+                    texto += f" | {type(r.exc_info[1]).__name__}: {r.exc_info[1]}"
+                ao_log(texto[:600])
+            except Exception:  # noqa: BLE001  (o log de diagnóstico nunca derruba a sessão)
+                pass
+
+    destino = ParaOLog()
+    for nome, nivel in (("aioice", logging.INFO), ("aiortc", logging.INFO), ("asyncio", logging.WARNING)):
+        registrador = logging.getLogger(nome)
+        registrador.setLevel(nivel)
+        registrador.addHandler(destino)
 
 
 def _linux_tela():
@@ -1258,7 +1282,7 @@ def main():
     if "--testar" in sys.argv:
         print(json.dumps(asyncio.run(testar(stun, turn))), flush=True)
         return
-    asyncio.run(_principal(stun, turn, ler_area="--sem-ler-area" not in sys.argv))
+    asyncio.run(_principal(stun, turn, ler_area="--sem-ler-area" not in sys.argv, debug="--debug" in sys.argv))
 
 
 if __name__ == "__main__":

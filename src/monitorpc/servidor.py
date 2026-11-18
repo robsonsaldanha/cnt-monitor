@@ -19,7 +19,7 @@ import subprocess
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs, unquote
 
-from . import config, configuracao, banco, icones, energia, servicos, alertas, regras, limpeza, captura, envio
+from . import config, configuracao, banco, icones, energia, servicos, alertas, regras, limpeza, captura, envio, registro
 
 HOSTS_OK = {f"127.0.0.1:{config.PORTA}", f"localhost:{config.PORTA}"}
 ORIGENS_OK = {f"http://127.0.0.1:{config.PORTA}", f"http://localhost:{config.PORTA}"}
@@ -463,6 +463,16 @@ def fabrica(motor, TOKEN, remoto=False):
                 return self._json(rel)
             if r == "/api/status":
                 return self._json(m.status())
+            if r == "/api/logs":      # só neste computador, com o token do ícone e com o Modo debug ligado
+                if remoto or not self._pode_alterar():
+                    return self._json({"erro": "só no próprio computador"}, 403)
+                if not configuracao.obter("modo_debug"):
+                    return self._json({"erro": "Ligue o Modo debug nas Configurações para ver os registros."}, 403)
+                try:
+                    linhas = int(q.get("linhas") or 400)
+                except ValueError:
+                    linhas = 400
+                return self._json(registro.ler(q.get("arquivo") or "servico", linhas))
             if r == "/api/config":
                 revelar = not remoto and self._pode_alterar()   # só o ícone pede com o token
                 return self._json({"valores": configuracao.publico(revelar), "padrao": config.PADRAO, "opcoes": config.OPCOES,
@@ -662,7 +672,11 @@ def fabrica(motor, TOKEN, remoto=False):
                         corpo.pop("caminho", None)
                     elif corpo.get("tipo") == "ajuda_aceitar" and not veio_do_icone(self.client_address[1]):
                         return self._json({"erro": "só a pessoa, pelo aviso do ícone, aceita o acesso"}, 403)
-                    return self._json(m.acao(corpo))
+                    res = m.acao(corpo)
+                    if not str(corpo.get("tipo")).endswith("_estado"):     # consultas repetidas a cada segundo só encheriam o log
+                        configuracao.depurar("ação:", corpo.get("tipo"), "->",
+                                             "ok" if res.get("ok") else f"recusada: {str(res.get('msg') or '')[:200]}")
+                    return self._json(res)
                 if r == "/api/config":
                     final = configuracao.salvar_publico(corpo, remoto=remoto)
                     m.config_mudou()

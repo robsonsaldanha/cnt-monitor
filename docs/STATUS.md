@@ -4,7 +4,7 @@ Atualizado em 2026-11-18. As funcionalidades completas estão no [README](../REA
 
 ## Versão atual
 
-- **3.7.3** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.7.3`. A release no GitHub traz
+- **3.7.4** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.7.4`. A release no GitHub traz
   `CNTMonitor-Setup-<versão>.exe`, `MonitorDoPC-Setup-<versão>.exe` (nome antigo, para instalações antigas) e
   `cnt-monitor_<versão>_amd64.deb`.
 - Repositório: `robsonsaldanha/cnt-monitor` (público, GPL v3 ou posterior).
@@ -33,6 +33,7 @@ Atualizado em 2026-11-18. As funcionalidades completas estão no [README](../REA
 | 3.7.1 | Acesso remoto abre dentro da janela do CNT Monitor (não mais no Chrome); sessão do técnico pedida pelo serviço; "Janelas separadas" por monitor removida (não funciona em janela embutida; configs antigas viram "lado a lado"). |
 | 3.7.2 | Modo debug (desligado por padrão, em Configurações) que grava o estado do acesso remoto no log; o instalador baixado é apagado da pasta de atualização (só fica o último, até a próxima verificação); texto de atualização "a cada 1 hora" |
 | 3.7.3 | Diagnóstico do acesso remoto: o agente grava no `servico.log` o estado de cada par de candidatos ICE (`remoto: pares ICE`) enquanto a conexão não fecha; o motivo do encerramento entra na linha `debug:` da bandeja. |
+| 3.7.4 | Tela **Logs** (aparece no menu com o Modo debug ligado): mostra, filtra e copia o fim do `servico.log`, do `bandeja.log` e do log da atualização, só neste computador (`/api/logs`, com o token do ícone). No modo debug cada linha dos logs leva data e hora, as ações pedidas são registradas e o agente do acesso remoto grava o que o aioice/aiortc registram (cada teste de caminho, o retransmissor, erros do asyncio). |
 
 ## Como publicar uma versão
 

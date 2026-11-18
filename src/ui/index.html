@@ -226,6 +226,10 @@ input[type=checkbox],input[type=radio]{accent-color:var(--cnt-cor-primaria)}
 .cfg{max-width:900px}
 .cfg .item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 20px;padding:12px 14px;border-bottom:1px solid var(--cnt-cor-borda);align-items:center}
 .cfg .item:last-child{border-bottom:0}
+.logs-barra{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.logs-barra #logFiltro{flex:1 1 220px;width:auto;min-width:0}
+.logs-auto{display:inline-flex;gap:6px;align-items:center;font-size:var(--cnt-texto-sm);color:var(--cnt-cor-texto-suave)}
+.logs-texto{margin:0 0 8px;padding:12px 14px;min-height:180px;max-height:calc(100vh - 290px);overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--cnt-fonte-mono);font-size:12px;font-weight:400;line-height:1.5;background:var(--cnt-cor-superficie);border:1px solid var(--cnt-cor-borda);border-radius:var(--cnt-raio-md)}
 .cfg .item b{font-weight:600}
 .cfg .item small{grid-column:1;color:var(--cnt-cor-texto-suave);font-size:12.5px;line-height:1.45}
 .cfg .item .ctl{grid-row:1/3;grid-column:2;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
@@ -501,6 +505,7 @@ body:not([data-so="linux"]) .so-lin{display:none!important}
     <p class="cnt-sidebar__secao">Programa</p>
     <ul class="cnt-sidebar__lista">
       <li><button class="cnt-sidebar__item" type="button" data-v="config"><span class="cnt-sidebar__icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></span><span class="cnt-sidebar__rotulo">Configurações</span></button></li>
+      <li id="navLogs" hidden><button class="cnt-sidebar__item" type="button" data-v="logs"><span class="cnt-sidebar__icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg></span><span class="cnt-sidebar__rotulo">Logs</span></button></li>
     </ul>
   </nav>
   <div class="cnt-sidebar__rodape"><div class="app-rodape"><div class="vivo" id="vivo"><i></i><span>conectando…</span></div><div id="rodInfo"></div></div></div>
@@ -781,6 +786,18 @@ body:not([data-so="linux"]) .so-lin{display:none!important}
   <h1>Configurações</h1><p class="sub">As mudanças são salvas na hora.</p>
   <div class="cfg" id="cfgCorpo"></div>
 </section>
+
+<section id="v-logs" hidden>
+  <h1>Logs</h1><p class="sub">O que o programa registrou, lido direto dos arquivos de log deste computador. Esta tela só aparece com o Modo debug ligado.</p>
+  <div class="logs-barra">
+    <div class="seg" id="logArq" role="group" aria-label="Arquivo de log"><button type="button" data-arq="servico" aria-pressed="true">Serviço</button><button type="button" data-arq="bandeja" aria-pressed="false">Ícone</button><button type="button" data-arq="instalacao" aria-pressed="false">Atualização</button></div>
+    <input class="cnt-campo__controle" id="logFiltro" type="search" placeholder="Filtrar (ex.: remoto, debug, erro)" aria-label="Filtrar as linhas do log">
+    <label class="logs-auto"><input type="checkbox" id="logAuto" checked> Atualizar sozinho</label>
+    <button class="cnt-botao cnt-botao--pq cnt-botao--secundario" type="button" id="logCopiar">Copiar</button>
+  </div>
+  <pre class="logs-texto" id="logTexto" tabindex="0" aria-label="Linhas do log"></pre>
+  <p class="sub" id="logInfo" aria-live="polite"></p>
+</section>
 </main>
 </div>
 </div>
@@ -981,7 +998,7 @@ const eixoPct=v=>nf0.format(v)+'%', eixoB=v=>v>=GB?nf1.format(v/GB)+' GB':nf0.fo
 const eixoN=v=>CFG.rede_em_bits?(v*8>=1e6?nf1.format(v*8/1e6)+' Mb/s':nf0.format(v*8/1e3)+' Kb/s'):eixoR(v);
 
 /* =================== navegação =================== */
-const VISTAS=['geral','recurso','programas','processos','capturas','editor','jogo','otimizar','regras','inicializacao','energia','audio','personalizar','servicos','rede','hardware','ventoinhas','historico','lentidao','alertas','relatorio','comparar','vps','ajuda','config'];
+const VISTAS=['geral','recurso','programas','processos','capturas','editor','jogo','otimizar','regras','inicializacao','energia','audio','personalizar','servicos','rede','hardware','ventoinhas','historico','lentidao','alertas','relatorio','comparar','vps','ajuda','config','logs'];
 let vista='geral', recurso='cpu', ED_ID=0, CAP_ABA='capturar';
 function ir(h){ h=(h||'geral').replace(/^#/,''); let v=h, r=null; if(h.startsWith('recurso/')){ v='recurso'; r=h.split('/')[1]; }
   if(h==='capturas'||h.startsWith('capturas/')){ v='capturas'; CAP_ABA=h==='capturas/opcoes'?'opcoes':h==='capturas/estatisticas'?'estatisticas':'capturar'; }
@@ -1397,7 +1414,7 @@ function entrar(){ fecharMenu();
   if(vista==='geral'&&E) vGeral(); if(vista==='recurso') vRecurso(true); if(vista==='programas') vArvore(); if(vista==='processos') renderProc();
   if(vista==='inicializacao') vIni(); if(vista==='rede') vRede(); if(vista==='hardware') vHardware(true); if(vista==='ventoinhas') vVentoinhas(true);
   if(vista==='personalizar') vPersonalizar();
-  if(vista==='historico') vHistorico(); if(vista==='lentidao') vLentidao(); if(vista==='relatorio') vRelatorio(); if(vista==='config') vConfig();
+  if(vista==='historico') vHistorico(); if(vista==='lentidao') vLentidao(); if(vista==='relatorio') vRelatorio(); if(vista==='config') vConfig(); if(vista==='logs') vLogs();
   if(vista==='jogo') vJogo(true); if(vista==='energia') vEnergia(); if(vista==='audio') vAudio(); if(vista==='servicos') vServicos(); if(vista==='alertas') vAlertas();
   if(vista==='otimizar') vOtimizar(); if(vista==='regras') vRegras(); if(vista==='vps') vVps(true); if(vista==='ajuda') vAjuda(); if(vista==='comparar') vComparar();
   if(vista==='capturas'){ abaCaptura(CAP_ABA); vCapturas(true); } if(vista==='editor') vEditor(); }
@@ -1791,7 +1808,24 @@ const CFG_DEF=[
 ];
 function aplicarTema(){ if(window.cntTema) cntTema.aplicar({tema:CFG.tema||'auto', estilo:CFG.estilo||'personalizado'}); }
 document.documentElement.addEventListener('cnt:tema',e=>{ const t=e.detail.tema; if(t!==CFG.tema && ['auto','claro','escuro'].includes(t)) POST('config',{tema:t}).then(r=>{ if(r&&r.valores){ CFG=r.valores; if(vista==='config') vConfig(); } }).catch(()=>{}); });
-async function carregarCfg(){ try{ const d=await API('config'); CFG=d.valores; aplicarTema(); }catch(_){} }
+async function carregarCfg(){ try{ const d=await API('config'); CFG=d.valores; aplicarTema(); logsMenu(); }catch(_){} }
+// Tela Logs: só com o Modo debug ligado e só neste computador (a leitura pede o token do ícone).
+const LOGS={arq:'servico',linhas:[],existe:true,bytes:0};
+function logsMenu(){ const pode=!!CFG.modo_debug&&!REMOTO; $('#navLogs').hidden=!pode; if(vista==='logs'){ if(pode) vLogs(); else ir('config'); } }
+async function vLogs(){ const arq=LOGS.arq, el=$('#logTexto'); if(!CFG.modo_debug){ el.textContent='Ligue o Modo debug em Configurações para ver os registros.'; $('#logInfo').textContent=''; return; }
+  const d=await fetch('/api/logs?arquivo='+arq+'&linhas=1000',{cache:'no-store',headers:{'X-Token':TOKEN}}).then(r=>r.json()).catch(()=>null); if(vista!=='logs'||arq!==LOGS.arq) return;
+  if(!d||d.erro){ el.textContent=(d&&d.erro)||'Não consegui ler o log.'; $('#logInfo').textContent=''; return; }
+  LOGS.linhas=d.linhas||[]; LOGS.existe=!!d.existe; LOGS.bytes=d.bytes||0; logsPintar(); }
+function logsVisiveis(){ const f=$('#logFiltro').value.trim().toLowerCase(); return f?LOGS.linhas.filter(x=>x.toLowerCase().includes(f)):LOGS.linhas; }
+function logsPintar(){ const el=$('#logTexto'), l=logsVisiveis(), noFim=el.scrollHeight-el.scrollTop-el.clientHeight<40;
+  el.textContent=!LOGS.existe?'Esse arquivo ainda não existe neste computador.':l.length?l.join('\n'):(LOGS.linhas.length?'Nenhuma linha com esse filtro.':'O arquivo está vazio.');
+  if(noFim) el.scrollTop=el.scrollHeight;
+  $('#logInfo').textContent=LOGS.existe?`${l.length} de ${LOGS.linhas.length} linhas mais recentes · arquivo com ${(LOGS.bytes/1024).toFixed(0)} KB`:''; }
+$('#logArq').addEventListener('click',e=>{ const b=e.target.closest('button[data-arq]'); if(!b) return; LOGS.arq=b.dataset.arq; LOGS.linhas=[];
+  document.querySelectorAll('#logArq button').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); $('#logTexto').textContent='Lendo…'; vLogs(); });
+$('#logFiltro').addEventListener('input',logsPintar);
+$('#logCopiar').addEventListener('click',()=>{ const l=logsVisiveis(); if(l.length) copiar(l.join('\n')); else toast('Não há linhas para copiar.',1); });
+setInterval(()=>{ if(vista==='logs'&&$('#logAuto').checked&&!document.hidden) vLogs(); },2000);
 let CFG_ATU={};
 // Atualização acompanhada na tela: baixar e conferir têm % real; durante a instalação o serviço fica parado e não há o que medir.
 let ATU={ativo:false, fase:'', pct:0, alvo:'', de:'', erro:'', fora:false, desde:0, timer:null};
@@ -1810,7 +1844,7 @@ async function atuPasso(){ let d=null; try{ d=await API('atualizacao'); }catch(_
 function atuRender(){ const el=$('#atuPainel'); if(!el) return; const s=STATUS||{};
   if(!ATU.ativo){ el.innerHTML=`<div class="item"><b>Versão instalada: ${esc(CFG_ATU.versao_atual||s.versao||'—')}</b><div class="ctl" style="display:flex;gap:8px"><button class="cnt-botao cnt-botao--pq cnt-botao--secundario" id="atuVer">Procurar agora</button><button class="cnt-botao cnt-botao--pq cnt-botao--primario" id="atuInst" ${CFG_ATU.disponivel?'':'disabled'}>${CFG_ATU.disponivel?'Atualizar para '+esc(CFG_ATU.disponivel.versao):'Atualizar'}</button></div><small>${CFG_ATU.erro?esc(CFG_ATU.erro):CFG_ATU.disponivel?'Versão nova disponível.':CFG_ATU.ultima_verificacao?'Última verificação: '+quando(CFG_ATU.ultima_verificacao)+' — você está na versão mais nova.':'Ainda não verificado.'}</small></div>
       <div class="item"><b>Atualizar automaticamente</b><div class="ctl"><label class="sw"><input type="checkbox" data-cfg="atualizacao_auto" ${CFG.atualizacao_auto?'checked':''}><span></span></label></div><small>Procura versão nova no GitHub a cada 1 hora e instala sozinho (nunca durante o Modo Jogo nem com um pedido de ajuda aberto no Acesso remoto).</small></div>
-      <div class="item"><b>Modo debug</b><div class="ctl"><label class="sw"><input type="checkbox" data-cfg="modo_debug" ${CFG.modo_debug?'checked':''}><span></span></label></div><small>Desligado por padrão. Ligado, o acesso remoto grava cada passo no log do programa (<code>servico.log</code> e <code>bandeja.log</code>), para achar o motivo de uma falha. Não grava senha. Desligue depois do teste.</small></div>`;
+      <div class="item"><b>Modo debug</b><div class="ctl"><label class="sw"><input type="checkbox" data-cfg="modo_debug" ${CFG.modo_debug?'checked':''}><span></span></label></div><small>Desligado por padrão. Ligado, o programa grava cada passo nos arquivos de log (ações pedidas, acesso remoto, erros) e aparece a tela <b>Logs</b> no menu, para ver e copiar os registros sem rodar comando. Não grava senha. Desligue depois do teste.</small></div>`;
     $('#atuVer').onclick=async()=>{ $('#atuVer').disabled=true; const r=await POST('acao',{tipo:'atualizar_verificar'}).catch(()=>null); if(r) toast(r.msg,!r.ok); CFG_ATU=await API('atualizacao').catch(()=>CFG_ATU); atuRender(); };
     $('#atuInst').onclick=async()=>{ if(!await confirmar('Atualizar agora?','O CNT Monitor vai baixar a versão nova, conferir a assinatura e instalar. O andamento aparece aqui; no fim, use o botão Recarregar.','Atualizar')) return;
       const r=await POST('acao',{tipo:'atualizar_instalar'}).catch(()=>null); if(!r||!r.ok){ toast(r?r.msg:'O serviço não respondeu.',1); return; } atuAcompanhar(await API('atualizacao').catch(()=>CFG_ATU)); };
@@ -1849,7 +1883,7 @@ async function salvarCampoCfg(e, depois){ const el=e.target.closest('[data-cfg],
   let v = el.type==='checkbox'?el.checked:el.type==='number'?+el.value:el.value; if(el.tagName==='SELECT' && /^\d+$/.test(v)) v=+v;
   if(el.dataset.mini){ const l=[...document.querySelectorAll('[data-mini]')].filter(x=>x.checked).map(x=>x.dataset.mini); k='mini_itens'; v=l; }
   const r=await POST('config',{[k]:v}).catch(()=>null);
-  if(r&&r.valores){ CFG=r.valores; aplicarTema(); if(k==='captura_pasta'&&String(v).trim()&&!CFG.captura_pasta) toast('Use um caminho completo, como D:\\Prints (ou o botão “Escolher pasta…”).',1); else toast('Configuração salva.'); }
+  if(r&&r.valores){ CFG=r.valores; aplicarTema(); logsMenu(); if(k==='captura_pasta'&&String(v).trim()&&!CFG.captura_pasta) toast('Use um caminho completo, como D:\\Prints (ou o botão “Escolher pasta…”).',1); else toast('Configuração salva.'); }
   else toast(r&&r.erro?r.erro:'Não consegui salvar.',1); depois(); }
 $('#cfgCorpo').addEventListener('change',e=>salvarCampoCfg(e,vConfig));
 $('#capOpcoes').addEventListener('change',e=>salvarCampoCfg(e,renderCapOpcoes));

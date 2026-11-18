@@ -12,7 +12,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from monitorpc import config  # noqa: E402
+from monitorpc import config, registro  # noqa: E402
 
 WIN = os.name == "nt"
 
@@ -24,7 +24,7 @@ def preparar_log():
             os.replace(config.LOG, config.LOG + ".1")
     except OSError:
         pass
-    f = open(config.LOG, "a", encoding="utf-8", buffering=1)
+    f = registro.ComHora(open(config.LOG, "a", encoding="utf-8", buffering=1))
     sys.stdout = f
     sys.stderr = f
     print(f"\n=== CNT Monitor {config.VERSAO} iniciado em {time.strftime('%Y-%m-%d %H:%M:%S')} ===")

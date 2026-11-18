@@ -23,7 +23,7 @@ from collections import defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from monitorpc import config  # noqa: E402
+from monitorpc import config, registro  # noqa: E402
 
 WIN = os.name == "nt"
 PASTA_USUARIO = os.path.join(os.environ.get("LOCALAPPDATA") or os.path.expanduser("~/.local/share"), "MonitorPC")
@@ -34,7 +34,7 @@ TITULO_JANELA = "CNT Monitor"
 def _log():
     os.makedirs(PASTA_USUARIO, exist_ok=True)
     if sys.stdout is None or sys.stderr is None:
-        f = open(os.path.join(PASTA_USUARIO, "bandeja.log"), "a", encoding="utf-8", buffering=1)
+        f = registro.ComHora(open(os.path.join(PASTA_USUARIO, "bandeja.log"), "a", encoding="utf-8", buffering=1))
         sys.stdout = sys.stdout or f
         sys.stderr = sys.stderr or f
 
