@@ -1,10 +1,10 @@
 # Estado do projeto: CNT Monitor
 
-Atualizado em 2026-11-17. As funcionalidades completas estão no [README](../README.md); a API está em [API.md](API.md).
+Atualizado em 2026-11-18. As funcionalidades completas estão no [README](../README.md); a API está em [API.md](API.md).
 
 ## Versão atual
 
-- **3.5.2** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.5.2`. A release no GitHub traz
+- **3.6.0** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.6.0`. A release no GitHub traz
   `CNTMonitor-Setup-<versão>.exe`, `MonitorDoPC-Setup-<versão>.exe` (nome antigo, para instalações antigas) e
   `cnt-monitor_<versão>_amd64.deb`.
 - Repositório: `robsonsaldanha/cnt-monitor` (público, GPL v3 ou posterior).
@@ -27,6 +27,7 @@ Atualizado em 2026-11-17. As funcionalidades completas estão no [README](../REA
 | 3.5.0 | Página Áudio (modo Básico e Avançado): volume, silenciar e troca de aparelho, mixer por programa, dB, balanço por canal, formato, aparelho de chamadas, ligar/desligar aparelho (ajudante na sessão do usuário; `pactl` no Linux); dicas (balões) em todos os botões e campos da interface |
 | 3.5.1 | Gráficos não crescem nem encolhem sozinhos com zoom do navegador (Ctrl +/−) ou escala de tela diferente de 100%; gráficos limitados à largura do painel em telas pequenas |
 | 3.5.2 | Linux: a janela do monitor se junta ao atalho instalado no dock (`--class` e `StartupWMClass`), sem parecer um segundo aplicativo |
+| 3.6.0 | Segurança: a atualização só instala release assinada (Ed25519, chave pública embutida; `.sig` de cada `.exe` e `.deb` gerado no CI); aceite de acesso remoto só vindo do ícone instalado; imagem do técnico só em PNG (Pillow 13.0.0); prioridade do Modo Jogo desligada por padrão; processos essenciais do Linux protegidos; CI com token só leitura e instalador do PawnIO com SHA-256 fixo |
 
 ## Como publicar uma versão
 

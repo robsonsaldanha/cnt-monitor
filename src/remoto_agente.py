@@ -338,7 +338,7 @@ class AreaWindows:
 
     def imagem(self, png):
         from PIL import Image
-        img = Image.open(io.BytesIO(png))
+        img = Image.open(io.BytesIO(png), formats=["PNG"])   # veio da outra ponta: só PNG, sem outros decodificadores
         img.load()
         b = io.BytesIO()
         img.convert("RGB").save(b, "BMP")

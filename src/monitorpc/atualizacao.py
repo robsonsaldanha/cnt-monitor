@@ -24,6 +24,24 @@ WIN = os.name == "nt"
 # Linux: o pacote cnt-monitor_<versão>_amd64.deb e a linha "SHA256 (deb): ..." nas notas do release (a primeira
 # linha "SHA256:" continua sendo a do instalador do Windows, que as versões antigas leem)
 RE_SHA = re.compile(r"SHA256:\s*([0-9a-fA-F]{64})" if WIN else r"SHA256 \(deb\):\s*([0-9a-fA-F]{64})")
+# Chave pública Ed25519 (base64) das releases. A privada fica só nos Secrets do GitHub (RELEASE_SIGNING_KEY);
+# quem invadir a conta do GitHub não consegue assinar uma versão falsa. Assinador: build/assinar_release.py
+PUBLICA = "JNyAurjXRi95cyyKd8lGkwxujQUHg3408hZ55LHFt9o="
+
+
+def conferir_assinatura(nome, sha256, assinatura_b64, publica=None):
+    """True só se a assinatura (base64) for válida para este nome de arquivo e este SHA-256."""
+    import base64
+    import binascii
+    from cryptography.exceptions import InvalidSignature
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+    try:
+        chave = Ed25519PublicKey.from_public_bytes(base64.b64decode(publica or PUBLICA))
+        chave.verify(base64.b64decode(assinatura_b64.strip()),
+                     f"cnt-monitor-release-v1\n{nome}\n{sha256.lower()}\n".encode())
+        return True
+    except (InvalidSignature, ValueError, binascii.Error):
+        return False
 
 
 def _versao(t):
@@ -122,9 +140,11 @@ class Atualizador:
             ativo = next((a for p in PREFIXOS for a in exes if a["name"].startswith(p)), None)
         else:
             ativo = next((a for a in d.get("assets", []) if re.fullmatch(r"cnt-monitor_[\d.]+_amd64\.deb", a["name"])), None)
+        sig = next((a for a in d.get("assets", []) if ativo and a["name"] == ativo["name"] + ".sig"), None)
         sha = RE_SHA.search(d.get("body") or "")
         info = {"versao": (d.get("tag_name") or "").lstrip("v"), "nome": d.get("name"), "notas": (d.get("body") or "")[:3000],
                 "url": ativo["browser_download_url"] if ativo else None, "tamanho": ativo["size"] if ativo else 0,
+                "arquivo": ativo["name"] if ativo else None, "assinatura": sig["browser_download_url"] if sig else None,
                 "sha256": sha.group(1).lower() if sha else None, "pagina": d.get("html_url")}
         nova = _versao(info["versao"]) > _versao(config.VERSAO)
         self.disponivel = info if nova and info["url"] else None
@@ -159,6 +179,9 @@ class Atualizador:
             return False, self.erro or "Você já está na versão mais nova."
         if not info.get("sha256"):
             return self._falha("O release não traz a assinatura SHA-256; por segurança não vou instalar.")
+        erro = self._assinatura_invalida(info)
+        if erro:
+            return self._falha(erro)
         os.makedirs(PASTA, exist_ok=True)
         destino = os.path.join(PASTA, f"CNTMonitor-Setup-{info['versao']}.exe" if WIN else f"cnt-monitor_{info['versao']}_amd64.deb")
         self.alvo, self.erro = info["versao"], None
@@ -205,6 +228,24 @@ class Atualizador:
         finally:
             trava.Close()
         return True, f"Instalando a versão {info['versao']}. O CNT Monitor reinicia sozinho em alguns segundos."
+
+    def _ler_assinatura(self, url):
+        req = urllib.request.Request(url, headers={"User-Agent": "MonitorDoPC/" + config.VERSAO})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return r.read(4096).decode("ascii")
+
+    def _assinatura_invalida(self, info):
+        """None se a release está assinada com a nossa chave; senão a mensagem de erro. Sem assinatura nunca instala
+        (senão bastaria apagar o .sig do release para voltar à confiança só no GitHub)."""
+        if not info.get("assinatura") or not info.get("arquivo"):
+            return "O release não traz a assinatura Ed25519 do CNT Monitor; por segurança não vou instalar."
+        try:
+            sig = self._ler_assinatura(info["assinatura"])
+        except Exception as e:  # noqa: BLE001
+            return f"Não consegui baixar a assinatura do release: {e}"
+        if not conferir_assinatura(info["arquivo"], info["sha256"], sig):
+            return "A assinatura do release não confere com a chave do CNT Monitor. Atualização cancelada."
+        return None
 
     def _instalar_deb(self, destino, info):
         """Linux: a pasta de atualização é do root e ninguém mais grava nela, então confere e instala. O apt roda

@@ -235,6 +235,31 @@ def teste_acoes_pela_rede():
         local.shutdown()
 
 
+def teste_aceitar_acesso_so_pelo_icone():
+    """Token legível por qualquer usuário não basta para aceitar um técnico: o pedido tem de vir do MonitorPC.exe."""
+    m = MotorFalso()
+    local = ThreadingHTTPServer(("127.0.0.1", 0), servidor.fabrica(m, "tok"))
+    threading.Thread(target=local.serve_forever, daemon=True).start()
+    cab = {"Host": f"127.0.0.1:{config.PORTA}", "X-Token": "tok"}
+    p = local.server_address[1]
+    velhos = (servidor.WIN, getattr(sys, "frozen", None), servidor.exe_do_icone, servidor.config.PORTA)
+    try:
+        servidor.WIN, sys.frozen, servidor.config.PORTA = True, True, p
+        servidor.exe_do_icone = lambda: os.path.normcase(r"C:\Program Files\CNT Monitor\MonitorPC.exe")
+        assert _post(p, {"tipo": "ajuda_aceitar"}, cab) == 403          # o python do teste faz o papel do script
+        assert not m.recebidas
+        servidor.exe_do_icone = lambda: os.path.normcase(sys.executable)
+        assert _post(p, {"tipo": "ajuda_aceitar"}, cab) == 200          # o "ícone" legítimo passa
+        assert m.recebidas.pop() == {"tipo": "ajuda_aceitar"}
+    finally:
+        servidor.WIN, servidor.exe_do_icone, servidor.config.PORTA = velhos[0], velhos[2], velhos[3]
+        if velhos[1] is None:
+            del sys.frozen
+        else:
+            sys.frozen = velhos[1]
+        local.shutdown()
+
+
 def teste_instalador_travado():
     """Entre conferir o SHA-256 e rodar o instalador ninguém pode trocar o arquivo."""
     if not WIN:
@@ -275,6 +300,55 @@ def teste_instalador_travado():
     finally:
         shutil.rmtree(pasta, ignore_errors=True)
 
+def _chave_de_teste():
+    import base64
+    from cryptography.hazmat.primitives import serialization as s
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    k = Ed25519PrivateKey.generate()
+    return k, base64.b64encode(k.public_key().public_bytes(s.Encoding.Raw, s.PublicFormat.Raw)).decode()
+
+
+def _assinar(chave, nome, sha):
+    import base64
+    import assinar_release        # build/assinar_release.py: o mesmo formato que o CI grava
+    return base64.b64encode(chave.sign(assinar_release.mensagem(nome, sha))).decode()
+
+
+def teste_atualizacao_so_instala_release_assinada():
+    """A1: SHA-256 vindo do próprio GitHub não basta; precisa da assinatura Ed25519 da nossa chave (sem .sig, nada)."""
+    k, pub = _chave_de_teste()
+    outra, _ = _chave_de_teste()
+    sha = "ab" * 32
+    ok = _assinar(k, "CNTMonitor-Setup-9.9.9.exe", sha)
+    assert atualizacao.conferir_assinatura("CNTMonitor-Setup-9.9.9.exe", sha, ok, pub)
+    assert not atualizacao.conferir_assinatura("CNTMonitor-Setup-9.9.9.exe", sha, ok)                       # chave embutida é outra
+    assert not atualizacao.conferir_assinatura("CNTMonitor-Setup-9.9.8.exe", sha, ok, pub)                  # outro nome
+    assert not atualizacao.conferir_assinatura("CNTMonitor-Setup-9.9.9.exe", "cd" * 32, ok, pub)            # outro conteúdo
+    assert not atualizacao.conferir_assinatura("CNTMonitor-Setup-9.9.9.exe", sha, _assinar(outra, "CNTMonitor-Setup-9.9.9.exe", sha), pub)
+    for lixo in ("", "não é base64!", "AAAA"):
+        assert not atualizacao.conferir_assinatura("x", sha, lixo, pub)
+
+    a = atualizacao.Atualizador()
+    base = {"arquivo": "CNTMonitor-Setup-9.9.9.exe", "sha256": sha}
+    assert "não traz a assinatura" in a._assinatura_invalida(dict(base, assinatura=None))
+    original, atualizacao.PUBLICA = atualizacao.PUBLICA, pub
+    try:
+        a._ler_assinatura = lambda url: ok
+        assert a._assinatura_invalida(dict(base, assinatura="u")) is None
+        assert "não confere" in a._assinatura_invalida(dict(base, assinatura="u", sha256="cd" * 32))
+        a._ler_assinatura = lambda url: 1 / 0
+        assert "Não consegui baixar a assinatura" in a._assinatura_invalida(dict(base, assinatura="u"))
+    finally:
+        atualizacao.PUBLICA = original
+
+    nome = "CNTMonitor-Setup-99.0.0.exe" if WIN else "cnt-monitor_99.0.0_amd64.deb"
+    assets = [{"name": nome, "browser_download_url": "bin", "size": 1}, {"name": nome + ".sig", "browser_download_url": "sig", "size": 1}]
+    corpo = "SHA256: " + sha + "\nSHA256 (deb): " + sha
+    info = a._avaliar({"tag_name": "v99.0.0", "body": corpo, "assets": assets})
+    assert info["assinatura"] == "sig" and info["arquivo"] == nome
+    assert a._avaliar({"tag_name": "v99.0.0", "body": corpo, "assets": assets[:1]})["assinatura"] is None
+
+
 def teste_atualizacao_mostra_o_andamento():
     """Baixar e conferir informam a porcentagem; arquivo que não confere não é executado e o motivo fica no estado."""
     if not WIN:
@@ -286,6 +360,9 @@ def teste_atualizacao_mostra_o_andamento():
         headers = {"Content-Length": str(len(conteudo))}
 
     a = atualizacao.Atualizador()
+    chave, publica_original = _chave_de_teste(), atualizacao.PUBLICA
+    atualizacao.PUBLICA = chave[1]
+    a._ler_assinatura = lambda url: _assinar(chave[0], "CNTMonitor-Setup-9.9.9.exe", hashlib.sha256(conteudo).hexdigest())
     vistos, rodou = [], []
     andou = a._andou
     a._andou = lambda feito, total: (andou(feito, total), vistos.append((a.situacao, a.pct)))
@@ -294,6 +371,7 @@ def teste_atualizacao_mostra_o_andamento():
     atualizacao.subprocess.Popen = lambda cmd, **k: rodou.append(cmd)
     try:
         a.disponivel = {"versao": "9.9.9", "url": "https://exemplo.invalid/x.exe", "tamanho": len(conteudo),
+                        "arquivo": "CNTMonitor-Setup-9.9.9.exe", "assinatura": "https://exemplo.invalid/x.exe.sig",
                         "sha256": hashlib.sha256(conteudo).hexdigest()}
         ok, msg = a.instalar()
         assert ok and len(rodou) == 1 and rodou[0][0].endswith("CNTMonitor-Setup-9.9.9.exe"), msg
@@ -307,6 +385,7 @@ def teste_atualizacao_mostra_o_andamento():
 
         b = atualizacao.Atualizador()
         b.disponivel = dict(a.disponivel, sha256="0" * 64)
+        b._ler_assinatura = lambda url: _assinar(chave[0], "CNTMonitor-Setup-9.9.9.exe", "0" * 64)   # assinada, mas o arquivo não é esse
         ok, msg = b.instalar_ao_fundo()
         assert ok and b.alvo == "9.9.9"
         for _ in range(100):
@@ -316,6 +395,7 @@ def teste_atualizacao_mostra_o_andamento():
         assert b.situacao == "erro" and "não confere" in b.estado()["erro"] and len(rodou) == 1
     finally:
         atualizacao.urllib.request.urlopen, atualizacao.subprocess.Popen = originais
+        atualizacao.PUBLICA = publica_original
         shutil.rmtree(atualizacao.PASTA, ignore_errors=True)
         if os.path.exists(atualizacao.FLAG_REABRIR):
             os.remove(atualizacao.FLAG_REABRIR)
@@ -425,6 +505,22 @@ def teste_atualizacao_acha_o_instalador_pelo_nome_novo_e_antigo():
     assert a._avaliar({**base, "assets": dois})["url"] == "novo"
     assert a._avaliar({**base, "assets": dois[:1]})["url"] == "antigo"
     assert a._avaliar({**base, "assets": [{"name": "outro.exe", "browser_download_url": "x", "size": 1}]}) is None
+
+
+def teste_linux_protege_processos_essenciais():
+    """§7: no Linux, encerrar ou mudar prioridade nunca vale para systemd, sshd, Xorg etc.; e a prioridade do Modo Jogo é opt-in."""
+    from monitorpc import motor
+    m = motor.Motor.__new__(motor.Motor)
+    m._meus = set()
+    antes, motor.WIN = motor.WIN, False
+    try:
+        for nome in ("systemd", "sshd", "Xorg", "NetworkManager", "gnome-shell"):
+            assert m._protecao(500, nome, "/usr/bin/" + nome, False) == "Processo essencial do Linux", nome
+        assert m._protecao(500, "firefox", "/usr/lib/firefox/firefox", False) is None
+        assert m._protecao(1, "qualquer", "/sbin/init", False) == "Sistema"
+    finally:
+        motor.WIN = antes
+    assert config.PADRAO["jogo_prioridade"] is False
 
 
 def teste_base_cnt_nao_sai_da_pasta():
