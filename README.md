@@ -46,6 +46,25 @@ Depois de instalado, ele se atualiza sozinho (Configurações → Atualizações
 | Energia | Planos e ajustes de energia, modo de energia do Windows. |
 | Serviços | Serviços de terceiros: iniciar, parar, reiniciar e mudar o tipo de inicialização (os do Windows ficam protegidos). |
 
+### Áudio
+
+Tela própria no menu (**Ferramentas › Áudio**), com dois modos. A escolha fica guardada no navegador.
+
+| Modo | O que tem |
+|---|---|
+| Básico | Volume e silenciar de cada saída (caixas, fones, monitor com som) e de cada microfone, a barra do som passando agora, “Usar este” para trocar a saída ou o microfone em uso, e o volume e silenciar de cada programa que está tocando som na saída em uso (mixer). |
+| Avançado | Tudo do Básico e mais: dispositivos desligados e desconectados, nível em dB (com a faixa do aparelho), balanço por canal (esquerdo/direito, 5.1, 7.1), placa e formato (kHz, bits, canais), dispositivo padrão e dispositivo de chamadas separados, ligar/desligar dispositivo (Windows), o mixer de todas as saídas e o que o Windows faz com o som durante uma chamada. |
+
+As mudanças valem na hora. Como o mixer e o dispositivo padrão são de quem está usando o PC, o serviço abre um
+ajudante (`MonitorPCServico.exe --audio`) com a conta e na sessão dessa pessoa. No Windows ele usa o Core Audio,
+o mesmo do painel de Som; no Linux, o `pactl` (PulseAudio ou PipeWire). Pelo acesso do celular o áudio também pode ser ajustado.
+
+### Dicas na tela
+
+Todo botão, campo, chave e item do menu mostra uma dica ao parar o mouse em cima (ou ao chegar nele pelo Tab).
+Os itens do menu explicam o que a tela faz, os botões explicam o que vão fazer e os campos das Configurações repetem
+a explicação do item. Esc fecha a dica.
+
 ### Personalizar
 
 | | |
@@ -130,6 +149,7 @@ O mesmo programa e a mesma interface, com as partes do sistema trocadas pelas do
 | Energia | perfis do power-profiles-daemon (economia, equilibrado, desempenho) ou o governor da CPU; brilho pelo `/sys/class/backlight` |
 | Inicialização | autostart do XDG (`/etc/xdg/autostart` e `~/.config/autostart`) |
 | Serviços | `systemctl` (os essenciais ficam protegidos) |
+| Áudio | `pactl` (PulseAudio ou PipeWire, pacote `pulseaudio-utils`): volume, silenciar, canais, dB, saída e microfone padrão e o volume de cada programa; sem a barra do som passando agora, sem dispositivo de chamadas e sem ligar/desligar dispositivo |
 | Otimizar | `/tmp`, `~/.cache`, miniaturas, lixeira, relatórios de erro, pacotes do apt, journal antigo, `fstrim` e `apt autoremove` |
 | Modo Jogo | perfil de desempenho, prioridade (`nice`) e fechar programas; FPS só no Windows (no Linux use o MangoHud) |
 | Ícone e janela | ícone na bandeja (no GNOME, com a extensão AppIndicator, que já vem no Ubuntu); janela no Chrome/Chromium/Edge em modo aplicativo ou no navegador padrão |

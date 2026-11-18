@@ -52,7 +52,7 @@ Architecture: amd64
 Maintainer: Robson Saldanha <54083389+robsonsaldanha@users.noreply.github.com>
 Installed-Size: $TAM
 Depends: libc6 (>= 2.35), systemd, iproute2, libx11-6, libxrandr2, libxtst6, libxfixes3, libxext6
-Recommends: xclip, wl-clipboard, xdg-desktop-portal, gstreamer1.0-tools, gstreamer1.0-pipewire, libnotify-bin, iw, xdg-user-dirs, xdg-utils, power-profiles-daemon
+Recommends: xclip, wl-clipboard, xdg-desktop-portal, gstreamer1.0-tools, gstreamer1.0-pipewire, libnotify-bin, iw, xdg-user-dirs, xdg-utils, power-profiles-daemon, pulseaudio-utils
 Suggests: gnome-shell-extension-appindicator, chromium | google-chrome-stable | microsoft-edge-stable
 Section: utils
 Priority: optional

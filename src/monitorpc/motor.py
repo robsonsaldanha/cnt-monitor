@@ -17,7 +17,7 @@ from collections import deque, defaultdict
 import psutil
 
 from . import config, configuracao, banco, rede, temperatura, nt, gpu, discos, inicializacao
-from . import alertas, jogo, energia, servicos, atualizacao, sessao, regras, limpeza, vps, captura, ventoinhas, remoto, encontro
+from . import alertas, jogo, energia, servicos, atualizacao, sessao, regras, limpeza, vps, captura, ventoinhas, remoto, encontro, audio
 from . import rede_programa
 from . import qualidade
 
@@ -44,6 +44,13 @@ CRITICOS = {
     "shellexperiencehost.exe", "searchhost.exe", "textinputhost.exe", "audiodg.exe", "spoolsv.exe", "wmiprvse.exe",
     "dllhost.exe", "taskhostw.exe", "smartscreen.exe", "wudfhost.exe", "conhost.exe", "userinit.exe", "logonui.exe",
     "lockapp.exe", "systemsettings.exe", "applicationframehost.exe", "sgrmbroker.exe", "searchindexer.exe",
+}
+
+CRITICOS_LINUX = {
+    "systemd", "init", "systemd-journald", "systemd-logind", "systemd-udevd", "systemd-resolved", "systemd-timesyncd",
+    "dbus-daemon", "dbus-broker", "polkitd", "networkmanager", "wpa_supplicant", "sshd", "cron", "rsyslogd", "udisksd",
+    "xorg", "xwayland", "gdm", "gdm3", "lightdm", "sddm", "gnome-shell", "plasmashell", "kwin_x11", "kwin_wayland",
+    "cinnamon", "mutter", "pipewire", "wireplumber", "pulseaudio", "login", "agetty", "monitorpc", "monitorpcservico",
 }
 
 NOMES = {
@@ -166,6 +173,7 @@ class Motor:
         self._url_encontro = os.environ.get("MONITORPC_ENCONTRO") or encontro.SERVIDOR
         self.encontro = encontro.Encontro(self.ajuda, self._url_encontro)
         self.vps = vps.Gerenciador()
+        self.audio = audio.Audio()
         self.vazamentos = []
         self._ult_vaz = 0
         self._vaz_avisados = {}
@@ -228,6 +236,7 @@ class Motor:
         self.parar_ev.set()
         self.encontro.parar()
         self.ajuda.parar()
+        self.audio.parar()
         self.vent.liberar()
         self.rede.parar()
         self.jogo.fps.parar()
@@ -459,6 +468,8 @@ class Motor:
         n = nome.lower()
         if n in CRITICOS:
             return "Processo essencial do Windows"
+        if not WIN and n in CRITICOS_LINUX:
+            return "Processo essencial do Linux"
         if not exe:
             return "Processo protegido do sistema" if WIN else None
         e = exe.lower()
@@ -1395,6 +1406,8 @@ class Motor:
             return res(self.vps.testar(item, a.get("segredo"), esperado))
         if isinstance(tipo, str) and tipo.startswith("ajuda_"):
             return self._acao_ajuda(tipo, a)
+        if isinstance(tipo, str) and tipo.startswith("audio_"):
+            return self.audio.acao(a)
         if tipo == "vps_esquecer":
             vid = a.get("id")
             configuracao.salvar({"vps": [dict(v, fingerprint="") if v["id"] == vid else v for v in configuracao.obter("vps")]})

@@ -1,10 +1,10 @@
 # Estado do projeto: CNT Monitor
 
-Atualizado em 2026-11-14. As funcionalidades completas estão no [README](../README.md); a API está em [API.md](API.md).
+Atualizado em 2026-11-18. As funcionalidades completas estão no [README](../README.md); a API está em [API.md](API.md).
 
 ## Versão atual
 
-- **3.4.0** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.4.0`. A release no GitHub traz
+- **3.6.1** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.6.1`. A release no GitHub traz
   `CNTMonitor-Setup-<versão>.exe`, `MonitorDoPC-Setup-<versão>.exe` (nome antigo, para instalações antigas) e
   `cnt-monitor_<versão>_amd64.deb`.
 - Repositório: `robsonsaldanha/cnt-monitor` (público, GPL v3 ou posterior).
@@ -24,6 +24,11 @@ Atualizado em 2026-11-14. As funcionalidades completas estão no [README](../REA
 | 3.2.0 | Acesso remoto: retransmissor também por TCP, credencial renovada sozinha, botão "Testar conexão", selo Direta/Retransmitida e Ctrl+C que não se perde; captura: partes das janelas (UI Automation) e Ctrl+C/Enter/Esc na seleção; Linux: ícone por AppIndicator/GTK (sem travar a tela) e textos "com o Linux" |
 | 3.3.0 | Interface com a base de front-end CNT (`src/ui/cnt`): sidebar recolhível, topbar, componentes e temas da base, opção "Estilo da interface"; relatório, sessão remota, login pela rede e site da VPS no mesmo visual; fonte Barlow removida |
 | 3.4.0 | Interface mais compacta (texto, controles, menu e topbar menores); visão em fluxo (editor de fluxos da base, só leitura) em Alertas, Regras por programa e Fluxos de trabalho da Captura |
+| 3.5.0 | Página Áudio (modo Básico e Avançado): volume, silenciar e troca de aparelho, mixer por programa, dB, balanço por canal, formato, aparelho de chamadas, ligar/desligar aparelho (ajudante na sessão do usuário; `pactl` no Linux); dicas (balões) em todos os botões e campos da interface |
+| 3.5.1 | Gráficos não crescem nem encolhem sozinhos com zoom do navegador (Ctrl +/−) ou escala de tela diferente de 100%; gráficos limitados à largura do painel em telas pequenas |
+| 3.5.2 | Linux: a janela do monitor se junta ao atalho instalado no dock (`--class` e `StartupWMClass`), sem parecer um segundo aplicativo |
+| 3.6.0 | Segurança: a atualização só instala release assinada (Ed25519, chave pública embutida; `.sig` de cada `.exe` e `.deb` gerado no CI); aceite de acesso remoto só vindo do ícone instalado; imagem do técnico só em PNG (Pillow 13.0.0); prioridade do Modo Jogo desligada por padrão; processos essenciais do Linux protegidos; CI com token só leitura e instalador do PawnIO com SHA-256 fixo |
+| 3.6.1 | Menu lateral mais compacto (cabe sem rolagem em ~880 px); acesso remoto: sai "Copiar como imagem", "Copiar como texto" vira "Copiar informações", cartões alinhados e centralizados |
 
 ## Como publicar uma versão
 
@@ -53,6 +58,8 @@ Push na `main` sem tag **não** gera release.
   (exige código nativo no Explorer).
 - 3.2.0 não testada em uso real: acesso remoto em 4G/5G, Ctrl+C com Excel num PC atendido, partes da janela fora do
   Chrome e o ícone AppIndicator em Ubuntu/Mint/KDE reais (Super+L e uso longo). Redes que só liberam 80/443 ficam de fora.
+- 3.5.0 não testada instalada: ajudante de áudio aberto pelo serviço na conta do usuário (só testado direto, fora do serviço) e
+  volume pelo acesso do celular.
 - A pasta de trabalho é `D:\monitor-pc` (a antiga, no OneDrive, não deve ser usada).
 
 ## Onde está cada coisa
