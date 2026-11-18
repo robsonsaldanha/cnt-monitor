@@ -966,9 +966,14 @@ class PedidoAjuda:
                 self.pedido = d if pede else None
                 if self.pedido and antes != "aguardando_aceite":
                     abrir_janela("ajuda")       # a janela vem para a frente na tela do acesso; a pergunta fica por cima
+                if (d.get("estado") or "") != antes and cfg().get("modo_debug"):
+                    print("debug: bandeja: estado do acesso remoto", antes or "-", "->", d.get("estado") or "-",
+                          "| pedido:", bool(self.pedido), flush=True)
                 antes = d.get("estado") or ""
-            except Exception:
-                pass        # serviço fora do ar por um instante: mantém o que estava
+            except Exception as e:  # noqa: BLE001
+                if cfg().get("modo_debug"):
+                    print("debug: bandeja: falha ao consultar o serviço:", repr(e), flush=True)
+                # serviço fora do ar por um instante: mantém o que estava
             time.sleep(1)
 
     def _responder(self, aceitar):

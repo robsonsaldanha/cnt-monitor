@@ -75,8 +75,26 @@ VERIFICAR_CADA = 3600     # segundos entre as procuras automáticas por versão 
 REPETIR_FALHA = 6 * 3600  # depois de uma instalação automática que falhou, espera isto para tentar a mesma versão
 
 
+def limpar_pasta():
+    """Apaga instaladores e assinaturas que sobraram na pasta de atualização (só a instalação em curso, que o
+    Windows mantém travada, escapa e sai na próxima passada). Guarda só o instalacao.log."""
+    try:
+        nomes = os.listdir(PASTA)
+    except OSError:
+        return
+    for nome in nomes:
+        if not re.search(r"\.(exe|deb|sig)$", nome, re.I):
+            continue
+        caminho = os.path.join(PASTA, nome)
+        try:
+            if os.path.isfile(caminho) or os.path.islink(caminho):
+                os.remove(caminho)
+        except OSError:
+            pass
+
 class Atualizador:
     def __init__(self):
+        limpar_pasta()
         self.lock = threading.Lock()      # uma instalação por vez
         self.ultima_verificacao = None
         self.disponivel = None
@@ -102,6 +120,7 @@ class Atualizador:
     def verificar(self):
         if self.situacao in EM_ANDAMENTO:      # não mexe no andamento de uma instalação em curso
             return self.disponivel
+        limpar_pasta()
         self.situacao = "verificando"
         try:
             cab = {"User-Agent": "MonitorDoPC/" + config.VERSAO, "Accept": "application/vnd.github+json"}
@@ -183,6 +202,7 @@ class Atualizador:
         if erro:
             return self._falha(erro)
         os.makedirs(PASTA, exist_ok=True)
+        limpar_pasta()
         destino = os.path.join(PASTA, f"CNTMonitor-Setup-{info['versao']}.exe" if WIN else f"cnt-monitor_{info['versao']}_amd64.deb")
         self.alvo, self.erro = info["versao"], None
         self._etapa("baixando")

@@ -559,6 +559,9 @@ class Gerente:
                 if p is not self._proc:
                     return
                 if "estado" in d:
+                    if d.get("estado") != self._estado.get("estado"):
+                        from . import configuracao
+                        configuracao.depurar("remoto: estado", self._estado.get("estado"), "->", d.get("estado"), d.get("motivo") or "")
                     self._estado = {k: d.get(k, "") for k in ("estado", "motivo", "conferencia", "convite", "senha", "senha_errada",
                                                             "tecnico")}
                 if d.get("id") is not None:

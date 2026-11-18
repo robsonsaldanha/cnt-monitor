@@ -325,6 +325,45 @@ def teste_intervalo_vai_para_1s_uma_unica_vez():
     assert configuracao.carregar()["intervalo_ms"] == 1000
 
 
+def teste_atualizacao_apaga_instaladores_antigos():
+    """Instaladores e .sig velhos somem da pasta de atualização; log e subpastas ficam."""
+    import tempfile
+    from monitorpc import atualizacao
+    pasta = tempfile.mkdtemp()
+    atualizacao.PASTA = pasta
+    for n in ("CNTMonitor-Setup-3.7.0.exe", "MonitorDoPC-Setup-2.7.0.exe", "cnt-monitor_3.7.0_amd64.deb",
+              "CNTMonitor-Setup-3.7.0.exe.sig", "instalacao.log"):
+        open(os.path.join(pasta, n), "wb").write(b"x")
+    os.mkdir(os.path.join(pasta, "pasta.exe"))
+    atualizacao.limpar_pasta()
+    assert sorted(os.listdir(pasta)) == ["instalacao.log", "pasta.exe"]
+    atualizacao.PASTA = os.path.join(pasta, "nao-existe")
+    atualizacao.limpar_pasta()   # pasta ausente não quebra
+
+def teste_modo_debug_desligado_por_padrao():
+    """Vem desligado, só liga pela escolha da pessoa e só então grava 'debug:' no log."""
+    import io
+    import tempfile
+    import contextlib
+    from monitorpc import config
+    assert config.PADRAO["modo_debug"] is False
+    config.BASE = tempfile.mkdtemp()
+    config.CONFIG = os.path.join(config.BASE, "config.json")
+    configuracao.aplicar_inicializacao = lambda c=None: None
+    assert configuracao.carregar()["modo_debug"] is False
+
+    def saida():
+        b = io.StringIO()
+        with contextlib.redirect_stderr(b):
+            configuracao.depurar("remoto: estado x")
+        return b.getvalue()
+    assert saida() == ""
+    configuracao.salvar_publico({"modo_debug": True})
+    assert "debug: remoto: estado x" in saida()
+    configuracao.salvar_publico({"modo_debug": False})
+    assert saida() == ""
+
+
 def teste_limites_remoto_e_atualizacao():
     from monitorpc import atualizacao, remoto
     assert remoto.DURACAO_MAXIMA == 12 * 3600
