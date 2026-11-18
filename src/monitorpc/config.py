@@ -66,7 +66,7 @@ PADRAO = {
     "jogo_fechar": [],          # programas que o Modo Jogo fecha
     "jogo_reabrir": True,
     "jogo_plano": True,
-    "jogo_prioridade": True,
+    "jogo_prioridade": False,   # opt-in: mexer na prioridade de processos só se a pessoa ligar
     "jogo_modo_windows": True,
     "jogo_silenciar": True,
     "jogo_fps": True,

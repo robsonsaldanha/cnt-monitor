@@ -98,6 +98,7 @@ class Audio:
         self._fila = None
         self._dono = None
         self._conferido = 0
+        self._exes = {}                  # (pid, nome) -> caminho do .exe, para o ícone do programa no mixer
 
     def _cmd(self):
         if self._comando:
@@ -179,9 +180,29 @@ class Audio:
             r = self.pedir({"op": "listar"})
         except OSError as e:
             r = {"erro": str(e)}
+        self._com_exe(r.get("programas") or [])
         r["sistema"] = "windows" if WIN else "linux"
         r["reducoes"] = list(REDUCOES)
         return r
+
+    def _com_exe(self, programas):
+        """Acrescenta o caminho do executável (o serviço enxerga todos os processos; o ajudante, só os da pessoa)."""
+        import psutil
+        for p in programas:
+            pid = p.get("pid")
+            if not pid or p.get("app") == "sis":
+                continue
+            chave = (pid, p.get("nome"))
+            if chave not in self._exes:
+                try:
+                    exe = psutil.Process(pid).exe()
+                except (psutil.Error, OSError):
+                    exe = ""
+                if len(self._exes) > 500:
+                    self._exes.clear()
+                self._exes[chave] = exe
+            if self._exes[chave]:
+                p["exe"] = self._exes[chave]
 
     def acao(self, a):
         ped, erro = validar(a)

@@ -131,6 +131,8 @@ button.card:hover{border-color:var(--cnt-cor-primaria)}
 .ico.vz{display:inline-flex;align-items:center;justify-content:center;border-radius:4px;background:var(--cnt-cor-superficie-2);color:var(--cnt-cor-texto-suave);font-size:10px;font-weight:600;line-height:1}
 .ico-g{width:28px;height:28px;margin-right:8px;vertical-align:-8px}
 .ico-g.vz{font-size:14px}
+.ico-m{width:24px;height:24px;margin-right:10px;vertical-align:-7px}
+.ico-m.vz{font-size:12px}
 .big-jogo{display:flex;flex-direction:row;align-items:center;gap:18px;padding:18px 20px;flex-wrap:wrap}
 .big-jogo .st{font-size:var(--cnt-texto-xl);font-weight:var(--cnt-peso-forte)}
 .fps{font-size:68px;font-weight:700;line-height:1}
@@ -398,8 +400,15 @@ body:not([data-so="linux"]) .so-lin{display:none!important}
 .au-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:10px}
 .au-disp{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
 .au-disp.on{border-color:var(--cnt-cor-primaria);box-shadow:inset 0 0 0 1px var(--cnt-cor-primaria)}
-.au-cab{display:flex;align-items:center;gap:8px;min-width:0}
-.au-cab b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.au-cab{display:flex;align-items:center;gap:10px;min-width:0}
+.au-tipo{width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:var(--cnt-raio-md);background:var(--cnt-cor-superficie-2);color:var(--cnt-cor-texto-suave)}
+.au-tipo svg{width:20px;height:20px}
+.au-disp.on .au-tipo{background:var(--cnt-cor-primaria-suave);color:var(--cnt-cor-primaria)}
+.au-aviso{margin:4px 0 6px}
+.au-aviso .cnt-aviso__corpo{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.au-aviso .cnt-botao{margin-left:auto}
+#auCorpo input[type=range]{height:26px;cursor:pointer}
+.au-cab b{flex:1;min-width:0;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-height:1.3}
 .au-linha{display:grid;grid-template-columns:auto minmax(0,1fr) 3.2em;gap:10px;align-items:center}
 .au-linha input[type=range]{width:100%}
 .au-linha output{font-variant-numeric:tabular-nums;text-align:right;font-weight:600}
@@ -418,14 +427,17 @@ body:not([data-so="linux"]) .so-lin{display:none!important}
 .au-canais summary{cursor:pointer;font-size:var(--cnt-texto-sm);color:var(--cnt-cor-texto-suave)}
 .au-canais[open] summary{margin-bottom:8px}
 .au-canais .au-linha{margin-top:6px}
-.au-mix{padding:4px 14px;margin-bottom:10px}
+.au-mix{padding:4px 14px;margin-bottom:10px;max-width:980px}
 .au-mix-tit{font-weight:600;padding:10px 0 4px}
-.au-app{display:grid;grid-template-columns:minmax(110px,1fr) auto minmax(140px,2fr) 3.2em;gap:6px 10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--cnt-cor-borda)}
+.au-app{display:grid;grid-template-columns:minmax(150px,260px) auto minmax(160px,1fr) 3.2em;gap:6px 10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--cnt-cor-borda)}
 .au-app:last-child{border-bottom:0}
 .au-app input[type=range]{width:100%}
 .au-app output{font-variant-numeric:tabular-nums;text-align:right;font-weight:600}
 .au-app .au-nivel{grid-column:3/5}
-.au-app-nome{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.au-app-nome{display:flex;align-items:center;min-width:0}
+.au-app-nome>span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.au-sis{display:inline-grid;place-items:center;color:var(--cnt-cor-texto-suave)}
+.au-sis svg{width:20px;height:20px}
 @media (max-width:640px){.au-app{grid-template-columns:minmax(0,1fr) auto}.au-app input[type=range]{grid-column:1}.au-app .au-nivel{grid-column:1/3}}
 @media (prefers-reduced-motion:reduce){.au-nivel i{transition:none}}
 /* Dicas (balão ao parar o mouse ou focar pelo teclado) */
@@ -822,7 +834,14 @@ const exeNome = p => (p||'').split(/[\\/]/).pop();
 const ICO_FALHA = new Set();
 const inicial = exe => esc((exeNome(exe)||'?').replace(/\.exe$/i,'').charAt(0).toUpperCase());
 function ico(exe, cls){ if(!exe || ICO_FALHA.has(exe)) return `<span class="ico vz ${cls||''}" aria-hidden="true">${exe?inicial(exe):''}</span>`; return `<img class="ico ${cls||''}" src="/api/icone?exe=${encodeURIComponent(exe)}" alt="" data-exe="${esc(exe)}" onerror="icoFalhou(this)">`; }
-function icoFalhou(img){ ICO_FALHA.add(img.dataset.exe); img.outerHTML=`<span class="ico vz ${img.classList.contains('ico-g')?'ico-g':''}" aria-hidden="true">${inicial(img.dataset.exe)}</span>`; }
+// Telas que só têm o nome (histórico, regras, rede): o ícone vem do .exe dos programas e processos já vistos neste PC.
+const icoChave = n => String(n||'').toLowerCase().replace(/\.exe$/,'');
+const ICO_NOME = new Map((()=>{ try{ return JSON.parse(localStorage.getItem('mpc_ico_nomes')||'[]'); }catch(_){ return []; } })());
+let ICO_SALVAR=0;
+function icoAprender(l){ for(const x of l||[]){ const k=icoChave(x&&x.nome); if(!k||!x.exe||ICO_NOME.get(k)===x.exe) continue; ICO_NOME.delete(k); ICO_NOME.set(k,x.exe);
+    clearTimeout(ICO_SALVAR); ICO_SALVAR=setTimeout(()=>{ while(ICO_NOME.size>800) ICO_NOME.delete(ICO_NOME.keys().next().value); try{ localStorage.setItem('mpc_ico_nomes',JSON.stringify([...ICO_NOME])); }catch(_){} },2000); } }
+function icoN(nome, exe, cls){ const e=exe||ICO_NOME.get(icoChave(nome)); return e?ico(e,cls):`<span class="ico vz ${cls||''}" aria-hidden="true">${esc(String(nome||'?').charAt(0).toUpperCase())}</span>`; }
+function icoFalhou(img){ ICO_FALHA.add(img.dataset.exe); img.outerHTML=`<span class="ico vz ${[...img.classList].filter(c=>c!=='ico').join(' ')}" aria-hidden="true">${inicial(img.dataset.exe)}</span>`; }
 
 /* =================== avisos, confirmação e menu =================== */
 function toast(msg, erro){ const t=document.createElement('div'); t.className='toast'+(erro?' erro':''); t.textContent=msg||(erro?'Algo deu errado e o serviço não disse o motivo. Veja C:\\ProgramData\\MonitorPC\\servico.log.':'Feito.'); $('#toasts').appendChild(t); setTimeout(()=>t.remove(), erro?7000:4500); }
@@ -1378,7 +1397,7 @@ async function ciclo(){
   const precisaProcs = ['programas','processos','recurso'].includes(vista) || gavAtual;
   try{
     const [e,p] = await Promise.all([API('agora'), precisaProcs?API('processos'):Promise.resolve(null)]);
-    E=e; if(p) PROCS=p;
+    E=e; if(p) PROCS=p; icoAprender(e.programas); if(p) icoAprender(p);
     $('#vivo').className='vivo'; $('#vivo span').textContent=`ao vivo · a cada ${CFG.intervalo_ms<1000?CFG.intervalo_ms+' ms':(CFG.intervalo_ms/1000)+' s'}`;
   }catch(_){ $('#vivo').className='vivo off'; $('#vivo span').textContent='serviço não responde'; E=null; return; }
   if(!E) return;
@@ -1613,16 +1632,16 @@ const corMs=(v,a,b)=>v==null?'':v>=b?'muito':v>=a?'quente':'';
 const colGeo=[{k:'pais',t:'País',e:1,texto:1,v:r=>(r.geo||{}).pais||'',f:r=>r.geo?`${esc(r.geo.pais||'')}${r.geo.operadora?`<div class="mut" style="font-size:11px">${esc(r.geo.operadora)}</div>`:''}`:'<span class="mut">—</span>'}];
 const colProto=[{k:'udp_tot',t:'TCP / UDP',v:r=>(r.udp_tot||0)-(r.tcp_tot||0),f:r=>(r.tcp_tot||r.udp_tot)?`${fB(r.tcp_tot||0)} / ${fB(r.udp_tot||0)}`:'<span class="mut">—</span>'},{k:'servicos',t:'Serviços',e:1,texto:1,v:r=>(r.servicos||[]).join(', '),f:r=>esc((r.servicos||[]).join(', '))}];
 const colLat=[{k:'lat',t:'Latência',v:r=>r.lat?.mediana??1e9,f:r=>r.lat?`<span class="${corMs(r.lat.mediana,80,150)}">${fMs(r.lat.mediana)}</span>`:'<span class="mut" title="medindo… (alguns servidores não respondem a ping)">—</span>'},{k:'jit',t:'Jitter',v:r=>r.lat?.jitter??1e9,f:r=>r.lat?fMs(r.lat.jitter):''},{k:'perda',t:'Perda',v:r=>r.lat?.perda??1e9,f:r=>r.lat&&r.lat.perda!=null?`<span class="${r.lat.perda>=100?'mut':r.lat.perda>=2?'muito':r.lat.perda>0?'quente':''}">${r.lat.perda>=100?'não responde':nf1.format(r.lat.perda)+'%'}</span>`:''}];
-const tRedeProg=Tabela($('#tRedeProg'),[{k:'nome',t:'Programa',e:1,texto:1,f:r=>`<span class="nm">${esc(r.nome)}</span>`},{k:'env',t:'Enviando',f:r=>fN(r.env)},{k:'rec',t:'Recebendo',f:r=>fN(r.rec)},{k:'nconn',t:'Conexões'},{k:'nips',t:'IPs'}],
+const tRedeProg=Tabela($('#tRedeProg'),[{k:'nome',t:'Programa',e:1,texto:1,f:r=>`${icoN(r.nome,r.exe)}<span class="nm">${esc(r.nome)}</span>`},{k:'env',t:'Enviando',f:r=>fN(r.env)},{k:'rec',t:'Recebendo',f:r=>fN(r.rec)},{k:'nconn',t:'Conexões'},{k:'nips',t:'IPs'}],
   {ordem:'rec',clique:r=>abrirPrograma(r.nome),menu:(e,r)=>menuPrograma(e,E?.programas.find(g=>g.nome===r.nome)),limite:60});
 const tIfs=Tabela($('#tIfs'),[{k:'nome',t:'Placa',e:1,texto:1},{k:'ips',t:'IP',e:1,f:r=>esc((r.ips||[]).join(', '))},{k:'env',t:'↑',f:r=>fN(r.env)},{k:'rec',t:'↓',f:r=>fN(r.rec)},{k:'velocidade',t:'Velocidade',f:r=>r.velocidade?nf0.format(r.velocidade)+' Mb/s':'—'},{k:'rec_tot',t:'Recebido',f:r=>fB(r.rec_tot)}],{ordem:'rec_tot'});
 const tRem=Tabela($('#tRem'),[
-  {k:'programa',t:'Programa',e:1,texto:1,f:r=>`<span class="nm">${esc(r.programa)}</span>`},{k:'ip',t:'IP',e:1,texto:1,f:r=>`<code>${esc(r.ip)}</code>`},
+  {k:'programa',t:'Programa',e:1,texto:1,f:r=>`${icoN(r.programa)}<span class="nm">${esc(r.programa)}</span>`},{k:'ip',t:'IP',e:1,texto:1,f:r=>`<code>${esc(r.ip)}</code>`},
   {k:'host',t:'Nome (DNS)',e:1,texto:1,f:r=>esc(r.host||'')||'<span class="mut">—</span>'},{k:'tipo',t:'Tipo',e:1,texto:1,f:r=>tagIP(r.tipo)},...colGeo,
   {k:'env',t:'↑ agora',f:r=>fN(r.env)},{k:'rec',t:'↓ agora',f:r=>fN(r.rec)},{k:'pps',t:'Pacotes/s',f:r=>r.pps?nf0.format(r.pps):'<span class="mut">0</span>'},{k:'env_tot',t:'Enviado',f:r=>fB(r.env_tot)},{k:'rec_tot',t:'Recebido',f:r=>fB(r.rec_tot)},...colProto,{k:'ult',t:'Último tráfego',f:r=>quando(r.ult)},
 ],{ordem:'rec_tot',clique:r=>abrirIP(r.ip),menu:(e,r)=>abrirMenu(e,r.ip,[{t:'Detalhes do IP',ic:'web',f:()=>abrirIP(r.ip)},{t:'Ver programa',ic:'prog',f:()=>abrirPrograma(r.programa)},{t:'Copiar IP',ic:'copiar',f:()=>copiar(r.ip)},{t:'Pesquisar esse IP',ic:'web',f:()=>pesquisar(`${r.ip} ${r.host||''} quem é`)}]),limite:500,vazio:'Nenhum tráfego medido ainda.'});
 const tConn=Tabela($('#tConn'),[
-  {k:'programa',t:'Programa',e:1,texto:1,f:r=>`<span class="nm">${esc(r.programa)}</span>`},{k:'processo',t:'Processo',e:1,texto:1,f:r=>`${esc(r.processo)}<span class="pid">${r.pid}</span>`},
+  {k:'programa',t:'Programa',e:1,texto:1,f:r=>`${icoN(r.programa)}<span class="nm">${esc(r.programa)}</span>`},{k:'processo',t:'Processo',e:1,texto:1,f:r=>`${esc(r.processo)}<span class="pid">${r.pid}</span>`},
   {k:'proto',t:'Protocolo',e:1,texto:1},{k:'local',t:'Local',e:1,texto:1,v:r=>r.lip+':'+r.lport,f:r=>`<code>${esc(r.lip)}:${r.lport}</code>`},
   {k:'remoto',t:'Remoto',e:1,texto:1,v:r=>r.rip,f:r=>r.rip?`<code>${esc(r.rip)}:${r.rport}</code>`:'<span class="mut">—</span>'},
   {k:'host',t:'Nome (DNS)',e:1,texto:1,f:r=>esc(r.host||'')},{k:'tipo',t:'Tipo',e:1,texto:1,f:r=>tagIP(r.tipo)},{k:'servico',t:'Serviço',e:1,texto:1},{k:'estado',t:'Estado',e:1,texto:1},
@@ -1691,14 +1710,14 @@ async function verMomento(t,el,marcar){ let m; try{ m=await API('momento?ts='+Ma
   if(marcar) gH.forEach(g=>{ if(g){ g.marca=m.ts; g.desenhar(); } });
   const tot=m.mem_total||1;
   el.innerHTML=`<div class="cnt-cartao__topo"><h2>${quando(m.ts)}</h2></div><div class="pad mut2" style="font-size:12.5px">Memória <b class="${nivM(m.mem_pct)}">${fP(m.mem_pct)}</b> (${fB(m.mem_usada)}) · CPU <b class="${nivC(m.cpu)}">${fP(m.cpu)}</b>${m.temp_cpu!=null?` · CPU ${fT(m.temp_cpu)}`:''}</div>
-    <ul class="lista">${m.apps.map(a=>`<li class="cl" data-prog="${esc(a.nome)}"><span>${esc(a.nome)}</span><span class="n">${fB(a.mem)}${a.cpu>=1?' · '+fP(a.cpu):''}</span>${barra(a.mem,tot,3)}</li>`).join('')}</ul>
-    ${m.procs.length?`<div class="cnt-cartao__topo"><h2>Processos que mais pesavam</h2></div><ul class="lista">${m.procs.map(p=>`<li><span>${esc(p.nome)} <span class="pid">${esc(p.programa)} · ${p.pid}</span></span><span class="n">${fB(p.mem)}</span></li>`).join('')}</ul>`:''}`; }
+    <ul class="lista">${m.apps.map(a=>`<li class="cl" data-prog="${esc(a.nome)}"><span>${icoN(a.nome)}${esc(a.nome)}</span><span class="n">${fB(a.mem)}${a.cpu>=1?' · '+fP(a.cpu):''}</span>${barra(a.mem,tot,3)}</li>`).join('')}</ul>
+    ${m.procs.length?`<div class="cnt-cartao__topo"><h2>Processos que mais pesavam</h2></div><ul class="lista">${m.procs.map(p=>`<li><span>${icoN(p.programa||p.nome,p.exe)}${esc(p.nome)} <span class="pid">${esc(p.programa)} · ${p.pid}</span></span><span class="n">${fB(p.mem)}</span></li>`).join('')}</ul>`:''}`; }
 
 /* =================== LENTIDÃO =================== */
 function htmlEps(eps,lm,lc,lt){ if(!eps.length) return `<div class="vazio"><b class="ok" style="display:block;font-size:15px;margin-bottom:4px">Nenhum momento de lentidão</b>Quando a memória passar de ${lm}%, a CPU de ${lc}% ou a temperatura de ${lt} °C, aparece aqui com os responsáveis.</div>`;
   return eps.map(e=>{ const q=[e.mem_max>=lm?'memória':'',e.cpu_max>=lc?'CPU':'',e.temp_max>=lt?'temperatura':''].filter(Boolean).join(', ')||'alto';
     return `<div class="ep" data-ts="${e.ts_pico}"><div><b>${quando(e.inicio)}</b><div class="mut" style="font-size:12px">${q} · ${dur(e.fim-e.inicio)}</div></div><div><div class="mut2" style="font-size:12.5px;margin-bottom:5px">Memória até <b class="${nivM(e.mem_max)}">${fP(e.mem_max)}</b> · CPU até <b class="${nivC(e.cpu_max)}">${fP(e.cpu_max)}</b>${e.temp_max?` · CPU <b class="${nivT(e.temp_max)}">${fT(e.temp_max)}</b>`:''}</div>
-    <div class="chips">${e.top.map(a=>`<span class="chip"><b>${esc(a.nome)}</b> ${fB(a.mem)}</span>`).join('')}${e.top_cpu.filter(a=>!e.top.some(b=>b.nome===a.nome)).map(a=>`<span class="chip"><b>${esc(a.nome)}</b> CPU ${fP(a.cpu)}</span>`).join('')}</div></div></div>`; }).join(''); }
+    <div class="chips">${e.top.map(a=>`<span class="chip">${icoN(a.nome)}<b>${esc(a.nome)}</b> ${fB(a.mem)}</span>`).join('')}${e.top_cpu.filter(a=>!e.top.some(b=>b.nome===a.nome)).map(a=>`<span class="chip">${icoN(a.nome)}<b>${esc(a.nome)}</b> CPU ${fP(a.cpu)}</span>`).join('')}</div></div></div>`; }).join(''); }
 async function vLentidao(){ let d; try{ d=await API('lentidao?dias=7'); }catch(_){ return; }
   $('#lentSub').textContent=`Momentos em que a memória passou de ${d.limiar_mem}%, a CPU de ${d.limiar_cpu}% ou a temperatura da CPU de ${d.limiar_temp} °C — é quando o PC costuma travar. Os limites podem ser mudados em Configurações.`;
   $('#eps').innerHTML=htmlEps(d.episodios,d.limiar_mem,d.limiar_cpu,d.limiar_temp);
@@ -1730,7 +1749,7 @@ async function vRelatorio(){ const [a,b]=faixa(); $('#relCorpo').innerHTML='<div
   ${tile('Momentos de lentidão',nf0.format(r.episodios.length),r.episodios.length?'veja a lista abaixo':'nenhum no período',r.episodios.length?'quente':'ok')}</div>
   <div class="cnt-cartao secao graf"><h2>Memória e CPU no período</h2><div class="leg"><span style="--c:${COR(0)}">Memória média</span><span style="--c:${COR(7)}">Memória máxima</span><span style="--c:${COR(1)}">CPU média</span></div><canvas id="relGraf" height="210"></canvas></div>
   <div class="cnt-cartao secao"><div class="cnt-cartao__topo"><h2>Resumo: quem mais pesou</h2></div><div class="grade g4 pad">
-    ${[['Memória (média)',top(P,'mem_med'),x=>fB(x.mem_med)],['CPU (média)',top(P,'cpu_med'),x=>fP(x.cpu_med)],['Disco (total)',top(P.map(x=>({...x,d:x.ler+x.gravar})),'d'),x=>fB(x.d)],['Rede (total)',top(P.map(x=>({...x,n:x.env+x.rec})),'n'),x=>fB(x.n)]].map(([t,l,f])=>`<div><div class="mut2" style="font-size:12px;margin-bottom:4px">${t}</div>${l.map((x,i)=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:2px 0"><span>${i+1}. ${esc(x.nome)}</span><b class="n">${f(x)}</b></div>`).join('')||'<span class="mut">—</span>'}</div>`).join('')}
+    ${[['Memória (média)',top(P,'mem_med'),x=>fB(x.mem_med)],['CPU (média)',top(P,'cpu_med'),x=>fP(x.cpu_med)],['Disco (total)',top(P.map(x=>({...x,d:x.ler+x.gravar})),'d'),x=>fB(x.d)],['Rede (total)',top(P.map(x=>({...x,n:x.env+x.rec})),'n'),x=>fB(x.n)]].map(([t,l,f])=>`<div><div class="mut2" style="font-size:12px;margin-bottom:4px">${t}</div>${l.map((x,i)=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:2px 0"><span>${i+1}. ${icoN(x.nome)}${esc(x.nome)}</span><b class="n">${f(x)}</b></div>`).join('')||'<span class="mut">—</span>'}</div>`).join('')}
   </div></div>
   <div class="cnt-cartao secao"><div class="cnt-cartao__topo"><h2>Programas</h2><span class="cnt-cartao__apoio">${P.length} programas no período</span></div><div class="tw" id="rProg"></div></div>
   <div class="cnt-cartao secao"><div class="cnt-cartao__topo"><h2>Processos que mais usaram memória</h2></div><div class="tw" id="rProc"></div></div>
@@ -1738,7 +1757,7 @@ async function vRelatorio(){ const [a,b]=faixa(); $('#relCorpo').innerHTML='<div
   <div class="cnt-cartao secao"><div class="cnt-cartao__topo"><h2>Recomendações</h2><span class="cnt-cartao__apoio">com base neste período</span></div><ul class="lista">${recomendacoes(r).map(x=>`<li><span style="white-space:normal">${esc(x)}</span></li>`).join('')}</ul></div>
   <div class="cnt-cartao secao"><div class="cnt-cartao__topo"><h2>Momentos de lentidão</h2></div>${htmlEps(r.episodios.slice(0,40),r.limiar_mem,r.limiar_cpu,r.limiar_temp)}</div>`;
   const L=r.linha; new Grafico($('#relGraf'),{ymax:100,limiar:r.limiar_mem,fmt:v=>fP(v),eixo:eixoPct}).def({t0:r.desde,t1:r.ate,passo:r.passo_linha,series:[{nome:'Memória média',cor:COR(0),grossa:1,pts:L.map(x=>[x[0],x[1]])},{nome:'Memória máxima',cor:COR(7),pts:L.map(x=>[x[0],x[2]])},{nome:'CPU média',cor:COR(1),pts:L.map(x=>[x[0],x[3]])}]});
-  Tabela($('#rProg'),[{k:'nome',t:'Programa',e:1,texto:1,f:x=>`<span class="nm">${esc(x.nome)}</span>`},{k:'tempo',t:'Tempo aberto',f:x=>dur(x.tempo)},{k:'mem_med',t:'Memória média',f:x=>`<div class="mc"><span>${fB(x.mem_med)}</span>${barra(x.mem_med,tot,3)}</div>`},{k:'mem_max',t:'Memória máx.',f:x=>fB(x.mem_max)},
+  Tabela($('#rProg'),[{k:'nome',t:'Programa',e:1,texto:1,f:x=>`${icoN(x.nome)}<span class="nm">${esc(x.nome)}</span>`},{k:'tempo',t:'Tempo aberto',f:x=>dur(x.tempo)},{k:'mem_med',t:'Memória média',f:x=>`<div class="mc"><span>${fB(x.mem_med)}</span>${barra(x.mem_med,tot,3)}</div>`},{k:'mem_max',t:'Memória máx.',f:x=>fB(x.mem_max)},
     {k:'cpu_med',t:'CPU média',f:x=>fP(x.cpu_med)},{k:'cpu_max',t:'CPU máx.',f:x=>fP(x.cpu_max)},{k:'ler',t:'Disco lido',f:x=>fB(x.ler)},{k:'gravar',t:'Disco gravado',f:x=>fB(x.gravar)},{k:'env',t:'Rede enviada',f:x=>fB(x.env)},{k:'rec',t:'Rede recebida',f:x=>fB(x.rec)},{k:'nproc_max',t:'Proc. máx.'},{k:'nconn_max',t:'Conexões máx.'}],{ordem:'mem_med',clique:x=>abrirPrograma(x.nome)}).def(P);
   Tabela($('#rProc'),[{k:'nome',t:'Processo',e:1,texto:1},{k:'programa',t:'Programa',e:1,texto:1},{k:'mem_max',t:'Memória máx.',f:x=>fB(x.mem_max)},{k:'cpu_med',t:'CPU média',f:x=>fP(x.cpu_med)},{k:'cpu_max',t:'CPU máx.',f:x=>fP(x.cpu_max)},{k:'disco',t:'Disco',f:x=>fB(x.disco)},{k:'rede',t:'Rede',f:x=>fB(x.rede)},{k:'instancias',t:'Vezes aberto'}],{ordem:'mem_max',limite:30}).def(r.processos);
   Tabela($('#rRem'),[{k:'ip',t:'IP',e:1,texto:1,f:x=>`<code>${esc(x.ip)}</code>`},{k:'host',t:'Nome',e:1,texto:1,f:x=>esc(x.host||'')},{k:'programas',t:'Programas',e:1,texto:1,f:x=>esc((x.programas||'').split(',').join(', '))},{k:'env',t:'Enviado',f:x=>fB(x.env)},{k:'rec',t:'Recebido',f:x=>fB(x.rec)}],{ordem:'rec',limite:30,vazio:'Sem tráfego registrado.'}).def(r.remotos);
@@ -1871,7 +1890,7 @@ async function vJogo(entrando){ try{ JOGO=await API('jogo'); }catch(_){ return; 
   const p=j.fps_principal;
   if(p){ FPS_SERIE.push([Date.now()/1000,p.fps]); if(FPS_SERIE.length>240) FPS_SERIE.shift(); }
   $('#fpsDesc').textContent=j.fps_rodando?'medindo agora':j.presentmon?(j.ativo?'ligue “Medir o FPS” ao lado':'liga junto com o Modo Jogo'):'medidor de FPS indisponível';
-  $('#fpsCorpo').innerHTML=p?`<div style="display:flex;align-items:flex-end;gap:16px"><div class="fps ${p.fps<30?'muito':p.fps<55?'quente':'ok'}">${nf0.format(p.fps)}</div><div class="mut2" style="padding-bottom:8px">FPS em <b>${esc(p.nome)}</b><br>${nf1.format(p.ms_quadro)} ms por quadro</div></div>
+  $('#fpsCorpo').innerHTML=p?`<div style="display:flex;align-items:flex-end;gap:16px"><div class="fps ${p.fps<30?'muito':p.fps<55?'quente':'ok'}">${nf0.format(p.fps)}</div><div class="mut2" style="padding-bottom:8px">FPS em <b>${icoN(p.nome,p.exe)}${esc(p.nome)}</b><br>${nf1.format(p.ms_quadro)} ms por quadro</div></div>
     ${Object.keys(j.fps).length>1?`<div class="mut" style="font-size:12px;margin-top:6px">Outros: ${Object.entries(j.fps).filter(([k])=>+k!==p.pid).map(([k,v])=>`${esc(v.nome)} ${nf0.format(v.fps)} FPS`).join(' · ')}</div>`:''}`
     :`<div class="mut">${j.fps_rodando?'Nenhum jogo desenhando na tela agora. Abra o jogo — o FPS aparece aqui e no ícone perto do relógio.':j.fps_erro?esc(j.fps_erro):'O FPS aparece aqui quando o Modo Jogo estiver ligado.'}</div>`;
   const ag=Date.now()/1000; grFps.def({t0:ag-60,t1:ag,passo:.5,series:[{nome:'FPS',cor:COR(2),grossa:1,area:1,pts:FPS_SERIE}]});
@@ -1907,16 +1926,25 @@ $('#enCorpo').addEventListener('input',e=>{ if(e.target.id==='brilho') $('#brilh
 /* =================== ÁUDIO =================== */
 // O serviço repassa tudo a um ajudante aberto na sessão de quem usa o PC (o mixer é da pessoa, não do SYSTEM).
 // A tela é redesenhada só quando muda a lista (dispositivos, programas, modo); volume e nível são atualizados no lugar.
-let AU=null, AU_CHAVE='', AU_TIMER=0, AU_ATIVO=null, AU_MEXEU=0, AU_MODO=(()=>{ try{ return localStorage.getItem('mpc_audio_modo')==='avancado'?'avancado':'basico'; }catch(_){ return 'basico'; } })();
+let AU=null, AU_CHAVE='', AU_TIMER=0, AU_ATIVO=null, AU_MEXEU=0, AU_MODO='basico';
 const AU_ABERTOS=new Set();
 const AU_ICO={som:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>',
   mudo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>'};
+const AU_TIPO={caixa:'<path d="M11 5L6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>',
+  fone:'<path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>',
+  mic:'<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4M8 22h8"/>',
+  tela:'<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>'};
+function auTipo(d,entrada){ const n=d.nome||''; const t=entrada?'mic':/fone|headphone|headset|auricular|earbud|airpods|buds/i.test(n)?'fone':/hdmi|displayport|monitor|\btv\b/i.test(n)?'tela':'caixa';
+  return `<span class="au-tipo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${AU_TIPO[t]}</svg></span>`; }
 const AU_CANAIS={4:['Frontal esq.','Frontal dir.','Traseiro esq.','Traseiro dir.'],6:['Frontal esq.','Frontal dir.','Centro','Subwoofer','Traseiro esq.','Traseiro dir.'],
   8:['Frontal esq.','Frontal dir.','Centro','Subwoofer','Traseiro esq.','Traseiro dir.','Lateral esq.','Lateral dir.']};
 const AU_PULSE={'front-left':'Frontal esq.','front-right':'Frontal dir.','front-center':'Centro','lfe':'Subwoofer','rear-left':'Traseiro esq.','rear-right':'Traseiro dir.','side-left':'Lateral esq.','side-right':'Lateral dir.','mono':'Mono'};
 function auCanal(d,i){ if(d.canais.length===2) return i?'Direito':'Esquerdo'; const n=(d.nomes_canais||[])[i]; if(n) return AU_PULSE[n]||n; return (AU_CANAIS[d.canais.length]||[])[i]||'Canal '+(i+1); }
-function auModoTxt(){ $('#auModoTxt').textContent=AU_MODO==='avancado'?'Mostrando tudo, inclusive os dispositivos desligados.':'Mostrando o essencial. Use “Avançado” para dB, canais e formato.'; }
-async function vAudio(){ document.querySelectorAll('#auModo [data-modo]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.modo===AU_MODO))); auModoTxt();
+function auModoTxt(){ $('#auModoTxt').textContent=AU_MODO==='avancado'?'Ajustes profissionais: dB, canais, formato, chamadas e dispositivos desligados.':'O essencial para o dia a dia: volume, silenciar e qual aparelho usar.'; }
+async function auMudarModo(m){ if(m===AU_MODO) return;
+  if(m==='avancado'&&!await confirmar('Abrir o modo Avançado?','O modo Avançado tem ajustes profissionais: desligar dispositivos, trocar o aparelho das chamadas, nível em dB e balanço entre canais. Um ajuste errado pode deixar o computador sem som ou sem microfone. Você sabe o que está fazendo e está ciente desse risco?','Sei o que estou fazendo',true)) return;
+  AU_MODO=m; document.querySelectorAll('#auModo [data-modo]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.modo===m))); auModoTxt(); if(AU) auDesenhar(true); }
+async function vAudio(){ AU_MODO='basico'; document.querySelectorAll('#auModo [data-modo]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.modo===AU_MODO))); auModoTxt();
   await auLer(true); clearInterval(AU_TIMER);
   AU_TIMER=setInterval(()=>{ if(vista!=='audio'){ clearInterval(AU_TIMER); return; } if(!document.hidden) auLer(false); },1000); }
 async function auLer(forcar){ let a; try{ a=await API('audio'); }catch(_){ if(forcar){ AU_CHAVE=''; $('#auCorpo').innerHTML='<div class="vazio">Não consegui falar com o serviço do CNT Monitor.</div>'; } return; }
@@ -1928,20 +1956,23 @@ function auDesenhar(forcar){ const a=AU, c=$('#auCorpo');
   AU_CHAVE=chave; c.innerHTML=auHtml(a,AU_MODO==='avancado'); auAtualizar(); }
 function auHtml(a,av){ const r=a.recursos||{};
   const sec=(tit,sub,l,vazio)=>`<h2 class="secao">${tit}</h2><p class="au-meta" style="margin-bottom:8px">${sub}</p><div class="au-grade">${(av?l:l.filter(d=>d.estado==='ativo')).map(d=>auCartao(d,av,r,l===a.entradas)).join('')||`<div class="vazio">${vazio}</div>`}</div>`;
-  let h=sec('Saída de som','Por onde o som sai: caixas, fones e monitores com som. '+(av&&r.comunicacao?'“Padrão” é o que os programas usam; “Chamadas”, o que Teams, Discord e parecidos usam.':'O marcado “'+(av?'Padrão':'Em uso')+'” é o que os programas usam.'),a.saidas,'Nenhuma saída de som ligada.')
-   +sec('Microfones','Por onde o som entra. O volume aqui é o quanto o microfone capta.',a.entradas,'Nenhum microfone ligado.');
+  let h=av?'<div class="cnt-aviso cnt-aviso--alerta au-aviso" role="status"><div class="cnt-aviso__corpo"><span><b>Modo Avançado ligado.</b> Um dispositivo desligado ou um padrão trocado pode deixar o PC sem som ou sem microfone.</span><button type="button" class="cnt-botao cnt-botao--pq cnt-botao--secundario" data-au-basico="1" data-dica="Volta para o modo simples, com só o essencial">Voltar ao Básico</button></div></div>':'';
+  h+=sec('Saída de som','Por onde o som sai: caixas, fones e monitores com som. '+(av&&r.comunicacao?'“Padrão” é o que os programas usam; “Chamadas”, o que Teams, Discord e parecidos usam.':'O marcado “'+(av?'Padrão':'Em uso')+'” é o que os programas usam.'),a.saidas,'Nenhuma saída de som ligada.')
+;
+  const mics=sec('Microfones','Por onde o som entra. O volume aqui é o quanto o microfone capta.',a.entradas,'Nenhum microfone ligado.');
   const saidas=a.saidas.filter(d=>d.estado==='ativo'), pad=saidas.find(d=>d.padrao)||saidas[0];
   const grupos=av?saidas.filter(d=>d===pad||a.programas.some(p=>p.dispositivo===d.id)):(pad?[pad]:[]);
   h+=`<h2 class="secao">Volume de cada programa</h2><p class="au-meta" style="margin-bottom:8px">Abaixe ou silencie um programa sem mexer nos outros. Só aparecem os programas que estão com o som aberto${av?'':' na saída em uso'}.</p>`;
   h+=grupos.map(d=>{ const ps=a.programas.filter(p=>p.dispositivo===d.id);
     return `<div class="cnt-cartao au-mix">${av?`<div class="au-mix-tit">${esc(d.nome)}</div>`:''}${ps.map(p=>auApp(p,d,r)).join('')||'<div class="vazio">Nenhum programa com som aberto agora.</div>'}</div>`; }).join('')||'<div class="vazio">Nenhuma saída de som ligada.</div>';
+  h+=mics;
   if(av&&r.reducao) h+=`<h2 class="secao">Chamadas</h2><div class="cnt-cartao cfg" style="max-width:none"><div class="item"><b>Quando o Windows detectar uma chamada</b><div class="ctl"><select data-a="reducao" class="cnt-campo__controle cnt-campo__controle--select" aria-label="Quando o Windows detectar uma chamada">${(a.reducoes||[]).map((t,i)=>`<option value="${i}" ${i===a.reducao?'selected':''}>${esc(t)}</option>`).join('')}</select></div><small>O que acontece com o som dos outros programas durante uma ligação (Teams, Discord, WhatsApp…). Vale a partir da próxima chamada.</small></div></div>`;
   return h; }
 function auCartao(d,av,r,entrada){ const id=esc(d.id), nome=esc(d.nome), ativo=d.estado==='ativo', tem=ativo&&d.volume!=null;
   const selos=(d.padrao?`<span class="cnt-selo cnt-selo--sucesso" data-dica="${av?'Dispositivo padrão: os programas usam este':'É por aqui que o som está passando agora'}">${av?'Padrão':'Em uso'}</span>`:'')
     +(av&&r.comunicacao&&d.comunicacao?'<span class="cnt-selo cnt-selo--primario" data-dica="Usado em chamadas (Teams, Discord, WhatsApp…)">Chamadas</span>':'')
     +(ativo?'':`<span class="cnt-selo" data-dica="${d.estado==='desativado'?'Desligado no Windows. Use a chave “Ligado” para voltar a usar.':'O aparelho não está conectado agora.'}">${d.estado==='desativado'?'Desligado':'Desconectado'}</span>`);
-  let h=`<div class="cnt-cartao au-disp${d.padrao?' on':''}"><div class="au-cab"><b data-dica="${nome}">${nome}</b>${selos}</div>`;
+  let h=`<div class="cnt-cartao au-disp${d.padrao?' on':''}"><div class="au-cab">${auTipo(d,entrada)}<b data-dica="${nome}">${nome}</b>${selos}</div>`;
   if(tem) h+=`<div class="au-linha"><button type="button" class="au-mudo" data-a="mudo" data-id="${id}" aria-pressed="${d.mudo}"></button><input type="range" min="0" max="100" step="1" value="${d.volume}" data-a="volume" data-id="${id}" aria-label="Volume de ${nome}" data-dica="Arraste para mudar o volume (as setas do teclado também funcionam)"><output data-id="${id}">${d.volume}%</output></div>`
     +(r.nivel?`<div class="au-nivel" data-dica="${entrada?'Se a barra mexe quando você fala, o microfone está captando':'Se a barra mexe, o som está saindo por aqui'}"><i data-n="1" data-id="${id}"></i></div>`:'');
   if(av){ const meta=[d.placa&&('Placa: '+d.placa), d.formato_texto&&('Formato: '+d.formato_texto)].filter(Boolean).join(' · ');
@@ -1955,7 +1986,7 @@ function auCartao(d,av,r,entrada){ const id=esc(d.id), nome=esc(d.nome), ativo=d
   if(bts.length) h+=`<div class="au-bts">${bts.join('')}</div>`;
   return h+'</div>'; }
 function auApp(p,d,r){ const id=esc(d.id), app=esc(p.app), nome=esc(p.nome);
-  return `<div class="au-app"><span class="au-app-nome" data-dica="${p.app==='sis'?'Avisos e alertas do sistema':nome}">${nome}</span><button type="button" class="au-mudo" data-a="app_mudo" data-id="${id}" data-app="${app}" aria-pressed="${p.mudo}"></button><input type="range" min="0" max="100" value="${p.volume}" data-a="app_volume" data-id="${id}" data-app="${app}" aria-label="Volume de ${nome}" data-dica="Volume só deste programa (proporcional ao volume da saída)"><output data-id="${id}" data-app="${app}">${p.volume}%</output>${r.nivel?`<div class="au-nivel" data-dica="Se a barra mexe, este programa está tocando som agora"><i data-n="1" data-id="${id}" data-app="${app}"></i></div>`:''}</div>`; }
+  return `<div class="au-app"><span class="au-app-nome" data-dica="${p.app==='sis'?'Avisos e alertas do sistema':nome}">${p.app==='sis'?`<span class="ico ico-m au-sis" aria-hidden="true">${AU_ICO.som}</span>`:icoN(p.nome,p.exe,'ico-m')}<span>${nome}</span></span><button type="button" class="au-mudo" data-a="app_mudo" data-id="${id}" data-app="${app}" aria-pressed="${p.mudo}"></button><input type="range" min="0" max="100" value="${p.volume}" data-a="app_volume" data-id="${id}" data-app="${app}" aria-label="Volume de ${nome}" data-dica="Volume só deste programa (proporcional ao volume da saída)"><output data-id="${id}" data-app="${app}">${p.volume}%</output>${r.nivel?`<div class="au-nivel" data-dica="Se a barra mexe, este programa está tocando som agora"><i data-n="1" data-id="${id}" data-app="${app}"></i></div>`:''}</div>`; }
 function auAtualizar(){ const a=AU, disp=new Map([...a.saidas,...a.entradas].map(d=>[d.id,d])), apps=new Map(a.programas.map(p=>[p.dispositivo+'\n'+p.app,p]));
   const mexendo=Date.now()-AU_MEXEU<1500;
   for(const el of $('#auCorpo').querySelectorAll('[data-id]')){ const x=el.dataset.app?apps.get(el.dataset.id+'\n'+el.dataset.app):disp.get(el.dataset.id); if(!x) continue;
@@ -1977,14 +2008,13 @@ async function auAcao(el){ const t=el.dataset.a, d={tipo:'audio_'+t};
   if(!r) return toast('Não consegui falar com o serviço.',true);
   if(!r.ok) toast(r.msg,true); else if(['padrao','ativar','reducao'].includes(t)) toast(r.msg);
   if(!['volume','app_volume','canal'].includes(t)) auLer(false); }
-$('#auModo').addEventListener('click',e=>{ const b=e.target.closest('[data-modo]'); if(!b) return; AU_MODO=b.dataset.modo; try{ localStorage.setItem('mpc_audio_modo',AU_MODO); }catch(_){}
-  document.querySelectorAll('#auModo [data-modo]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); auModoTxt(); if(AU) auDesenhar(true); });
+$('#auModo').addEventListener('click',e=>{ const b=e.target.closest('[data-modo]'); if(b) auMudarModo(b.dataset.modo); });
 $('#auCorpo').addEventListener('input',e=>{ const el=e.target; if(!['volume','app_volume','canal'].includes(el.dataset.a)) return;
   AU_ATIVO=el; AU_MEXEU=Date.now(); const o=el.nextElementSibling; if(o&&o.tagName==='OUTPUT') o.textContent=el.value+'%';
   clearTimeout(el._t); const env=()=>{ el._ult=Date.now(); auAcao(el); };            // no máximo um pedido a cada 120 ms; o último sempre vai
   if(!el._ult||Date.now()-el._ult>120) env(); else el._t=setTimeout(env,120); });
 $('#auCorpo').addEventListener('change',e=>{ const el=e.target; if(['db','ativar','reducao'].includes(el.dataset.a)) auAcao(el); });
-$('#auCorpo').addEventListener('click',e=>{ const b=e.target.closest('button[data-a]'); if(b) auAcao(b); });
+$('#auCorpo').addEventListener('click',e=>{ if(e.target.closest('[data-au-basico]')) return auMudarModo('basico'); const b=e.target.closest('button[data-a]'); if(b) auAcao(b); });
 $('#auCorpo').addEventListener('toggle',e=>{ const d=e.target; if(d.matches&&d.matches('details[data-id]')){ if(d.open) AU_ABERTOS.add(d.dataset.id); else AU_ABERTOS.delete(d.dataset.id); } },true);
 
 /* =================== DICAS (balões em toda a interface) =================== */
@@ -2272,7 +2302,7 @@ function peWindows(){ const e=PERS.est;
   let h=[['barra','Barra de tarefas e relógio'],['tema','Cores'],['explorer','Explorador de arquivos']].map(([g,t])=>{ const it=e.sistema.filter(x=>x.grupo===g); return it.length?`<h2 class="secao" style="margin-bottom:8px">${t}</h2><div class="cnt-cartao cfg" style="max-width:none">${it.map(item).join('')}</div>`:''; }).join('');
   h+=`<div style="margin-top:10px"><button class="cnt-botao cnt-botao--pq cnt-botao--secundario" data-pe="explorer">Reiniciar o Explorer</button> <span class="mut2">A barra e as janelas de pastas somem por um segundo e voltam.</span></div>`;
   const ic=e.icones.filter(i=>PERS.verIcones||i.existe);
-  h+=`<h2 class="secao" style="margin-bottom:8px">Ícones ao lado do relógio ${AJ(AJUDA_PE.icones)}</h2><div class="cnt-cartao cfg" style="max-width:none">${ic.map(i=>`<div class="item"><b>${esc(i.nome)}</b><div class="ctl">${peSw(`data-icone="${esc(i.id)}"`,i.visivel)}</div><small>${esc(i.exe)}${i.existe?'':' — esse programa não existe mais'}</small></div>`).join('')||'<div class="vazio">O Windows ainda não registrou nenhum ícone.</div>'}</div>
+  h+=`<h2 class="secao" style="margin-bottom:8px">Ícones ao lado do relógio ${AJ(AJUDA_PE.icones)}</h2><div class="cnt-cartao cfg" style="max-width:none">${ic.map(i=>`<div class="item"><b>${ico(i.exe)}${esc(i.nome)}</b><div class="ctl">${peSw(`data-icone="${esc(i.id)}"`,i.visivel)}</div><small>${esc(i.exe)}${i.existe?'':' — esse programa não existe mais'}</small></div>`).join('')||'<div class="vazio">O Windows ainda não registrou nenhum ícone.</div>'}</div>
     <label class="mut2" style="display:inline-flex;gap:6px;margin-top:8px"><input type="checkbox" id="peVerIcones" ${PERS.verIcones?'checked':''}> mostrar também os de programas que não existem mais</label>
     <p class="mut2">Ícones em grade (várias linhas e colunas) ao lado do relógio não existem no Windows 11 sem um programa que se injeta no Explorer (como o Windhawk), por isso não estão aqui.</p>`;
   return h; }
@@ -2551,7 +2581,7 @@ function abrirIP(ip){ if(!ip) return; let aba='resumo', d=null, T={}, cont=0, tr
     $('#gCorpo').innerHTML=h;
     if(aba==='resumo'){ gP=new Grafico($('#ipG1'),{fmt:v=>nf1.format(v)+' ms',eixo:v=>nf0.format(v)+' ms',ymin:10,gap:3}); gT=new Grafico($('#ipG2'),{fmt:fN,eixo:eixoN,ymin:KB,gap:3}); }
     if(aba==='serv') T.a=Tabela($('#gt'),[{k:'nome',t:'Protocolo / serviço',e:1,texto:1},{k:'env',t:'Enviado',f:r=>fB(r.env)},{k:'rec',t:'Recebido',f:r=>fB(r.rec)}],{ordem:'rec',vazio:'Sem tráfego medido para esse IP nos últimos minutos.'});
-    if(aba==='prog') T.a=Tabela($('#gt'),[{k:'programa',t:'Programa',e:1,texto:1,f:r=>`<span class="nm">${esc(r.programa)}</span>`},{k:'env',t:'↑ agora',f:r=>fN(r.env)},{k:'rec',t:'↓ agora',f:r=>fN(r.rec)},{k:'env_tot',t:'Enviado',f:r=>fB(r.env_tot)},{k:'rec_tot',t:'Recebido',f:r=>fB(r.rec_tot)},{k:'primeiro',t:'Desde',f:r=>quando(r.primeiro)}],{ordem:'rec_tot',clique:r=>abrirPrograma(r.programa),vazio:'Nenhum programa trocou dados com esse IP desde que o serviço iniciou.'});
+    if(aba==='prog') T.a=Tabela($('#gt'),[{k:'programa',t:'Programa',e:1,texto:1,f:r=>`${icoN(r.programa)}<span class="nm">${esc(r.programa)}</span>`},{k:'env',t:'↑ agora',f:r=>fN(r.env)},{k:'rec',t:'↓ agora',f:r=>fN(r.rec)},{k:'env_tot',t:'Enviado',f:r=>fB(r.env_tot)},{k:'rec_tot',t:'Recebido',f:r=>fB(r.rec_tot)},{k:'primeiro',t:'Desde',f:r=>quando(r.primeiro)}],{ordem:'rec_tot',clique:r=>abrirPrograma(r.programa),vazio:'Nenhum programa trocou dados com esse IP desde que o serviço iniciou.'});
     if(aba==='conn') T.a=Tabela($('#gt'),[...colConn.filter(c=>c.k!=='host'),{k:'rtt',t:'RTT TCP',v:r=>r.tcp?.rtt??1e9,f:r=>r.tcp?fMs(r.tcp.rtt):'<span class="mut">—</span>'},{k:'var',t:'Variação',v:r=>r.tcp?.rtt_var??-1,f:r=>r.tcp?fMs(r.tcp.rtt_var):''},{k:'ret',t:'Retransmissões',v:r=>r.tcp?.retransmissoes??-1,f:r=>r.tcp?nf0.format(r.tcp.retransmissoes):''},{k:'dup',t:'ACK dupl.',v:r=>r.tcp?.dup_acks??-1,f:r=>r.tcp?nf0.format(r.tcp.dup_acks):''},{k:'to',t:'Timeouts',v:r=>r.tcp?.timeouts??-1,f:r=>r.tcp?nf0.format(r.tcp.timeouts):''},{k:'rto',t:'RTO',v:r=>r.tcp?.rto??-1,f:r=>r.tcp&&r.tcp.rto!=null?fMs(r.tcp.rto):''}],{ordem:'remoto',clique:r=>abrirProcesso(r.pid),vazio:'Nenhuma conexão aberta com esse IP agora.'});
     if(aba==='trace'){ T.a=Tabela($('#gt'),[{k:'ttl',t:'Salto'},{k:'ip',t:'Roteador',e:1,texto:1,f:r=>r.ip?`<code>${esc(r.ip)}</code>`:'<span class="mut">* não respondeu</span>'},{k:'host',t:'Nome',e:1,texto:1,f:r=>esc(r.host||'')},...colGeo,{k:'mediana',t:'Latência',f:r=>fMs(r.mediana)},{k:'min',t:'Mín.',f:r=>fMs(r.min)},{k:'max',t:'Máx.',f:r=>fMs(r.max)},{k:'perda',t:'Perda',f:r=>r.perda==null?'':nf0.format(r.perda)+'%'}],{ordem:'ttl',desc:false,vazio:'Clique em “Traçar rota”.'}); $('#ipTr').onclick=tracar; if(tr) T.a.def(tr.saltos); }
     preencher(); }
@@ -2614,7 +2644,7 @@ function montarAnalise(){ anMontado=true;
   <p class="mut secao" style="font-size:12px">${esc(AJUDA_REDE.limites)} País e operadora: <a href="https://db-ip.com" target="_blank" rel="noopener">IP Geolocation by DB-IP</a> (CC BY 4.0), consultado no próprio PC.</p>`;
   anG1=new Grafico($('#anG1'),{fmt:v=>nf1.format(v)+' ms',eixo:v=>nf0.format(v)+' ms',ymin:10,gap:1e9}); anG2=new Grafico($('#anG2'),{fmt:fN,eixo:eixoN,ymin:KB,gap:1e9});
   anTG=new Grafico($('#anTG'),{fmt:v=>nf1.format(v)+' ms',eixo:v=>nf0.format(v)+' ms',ymin:10,gap:3});
-  anConT=Tabela($('#anCon'),[{k:'programa',t:'Programa',e:1,texto:1,f:r=>`${esc(r.programa)}<span class="pid">${esc(r.processo)} ${r.pid}</span>`},{k:'proto',t:'Prot.',e:1,texto:1},
+  anConT=Tabela($('#anCon'),[{k:'programa',t:'Programa',e:1,texto:1,f:r=>`${icoN(r.programa)}${esc(r.programa)}<span class="pid">${esc(r.processo)} ${r.pid}</span>`},{k:'proto',t:'Prot.',e:1,texto:1},
     {k:'ip',t:'Destino',e:1,texto:1,f:r=>`<code>${esc(r.ip)}:${r.rport}</code>${r.host?`<div class="mut" style="font-size:11px">${esc(r.host)}</div>`:''}`},{k:'servico',t:'Serviço',e:1,texto:1},
     {k:'env',t:'↑',f:r=>fN(r.env)},{k:'rec',t:'↓',f:r=>fN(r.rec)},{k:'pps',t:'Pacotes/s',f:r=>nf0.format(r.pps)},
     {k:'ping',t:'Ping',v:r=>r.ping??1e9,f:r=>fMs(r.ping)},{k:'rtt_tcp',t:'RTT TCP',v:r=>r.rtt_tcp??1e9,f:r=>r.proto==='TCP'?fMs(r.rtt_tcp):'<span class="mut">—</span>'},
@@ -2747,11 +2777,11 @@ function anProgRender(a){ const corpo=$('#anProgCorpo'), bts=$('#anProgB'); if(!
     anProgG=[new Grafico($('#anPG1'),ms),new Grafico($('#anPG2'),{fmt:fN,eixo:eixoN,ymin:KB,gap:5}),new Grafico($('#anPG3'),{fmt:fN,eixo:eixoN,ymin:KB,gap:5}),
       new Grafico($('#anPG4'),{fmt:fN,eixo:eixoN,ymin:KB,gap:5}),new Grafico($('#anPG5'),{fmt:v=>nf1.format(v),eixo:v=>nf1.format(v),ymax:5,gap:5})]; }
   const CI=Object.fromEntries((v.colunas||[]).map((k,i)=>[k,i])), cor=i=>AN_CORES[i%4];
-  $('#anPInfo').innerHTML=anProgVista?`Monitoramento de ${quando(v.inicio)} · ${dur(v.segundos)}`:`<b>Monitorando</b> há ${dur(v.segundos)} · ${progs.map((p,i)=>`<span class="chip" style="border-color:${cor(i)}">${esc(p.nome)}${progs.length>1?` <button class="cnt-botao cnt-botao--pq cnt-botao--secundario" data-tirar="${esc(p.nome)}" aria-label="Tirar ${esc(p.nome)}" style="padding:0 6px">×</button>`:''}</span>`).join(' ')}`
+  $('#anPInfo').innerHTML=anProgVista?`Monitoramento de ${quando(v.inicio)} · ${dur(v.segundos)}`:`<b>Monitorando</b> há ${dur(v.segundos)} · ${progs.map((p,i)=>`<span class="chip" style="border-color:${cor(i)}">${icoN(p.nome)}${esc(p.nome)}${progs.length>1?` <button class="cnt-botao cnt-botao--pq cnt-botao--secundario" data-tirar="${esc(p.nome)}" aria-label="Tirar ${esc(p.nome)}" style="padding:0 6px">×</button>`:''}</span>`).join(' ')}`
     +(v.captura_rtp&&!v.captura_rtp.ok&&v.captura_rtp.erro?` · <span class="quente">análise de chamadas (RTP) indisponível: ${esc(v.captura_rtp.erro)}</span>`:'');
   $('#anPInfo').onclick=async e=>{ const b=e.target.closest('[data-tirar]'); if(!b) return; const r=await POST('acao',{tipo:'rede_prog_remover',programa:b.dataset.tirar}).catch(()=>null); if(r) toast(r.msg,!r.ok); anProgChave=''; vAnalise(true); };
   $('#anPCards').innerHTML=progs.map((p,i)=>{ const r=p.resumo||{}, l=r.latencia||{}, rtp=(p.rtp||[])[0];
-    return `<h3 style="margin:12px 0 6px;font-size:14px;color:${cor(i)}">${esc(p.nome)}</h3>`+miniCards([['Nota',r.nota!=null?r.nota+'/100':'—',r.mos!=null?`MOS ${nf1.format(r.mos)} · pior ${nf1.format(r.mos_min)}`:'sem latência medida',r.nota==null?'':r.nota<60?'muito':r.nota<80?'quente':'ok'],
+    return `<h3 style="margin:12px 0 6px;font-size:14px;color:${cor(i)}">${icoN(p.nome)}${esc(p.nome)}</h3>`+miniCards([['Nota',r.nota!=null?r.nota+'/100':'—',r.mos!=null?`MOS ${nf1.format(r.mos)} · pior ${nf1.format(r.mos_min)}`:'sem latência medida',r.nota==null?'':r.nota<60?'muito':r.nota<80?'quente':'ok'],
       ['Latência',fMs(l.mediana),l.p95!=null?`P95 ${fMs(l.p95)} · máx ${fMs(l.max)}`:'sondas até os destinos'],
       ['Jitter',fMs(r.rtp_jitter??r.jitter_chegada??l.jitter),r.rtp_jitter!=null?'da chamada (RTP, RFC 3550)':r.jitter_chegada!=null?'de chegada dos pacotes UDP':'entre as sondas'],
       ['Perda',r.rtp_perda!=null?nf1.format(r.rtp_perda)+'%':l.perda!=null?nf1.format(l.perda)+'%':'—',r.rtp_perda!=null?`chamada · ${r.rtp_fora_de_ordem} fora de ordem`:'das sondas',(r.rtp_perda??l.perda)>=2?'muito':(r.rtp_perda??l.perda)>0?'quente':''],
@@ -2843,7 +2873,7 @@ function estadoTarefa(d){ const a=d.atual; $('#tarefaEstado').innerHTML=a?`<b>${
 async function acompanharTarefa(){ for(let i=0;i<720 && vista==='otimizar';i++){ const d=await API('tarefas').catch(()=>null); if(!d||!estadoTarefa(d)) return; await new Promise(r=>setTimeout(r,5000)); } }
 function htmlVaz(l, ativo){ if(!ativo) return '<div class="vazio">A detecção está desligada nas Configurações.</div>';
   if(!l||!l.length) return '<div class="vazio"><b class="ok" style="display:block;margin-bottom:4px">Nenhum vazamento encontrado</b>Um programa aparece aqui quando a memória dele cresce sem parar por mais de 1h30 (ex.: +200 MB por hora).</div>';
-  return '<ul class="lista">'+l.map(v=>`<li class="cl" data-prog="${esc(v.nome)}"><span><b>${esc(v.nome)}</b> <span class="mut">${nf0.format(v.inicio_mb)} MB → ${nf0.format(v.atual_mb)} MB em ${nf1.format(v.horas)} h</span></span><b class="n muito">+${nf0.format(v.taxa_mb_h)} MB/h</b></li>`).join('')+'</ul><p class="mut" style="font-size:12.5px;padding:0 14px 12px;margin:6px 0 0">Reiniciar o programa devolve a memória. Se acontecer sempre, vale atualizar o programa.</p>'; }
+  return '<ul class="lista">'+l.map(v=>`<li class="cl" data-prog="${esc(v.nome)}"><span>${icoN(v.nome,v.exe)}<b>${esc(v.nome)}</b> <span class="mut">${nf0.format(v.inicio_mb)} MB → ${nf0.format(v.atual_mb)} MB em ${nf1.format(v.horas)} h</span></span><b class="n muito">+${nf0.format(v.taxa_mb_h)} MB/h</b></li>`).join('')+'</ul><p class="mut" style="font-size:12.5px;padding:0 14px 12px;margin:6px 0 0">Reiniciar o programa devolve a memória. Se acontecer sempre, vale atualizar o programa.</p>'; }
 async function diagnostico(){ const it=[]; const add=(nivel,txt,ir,bt)=>it.push({nivel,txt,ir,bt});
   const [hw,ini,en,al]=await Promise.all([API('hardware').catch(()=>null),API('inicializacao').catch(()=>null),API('energia').catch(()=>null),API('alertas').catch(()=>null)]);
   if(hw) for(const p of hw.particoes||[]) if(p.pct>=90) add('muito',`A unidade ${p.unidade} está ${fP(p.pct,0)} cheia (sobram ${fB(p.total-p.usado)}). Pouco espaço deixa o Windows lento.`,null,null);
@@ -2861,7 +2891,7 @@ async function diagnostico(){ const it=[]; const add=(nivel,txt,ir,bt)=>it.push(
 let REG=null, REG_EDIT=null;
 async function vRegras(){ try{ REG=await API('regras'); }catch(_){ return; }
   $('#regInfo').textContent=REG.regras.length?`${REG.regras.length} regra(s)`:'';
-  $('#regLista').innerHTML=REG.regras.length?REG.regras.map(r=>`<div class="lim"><label class="sw" title="Ligar/desligar"><input type="checkbox" data-rgat="${esc(r.id)}" ${r.ativo?'checked':''}><span></span></label><div><b>${esc(r.programa)}</b></div><span style="display:flex;gap:6px"><button class="cnt-botao cnt-botao--pq cnt-botao--secundario" data-rged="${esc(r.id)}">Editar</button><button class="cnt-botao cnt-botao--pq cnt-botao--perigo" data-rgdel="${esc(r.id)}">Apagar</button></span><small>${esc(r.descricao)}</small></div>`).join('')
+  $('#regLista').innerHTML=REG.regras.length?REG.regras.map(r=>`<div class="lim"><label class="sw" title="Ligar/desligar"><input type="checkbox" data-rgat="${esc(r.id)}" ${r.ativo?'checked':''}><span></span></label><div>${icoN(r.programa)}<b>${esc(r.programa)}</b></div><span style="display:flex;gap:6px"><button class="cnt-botao cnt-botao--pq cnt-botao--secundario" data-rged="${esc(r.id)}">Editar</button><button class="cnt-botao cnt-botao--pq cnt-botao--perigo" data-rgdel="${esc(r.id)}">Apagar</button></span><small>${esc(r.descricao)}</small></div>`).join('')
     :'<div class="vazio">Nenhuma regra ainda. Crie a primeira no formulário abaixo.</div>';
   $('#rgPri').innerHTML=Object.entries(REG.prioridades).map(([k,v])=>`<option value="${k}">${esc(v)}</option>`).join('');
   $('#rgProgs').innerHTML=(E?.programas||[]).filter(g=>!g.outros&&!g.protegido).map(g=>`<option value="${esc(g.nome)}">`).join('');
@@ -3099,7 +3129,7 @@ function htmlRelatorioCompleto(r){ const g=r.geral; if(!g) return '<div class="v
   <div class="cnt-cartao"><div class="cnt-cartao__topo"><h2>Mais CPU (média)</h2></div><div class="pad">${barrasH(topN('cpu_med').map(x=>[x.nome,x.cpu_med]),v=>fP(v),'#d07a1f')}</div></div>
   <div class="cnt-cartao"><div class="cnt-cartao__topo"><h2>Mais disco (total)</h2></div><div class="pad">${barrasH(P.map(x=>[x.nome,x.ler+x.gravar]).sort((a,b)=>b[1]-a[1]).filter(x=>x[1]>0).slice(0,8),fB,'#1d8a5b')}</div></div>
   <div class="cnt-cartao"><div class="cnt-cartao__topo"><h2>Mais rede (total)</h2></div><div class="pad">${barrasH(P.map(x=>[x.nome,x.env+x.rec]).sort((a,b)=>b[1]-a[1]).filter(x=>x[1]>0).slice(0,8),fB,'#6b52d6')}</div></div></div>
-  <div class="cnt-cartao longo"><div class="cnt-cartao__topo"><h2>Todos os programas</h2><span class="cnt-cartao__apoio">${P.length} no período</span></div><table class="cnt-tabela"><thead><tr class="cnt-tabela__linha"><th class="cnt-tabela__cab e">Programa</th><th class="cnt-tabela__cab">Tempo aberto</th><th class="cnt-tabela__cab">Memória média</th><th class="cnt-tabela__cab">Memória máx.</th><th class="cnt-tabela__cab">CPU média</th><th class="cnt-tabela__cab">CPU máx.</th><th class="cnt-tabela__cab">Disco</th><th class="cnt-tabela__cab">Rede</th></tr></thead><tbody>${P.map(x=>`<tr class="cnt-tabela__linha"><td class="cnt-tabela__cel e">${esc(x.nome)}</td><td class="cnt-tabela__cel">${dur(x.tempo)}</td><td class="cnt-tabela__cel">${fB(x.mem_med)}</td><td class="cnt-tabela__cel">${fB(x.mem_max)}</td><td class="cnt-tabela__cel">${fP(x.cpu_med)}</td><td class="cnt-tabela__cel">${fP(x.cpu_max)}</td><td class="cnt-tabela__cel">${fB(x.ler+x.gravar)}</td><td class="cnt-tabela__cel">${fB(x.env+x.rec)}</td></tr>`).join('')}</tbody></table></div>
+  <div class="cnt-cartao longo"><div class="cnt-cartao__topo"><h2>Todos os programas</h2><span class="cnt-cartao__apoio">${P.length} no período</span></div><table class="cnt-tabela"><thead><tr class="cnt-tabela__linha"><th class="cnt-tabela__cab e">Programa</th><th class="cnt-tabela__cab">Tempo aberto</th><th class="cnt-tabela__cab">Memória média</th><th class="cnt-tabela__cab">Memória máx.</th><th class="cnt-tabela__cab">CPU média</th><th class="cnt-tabela__cab">CPU máx.</th><th class="cnt-tabela__cab">Disco</th><th class="cnt-tabela__cab">Rede</th></tr></thead><tbody>${P.map(x=>`<tr class="cnt-tabela__linha"><td class="cnt-tabela__cel e">${icoN(x.nome)}${esc(x.nome)}</td><td class="cnt-tabela__cel">${dur(x.tempo)}</td><td class="cnt-tabela__cel">${fB(x.mem_med)}</td><td class="cnt-tabela__cel">${fB(x.mem_max)}</td><td class="cnt-tabela__cel">${fP(x.cpu_med)}</td><td class="cnt-tabela__cel">${fP(x.cpu_max)}</td><td class="cnt-tabela__cel">${fB(x.ler+x.gravar)}</td><td class="cnt-tabela__cel">${fB(x.env+x.rec)}</td></tr>`).join('')}</tbody></table></div>
   <div class="cnt-cartao"><div class="cnt-cartao__topo"><h2>IPs mais acessados</h2></div><table class="cnt-tabela"><thead><tr class="cnt-tabela__linha"><th class="cnt-tabela__cab e">IP</th><th class="cnt-tabela__cab e">Nome</th><th class="cnt-tabela__cab e">Programas</th><th class="cnt-tabela__cab">Enviado</th><th class="cnt-tabela__cab">Recebido</th></tr></thead><tbody>${r.remotos.slice(0,25).map(x=>`<tr class="cnt-tabela__linha"><td class="cnt-tabela__cel e">${esc(x.ip)}</td><td class="cnt-tabela__cel e">${esc(x.host||'')}</td><td class="cnt-tabela__cel e">${esc((x.programas||'').split(',').join(', '))}</td><td class="cnt-tabela__cel">${fB(x.env)}</td><td class="cnt-tabela__cel">${fB(x.rec)}</td></tr>`).join('')||'<tr class="cnt-tabela__linha"><td colspan="5" class="cnt-tabela__cel vazio">Sem tráfego registrado.</td></tr>'}</tbody></table></div>
   <div class="cnt-cartao"><div class="cnt-cartao__topo"><h2>Momentos de lentidão</h2></div>${r.episodios.length?`<table class="cnt-tabela"><thead><tr class="cnt-tabela__linha"><th class="cnt-tabela__cab e">Quando</th><th class="cnt-tabela__cab">Duração</th><th class="cnt-tabela__cab">Memória máx.</th><th class="cnt-tabela__cab">CPU máx.</th><th class="cnt-tabela__cab e">Quem pesava</th></tr></thead><tbody>${r.episodios.slice(0,40).map(e=>`<tr class="cnt-tabela__linha"><td class="cnt-tabela__cel e">${quando(e.inicio)}</td><td class="cnt-tabela__cel">${dur(e.fim-e.inicio)}</td><td class="cnt-tabela__cel">${fP(e.mem_max)}</td><td class="cnt-tabela__cel">${fP(e.cpu_max)}</td><td class="cnt-tabela__cel e">${esc((e.top||[]).map(t=>t.nome||t[0]).slice(0,4).join(', '))}</td></tr>`).join('')}</tbody></table>`:'<div class="vazio">Nenhum momento de lentidão no período.</div>'}</div>
   ${r.alertas&&r.alertas.length?`<div class="cnt-cartao"><div class="cnt-cartao__topo"><h2>Alertas disparados</h2></div><table class="cnt-tabela"><tbody>${r.alertas.slice(0,50).map(a=>`<tr class="cnt-tabela__linha"><td class="cnt-tabela__cel e" style="width:170px">${quando(a.ts)}</td><td class="cnt-tabela__cel e"><b>${esc(a.titulo)}</b> <span class="mut">${esc(a.msg)}</span></td></tr>`).join('')}</tbody></table></div>`:''}`; }

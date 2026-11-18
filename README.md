@@ -48,7 +48,7 @@ Depois de instalado, ele se atualiza sozinho (Configurações → Atualizações
 
 ### Áudio
 
-Tela própria no menu (**Ferramentas › Áudio**), com dois modos. A escolha fica guardada no navegador.
+Tela própria no menu (**Ferramentas › Áudio**), com dois modos. Ela sempre abre no Básico; para entrar no Avançado, a tela pergunta se a pessoa sabe o que está fazendo e mostra um aviso no topo enquanto ele estiver ligado. Cada aparelho tem o ícone do tipo (caixa, fone, monitor, microfone) e cada programa do mixer, o ícone do próprio programa.
 
 | Modo | O que tem |
 |---|---|
@@ -58,6 +58,10 @@ Tela própria no menu (**Ferramentas › Áudio**), com dois modos. A escolha fi
 As mudanças valem na hora. Como o mixer e o dispositivo padrão são de quem está usando o PC, o serviço abre um
 ajudante (`MonitorPCServico.exe --audio`) com a conta e na sessão dessa pessoa. No Windows ele usa o Core Audio,
 o mesmo do painel de Som; no Linux, o `pactl` (PulseAudio ou PipeWire). Pelo acesso do celular o áudio também pode ser ajustado.
+
+### Ícones dos programas
+
+Toda tela que fala de programas mostra o ícone de cada um, tirado do próprio `.exe`: Programas, Processos, Inicialização, Rede, Lentidão, Histórico, Relatório, Comparar, Otimizar, Regras, Modo Jogo, Áudio e as gavetas. Nas telas que só guardam o nome (histórico e regras), o ícone vem dos programas já vistos neste PC; quando não há ícone (ou no Linux), aparece a inicial do nome.
 
 ### Dicas na tela
 

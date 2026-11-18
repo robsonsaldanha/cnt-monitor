@@ -837,7 +837,7 @@ class Capturador:
 
     def editada(self, cid, caminho, png_b64, nova, copiar):
         from PIL import Image
-        img = Image.open(io.BytesIO(base64.b64decode(png_b64)))
+        img = Image.open(io.BytesIO(base64.b64decode(png_b64)), formats=["PNG"])
         img.load()
         c = self.cfg(True)
         if nova or not os.path.isfile(caminho):

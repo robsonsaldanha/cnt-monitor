@@ -117,6 +117,20 @@ def teste_ajudante_de_verdade_responde():
         g.parar()
 
 
+def teste_exe_do_programa():
+    """O mixer ganha o caminho do .exe (para o ícone); sons do sistema e processo que sumiu ficam sem."""
+    g = audio.Audio()
+    progs = [{"app": "sis", "nome": "Sons do sistema", "pid": 0},
+             {"app": "exe:python", "nome": "python", "pid": os.getpid()},
+             {"app": "exe:sumiu", "nome": "sumiu", "pid": 2 ** 31 - 2}]
+    g._com_exe(progs)
+    assert "exe" not in progs[0] and "exe" not in progs[2], progs
+    assert os.path.samefile(progs[1]["exe"], sys.executable), progs[1]
+    progs[1].pop("exe")
+    g._com_exe(progs)                                   # segunda vez vem do cache
+    assert os.path.samefile(progs[1]["exe"], sys.executable)
+
+
 if __name__ == "__main__":
     for nome, f in list(globals().items()):
         if nome.startswith("teste_"):

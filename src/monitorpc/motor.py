@@ -46,6 +46,13 @@ CRITICOS = {
     "lockapp.exe", "systemsettings.exe", "applicationframehost.exe", "sgrmbroker.exe", "searchindexer.exe",
 }
 
+CRITICOS_LINUX = {
+    "systemd", "init", "systemd-journald", "systemd-logind", "systemd-udevd", "systemd-resolved", "systemd-timesyncd",
+    "dbus-daemon", "dbus-broker", "polkitd", "networkmanager", "wpa_supplicant", "sshd", "cron", "rsyslogd", "udisksd",
+    "xorg", "xwayland", "gdm", "gdm3", "lightdm", "sddm", "gnome-shell", "plasmashell", "kwin_x11", "kwin_wayland",
+    "cinnamon", "mutter", "pipewire", "wireplumber", "pulseaudio", "login", "agetty", "monitorpc", "monitorpcservico",
+}
+
 NOMES = {
     "chrome": "Google Chrome", "msedge": "Microsoft Edge", "firefox": "Firefox", "opera": "Opera", "brave": "Brave",
     "claude": "Claude", "maestri": "Maestri", "vynex forge": "Vynex Forge", "discord": "Discord",
@@ -461,6 +468,8 @@ class Motor:
         n = nome.lower()
         if n in CRITICOS:
             return "Processo essencial do Windows"
+        if not WIN and n in CRITICOS_LINUX:
+            return "Processo essencial do Linux"
         if not exe:
             return "Processo protegido do sistema" if WIN else None
         e = exe.lower()
@@ -931,7 +940,7 @@ class Motor:
             procs = self.procs
             conns = [self._conn_fmt(c, procs) for c in self.conns]
             e = self.estado or {}
-            progs = [{k: g[k] for k in ("nome", "env", "rec", "nconn", "nips")}
+            progs = [{k: g.get(k) for k in ("nome", "exe", "env", "rec", "nconn", "nips")}
                      for g in e.get("programas", []) if not g.get("outros")]
             vivos = list(self.vivos.values())
         rem = []
