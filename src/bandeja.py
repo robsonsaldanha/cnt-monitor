@@ -968,7 +968,7 @@ class PedidoAjuda:
                     abrir_janela("ajuda")       # a janela vem para a frente na tela do acesso; a pergunta fica por cima
                 if (d.get("estado") or "") != antes and cfg().get("modo_debug"):
                     print("debug: bandeja: estado do acesso remoto", antes or "-", "->", d.get("estado") or "-",
-                          "| pedido:", bool(self.pedido), flush=True)
+                          "| pedido:", bool(self.pedido), "| motivo:", d.get("motivo") or "-", flush=True)
                 antes = d.get("estado") or ""
             except Exception as e:  # noqa: BLE001
                 if cfg().get("modo_debug"):

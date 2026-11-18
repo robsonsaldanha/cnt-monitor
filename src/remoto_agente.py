@@ -865,6 +865,21 @@ class Agente:
         self._caminho = asyncio.ensure_future(self._manter_caminho())
         self._avisar()
 
+    async def _log_pares(self):
+        """Diagnóstico: enquanto o ICE não conecta, registra a cada 5 s o estado de cada par de candidatos."""
+        try:
+            for _ in range(13):
+                await asyncio.sleep(5)
+                if self.pc.connectionState in ("connected", "failed", "closed"):
+                    return
+                for t in self.pc._RTCPeerConnection__iceTransports:
+                    pares = t._connection._check_list
+                    resumo = "; ".join(f"{p.local_candidate.type}/{p.local_candidate.transport}"
+                                       f"→{p.remote_candidate.type}:{p.state.name}" for p in pares)
+                    self._log(f"pares ICE ({len(pares)}): {resumo[:600]}")
+        except Exception:  # noqa: BLE001  (campos internos do aiortc; só serve para o log)
+            pass
+
     def rota(self):
         """"direta" ou "retransmitida", pelo par que o ICE escolheu ("" se ainda não há par)."""
         try:
@@ -922,6 +937,7 @@ class Agente:
             try:
                 await self.pc.setRemoteDescription(RTCSessionDescription(sdp=sdp, type="answer"))
                 self._log(f"resposta do técnico: {remoto.resumo_candidatos(sdp)}")
+                asyncio.ensure_future(self._log_pares())
             except Exception:  # noqa: BLE001  (SDP que o WebRTC não aceita)
                 await self.encerrar("O código de resposta não serve para este convite. Gere outro convite.")
                 raise remoto.Erro(self.sessao.motivo) from None

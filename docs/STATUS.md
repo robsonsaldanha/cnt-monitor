@@ -4,7 +4,7 @@ Atualizado em 2026-11-18. As funcionalidades completas estão no [README](../REA
 
 ## Versão atual
 
-- **3.7.2** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.7.2`. A release no GitHub traz
+- **3.7.3** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.7.3`. A release no GitHub traz
   `CNTMonitor-Setup-<versão>.exe`, `MonitorDoPC-Setup-<versão>.exe` (nome antigo, para instalações antigas) e
   `cnt-monitor_<versão>_amd64.deb`.
 - Repositório: `robsonsaldanha/cnt-monitor` (público, GPL v3 ou posterior).
@@ -32,6 +32,7 @@ Atualizado em 2026-11-18. As funcionalidades completas estão no [README](../REA
 | 3.7.0 | Janela própria do CNT Monitor (WebView2 no Windows, WebKitGTK no Linux, sem Edge/Chrome e com ícone da CNT); coleta a cada 1 s por padrão em todos os PCs (250 e 500 ms seguem nas opções; a partir daqui vale a escolha da pessoa); checagem de atualização a cada 1 h, sem travar o monitor; acesso remoto até 12 h; rolagem de print só na região sob o mouse |
 | 3.7.1 | Acesso remoto abre dentro da janela do CNT Monitor (não mais no Chrome); sessão do técnico pedida pelo serviço; "Janelas separadas" por monitor removida (não funciona em janela embutida; configs antigas viram "lado a lado"). |
 | 3.7.2 | Modo debug (desligado por padrão, em Configurações) que grava o estado do acesso remoto no log; o instalador baixado é apagado da pasta de atualização (só fica o último, até a próxima verificação); texto de atualização "a cada 1 hora" |
+| 3.7.3 | Diagnóstico do acesso remoto: o agente grava no `servico.log` o estado de cada par de candidatos ICE (`remoto: pares ICE`) enquanto a conexão não fecha; o motivo do encerramento entra na linha `debug:` da bandeja. |
 
 ## Como publicar uma versão
 
