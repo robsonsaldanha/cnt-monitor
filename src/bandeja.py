@@ -203,9 +203,9 @@ def janela_embutida(url):
     return False             # saiu logo: não conseguiu abrir
 
 
-def abrir_janela(aba=""):
-    """Abre a janela do Monitor. Se só pode haver uma (Configurações), traz a que já está aberta."""
-    if not cfg().get("varias_janelas", False):
+def abrir_janela(aba="", nova=False):
+    """Abre a janela do Monitor. Se só pode haver uma (Configurações), traz a que já está aberta (nova=True força outra)."""
+    if not nova and not cfg().get("varias_janelas", False):
         h = janela_existente()
         if h:
             trazer_para_frente(h)
@@ -272,6 +272,9 @@ def executar_linux(tipo, a):
 
 def executar(a):
     tipo = a.get("tipo")
+    if tipo == "abrir_janela":
+        abrir_janela(str(a.get("aba") or ""), nova=bool(a.get("nova")))
+        return True, "Janela aberta."
     if str(tipo).startswith("pers_"):
         return executar_pers(tipo, a)
     if not WIN:
