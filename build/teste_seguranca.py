@@ -401,11 +401,11 @@ def teste_atualizacao_mostra_o_andamento():
             os.remove(atualizacao.FLAG_REABRIR)
 
 
-def teste_atualizacao_procura_de_10_em_10_minutos():
+def teste_atualizacao_procura_de_hora_em_hora():
     """A procura é frequente, então manda o ETag: enquanto nada muda o GitHub responde 304 (sem corpo) e o
     resultado continua sendo o da última resposta inteira. Cota esgotada (403/429) vira um aviso que explica."""
     import io
-    assert atualizacao.VERIFICAR_CADA == 600
+    assert atualizacao.VERIFICAR_CADA == 3600
     # como a release de verdade: os dois arquivos, e a linha "SHA256:" do .exe antes da do .deb
     corpo = json.dumps({"tag_name": "v99.0.0", "name": "x", "html_url": "p",
                         "body": "SHA256: " + "ab" * 32 + "\nSHA256 (deb): " + "cd" * 32,

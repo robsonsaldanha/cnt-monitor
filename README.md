@@ -156,7 +156,7 @@ O mesmo programa e a mesma interface, com as partes do sistema trocadas pelas do
 | Áudio | `pactl` (PulseAudio ou PipeWire, pacote `pulseaudio-utils`): volume, silenciar, canais, dB, saída e microfone padrão e o volume de cada programa; sem a barra do som passando agora, sem dispositivo de chamadas e sem ligar/desligar dispositivo |
 | Otimizar | `/tmp`, `~/.cache`, miniaturas, lixeira, relatórios de erro, pacotes do apt, journal antigo, `fstrim` e `apt autoremove` |
 | Modo Jogo | perfil de desempenho, prioridade (`nice`) e fechar programas; FPS só no Windows (no Linux use o MangoHud) |
-| Ícone e janela | ícone na bandeja (no GNOME, com a extensão AppIndicator, que já vem no Ubuntu); janela no Chrome/Chromium/Edge em modo aplicativo ou no navegador padrão |
+| Ícone e janela | ícone na bandeja (no GNOME, com a extensão AppIndicator, que já vem no Ubuntu); janela própria do CNT Monitor (WebKitGTK), sem navegador |
 | Acesso remoto (atendido) | **X11:** tela pelo XRandR + XShm e mouse/teclado pelo XTest. **Wayland:** portal RemoteDesktop/ScreenCast + PipeWire; o próprio sistema pergunta, a cada sessão, quais telas compartilhar. Área de transferência pelo `xclip` / `wl-clipboard` |
 | Acesso remoto (técnico) | igual ao Windows; os atalhos (Super, Alt+Tab…) vão para o outro PC pelo X11 com a sessão na frente, ou em tela cheia em qualquer sessão |
 
@@ -196,7 +196,7 @@ histórico, processos, serviços e alertas (ex.: disco cheio). A identidade do s
 - `MonitorPCServico.exe`: serviço do Windows (SYSTEM). Lê todos os processos numa chamada do Windows (NT),
   mede a rede por processo via ETW, GPU por contadores, sensores e ventoinhas pelo LibreHardwareMonitor, FPS pelo PresentMon.
 - `MonitorPC.exe`: ícone perto do relógio, mini painel, captura de tela, avisos, pop-up de aceite do acesso remoto
-  e janela (Edge em modo aplicativo). A gravação de tela usa o ffmpeg, baixado na primeira gravação para
+  e janela própria (WebView2). A gravação de tela usa o ffmpeg, baixado na primeira gravação para
   `%LOCALAPPDATA%\MonitorPC\ffmpeg` (SHA-256 conferido).
 - `remoto\`: agente do acesso remoto (WebRTC com aiortc).
 - Dados em `C:\ProgramData\MonitorPC` (`historico.db`, `config.json`, `servico.log`). Os nomes internos (serviço

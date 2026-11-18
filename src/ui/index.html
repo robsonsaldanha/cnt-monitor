@@ -816,7 +816,7 @@ const nf2 = new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFracti
 const KB=1024, MB=KB*1024, GB=MB*1024, TB=GB*1024;
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const COR = i => css('--c'+((i%8)+1));
-let CFG = {intervalo_ms:250, rede_em_bits:false, confirmar_encerrar:true, permitir_encerrar:true, limiar_mem:88, limiar_cpu:85, limiar_temp:90, tema:'auto', estilo:'personalizado'};
+let CFG = {intervalo_ms:1000, rede_em_bits:false, confirmar_encerrar:true, permitir_encerrar:true, limiar_mem:88, limiar_cpu:85, limiar_temp:90, tema:'auto', estilo:'personalizado'};
 function esc(s){ return s==null?'':String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fB(b){ if(b==null) return '—'; b=+b; if(b>=TB) return nf2.format(b/TB)+' TB'; if(b>=MB*1000) return nf2.format(b/GB)+' GB'; if(b>=MB*10) return nf0.format(b/MB)+' MB'; if(b>=MB) return nf1.format(b/MB)+' MB'; if(b>=KB) return nf0.format(b/KB)+' KB'; return nf0.format(b)+' B'; }
 function fR(b){ if(b==null) return '—'; b=+b; if(b>=MB) return nf1.format(b/MB)+' MB/s'; if(b>=KB*0.95) return nf0.format(b/KB)+' KB/s'; if(b>0) return '<1 KB/s'; return '0'; }
@@ -1065,7 +1065,7 @@ function ajVigiar(){ clearInterval(AJU.timer); AJU.timer=setInterval(async()=>{
 function ajRenderPedir(el){ const e=AJU.est||{estado:'iniciando'}; AJU.visto=JSON.stringify(e); let h='';
   if(['convite','conectando','iniciando'].includes(e.estado)) h=`<div class="cnt-cartao aj-passo"><b>Um técnico está se conectando…</b><p class="mut">Leva alguns segundos. Ele só vê e controla este computador depois que você permitir.</p><p><button class="cnt-botao cnt-botao--pq cnt-botao--secundario" id="ajCancelar">Recusar</button></p></div>`;
   else if(e.estado==='aguardando_aceite') h=`<div class="cnt-cartao aj-passo"><b>Permitir que o técnico veja e controle este computador?</b><p>Quem conectou informou a senha certa. Código de conferência: <span class="aj-senha">${esc(e.conferencia)}</span></p><p class="mut">Se quiser ter certeza de que é o seu técnico, pergunte se o código dele é igual. Até você permitir, ele não vê nada.</p><p><button class="cnt-botao cnt-botao--pq cnt-botao--primario" id="ajPermitir">Permitir acesso</button> <button class="cnt-botao cnt-botao--pq cnt-botao--perigo" id="ajCancelar">Recusar</button></p></div>`;
-  else if(e.estado==='ativa') h=`<div class="aj-vivo"><div><b>Este computador está sendo visto e controlado pelo técnico.</b><br><span class="mut2">Você pode encerrar a qualquer momento. A sessão acaba sozinha em 4 horas.</span></div><button class="cnt-botao cnt-botao--pq cnt-botao--perigo" id="ajCancelar">Encerrar agora</button></div>`;
+  else if(e.estado==='ativa') h=`<div class="aj-vivo"><div><b>Este computador está sendo visto e controlado pelo técnico.</b><br><span class="mut2">Você pode encerrar a qualquer momento. A sessão acaba sozinha em 12 horas.</span></div><button class="cnt-botao cnt-botao--pq cnt-botao--perigo" id="ajCancelar">Encerrar agora</button></div>`;
   else h=`<div class="cnt-cartao aj-passo"><b>Sessão encerrada</b><p>${esc(e.motivo||'O acesso remoto foi encerrado.')}</p><p><button class="cnt-botao cnt-botao--pq cnt-botao--primario" id="ajNovo">Voltar</button></p></div>`;
   el.innerHTML=h; const b=id=>$('#'+id);
   if(b('ajPermitir')) b('ajPermitir').onclick=async()=>{ const r=await ajAcao('ajuda_aceitar'); if(!r.ok) toast(r.msg,1); if(r.dados) AJU.est=r.dados; ajRender(); };

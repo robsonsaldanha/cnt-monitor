@@ -1521,6 +1521,40 @@ def _colunas_que_rolam(a, b):
     return (cols[0], cols[-1] + 1) if cols else None
 
 
+def _trecho_com(marcas, p, folga):
+    """Trecho [i0, i1) de posições marcadas que contém p (ou o mais perto dele), juntando buracos de até `folga`."""
+    ext = []
+    for passo in (-1, 1):
+        ultimo, buraco, i = None, 0, p
+        while 0 <= i < len(marcas):
+            if marcas[i]:
+                ultimo, buraco = i, 0
+            else:
+                buraco += 1
+                if buraco > folga:
+                    break
+            i += passo
+        ext.append(ultimo)
+    achados = [i for i in ext if i is not None]
+    if not achados:
+        return None
+    return min(achados), max(achados) + 1
+
+def _regiao_que_rola(a, b, px, py):
+    """Retângulo (x0, y0, x1, y1) do que rolou entre os quadros a e b (tons de cinza): só a parte ligada ao
+    ponto (px, py), onde está o mouse. Outras partes que mudam (gráfico ao vivo, relógio) ficam de fora.
+    None se nada mudou em volta do ponto."""
+    from PIL import Image, ImageChops
+    m = ImageChops.difference(a, b).point(lambda v: 255 if v else 0)
+    cols = _trecho_com([v > 25 for v in m.resize((a.width, 1), Image.BOX).tobytes()], px, 12)
+    if not cols:
+        return None
+    x0, x1 = cols
+    lin = _trecho_com([v > 25 for v in m.crop((x0, 0, x1, a.height)).resize((1, a.height), Image.BOX).tobytes()], py, 60)
+    if not lin:
+        return None
+    return x0, lin[0], x1, lin[1]
+
 def _acertos(A, B, s, raro):
     """Com B deslocado s linhas em relação a A: (fração de pedaços iguais, fração entre os pedaços raros de B).
     Os raros têm conteúdo; os comuns (fundo liso) batem em qualquer posição e não provam nada."""
@@ -1585,6 +1619,17 @@ def _deslocamento(a, b, tolerancia=0.9):
         return melhor[0], topo, base
     if parado_raros >= 0.5:
         return 0, topo, base          # não rolou: só o que é ao vivo mudou
+    if parado >= 0.75 and parado >= max((c[1] for c in candidatos), default=0) + 0.1:
+        return 0, topo, base          # quase tudo igual no mesmo lugar: só o que é ao vivo mudou (fim da página)
+    top = votos.most_common(2)
+    if top:
+        # tela com muito conteúdo ao vivo (ou com uma parte fixa no meio): o deslocamento que domina os votos vale
+        s1, v1 = top[0]
+        c1 = next((c for c in candidatos if c[0] == s1), None)
+        if c1 and v1 >= 3 * max(1, top[1][1] if len(top) > 1 else 0) and v1 >= max(30, m // 10) and c1[1] >= 0.4:
+            return s1, topo, base
+    if not candidatos and m < max(8, h // 10):
+        return 0, topo, base          # só uma faixa pequena mudou (relógio, gráfico, cursor): não rolou
     return None, topo, base
 
 
@@ -1777,12 +1822,17 @@ def rolagem(bbox, parar=None, max_altura=40000, max_quadros=800):
         g = img.convert("L")
         lin = _linhas(g)
         fim = time.time() + 1.5
+        quase = 0
         while time.time() < fim:
             esperar(0.08)
             novo = capturar(bbox)[0]
             ng = novo.convert("L")
             nlin = _linhas(ng)
-            if _parecidas(lin, nlin) >= 0.98:
+            par = _parecidas(lin, nlin)
+            # com gráficos ao vivo nunca chega a 98%: rolagem em andamento muda quase todas as linhas, então duas
+            # comparações seguidas com mais de 60% iguais já mostram que parou de andar
+            quase = quase + 1 if par >= 0.6 else 0
+            if par >= 0.98 or quase >= 2:
                 return novo, ng
             img, g, lin = novo, ng, nlin
         return img, g
@@ -1795,6 +1845,16 @@ def rolagem(bbox, parar=None, max_altura=40000, max_quadros=800):
 
     motivo = "fim"
     try:
+        esperar(0.3)
+        quadro, ant = quadro_estavel()
+        # um passo de teste mostra qual parte rola: a que está debaixo do mouse. Só ela é emendada; o resto da área
+        # (gráfico ao vivo, outra parte da janela) fica de fora. Depois volta o passo para começar de onde estava.
+        roda(-120)
+        _q, tg = quadro_estavel()
+        reg = _regiao_que_rola(ant, tg, cx - l, cy - t)
+        roda(120)
+        if reg and reg[2] - reg[0] >= 40 and reg[3] - reg[1] >= 40:
+            bbox = (l + reg[0], t + reg[1], l + reg[2], t + reg[3])
         esperar(0.3)
         quadro, ant = quadro_estavel()
         emenda, partes = _Emenda(quadro), 1
@@ -1812,6 +1872,12 @@ def rolagem(bbox, parar=None, max_altura=40000, max_quadros=800):
             roda(-passo)
             novo, lin = quadro_estavel()
             s, topo, base, cols = _comparar(ant, lin)
+            for _tent in range(3):        # None pode ser quadro no meio da rolagem ou da atualização ao vivo: olha de novo
+                if s is not None:
+                    break
+                esperar(0.4)
+                novo, lin = quadro_estavel()
+                s, topo, base, cols = _comparar(ant, lin)
             if s == 0:
                 if passo < 120:
                     passo = 120   # passo pequeno pode ser ignorado por programas antigos

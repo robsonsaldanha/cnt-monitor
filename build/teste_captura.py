@@ -95,6 +95,49 @@ def teste_rolagem_tolerante():
     assert final.crop(corte).tobytes() == pag.crop(corte).tobytes()
 
 
+def teste_rolagem_tela_com_muito_conteudo_ao_vivo():
+    """Dois quadros reais da tela do monitor (gráficos ao vivo) com a página 100 px mais abaixo: só ~2/3 das linhas
+    batem no deslocamento certo. A emenda tem que sair (antes dava None, a rolagem ia e voltava sem sair do lugar)."""
+    from PIL import Image
+    pasta = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dados")
+    a = Image.open(os.path.join(pasta, "rolagem_ao_vivo_a.png")).convert("L")
+    b = Image.open(os.path.join(pasta, "rolagem_ao_vivo_b.png")).convert("L")
+    s, topo, base, _cols = captura._comparar(a, b)
+    assert s == 100, (s, topo, base)
+    a = Image.open(os.path.join(pasta, "rolagem_ao_vivo2_a.png")).convert("L")
+    b = Image.open(os.path.join(pasta, "rolagem_ao_vivo2_b.png")).convert("L")
+    assert captura._comparar(a, b)[0] == 200   # votos 253 contra 66, 65% das linhas batem
+    # no fim da página, com o gráfico ao vivo mudando: não rolou (0), não "falhou" (None)
+    a = Image.open(os.path.join(pasta, "rolagem_fim_a.png")).convert("L")
+    b = Image.open(os.path.join(pasta, "rolagem_fim_b.png")).convert("L")
+    assert captura._comparar(a, b)[0] == 0
+
+def teste_rolagem_faixa_pequena_mudou_sem_rolar():
+    """Só uma faixa pequena mudou (relógio, cursor) e a tela não rolou: é "0", não "falhou" (None fazia rolar para
+    cima e para baixo no mesmo lugar)."""
+    from PIL import ImageDraw
+    pag = _pagina()
+    a, b = _quadro(pag, 0, 300, 0), _quadro(pag, 0, 300, 0)
+    ImageDraw.Draw(b).rectangle((60, 100, 300, 112), fill=(10, 200, 30))
+    assert captura._deslocamento(captura._linhas(a), captura._linhas(b))[0] == 0
+
+def teste_rolagem_so_a_regiao_do_mouse():
+    """Duas partes mudam entre os quadros: a que rolou (debaixo do mouse) e um gráfico ao vivo do lado. Só a
+    primeira vale; o gráfico e o cabeçalho parado ficam de fora."""
+    import random
+    from PIL import Image
+    rnd = random.Random(7)
+    def ruido(w, h):
+        return Image.frombytes("L", (w, h), bytes(rnd.randrange(256) for _ in range(w * h)))
+    pag = ruido(150, 260)
+    a, b = Image.new("L", (300, 200), 128), Image.new("L", (300, 200), 128)
+    a.paste(pag.crop((0, 0, 150, 160)), (140, 30))
+    b.paste(pag.crop((0, 20, 150, 180)), (140, 30))
+    a.paste(ruido(60, 160), (10, 30))      # gráfico ao vivo: muda por inteiro, longe do mouse
+    b.paste(ruido(60, 160), (10, 30))
+    assert captura._regiao_que_rola(a, b, 215, 100) == (140, 30, 290, 190)
+    assert captura._regiao_que_rola(a, a, 215, 100) is None
+
 def teste_rolagem_cabecalho_fixo():
     from PIL import ImageDraw
     pag = _pagina()
@@ -259,6 +302,33 @@ def teste_configuracao():
     assert v({"captura_envio_formato": "bbcode"})["captura_envio_formato"] == "bbcode"
     d = v({})
     assert d["captura_anotar"] and d["captura_envio_copiar"] and not d["captura_perguntar"]
+
+
+def teste_intervalo_vai_para_1s_uma_unica_vez():
+    """Padrão 1 s; config antiga (250/500 ms) migra uma vez; depois vale a escolha da pessoa, mesmo reabrindo."""
+    import json
+    import tempfile
+    from monitorpc import config
+    assert config.PADRAO["intervalo_ms"] == 1000 and 250 in config.OPCOES["intervalo_ms"] and 500 in config.OPCOES["intervalo_ms"]
+    config.BASE = tempfile.mkdtemp()
+    config.CONFIG = os.path.join(config.BASE, "config.json")
+    configuracao.aplicar_inicializacao = lambda c=None: None
+    with open(config.CONFIG, "w", encoding="utf-8") as f:
+        json.dump({"intervalo_ms": 250, "tema": "escuro"}, f)
+    assert configuracao.carregar()["intervalo_ms"] == 1000        # migrou
+    assert configuracao.obter("tema") == "escuro"                  # o resto ficou
+    configuracao.salvar_publico({"intervalo_ms": 500})            # a pessoa escolhe
+    assert configuracao.carregar()["intervalo_ms"] == 500          # reabrir não volta para 1 s
+    configuracao.salvar_publico({"intervalo_1s_aplicado": False})  # nem pelo formulário se reativa a migração
+    assert configuracao.carregar()["intervalo_ms"] == 500
+    os.remove(config.CONFIG)                                       # instalação nova
+    assert configuracao.carregar()["intervalo_ms"] == 1000
+
+
+def teste_limites_remoto_e_atualizacao():
+    from monitorpc import atualizacao, remoto
+    assert remoto.DURACAO_MAXIMA == 12 * 3600
+    assert atualizacao.VERIFICAR_CADA == 3600
 
 
 def teste_cabecalhos_ocultos():

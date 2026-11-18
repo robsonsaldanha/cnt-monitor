@@ -23,7 +23,7 @@ GEOIP=()
 # ícone pelo AppIndicator (ou GTK); o modo X11 do pystray não vai junto: ele congela o servidor gráfico (bandeja.py)
 "${PYI[@]}" --name cnt-monitor --hidden-import pystray._appindicator --hidden-import pystray._gtk \
     --exclude-module pystray._xorg --hidden-import PIL.ImageTk --collect-submodules Xlib \
-    --collect-submodules qrcode src/bandeja.py
+    --collect-submodules qrcode --collect-all webview src/bandeja.py
 "${PYI[@]}" --name cnt-monitor-remoto --collect-all aiortc --collect-all av --collect-all aioice --collect-all pylibsrtp \
     --hidden-import mss --collect-submodules Xlib --collect-submodules jeepney src/remoto_agente.py
 
@@ -51,9 +51,9 @@ Version: $VERSAO
 Architecture: amd64
 Maintainer: Robson Saldanha <54083389+robsonsaldanha@users.noreply.github.com>
 Installed-Size: $TAM
-Depends: libc6 (>= 2.35), systemd, iproute2, libx11-6, libxrandr2, libxtst6, libxfixes3, libxext6
+Depends: libc6 (>= 2.35), systemd, iproute2, libx11-6, libxrandr2, libxtst6, libxfixes3, libxext6, gir1.2-gtk-3.0, gir1.2-webkit2-4.1
 Recommends: xclip, wl-clipboard, xdg-desktop-portal, gstreamer1.0-tools, gstreamer1.0-pipewire, libnotify-bin, iw, xdg-user-dirs, xdg-utils, power-profiles-daemon, pulseaudio-utils
-Suggests: gnome-shell-extension-appindicator, chromium | google-chrome-stable | microsoft-edge-stable
+Suggests: gnome-shell-extension-appindicator
 Section: utils
 Priority: optional
 Homepage: https://monitor.cntoficial.com.br

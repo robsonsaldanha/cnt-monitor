@@ -71,7 +71,7 @@ def sha256_travado(trava, ao_ler=None):
 
 
 EM_ANDAMENTO = ("baixando", "conferindo", "instalando")
-VERIFICAR_CADA = 600      # segundos entre as procuras automáticas por versão nova
+VERIFICAR_CADA = 3600     # segundos entre as procuras automáticas por versão nova (1 hora)
 REPETIR_FALHA = 6 * 3600  # depois de uma instalação automática que falhou, espera isto para tentar a mesma versão
 
 
@@ -85,7 +85,7 @@ class Atualizador:
         self.pct = 0                      # andamento da etapa atual (baixando / conferindo), 0 a 100
         self.alvo = None                  # versão que está sendo instalada
         # ETag da última resposta: o 304 ("nada mudou") poupa o download, mas sem login ele CONTA na cota
-        # do GitHub (60 consultas por hora por IP público; cada PC faz 6 por hora)
+        # do GitHub (60 consultas por hora por IP público; cada PC faz 1 por hora)
         self._etag = None
         self._resposta = None
 
