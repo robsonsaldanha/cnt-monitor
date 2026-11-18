@@ -125,7 +125,7 @@ jobs:
             --hidden-import maxminddb --add-data "src/ui;ui" --add-data "lhm;lhm" --add-data "presentmon;presentmon" --add-data "geoip;geoip" src/servico.py
           pyinstaller --noconfirm --clean --windowed --name MonitorPC --icon instalador/icone.ico `
             --paths src --hidden-import pystray._win32 --hidden-import PIL.ImageTk --hidden-import PIL.ImageGrab `
-            --collect-submodules qrcode --hidden-import zxingcpp src/bandeja.py
+            --collect-submodules qrcode --hidden-import zxingcpp --collect-all webview --collect-all pythonnet --collect-all clr_loader src/bandeja.py
           pyinstaller --noconfirm --clean --console --name MonitorPCRemoto --icon instalador/icone.ico `
             --paths src --collect-all aiortc --collect-all av --collect-all aioice --collect-all pylibsrtp `
             --hidden-import win32clipboard --hidden-import PIL.ImageGrab --hidden-import PIL.BmpImagePlugin --hidden-import PIL.PngImagePlugin `

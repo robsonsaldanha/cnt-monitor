@@ -327,7 +327,7 @@ def teste_turn_vai_para_o_agente():
 
 
 def teste_credencial_do_turn_renovada():
-    """A credencial do retransmissor vence em 12 h: perto disso o serviço pega outra antes de abrir o pedido."""
+    """A credencial do retransmissor vence em 13 h (a sessão dura até 12): perto disso o serviço pega outra antes de abrir o pedido."""
     assert encontro.validade_turn(None) == 0 and encontro.validade_turn({"username": "x:y"}) == 0
     p, url = _servidor()
     try:
@@ -338,7 +338,7 @@ def teste_credencial_do_turn_renovada():
         assert encontro.validade_turn(primeira) > relogio[0] + 11 * 3600
         assert any("transport=tcp" in u for u in primeira["urls"])
         assert e.turn_atual() is primeira                   # longe de vencer: nada muda
-        relogio[0] += 11.5 * 3600                            # falta menos de 1 h
+        relogio[0] += 12.5 * 3600                            # falta menos de 1 h
         nova = e.turn_atual()
         assert nova is not primeira and nova["username"].endswith(":cntmonitor")
         e.url = "http://127.0.0.1:9/api"                     # servidor fora do ar: segue com a que tem

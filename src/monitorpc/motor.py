@@ -1,6 +1,6 @@
 """Motor de coleta do CNT Monitor.
 
-- Leitura rápida (padrão 250 ms) de todos os processos numa única chamada do Windows.
+- Leitura rápida (padrão 1 s) de todos os processos numa única chamada do Windows.
 - CPU, disco e rede são a média do último segundo (atualizada a cada leitura).
 - Agrupa cada processo no programa que o abriu (árvore de processos).
 - Rede por processo (ETW), GPU por processo (contadores do Windows), sensores (LHM).
@@ -163,6 +163,7 @@ class Motor:
         self._ult_part = 0
         self.atualizador = atualizacao.Atualizador()
         self._ult_atualizacao = 0
+        self._thr_atu = None
         self._atu_falha = (None, 0)       # (versão, quando) da última instalação automática que falhou
         self.jogo = jogo.ModoJogo(self)
         self.regras = regras.MotorRegras()
@@ -285,7 +286,11 @@ class Motor:
                 self._extras_lentos(c)
                 if c["atualizacao_auto"] and time.time() - self._ult_atualizacao > atualizacao.VERIFICAR_CADA and time.time() - self.inicio > 120:
                     self._ult_atualizacao = time.time()
-                    self._atualizar_sozinho(time.time())
+                    # em thread própria: verificar e baixar o instalador não pode parar regras, rede, discos e VPS
+                    if not (self._thr_atu and self._thr_atu.is_alive()):
+                        self._thr_atu = threading.Thread(target=self._atualizar_sozinho, args=(time.time(),),
+                                                         daemon=True, name="atualizacao-auto")
+                        self._thr_atu.start()
             except Exception:
                 self.erros.append(traceback.format_exc())
             self.parar_ev.wait(2)
@@ -940,7 +945,7 @@ class Motor:
             procs = self.procs
             conns = [self._conn_fmt(c, procs) for c in self.conns]
             e = self.estado or {}
-            progs = [{k: g[k] for k in ("nome", "env", "rec", "nconn", "nips")}
+            progs = [{k: g.get(k) for k in ("nome", "exe", "env", "rec", "nconn", "nips")}
                      for g in e.get("programas", []) if not g.get("outros")]
             vivos = list(self.vivos.values())
         rem = []

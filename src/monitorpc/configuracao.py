@@ -147,9 +147,24 @@ def carregar():
     with _lock:
         try:
             with open(config.CONFIG, encoding="utf-8") as f:
-                _atual = _validar(json.load(f))
+                bruto = json.load(f)
+            if not isinstance(bruto, dict):
+                bruto = {}
         except (OSError, ValueError):
-            _atual = _validar({})
+            bruto = {}
+        migrar = bruto.get("intervalo_1s_aplicado") is not True
+        if migrar:      # uma única vez: todo PC passa a 1 s; daí em diante vale o que a pessoa escolher
+            bruto["intervalo_ms"], bruto["intervalo_1s_aplicado"] = 1000, True
+        _atual = _validar(bruto)
+        if migrar:
+            try:
+                os.makedirs(config.BASE, exist_ok=True)
+                tmp = config.CONFIG + ".tmp"
+                with open(tmp, "w", encoding="utf-8") as f:
+                    json.dump(_atual, f, ensure_ascii=False, indent=1)
+                os.replace(tmp, config.CONFIG)
+            except OSError:
+                pass
         return dict(_atual)
 
 
@@ -224,7 +239,7 @@ def aplicar_inicializacao(c=None):
         print("Não consegui alterar a inicialização:", e)
 
 
-PROTEGIDAS = {"acesso_senha", "api_chave"}   # só mudam pelas funções próprias, nunca pelo formulário
+PROTEGIDAS = {"acesso_senha", "api_chave", "intervalo_1s_aplicado"}   # só mudam pelas funções próprias, nunca pelo formulário
 # só mudam no próprio PC: rodam programas, decidem para onde as capturas vão ou usam a chave de IA
 SO_LOCAL = {"captura_acoes", "captura_rodar_acoes", "captura_uploader", "captura_destino", "captura_ia",
             "captura_ia_provedor", "captura_ia_modelo", "captura_ia_prompt", "captura_fluxos", "captura_pasta", "ventoinhas",

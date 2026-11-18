@@ -14,3 +14,5 @@ geoip/
 dist-linux/
 build/pyi-linux/
 pacote/
+HANDOFF.md
+relatorios/

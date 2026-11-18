@@ -4,7 +4,7 @@ Atualizado em 2026-11-18. As funcionalidades completas estão no [README](../REA
 
 ## Versão atual
 
-- **3.6.1** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.6.1`. A release no GitHub traz
+- **3.7.0** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.7.0`. A release no GitHub traz
   `CNTMonitor-Setup-<versão>.exe`, `MonitorDoPC-Setup-<versão>.exe` (nome antigo, para instalações antigas) e
   `cnt-monitor_<versão>_amd64.deb`.
 - Repositório: `robsonsaldanha/cnt-monitor` (público, GPL v3 ou posterior).
@@ -29,6 +29,7 @@ Atualizado em 2026-11-18. As funcionalidades completas estão no [README](../REA
 | 3.5.2 | Linux: a janela do monitor se junta ao atalho instalado no dock (`--class` e `StartupWMClass`), sem parecer um segundo aplicativo |
 | 3.6.0 | Segurança: a atualização só instala release assinada (Ed25519, chave pública embutida; `.sig` de cada `.exe` e `.deb` gerado no CI); aceite de acesso remoto só vindo do ícone instalado; imagem do técnico só em PNG (Pillow 13.0.0); prioridade do Modo Jogo desligada por padrão; processos essenciais do Linux protegidos; CI com token só leitura e instalador do PawnIO com SHA-256 fixo |
 | 3.6.1 | Menu lateral mais compacto (cabe sem rolagem em ~880 px); acesso remoto: sai "Copiar como imagem", "Copiar como texto" vira "Copiar informações", cartões alinhados e centralizados |
+| 3.7.0 | Janela própria do CNT Monitor (WebView2 no Windows, WebKitGTK no Linux, sem Edge/Chrome e com ícone da CNT); coleta a cada 1 s por padrão em todos os PCs (250 e 500 ms seguem nas opções; a partir daqui vale a escolha da pessoa); checagem de atualização a cada 1 h, sem travar o monitor; acesso remoto até 12 h; rolagem de print só na região sob o mouse |
 
 ## Como publicar uma versão
 

@@ -17,7 +17,6 @@ import base64
 import shutil
 import threading
 import subprocess
-import webbrowser
 import urllib.error
 import urllib.request
 from collections import defaultdict
@@ -140,30 +139,68 @@ def trazer_para_frente(h):
 
 
 # ------------------------------------------------------------------ janela do monitor
-def navegador():
-    if not WIN:     # Linux: o navegador em modo aplicativo (janela própria, sem abas nem barra de endereço)
-        for nome in ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "microsoft-edge",
-                     "microsoft-edge-stable", "brave-browser", "vivaldi-stable"):
-            if shutil.which(nome):
-                return shutil.which(nome)
-        return None
-    for c in (
-        os.path.join(os.environ.get("ProgramFiles(x86)", ""), "Microsoft", "Edge", "Application", "msedge.exe"),
-        os.path.join(os.environ.get("ProgramFiles", ""), "Microsoft", "Edge", "Application", "msedge.exe"),
-        os.path.join(os.environ.get("ProgramFiles", ""), "Google", "Chrome", "Application", "chrome.exe"),
-        os.path.join(os.environ.get("LOCALAPPDATA", ""), "Google", "Chrome", "Application", "chrome.exe"),
-    ):
-        if c and os.path.exists(c):
-            return c
-    return shutil.which("msedge") or shutil.which("chrome")
-
-
 def janela_existente():
     for _pid, js in listar_janelas().items():
         for h, titulo, _m, _a in js:
             if titulo == TITULO_JANELA:
                 return h
     return None
+
+
+def _icone_cnt_windows(titulo):
+    """Troca o ícone da janela e da barra de tarefas pelo da CNT (o processo é o python.exe quando roda do código-fonte)."""
+    import ctypes
+    from ctypes import wintypes
+    u = ctypes.windll.user32
+    u.FindWindowW.restype = wintypes.HWND
+    u.LoadImageW.restype = wintypes.HANDLE
+    h = u.FindWindowW(None, titulo)
+    if not h:
+        return
+    if getattr(sys, "frozen", False):
+        grande, pequeno = wintypes.HICON(), wintypes.HICON()
+        ctypes.windll.shell32.ExtractIconExW(sys.executable, 0, ctypes.byref(grande), ctypes.byref(pequeno), 1)
+    else:
+        ico = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "instalador", "icone.ico")
+        grande = u.LoadImageW(None, ico, 1, 32, 32, 0x10)    # IMAGE_ICON, LR_LOADFROMFILE
+        pequeno = u.LoadImageW(None, ico, 1, 16, 16, 0x10)
+    for tam, ic in ((1, grande), (0, pequeno)):               # WM_SETICON: ICON_BIG=1, ICON_SMALL=0
+        if ic:
+            u.SendMessageW(h, 0x80, tam, ic)
+
+
+def mostrar_janela_embutida(url):
+    """Processo próprio da janela (o pywebview exige o fio principal). Roda até a janela fechar."""
+    import webview
+    icone = None
+    if WIN:
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("br.com.cntoficial.monitor")  # barra de tarefas: grupo da CNT
+    else:
+        icone = "/usr/share/icons/hicolor/256x256/apps/cnt-monitor.png"
+        try:
+            from gi.repository import GLib
+            GLib.set_prgname("cnt-monitor")    # o dock junta a janela ao atalho (StartupWMClass)
+        except Exception:
+            pass
+    janela = webview.create_window(TITULO_JANELA, url, width=1480, height=920, min_size=(900, 600))
+    if WIN:
+        janela.events.shown += lambda: _icone_cnt_windows(TITULO_JANELA)
+    webview.start(icon=icone if icone and os.path.exists(icone) else None,
+                  storage_path=os.path.join(PASTA_USUARIO, "janela-webview"))
+
+
+def janela_embutida(url):
+    """Abre a janela da CNT (WebView2 no Windows, WebKitGTK no Linux), sem navegador. False se não abriu."""
+    cmd = [sys.executable, "--janela", url] if getattr(sys, "frozen", False) else [sys.executable, os.path.abspath(__file__), "--janela", url]
+    try:
+        p = subprocess.Popen(cmd, close_fds=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        p.wait(timeout=3)
+    except subprocess.TimeoutExpired:
+        return True          # continua vivo depois de 3 s: a janela abriu
+    except OSError:
+        return False
+    return False             # saiu logo: não conseguiu abrir
 
 
 def abrir_janela(aba=""):
@@ -179,15 +216,9 @@ def abrir_janela(aba=""):
                     pass
             return
     url = config.URL + (f"#{aba}" if aba else "")
-    nav = navegador()
-    if nav:
-        perfil = os.path.join(PASTA_USUARIO, "janela")
-        classe = [] if WIN else ["--class=cnt-monitor"]   # Linux: o dock junta a janela ao atalho do CNT Monitor (StartupWMClass)
-        subprocess.Popen([nav, f"--app={url}", f"--user-data-dir={perfil}", "--window-size=1480,920",
-                          "--no-first-run", "--no-default-browser-check", "--disable-extensions",
-                          "--disable-sync", *classe], close_fds=True)
-    else:
-        webbrowser.open(url)
+    if not janela_embutida(url):
+        notificar("Não consegui abrir a janela do CNT Monitor. No Windows, falta o WebView2 Runtime; "
+                "no Linux, o pacote gir1.2-webkit2-4.1.")
 
 
 # ------------------------------------------------------------------ ações vindas do serviço
@@ -1220,6 +1251,8 @@ def rodar_ferramenta(capturador, nome, caminho):
 
 def main():
     global ICONE, CAP, AVISOS
+    if "--janela" in sys.argv:       # só a janela embutida: sem log, bandeja nem instância única
+        return mostrar_janela_embutida(sys.argv[sys.argv.index("--janela") + 1])
     _log()
     from monitorpc import aviso
     AVISOS = aviso.Avisos(cfg, notificar_windows) if WIN else None

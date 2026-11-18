@@ -33,7 +33,7 @@ TAMANHO_SENHA = 8                               # 8 de 32 símbolos = 40 bits; t
 VALIDADE_CONVITE = 600                          # segundos para colar a resposta
 ESPERA_CONEXAO = 60                             # da resposta até a prova da senha
 ESPERA_ACEITE = 120
-DURACAO_MAXIMA = 4 * 3600
+DURACAO_MAXIMA = 12 * 3600
 
 _MAX_CODIGO = 40000
 _MAX_SDP = 60000

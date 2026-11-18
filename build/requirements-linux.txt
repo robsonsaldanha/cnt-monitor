@@ -11,3 +11,4 @@ python-xlib==0.33
 jeepney==0.9.0
 PyGObject==3.50.0
 cryptography==50.0.2
+pywebview==6.2.1
