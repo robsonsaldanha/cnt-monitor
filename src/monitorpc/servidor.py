@@ -7,6 +7,7 @@
 - /api/v1/*: API somente leitura e documentada (docs/API.md) para outros programas.
 """
 import os
+import sys
 import json
 import math
 import base64
@@ -27,6 +28,26 @@ SEM_JANELA = 0x08000000 if WIN else 0
 TIPOS_ARQ = {".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8",
              ".png": "image/png", ".svg": "image/svg+xml"}
 POST_GRANDE = {"/api/capturas/conteudo", "/api/capturas/editada"}   # imagens inteiras (até 64 MB)
+
+
+def exe_do_icone():
+    return os.path.normcase(os.path.join(config.pasta_programa(), "MonitorPC.exe"))
+
+
+def veio_do_icone(porta_cliente):
+    """Quem aceita um técnico é a pessoa, no aviso do ícone. O token fica legível a qualquer usuário do PC (e na
+    página), então "aceitar" só vale se o pedido vier do MonitorPC.exe instalado: script, outro programa ou página
+    web com o token não passam. Só no Windows instalado (no código-fonte e no Linux não há como distinguir)."""
+    if not (WIN and getattr(sys, "frozen", False)):
+        return True
+    try:
+        import psutil
+        for c in psutil.net_connections("tcp"):
+            if c.laddr and c.laddr.port == porta_cliente and c.raddr and c.raddr.port == config.PORTA and c.pid:
+                return os.path.normcase(psutil.Process(c.pid).exe()) == exe_do_icone()
+    except Exception:
+        pass
+    return False
 
 
 # ---------------------------------------------------------------- senha e sessões (acesso pelo celular)
@@ -639,6 +660,8 @@ def fabrica(motor, TOKEN, remoto=False):
                         if str(corpo.get("tipo", "")).startswith(("vent_", "captura", "ajuda_", "pers_")):
                             return self._json({"erro": "só no próprio computador"}, 403)
                         corpo.pop("caminho", None)
+                    elif corpo.get("tipo") == "ajuda_aceitar" and not veio_do_icone(self.client_address[1]):
+                        return self._json({"erro": "só a pessoa, pelo aviso do ícone, aceita o acesso"}, 403)
                     return self._json(m.acao(corpo))
                 if r == "/api/config":
                     final = configuracao.salvar_publico(corpo, remoto=remoto)

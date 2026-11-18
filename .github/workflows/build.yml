@@ -8,8 +8,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# O token do GitHub só lê o repositório; só o job "release" (lá embaixo) pode gravar, para publicar a release.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   windows:
@@ -65,7 +66,13 @@ jobs:
       - name: Driver PawnIO (temperatura da CPU)
         shell: pwsh
         run: |
-          Invoke-WebRequest "https://github.com/namazso/PawnIO.Setup/releases/latest/download/PawnIO_setup.exe" -OutFile instalador/PawnIO_setup.exe
+          # Versão fixa e SHA-256 conferido: o instalador do driver roda como administrador no PC de cada usuário,
+          # então um arquivo trocado na origem não pode entrar no nosso instalador. Para atualizar: mude os dois valores.
+          $versao = "2.2.0"
+          $sha = "1f519a22e47187f70a1379a48ca604981c4fcf694f4e65b734aaa74a9fba3032"
+          Invoke-WebRequest "https://github.com/namazso/PawnIO.Setup/releases/download/$versao/PawnIO_setup.exe" -OutFile instalador/PawnIO_setup.exe
+          $achado = (Get-FileHash instalador/PawnIO_setup.exe -Algorithm SHA256).Hash.ToLower()
+          if ($achado -ne $sha) { Remove-Item instalador/PawnIO_setup.exe; throw "PawnIO_setup.exe $versao não confere: SHA-256 $achado" }
           Get-Item instalador/PawnIO_setup.exe | Format-List Name, Length
 
       - name: PresentMon (FPS dos jogos)
@@ -74,8 +81,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           New-Item -ItemType Directory -Force pm, presentmon | Out-Null
-          gh release download -R GameTechDev/PresentMon -p "PresentMon-*-x64.exe" -D pm
+          # Versão fixa e SHA-256 conferido (o PresentMon roda dentro do serviço). Para atualizar: mude os dois valores.
+          $versao = "2.6.0"
+          $sha = "b2a706bc6ad475749e3b7e3409263aa1e6906d45bdcf993f6dbc0f660188f1af"
+          gh release download "v$versao" -R GameTechDev/PresentMon -p "PresentMon-$versao-x64.exe" -D pm
           $exe = Get-ChildItem pm\*.exe | Sort-Object { $_.Name.Length } | Select-Object -First 1
+          $achado = (Get-FileHash $exe.FullName -Algorithm SHA256).Hash.ToLower()
+          if ($achado -ne $sha) { throw "PresentMon $versao não confere: SHA-256 $achado" }
           Copy-Item $exe.FullName presentmon\PresentMon.exe
           Get-ChildItem pm, presentmon | Format-Table Name, Length
 
@@ -299,6 +311,8 @@ jobs:
     needs: [windows, linux]
     if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -324,8 +338,15 @@ jobs:
           echo "sha=$(sha256sum "saida/CNTMonitor-Setup-$v.exe" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
           echo "deb=$(sha256sum "saida/cnt-monitor_${v}_amd64.deb" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
+      - name: Assinar os arquivos (Ed25519)
+        env:
+          RELEASE_SIGNING_KEY: ${{ secrets.RELEASE_SIGNING_KEY }}
+        run: |
+          pip install cryptography==50.0.2
+          python build/assinar_release.py saida/*.exe saida/*.deb
+
       - name: Publicar release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65   # v2, fixada pelo commit: uma tag pode ser movida
         with:
           tag_name: v${{ steps.versao.outputs.v }}
           name: CNT Monitor ${{ steps.versao.outputs.v }}
@@ -341,3 +362,4 @@ jobs:
           files: |
             saida/*.exe
             saida/*.deb
+            saida/*.sig
