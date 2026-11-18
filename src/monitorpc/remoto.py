@@ -519,6 +519,9 @@ class Gerente:
             cmd = [sys.executable, os.path.join(config.pasta_recursos(), "remoto_agente.py")]
         if not self._opcoes().get("ler_area", True):
             cmd = cmd + ["--sem-ler-area"]
+        from . import configuracao
+        if configuracao.obter("modo_debug"):
+            cmd = cmd + ["--debug"]
         if not stun:
             return cmd + ["--sem-stun"]
         if isinstance(turn, dict) and turn.get("urls") and turn.get("username") and turn.get("credential"):

@@ -260,6 +260,64 @@ def teste_aceitar_acesso_so_pelo_icone():
         local.shutdown()
 
 
+def _get(porta, caminho, cabecalhos):
+    con = http.client.HTTPConnection("127.0.0.1", porta, timeout=10)
+    con.request("GET", caminho, headers=cabecalhos)
+    r = con.getresponse()
+    corpo = json.loads(r.read() or b"{}")
+    con.close()
+    return r.status, corpo
+
+
+def teste_logs_so_neste_pc_e_com_o_modo_debug():
+    """A tela Logs lê os arquivos de log: só com o token do ícone, só no próprio PC e só com o Modo debug ligado."""
+    import io
+    import re
+    from monitorpc import registro
+    saida = io.StringIO()
+    log = registro.ComHora(saida)
+    log.write("primeira\n")
+    log.write("meio")
+    log.write(" da linha\n\nterceira\n")
+    linhas = saida.getvalue().split("\n")
+    hora = r"\d{4}-\d\d-\d\d \d\d:\d\d:\d\d "
+    assert re.fullmatch(hora + "primeira", linhas[0]) and re.fullmatch(hora + "meio da linha", linhas[1])
+    assert linhas[2] == "" and re.fullmatch(hora + "terceira", linhas[3])       # linha em branco fica sem hora
+
+    with open(config.LOG, "w", encoding="utf-8") as f:
+        f.write("".join(f"linha {i} " + "x" * 300 + "\n" for i in range(5000)))
+    r = registro.ler("servico", 10)
+    assert r["existe"] and [x.split()[1] for x in r["linhas"]] == [str(i) for i in range(4990, 5000)]
+    assert len(registro.ler("servico", 10 ** 9)["linhas"]) == registro.MAX_LINHAS     # nunca o arquivo inteiro
+    for nome in ("../servico", config.LOG, "token.txt", ""):                            # o nome nunca vira caminho
+        assert registro.ler(nome) == {"arquivo": nome, "existe": False, "linhas": [], "bytes": 0}, nome
+
+    m = MotorFalso()
+    rede = ThreadingHTTPServer(("127.0.0.1", 0), servidor.fabrica(m, "tok", remoto=True))
+    local = ThreadingHTTPServer(("127.0.0.1", 0), servidor.fabrica(m, "tok"))
+    for s in (rede, local):
+        threading.Thread(target=s.serve_forever, daemon=True).start()
+    servidor.SESSOES["sessao-logs"] = time.time() + 60
+    cab = {"Host": f"127.0.0.1:{config.PORTA}", "X-Token": "tok"}
+    p = local.server_address[1]
+    try:
+        configuracao.salvar({"modo_debug": False})
+        assert _get(p, "/api/logs?arquivo=servico", cab)[0] == 403                     # desligado: não mostra nada
+        configuracao.salvar({"modo_debug": True})
+        cod, d = _get(p, "/api/logs?arquivo=servico&linhas=3", cab)
+        assert cod == 200 and [x.split()[1] for x in d["linhas"]] == ["4997", "4998", "4999"]
+        assert _get(p, "/api/logs?arquivo=servico&linhas=abc", cab)[0] == 200
+        assert _get(p, "/api/logs?arquivo=servico", {**cab, "X-Token": "errado"})[0] == 403
+        assert _get(p, "/api/logs?arquivo=servico", {"Host": cab["Host"]})[0] == 403
+        pela_rede = {"Cookie": "mpc_sessao=sessao-logs", "X-Token": "tok"}
+        assert _get(rede.server_address[1], "/api/logs?arquivo=servico", pela_rede)[0] == 403
+    finally:
+        configuracao.salvar({"modo_debug": False})
+        servidor.SESSOES.pop("sessao-logs", None)
+        rede.shutdown()
+        local.shutdown()
+
+
 def teste_instalador_travado():
     """Entre conferir o SHA-256 e rodar o instalador ninguém pode trocar o arquivo."""
     if not WIN:
