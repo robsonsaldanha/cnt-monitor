@@ -180,6 +180,7 @@ class Motor:
         self._vaz_avisados = {}
         self._ult_vps_limpa = 0
         self.navegar = None
+        self.sessoes_tec = {}        # chave -> (validade, dados): sessão do técnico esperando a janela abrir
         self.servidores = None
         self.trafego = rede.TrafegoIP()
         self.fluxos_vivos = rede.FluxosVivos()
@@ -401,6 +402,21 @@ class Motor:
             if tipo == "ajuda_encerrar":
                 self.ajuda.parar()
                 return estado()
+            if tipo == "ajuda_sessao_abrir":
+                dados = {k: str(a.get(k) or "")[:200] for k in ("id", "senha", "servidor", "tecnico")}
+                agora = time.time()
+                self.sessoes_tec = {c: v for c, v in self.sessoes_tec.items() if v[0] > agora}
+                chave = uuid.uuid4().hex
+                self.sessoes_tec[chave] = (agora + 60, dados)
+                r = self._enfileirar({"tipo": "abrir_janela", "aba": f"sessao/{chave}", "nova": True})
+                if not r.get("ok"):
+                    self.sessoes_tec.pop(chave, None)
+                return r
+            if tipo == "ajuda_sessao_pegar":       # uso único: quem abriu a janela leva os dados e eles somem
+                v = self.sessoes_tec.pop(str(a.get("chave") or ""), None)
+                if not v or v[0] < time.time():
+                    return {"ok": False, "msg": "A sessão expirou."}
+                return {"ok": True, "msg": "", "dados": v[1]}
             # lado do técnico: nada fica guardado, cada chamada traz o que precisa
             if tipo == "ajuda_tec_convite":
                 return {"ok": True, "msg": "", "dados": {"sdp": remoto.ler_convite(a.get("codigo"))}}

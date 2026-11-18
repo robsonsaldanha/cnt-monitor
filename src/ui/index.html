@@ -1000,7 +1000,7 @@ addEventListener('hashchange',()=>ir(location.hash));
 /* =================== acesso remoto =================== */
 let AJU={modo:null, est:null, visto:'', timer:null, pc:null, canal:null, fluxo:null, oferta:'', sdp:'', senha:'', resp:null, fase:'form', msg:'',
   meu:null, manual:false, srv:'', pedido:null, alvo:'', trilhas:{}, tecId:''};
-const SESSAO=location.hash==='#sessao';
+const SESSAO=location.hash.startsWith('#sessao');
 const TELA=location.hash==='#tela';         // janela de um monitor no layout "janelas separadas": quem preenche é a janela da sessão   // janela aberta pelo botão Conectar: uma sessão de técnico, sem o resto do programa
 const AJ_STUN=['stun:stun.l.google.com:19302','stun:stun.cloudflare.com:3478'];
 const ajAcao=(tipo,d)=>POST('acao',{tipo,...(d||{})}).catch(()=>({ok:false,msg:'O serviço não respondeu.'}));
@@ -1045,14 +1045,13 @@ async function ajTestar(){ const b=$('#ajTestar'), el=$('#ajTeste'); if(!b||b.di
 // histórico do que técnicos mandaram para este computador ou levaram dele (90 dias, gravado pelo serviço)
 async function ajArquivos(){ const r=await ajAcao('ajuda_arquivos'), el=$('#ajArq'); if(!el||!r.ok||!r.dados) return; const l=r.dados.itens||[];
   el.innerHTML=`<h2 class="secao" style="margin-bottom:8px">Arquivos transferidos no acesso remoto</h2><div class="cnt-cartao">${l.length?`<div class="tw" style="max-height:360px"><table class="cnt-tabela"><thead><tr class="cnt-tabela__linha"><th class="cnt-tabela__cab">Quando</th><th class="cnt-tabela__cab">Sentido</th><th class="cnt-tabela__cab">Arquivo</th><th class="cnt-tabela__cab">Tamanho</th><th class="cnt-tabela__cab">Técnico</th></tr></thead><tbody>${l.map(x=>`<tr class="cnt-tabela__linha"><td class="cnt-tabela__cel">${esc(quando(x.ts))}</td><td class="cnt-tabela__cel">${x.sentido==='recebido'?'Recebido do técnico':'Levado pelo técnico'}</td><td title="${esc(x.caminho)}${x.sha256?' · SHA-256 '+esc(x.sha256):''}" class="cnt-tabela__cel">${esc(x.nome)}<br><small>${esc(x.caminho)}</small></td><td class="cnt-tabela__cel">${fB(x.tamanho)}</td><td class="cnt-tabela__cel">${esc(x.tecnico||'—')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="vazio">Nenhum arquivo transferido nos últimos 90 dias.</div>'}</div>`; }
-const AJU_JANELAS=new Map();
-function ajAbrirSessao(id, senha){ id=String(id||'').replace(/\D/g,''); senha=String(senha||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+async function ajAbrirSessao(id, senha){ id=String(id||'').replace(/\D/g,''); senha=String(senha||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
   if(id.length!==9) return toast('O ID tem 9 números.',1); if(senha.length!==8) return toast('A senha tem 8 letras e números.',1);
   if(AJU.meu&&AJU.meu.id&&AJU.meu.id.replace(/\D/g,'')===id) return toast('Esse é o ID deste computador.',1);
   // a sessão abre ocupando a tela toda (área útil): a tela remota aparece inteira, reduzida só se não couber
-  const w=window.open('/#sessao','_blank',`popup,left=${screen.availLeft||0},top=${screen.availTop||0},width=${screen.availWidth},height=${screen.availHeight}`); if(!w) return toast('O navegador bloqueou a janela nova. Permita janelas pop-up para o CNT Monitor.',1);
-  AJU_JANELAS.set(w,{id,senha,servidor:(AJU.meu&&AJU.meu.servidor)||'',tecnico:(AJU.meu&&AJU.meu.id)||''}); $('#ajSenhaId').value=''; }
-addEventListener('message',e=>{ if(e.origin!==location.origin||e.data!=='sessao-pronta') return; const p=AJU_JANELAS.get(e.source); if(!p) return; AJU_JANELAS.delete(e.source); e.source.postMessage({tipo:'sessao',...p},location.origin); });
+  // a janela embutida não tem pop-up: o serviço guarda os dados por um instante e o ícone abre a janela da sessão
+  const r=await ajAcao('ajuda_sessao_abrir',{id,senha,servidor:(AJU.meu&&AJU.meu.servidor)||'',tecnico:(AJU.meu&&AJU.meu.id)||''}); if(!r.ok) return toast(r.msg||'Não consegui abrir a janela da sessão.',1);
+  $('#ajSenhaId').value=''; }
 const AJ_ATIVOS=['convite','conectando','aguardando_aceite','ativa'];
 function ajVigiar(){ clearInterval(AJU.timer); AJU.timer=setInterval(async()=>{
   const r=await ajAcao('ajuda_estado'); if(!r.ok||!r.dados) return; const d=r.dados; if(d.meu) AJU.meu=d.meu;
@@ -1072,7 +1071,7 @@ function ajRenderPedir(el){ const e=AJU.est||{estado:'iniciando'}; AJU.visto=JSO
   if(b('ajCancelar')) b('ajCancelar').onclick=async()=>{ const r=await ajAcao('ajuda_encerrar'); if(r.dados) AJU.est=r.dados; ajRender(); };
   if(b('ajNovo')) b('ajNovo').onclick=()=>{ AJU.modo=null; AJU.est=null; AJU.foiAtiva=false; ajRender(); }; }
 function ajTecFechar(){ const pc=AJU.pc, c=AJU.canal; AJU.pc=AJU.canal=AJU.fluxo=null; AJU.trilhas={}; AJU.senha=''; if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
-  if(RS){ clearInterval(RS.timer); rsFecharJanelas(); for(const ok of RS.espera.values()) ok(null); RS=null; } document.body.classList.remove('rs-ativo'); document.title=document.title.replace(RS_MARCA,'');
+  if(RS){ clearInterval(RS.timer); for(const ok of RS.espera.values()) ok(null); RS=null; } document.body.classList.remove('rs-ativo'); document.title=document.title.replace(RS_MARCA,'');
   try{ if(c&&c.readyState==='open') c.send(JSON.stringify({t:'fim'})); }catch(_){ } if(pc) setTimeout(()=>pc.close(),150); }
 function ajTecFim(motivo){ if(AJU.modo!=='tecnico'||AJU.fase==='fim') return; ajTecFechar(); AJU.fase='fim'; AJU.msg=motivo; ajRender(); }
 function ajPreferirH264(pc){ // H.264: o navegador decodifica pela placa de vídeo e o outro lado comprime mais rápido que o VP8
@@ -1123,9 +1122,8 @@ async function ajIdConectar(id, senha, srv){ AJU.srv=srv; AJU.alvo=id; document.
 function ajDesistir(){ if(AJU.srv&&AJU.pedido&&!['ativa','fim'].includes(AJU.fase)){ try{ navigator.sendBeacon(AJU.srv+'/responder',JSON.stringify({pedido:AJU.pedido,dados:{tipo:'desistiu'}})); }catch(_){ } } AJU.pedido=null; }
 function ajSessaoIniciar(){ document.body.classList.add('so-sessao'); for(const x of VISTAS) $('#v-'+x).hidden=x!=='ajuda'; vista='ajuda';
   AJU.modo='tecnico'; AJU.fase='ligando'; AJU.alvo=''; ajRender();
-  addEventListener('message',e=>{ if(e.origin!==location.origin||e.source!==window.opener||!e.data||e.data.tipo!=='sessao'||AJU.alvo) return; AJU.tecId=String(e.data.tecnico||''); ajIdConectar(e.data.id,e.data.senha,e.data.servidor); });
   addEventListener('pagehide',()=>{ ajDesistir(); ajTecFechar(); });
-  if(window.opener) window.opener.postMessage('sessao-pronta',location.origin); else ajTecFim('Abra o acesso pela tela de Acesso remoto do CNT Monitor.'); }
+  const chave=location.hash.split('/')[1]||''; ajAcao('ajuda_sessao_pegar',{chave}).then(r=>{ const d=r.ok&&r.dados; if(!d) return ajTecFim('Abra o acesso pela tela de Acesso remoto do CNT Monitor.'); AJU.tecId=String(d.tecnico||''); ajIdConectar(d.id,d.senha,d.servidor); }); }
 async function ajTecMsg(ev){ let m; try{ m=JSON.parse(ev.data); }catch(_){ return; } if(!m||typeof m!=='object') return;
   if(m.t==='prova'&&AJU.fase==='conferindo'){ const r=await ajAcao('ajuda_tec_conferir',{senha:AJU.senha,oferta:AJU.oferta,resposta:AJU.sdp,mac:m.mac}); AJU.senha='';
     if(!r.ok){ ajTecFim('O outro computador não provou que conhece a senha, então a conexão foi encerrada. Pode haver alguém no meio do caminho: peça uma senha nova e conecte de novo.'); return; }
@@ -1154,7 +1152,7 @@ function ajRenderTecnico(el){ const conf=AJU.resp?esc(AJU.resp.conferencia):'';
 const RS_MARCA='⁣';
 const RS_FTECLA={F13:'MetaLeft',F14:'MetaRight',F15:'Tab',F16:'Escape',F17:'F4',F18:'Space',F19:'PrintScreen',F20:'KeyW',F21:'KeyT',F22:'KeyN'};
 const RS_AREA={ambos:'Nos dois sentidos',para_atendido:'Só daqui para lá',para_tecnico:'Só de lá para cá',desligada:'Desligada'};
-const RS_LAYOUT={lado:'Lado a lado',um:'Um ou outro',janelas:'Janelas separadas'};
+const RS_LAYOUT={lado:'Lado a lado',um:'Um ou outro'};
 let RS=null;
 const rsEnv=m=>{ try{ if(AJU.fase==='ativa'&&AJU.canal&&AJU.canal.readyState==='open') AJU.canal.send(JSON.stringify(m)); }catch(_){ } };
 const rsPode=s=>!!RS&&(RS.area==='ambos'||RS.area===s)&&(s!=='para_tecnico'||RS.lerTeto);
@@ -1178,7 +1176,7 @@ SHA256.K=(()=>{ const k=[], h=[]; for(let n=2;k.length<64;n++){ let p=true; for(
 function rsStream(m){ const t=AJU.trilhas||{}; return (m.mid!=null&&t[m.mid])||Object.values(t)[m.i]||AJU.fluxo; }
 // "ativa" do agente: traz os monitores (posição e tamanho reais) e se quem é atendido deixa ler a área de transferência dele
 function rsAtivar(m){ const lista=Array.isArray(m.monitores)&&m.monitores.length?m.monitores.slice(0,4):[{}];
-  RS={mons:lista.map((x,i)=>({i, n:+x.n||i+1, x:+x.x||0, y:+x.y||0, w:+x.w||0, h:+x.h||0, mid:x.mid==null?null:String(x.mid)})), layout:CFG.remoto_layout||'lado', sel:0, ajuste:true,
+  RS={mons:lista.map((x,i)=>({i, n:+x.n||i+1, x:+x.x||0, y:+x.y||0, w:+x.w||0, h:+x.h||0, mid:x.mid==null?null:String(x.mid)})), layout:CFG.remoto_layout==='um'?'um':'lado', sel:0, ajuste:true,
     area:CFG.remoto_area||'ambos', lerTeto:m.ler_area!==false, inicio:Date.now(), janelas:new Map(), dados:null, prox:1, transf:new Map(), espera:new Map(), copiados:[],
     ultArea:'', ultAreaImg:'', pendente:null, pasta:'', lista:null, painel:false, colando:null, teclas:new Set(), timer:null, ultV:null, nota:null, atalhos:CFG.remoto_atalhos!==false};
   rsTitulos();
@@ -1216,11 +1214,9 @@ function rsBarra(){ const b=$('#rsBarra'); if(!b||!RS) return; const varios=RS.m
     else if(x.id==='rsSair') return ajTecFim('Você encerrou a sessão.');
     const p=$('#rsPalco'); if(p) p.focus(); }; }
 function rsNota(t){ const n=$('#rsNota'); if(!n||!RS) return; n.textContent=t; clearTimeout(RS.nota); RS.nota=setTimeout(()=>{ n.textContent=''; },4000); }
-function rsEscolherMonitor(i){ if(RS.layout==='janelas'&&RS.janelas.has(i)){ try{ RS.janelas.get(i).w.focus(); }catch(_){ } return; }
+function rsEscolherMonitor(i){
   if(RS.layout==='lado') RS.layout='um'; RS.sel=i; rsMontar(); }
 function rsMontar(){ if(!RS) return; const p=$('#rsPalco'); if(!p) return;
-  if(RS.layout==='janelas'&&RS.mons.length>1){ for(const m of RS.mons) if(m.i!==RS.sel&&!RS.janelas.has(m.i)) rsAbrirJanela(m.i); }
-  else rsFecharJanelas();
   rsPreencher(p, RS.layout==='lado'?RS.mons.map(m=>m.i):[RS.sel]); rsBarra(); rsVer(); }
 function rsPreencher(p, vis){ const mapa=p.querySelector('.rs-mapa'), doc=p.ownerDocument; mapa.innerHTML='';
   for(const i of vis){ const v=doc.createElement('video'); v.autoplay=v.playsInline=v.muted=true; v.dataset.m=i; v.srcObject=rsStream(RS.mons[i]); v.onloadedmetadata=v.onresize=()=>rsDimensionar(p); mapa.appendChild(v); }
@@ -1303,19 +1299,6 @@ function rsMenu(qual, bt){ const mn=$('#rsMenu'); if(!mn.hidden&&mn.dataset.q===
     if(x.dataset.acao==='enviar'){ RS.ultArea=RS.ultAreaImg=''; rsFoco(); }
     $('#rsPalco').focus(); }; }
 // janelas separadas: cada monitor numa janela própria, que dá para arrastar para outro monitor do técnico
-function rsAbrirJanela(i){ const m=RS.mons[i], w=window.open('/#tela','cnt-tela-'+(AJU.alvo||'x')+'-'+i,`popup,width=${Math.min(screen.availWidth,1280)},height=${Math.min(screen.availHeight,800)},left=${(screen.availLeft||0)+60*i},top=${(screen.availTop||0)+40*i}`);
-  if(!w) return toast('O navegador bloqueou a janela do monitor '+m.n+'. Permita janelas pop-up para o CNT Monitor.',1);
-  RS.janelas.set(i,{w,palco:null}); }
-window.rsTelaPronta=w=>{ const par=RS&&[...RS.janelas].find(([,j])=>j.w===w); if(!par) return w.close(); const [i,j]=par, m=RS.mons[i], d=w.document;
-  d.title=rsTitulo(i); d.body.classList.add('so-tela');
-  const raiz=d.createElement('div'); raiz.className='rs rs-filha'; raiz.dataset.cntTema='escuro';
-  raiz.innerHTML=`<div class="rs-barra"><div class="rs-id"><span class="rs-ponto"></span><b>Monitor ${m.n}</b><span>${esc(AJU.alvo?ajFmtId(AJU.alvo):'')}</span></div><button class="cnt-botao cnt-botao--pq cnt-botao--secundario rs-bt" data-a="ajuste">${RS.ajuste?'Ajustar à janela':'Tamanho real'}</button><button class="cnt-botao cnt-botao--pq cnt-botao--secundario rs-bt" data-a="cheia">Tela cheia</button><span style="flex:1"></span><span class="rs-nota">Arraste esta janela para outro monitor. Fechar esta janela não encerra a sessão.</span></div><div class="rs-corpo"><div class="rs-palco" tabindex="0" aria-label="Monitor ${m.n} do outro computador"><div class="rs-mapa"></div></div></div>`;
-  d.body.appendChild(raiz); const palco=raiz.querySelector('.rs-palco'); j.palco=palco; rsLigar(palco); rsPreencher(palco,[i]);
-  raiz.querySelector('.rs-barra').onclick=e=>{ const x=e.target.closest('button'); if(!x||!RS) return; if(x.dataset.a==='cheia') return rsTelaCheia(palco);
-    if(x.dataset.a==='ajuste'){ RS.ajuste=!RS.ajuste; x.textContent=RS.ajuste?'Ajustar à janela':'Tamanho real'; rsBarra(); rsDimensionarTudo(); } palco.focus(); };
-  w.addEventListener('resize',()=>rsDimensionar(palco)); w.addEventListener('focus',()=>rsFoco()); d.addEventListener('visibilitychange',rsVer);
-  w.addEventListener('pagehide',()=>{ if(RS&&RS.janelas.get(i)===j){ RS.janelas.delete(i); rsBarra(); rsVer(); } }); rsBarra(); rsVer(); palco.focus(); };
-function rsFecharJanelas(){ if(!RS) return; for(const j of RS.janelas.values()) try{ j.w.close(); }catch(_){ } RS.janelas.clear(); }
 // ---- arquivos: pelo canal "dados" da própria conexão (criptografado, sem servidor), em pedaços de 16 KB com SHA-256 no fim
 function rsEsperar(id,ms){ return new Promise(ok=>{ RS.espera.set(id,ok); if(ms) setTimeout(()=>{ if(RS&&RS.espera.get(id)===ok){ RS.espera.delete(id); ok(null); } },ms); }); }
 async function rsAberto(){ for(let k=0;k<50&&RS&&RS.dados&&RS.dados.readyState==='connecting';k++) await ajEsperar(100); return !!(RS&&RS.dados&&RS.dados.readyState==='open'); }
@@ -1777,7 +1760,7 @@ const CFG_DEF=[
     ['varias_janelas','sw','Permitir abrir mais de uma janela','Desligado: clicar em “Abrir” de novo só traz a janela que já está aberta para a frente. Ligado: cada clique abre uma janela nova.'],
   ]],
   ['Acesso remoto',[
-    ['remoto_layout','sel','Layout padrão com vários monitores','Como aparece o computador acessado quando ele tem mais de um monitor. Dá para trocar durante a sessão, pela barra.',{lado:'Lado a lado (como estão de verdade)',um:'Um ou outro (botões 1 · 2 na barra)',janelas:'Janelas separadas (uma por monitor)'}],
+    ['remoto_layout','sel','Layout padrão com vários monitores','Como aparece o computador acessado quando ele tem mais de um monitor. Dá para trocar durante a sessão, pela barra.',{lado:'Lado a lado (como estão de verdade)',um:'Um ou outro (botões 1 · 2 na barra)'}],
     ['remoto_area','sel','Área de transferência compartilhada','Quando você acessa outro computador: o que um lado copia, o outro pode colar. Dá para trocar durante a sessão.',{ambos:'Nos dois sentidos',para_atendido:'Só daqui para o computador acessado',para_tecnico:'Só do computador acessado para cá',desligada:'Desligada'}],
     ['remoto_atalhos','sw','Atalhos do Windows no computador acessado','Quando você acessa outro computador: com a tela dele na frente, Win, Alt+Tab, Alt+F4, Ctrl+Esc e Print Screen vão para lá; em qualquer outra janela, ficam aqui. Dá para trocar durante a sessão, em Opções. Precisa do ícone do CNT Monitor aberto perto do relógio.'],
     ['remoto_permitir_ler_area','sw','Permitir que o técnico leia a minha área de transferência','Quando alguém acessa este computador. Desligado, nada do que você copia vai para o técnico (senhas, por exemplo), mesmo que ele escolha “nos dois sentidos”.'],
