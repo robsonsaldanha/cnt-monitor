@@ -2,7 +2,7 @@
 import os
 import sys
 
-VERSAO = "3.5.1"
+VERSAO = "3.5.2"
 WIN = os.name == "nt"
 
 # Linux: o serviço (root) e o ícone de cada usuário leem a mesma pasta, como o ProgramData do Windows.
