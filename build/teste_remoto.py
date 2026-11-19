@@ -727,6 +727,38 @@ def teste_log_do_agente_vai_para_o_servico():
         g._ler(p)
     assert "remoto: ICE: checking" in err.getvalue() and "log" not in g.estado()
 
+def teste_agente_so_recebe_debug_com_o_modo_ligado():
+    from monitorpc import configuracao
+    g = remoto.Gerente(["agente"])
+    original = configuracao.obter
+    try:
+        for ligado in (False, True):
+            configuracao.obter = lambda chave=None, _l=ligado: _l if chave == "modo_debug" else original(chave)
+            for stun in (True, False):
+                assert ("--debug" in g._linha_de_comando(stun)) is ligado
+    finally:
+        configuracao.obter = original
+
+def teste_log_das_bibliotecas_chega_ao_servico():
+    import logging
+    import remoto_agente as ra
+    nomes = ("aioice", "aiortc", "asyncio")
+    antes = {n: (logging.getLogger(n).level, list(logging.getLogger(n).handlers)) for n in nomes}
+    linhas = []
+    try:
+        ra._log_das_bibliotecas(linhas.append)
+        logging.getLogger("aioice.ice").info("Check %s -> %s", "a", "b")
+        logging.getLogger("asyncio").info("ruído")              # abaixo de WARNING: fica de fora
+        try:
+            raise OSError("sem rota")
+        except OSError:
+            logging.getLogger("asyncio").error("Task exception", exc_info=True)
+    finally:
+        for n, (nivel, handlers) in antes.items():
+            logging.getLogger(n).setLevel(nivel)
+            logging.getLogger(n).handlers[:] = handlers
+    assert linhas == ["aioice.ice: Check a -> b", "asyncio: Task exception | OSError: sem rota"], linhas
+
 def teste_gerente_e_acoes_do_motor():
     """O serviço liga o agente de verdade (outro processo), o lado do técnico usa só as ações do motor."""
     import asyncio
