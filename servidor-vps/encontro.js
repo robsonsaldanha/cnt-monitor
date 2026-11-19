@@ -53,7 +53,7 @@ function turn() {
   if (!TURN_SEGREDO) return null;
   const usuario = `${Math.floor(Date.now() / 1000) + TURN_VALIDADE}:cntmonitor`;
   const senha = crypto.createHmac('sha1', TURN_SEGREDO).update(usuario).digest('base64');
-  return { urls: [`turn:${TURN_HOST}:3478?transport=udp`, `turn:${TURN_HOST}:3478?transport=tcp`], username: usuario, credential: senha };
+  return { urls: [`turn:${TURN_HOST}:3478?transport=udp`, `turn:${TURN_HOST}:3478?transport=tcp`, `turns:${TURN_HOST}:443?transport=tcp`], username: usuario, credential: senha };
 }
 
 // ---------------------------------------------------------------- filas com espera longa

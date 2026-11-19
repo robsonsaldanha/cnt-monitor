@@ -691,7 +691,8 @@ def teste_diagnostico_da_conexao():
     assert c({"servidor": True, "turn_udp": True, "turn_tcp": True}).startswith("Tudo certo")
     assert "bloqueia UDP" in c({"servidor": True, "turn_udp": False, "turn_tcp": True})
     assert "TCP não respondeu" in c({"servidor": True, "turn_udp": True, "turn_tcp": False})
-    assert "não alcança" in c({"servidor": True, "turn_udp": False, "turn_tcp": False})
+    assert "não alcança" in c({"servidor": True, "turn_udp": False, "turn_tcp": False, "turn_tls": False})
+    assert "porta 443" in c({"servidor": True, "turn_udp": False, "turn_tcp": False, "turn_tls": True})
 
 def teste_agente_usa_o_retransmissor_por_tcp():
     """O aiortc só usa o primeiro TURN da lista: o TCP vai na frente, senão rede que bloqueia UDP fica sem saída."""
@@ -709,9 +710,22 @@ def teste_testar_conexao_sem_retransmissor():
     import remoto_agente as ra
     nada = (["turn:127.0.0.1:9?transport=udp", "turn:127.0.0.1:9?transport=tcp"], "1:u", "c")
     t = time.time()
-    assert asyncio.run(ra.testar((), nada, prazo=3)) == {"stun": None, "turn_udp": False, "turn_tcp": False}
+    assert asyncio.run(ra.testar((), nada, prazo=3)) == {"stun": None, "turn_udp": False, "turn_tcp": False, "turn_tls": None}
     assert time.time() - t < 8                       # UDP e TCP em paralelo, cada um com o seu prazo
-    assert asyncio.run(ra.testar((), None)) == {"stun": None, "turn_udp": None, "turn_tcp": None}
+    assert asyncio.run(ra.testar((), None)) == {"stun": None, "turn_udp": None, "turn_tcp": None, "turn_tls": None}
+    tres = (nada[0] + ["turns:127.0.0.1:9?transport=tcp"], "1:u", "c")
+    assert asyncio.run(ra.testar((), tres, prazo=3))["turn_tls"] is False
+    assert asyncio.run(ra.escolher_turn(tres, prazo=3)) == ra.turn_por_tcp(tres[0])     # nada responde: ordem padrão
+
+def teste_turn_tls_vai_por_ultimo_e_o_aiortc_aceita():
+    import remoto_agente as ra
+    from aiortc import RTCIceServer
+    from aiortc.rtcicetransport import connection_kwargs
+    urls = ["turn:t.exemplo:3478?transport=udp", "turns:t.exemplo:443?transport=tcp", "turn:t.exemplo:3478?transport=tcp"]
+    assert ra.turn_por_tcp(urls) == [urls[2], urls[0], urls[1]]
+    k = connection_kwargs([RTCIceServer(urls=[urls[1]], username="u", credential="c")])
+    assert k["turn_ssl"] is True and k["turn_server"] == ("t.exemplo", 443) and k["turn_transport"] == "tcp"
+    assert ra._canal(urls[1]) == "tls" and ra._canal(urls[2]) == "tcp" and ra._canal(urls[0]) == "udp"
 
 def teste_log_do_agente_vai_para_o_servico():
     import io

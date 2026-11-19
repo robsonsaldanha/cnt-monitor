@@ -827,9 +827,9 @@ class Agente:
     async def iniciar(self):
         from aiortc import RTCConfiguration, RTCIceServer, RTCPeerConnection
         servidores = [RTCIceServer(urls=u) for u in self._stun]
+        turn_urls = await escolher_turn(self._turn) if self._turn else []
         if self._turn:
-            servidores.append(RTCIceServer(urls=turn_por_tcp(self._turn[0]), username=self._turn[1],
-                                           credential=self._turn[2]))
+            servidores.append(RTCIceServer(urls=turn_urls, username=self._turn[1], credential=self._turn[2]))
         self.pc = RTCPeerConnection(RTCConfiguration(iceServers=servidores))
         self.canal = self.pc.createDataChannel("controle")
         self.canal.on("message", lambda msg: asyncio.ensure_future(self._mensagem(msg)))
@@ -857,9 +857,9 @@ class Agente:
         await self.pc.setLocalDescription(await self.pc.createOffer())    # já sai com os endereços (ICE completo)
         sdp = self.pc.localDescription.sdp
         self._log(f"convite: {remoto.resumo_candidatos(sdp)}; retransmissor: "
-                  + (_transporte(turn_por_tcp(self._turn[0])[0]) if self._turn else "nenhum"))
+                  + (_canal(turn_urls[0]) if self._turn else "nenhum"))
         if self._turn and "typ relay" not in sdp:
-            self._log("o retransmissor não deu endereço: porta 3478 bloqueada ou credencial vencida")
+            self._log("o retransmissor não deu endereço: portas 3478 e 443 bloqueadas ou credencial vencida")
         self._convite = remoto.convite(sdp)
         self._vigia = asyncio.ensure_future(self._vigiar())
         self._caminho = asyncio.ensure_future(self._manter_caminho())
@@ -1151,28 +1151,63 @@ def _taxas():
 
 
 def _transporte(url):
-    return "tcp" if "transport=tcp" in url.lower() else "udp"
+    return "tcp" if "transport=tcp" in url.lower() or url.lower().startswith("turns:") else "udp"
+
+
+def _canal(url):
+    """udp, tcp (turn: na 3478) ou tls (turns: na 443, que passa onde só a web é liberada)."""
+    return "tls" if url.lower().startswith("turns:") else _transporte(url)
 
 
 def turn_por_tcp(urls):
     """O aiortc só usa o primeiro endereço TURN da lista. Pelo TCP o retransmissor funciona também onde o UDP
     é bloqueado (4G de algumas operadoras, redes de empresa); onde o UDP passa, os caminhos diretos e o
-    retransmissor do técnico continuam valendo, então o TCP só carrega a sessão quando não há outro jeito."""
-    return sorted(urls, key=lambda u: _transporte(u) != "tcp")
+    retransmissor do técnico continuam valendo, então o TCP só carrega a sessão quando não há outro jeito.
+    O TLS na 443 vai por último: só entra na frente quando escolher_turn prova que o TCP na 3478 não passa."""
+    return sorted(urls, key=lambda u: ("tcp", "udp", "tls").index(_canal(u)))
+
+
+async def _relay_obtido(url, turn, prazo):
+    """Este PC consegue um endereço de retransmissão neste servidor TURN, como numa conexão de verdade?"""
+    from aioice import Connection
+    from aiortc.rtcicetransport import parse_stun_turn_uri
+    p = parse_stun_turn_uri(url)
+    c = Connection(ice_controlling=True, turn_server=(p["host"], p["port"]), turn_username=turn[1],
+                   turn_password=turn[2], turn_transport=p["transport"], turn_ssl=p["scheme"] == "turns")
+    try:
+        await asyncio.wait_for(c.gather_candidates(), prazo)
+        return any(x.type == "relay" for x in c.local_candidates)
+    except Exception:  # noqa: BLE001  (porta bloqueada, nome que não resolve, credencial recusada)
+        return False
+    finally:
+        await c.close()
+
+
+async def escolher_turn(turn, prazo=4):
+    """Lista de URLs TURN com na frente a primeira por TCP que responde: o TLS na 443 só passa à frente quando
+    a 3478 não responde (rede que só libera a web). Nada responde: mantém a ordem de turn_por_tcp."""
+    urls = turn_por_tcp(turn[0])
+    tcp = [u for u in urls if _canal(u) != "udp"]
+    if len(tcp) < 2:
+        return urls
+    for u, ok in zip(tcp, await asyncio.gather(*(_relay_obtido(u, turn, prazo) for u in tcp))):
+        if ok:
+            return [u] + [x for x in urls if x != u]
+    return urls
 
 
 async def testar(stun, turn, prazo=10):
-    """Este PC alcança o STUN (UDP) e o retransmissor por UDP e por TCP? Cada um pede um endereço ao servidor
-    como numa conexão de verdade. Devolve {stun, turn_udp, turn_tcp} (None: não havia o que testar)."""
+    """Este PC alcança o STUN (UDP) e o retransmissor por UDP, TCP e TLS? Cada um pede um endereço ao servidor
+    como numa conexão de verdade. Devolve {stun, turn_udp, turn_tcp, turn_tls} (None: não havia o que testar)."""
     from aioice import Connection
     from aiortc.rtcicetransport import parse_stun_turn_uri
 
-    async def tipo_obtido(tipo, **k):
-        c = Connection(ice_controlling=True, **k)
+    async def stun_obtido():
+        c = Connection(ice_controlling=True, stun_server=servidor(stun[0]))
         try:
             await asyncio.wait_for(c.gather_candidates(), prazo)
-            return any(x.type == tipo for x in c.local_candidates)
-        except Exception:  # noqa: BLE001  (porta bloqueada, nome que não resolve, credencial recusada)
+            return any(x.type == "srflx" for x in c.local_candidates)
+        except Exception:  # noqa: BLE001
             return False
         finally:
             await c.close()
@@ -1181,14 +1216,13 @@ async def testar(stun, turn, prazo=10):
         p = parse_stun_turn_uri(u)
         return p["host"], p["port"]
 
-    provas = {"stun": None, "turn_udp": None, "turn_tcp": None}
+    provas = {"stun": None, "turn_udp": None, "turn_tcp": None, "turn_tls": None}
     if stun:
-        provas["stun"] = tipo_obtido("srflx", stun_server=servidor(stun[0]))
+        provas["stun"] = stun_obtido()
     for url in (turn[0] if turn else []):
-        chave = "turn_" + _transporte(url)
+        chave = "turn_" + _canal(url)
         if provas.get(chave) is None:
-            provas[chave] = tipo_obtido("relay", turn_server=servidor(url), turn_username=turn[1],
-                                        turn_password=turn[2], turn_transport=_transporte(url))
+            provas[chave] = _relay_obtido(url, turn, prazo)
     feitas = {k: v for k, v in provas.items() if v is not None}
     return {**provas, **dict(zip(feitas, await asyncio.gather(*feitas.values())))}
 
@@ -1275,7 +1309,7 @@ def main():
     if "--turn" in sys.argv and "--sem-stun" not in sys.argv:
         try:
             a = sys.argv
-            urls = [u for u in a[a.index("--turn") + 1].split(",") if u.startswith("turn:")]
+            urls = [u for u in a[a.index("--turn") + 1].split(",") if u.startswith(("turn:", "turns:"))]
             turn = (urls, a[a.index("--turn-usuario") + 1], a[a.index("--turn-senha") + 1]) if urls else None
         except (ValueError, IndexError):
             turn = None
