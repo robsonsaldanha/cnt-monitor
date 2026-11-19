@@ -334,9 +334,12 @@ def conclusao_teste(r):
     if not r.get("servidor"):
         return ("Sem contato com o servidor do acesso remoto. Confira a internet e se o firewall libera "
                 "HTTPS para monitor.cntoficial.com.br.")
-    udp, tcp = r.get("turn_udp"), r.get("turn_tcp")
-    if udp is None and tcp is None:
+    udp, tcp, tls = r.get("turn_udp"), r.get("turn_tcp"), r.get("turn_tls")
+    if udp is None and tcp is None and tls is None:
         return "O servidor não mandou a credencial do retransmissor: só a conexão direta vai funcionar."
+    if tls and not tcp:
+        return ("A porta 3478 está bloqueada, mas o retransmissor seguro (porta 443) responde. O acesso remoto "
+                "funciona por ele, com um pouco mais de atraso.")
     if udp and tcp:
         return "Tudo certo: este computador alcança o retransmissor por UDP e por TCP."
     if tcp:
@@ -345,7 +348,7 @@ def conclusao_teste(r):
     if udp:
         return ("O retransmissor por TCP não respondeu (porta 3478). Funciona aqui, mas pode falhar se "
                 "o UDP for bloqueado.")
-    return ("Este computador não alcança o retransmissor (porta 3478 bloqueada em UDP e TCP). Só a "
+    return ("Este computador não alcança o retransmissor (portas 3478 e 443 bloqueadas). Só a "
             "conexão direta é possível, e ela costuma falhar em 4G/5G e em redes de empresa.")
 
 
@@ -525,7 +528,7 @@ class Gerente:
         if not stun:
             return cmd + ["--sem-stun"]
         if isinstance(turn, dict) and turn.get("urls") and turn.get("username") and turn.get("credential"):
-            urls = [u for u in turn["urls"] if isinstance(u, str) and u.startswith("turn:") and " " not in u]
+            urls = [u for u in turn["urls"] if isinstance(u, str) and u.startswith(("turn:", "turns:")) and " " not in u]
             if urls:
                 cmd += ["--turn", ",".join(urls), "--turn-usuario", str(turn["username"]), "--turn-senha", str(turn["credential"])]
         return cmd
@@ -624,8 +627,8 @@ class Gerente:
             return dict(self._estado)
 
     def testar(self, turn=None, prazo=30):
-        """Confere se este PC alcança o STUN e o retransmissor (UDP e TCP). Roda o agente com --testar,
-        fora da sessão de quem usa o PC: não precisa de tela. Devolve {stun, turn_udp, turn_tcp}."""
+        """Confere se este PC alcança o STUN e o retransmissor (UDP, TCP e TLS). Roda o agente com --testar,
+        fora da sessão de quem usa o PC: não precisa de tela. Devolve {stun, turn_udp, turn_tcp, turn_tls}."""
         cmd = self._linha_de_comando(True, turn) + ["--testar"]
         try:
             p = subprocess.run(cmd, stdin=subprocess.DEVNULL, capture_output=True, text=True, encoding="utf-8",
@@ -638,7 +641,7 @@ class Gerente:
             except ValueError:
                 continue
             if isinstance(d, dict) and "stun" in d:
-                return {k: d.get(k) for k in ("stun", "turn_udp", "turn_tcp")}
+                return {k: d.get(k) for k in ("stun", "turn_udp", "turn_tcp", "turn_tls")}
         raise Erro("O teste de conexão não respondeu.")
 
     def parar(self):
