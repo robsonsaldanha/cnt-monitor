@@ -104,28 +104,24 @@ def validade_turn(turn):
         return 0
 
 
-def _boot():
-    try:
-        import psutil
-        return int(psutil.boot_time())
-    except Exception:  # noqa: BLE001
-        return 0
+def _dia(agora):
+    return time.strftime("%Y-%m-%d", time.localtime(agora))
 
 
 class Encontro:
     """Mantém este PC registrado e atende os pedidos de conexão que chegam pelo ID."""
 
-    def __init__(self, gerente, url=SERVIDOR, arquivo=ARQUIVO, boot=_boot, agora=time.time):
+    def __init__(self, gerente, url=SERVIDOR, arquivo=ARQUIVO, agora=time.time):
         self.gerente = gerente
         self.url = url.rstrip("/")
         self.arquivo = arquivo
-        self._boot = boot
         self._agora = agora
         self._lock = threading.RLock()
         self.situacao, self.msg = "desligado", ""
         self.turn = None
         self.senha = remoto.nova_senha()
         self._erros = 0
+        self.chamadas = None             # p2p.Servidor: atende a API de chamadas pelo mesmo ID (o motor liga)
         self._pedido = None              # pedido de conexão em andamento: {pedido, desde, respondeu}
         self._parar = threading.Event()
         self._novo = threading.Event()   # ID trocado: a espera longa em curso é abandonada
@@ -139,19 +135,19 @@ class Encontro:
                 d = json.load(f)
         except (OSError, ValueError):
             pass
-        boot = self._boot()
         if (isinstance(d, dict) and str(d.get("id", "")).isdigit() and len(str(d["id"])) == 9
-                and isinstance(d.get("chave"), str) and len(d["chave"]) >= 32 and d.get("boot") == boot):
-            self.id, self.chave = str(d["id"]), d["chave"]
+                and isinstance(d.get("chave"), str) and len(d["chave"]) >= 32 and d.get("dia") == _dia(self._agora())):
+            self.id, self.chave, self._dia_id = str(d["id"]), d["chave"], d["dia"]
         else:
-            self._gerar_id(boot)
+            self._gerar_id()
 
-    def _gerar_id(self, boot=None):
-        self.id, self.chave = novo_id(), secrets.token_urlsafe(32)
+    def _gerar_id(self):
+        """O ID vale o dia inteiro (reinício do PC e conexões não o mudam): vira outro na virada do dia."""
+        self.id, self.chave, self._dia_id = novo_id(), secrets.token_urlsafe(32), _dia(self._agora())
         try:
             os.makedirs(os.path.dirname(self.arquivo), exist_ok=True)
             with open(self.arquivo, "w", encoding="utf-8") as f:
-                json.dump({"id": self.id, "chave": self.chave, "boot": self._boot() if boot is None else boot}, f)
+                json.dump({"id": self.id, "chave": self.chave, "dia": self._dia_id}, f)
         except OSError:
             pass                         # sem gravar, o ID só dura até o serviço reiniciar
 
@@ -275,6 +271,8 @@ class Encontro:
     def _vigiar_sempre(self):
         while not self._parar.wait(1):
             self.vigiar()
+            if _dia(self._agora()) != self._dia_id and self._pedido is None:
+                self.trocar_id()
 
     def parar(self):
         self._parar.set()
@@ -301,6 +299,10 @@ class Encontro:
         pedido = m.get("pedido")
         if not isinstance(pedido, str) or not pedido:
             return
+        if self.chamadas and m.get("tipo") == "pedido" and m.get("finalidade") == "chamadas":
+            return self.chamadas.pedido(pedido, self.turn_atual())     # API de chamadas: nada de tela nem senha
+        if self.chamadas and m.get("tipo") == "msg" and self.chamadas.dele(pedido):
+            return self.chamadas.resposta(pedido, m.get("dados"))
         if m.get("tipo") == "pedido":
             livre = self.gerente.estado().get("estado") in ("parada", "encerrada")
             if not livre:

@@ -18,7 +18,7 @@ import psutil
 
 from . import config, configuracao, banco, rede, temperatura, nt, gpu, discos, inicializacao
 from . import alertas, jogo, energia, servicos, atualizacao, sessao, regras, limpeza, vps, captura, ventoinhas, remoto, encontro, audio
-from . import rede_programa
+from . import rede_programa, sinalizacao, p2p
 from . import qualidade
 
 WIN = os.name == "nt"
@@ -192,6 +192,14 @@ class Motor:
             self._grupo_pids, lambda: [(g["nome"], g["env"] or 0, g["rec"] or 0) for g in (self.estado or {}).get("programas", [])
                                        if not g.get("outros")],
             lambda: list(self.conns), maquina=self.info_maquina)
+        self.voip = sinalizacao.Voip()
+        self.voip_chave = sinalizacao.ChaveApi()
+        self.voip_mon = sinalizacao.Monitoramento(ativo=lambda: bool(configuracao.obter("callflow")))
+        self.voip_alvo = sinalizacao.ClienteRemoto()      # outro PC cuja captura esta tela controla
+        if self._url_encontro != "0":
+            p2p.URL = self._url_encontro
+        # o outro PC chega pelo ID do compartilhamento online (canal direto), sem abrir porta
+        self.encontro.chamadas = p2p.Servidor(self._atender_chamadas, self._chave_chamadas, self.encontro._enviar)
         self._cont = deque(maxlen=40)       # leituras dos contadores TCP/UDP/placas para as taxas recentes
         self._cache_rede = {}
 
@@ -211,6 +219,7 @@ class Motor:
         self.discos.atualizar_mapa(True)
         if self._url_encontro != "0":
             self.encontro.iniciar()
+        self.voip_mon.iniciar()
         try:
             configuracao.aplicar_inicializacao()
         except Exception:
@@ -246,6 +255,8 @@ class Motor:
         self.velocidade.cancelar()
         self.teste.cancelar()
         self.rprog.parar()          # o monitoramento por programa em andamento fica salvo
+        self.voip.parar()
+        self.voip_mon.parar()
 
     def _loop_rapido(self):
         while not self.parar_ev.is_set():
@@ -366,8 +377,52 @@ class Motor:
             self.vps.sincronizar(configuracao.obter("vps"))
         except Exception:
             pass
+        if not configuracao.obter("callflow"):
+            self.voip.parar()           # sem o Call flow habilitado não se captura chamada
+            self.voip_alvo.desconectar()
         if self.ajuda.estado().get("estado") == "ativa":     # o teto da área de transferência vale na hora
             self.ajuda.ordem("area_permitir", valor=configuracao.obter("remoto_permitir_ler_area"))
+
+    def _acao_voip(self, tipo, a):
+        if not configuracao.obter("callflow"):
+            return {"ok": False, "msg": "Habilite o Call flow nas Configurações."}
+        if tipo == "voip_conectar":
+            ok, msg = self.voip_alvo.conectar(a.get("url"), a.get("chave"))
+            return {"ok": ok, "msg": msg}
+        if tipo == "voip_desconectar":
+            self.voip_alvo.desconectar()
+            return {"ok": True, "msg": "Desconectado do outro computador."}
+        if tipo == "voip_mon_add":
+            ok, msg = self.voip_mon.adicionar(a.get("nome"), a.get("url"), a.get("chave"))
+            return {"ok": ok, "msg": msg}
+        if tipo == "voip_mon_remover":
+            self.voip_mon.remover(int(a.get("id") or 0))
+            return {"ok": True, "msg": "Computador removido do monitoramento."}
+        if tipo == "voip_mon_agora":
+            self.voip_mon.pedir_agora()
+            return {"ok": True, "msg": "Coleta pedida: os computadores serão consultados agora."}
+        if tipo == "voip_chave_nova":
+            self.voip_chave.nova()
+            return {"ok": True, "msg": "Chave nova gerada. A anterior deixou de valer."}
+        if tipo == "voip_chave_horas":
+            ok, msg = self.voip_chave.definir_horas(a.get("horas"))
+            return {"ok": ok, "msg": msg}
+        if self.voip_alvo.ativo and tipo in ("voip_iniciar", "voip_parar"):
+            try:
+                r = self.voip_alvo.post("captura", {"ligar": tipo == "voip_iniciar"})
+            except RuntimeError as e:
+                return {"ok": False, "msg": str(e)}
+            return {"ok": bool(r.get("ok")), "msg": r.get("msg") or r.get("erro") or ""}
+        if tipo == "voip_iniciar":
+            ok, msg = self.voip.iniciar()
+            return {"ok": ok, "msg": msg}
+        if tipo == "voip_parar":
+            ok, msg = self.voip.parar()
+            return {"ok": ok, "msg": msg}
+        if tipo == "voip_apagar":
+            self.voip.apagar()
+            return {"ok": True, "msg": "Chamadas apagadas."}
+        return {"ok": False, "msg": "Ação desconhecida."}
 
     def _acao_ajuda(self, tipo, a):
         """Acesso remoto (pedir ajuda / ajudar alguém). O servidor só deixa chegar aqui o que vem do próprio PC."""
@@ -428,6 +483,14 @@ class Motor:
         except remoto.Erro as e:
             return {"ok": False, "msg": str(e)}
         return {"ok": False, "msg": "Ação desconhecida."}
+
+    def _chave_chamadas(self):
+        return self.voip_chave.estado()["chave"] if configuracao.obter("callflow") else ""
+
+    def _atender_chamadas(self, rota, metodo, q, corpo):
+        if not configuracao.obter("callflow"):
+            return 403, {"erro": "O Call flow está desabilitado nesse computador."}
+        return sinalizacao.atender(self.voip, rota, metodo, q, corpo)
 
     def remoto_rodando(self):
         s = self.servidores
@@ -1184,6 +1247,8 @@ class Motor:
                 return {"ok": False, "msg": f"Não consegui alterar: {e}"}
             return {"ok": True, "msg": f'"{item["nome"]}" {"vai" if a.get("ativo") else "não vai mais"} iniciar com o {"Windows" if WIN else "Linux"}.'}
 
+        if isinstance(tipo, str) and tipo.startswith("voip_"):
+            return self._acao_voip(tipo, a)
         if isinstance(tipo, str) and tipo.startswith("rede_"):
             return self._acao_rede(tipo, a)
         return self._acao_extra(tipo, a, c)

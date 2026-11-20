@@ -201,7 +201,7 @@ async function tratar(req, res) {
     if (!pc) return erro(res, 404, 'Não encontrei esse ID. Confira os números e se o CNT Monitor está aberto no outro computador.');
     const pedido = crypto.randomBytes(24).toString('base64url');
     pedidos.set(pedido, { id, fila: [], espera: null, criado: Date.now() });
-    entregar(pc, { tipo: 'pedido', pedido });
+    entregar(pc, { tipo: 'pedido', pedido, ...(c.finalidade === 'chamadas' ? { finalidade: 'chamadas' } : {}) });
     return responder(res, 200, { ok: true, pedido, turn: turn() });
   }
   if (rota === '/responder') {                      // técnico -> PC atendido

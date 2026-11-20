@@ -204,13 +204,13 @@ def _receber_ate(url, pedido, tipo):
 
 def teste_id_e_senha_do_servico():
     arq = os.path.join(DADOS, "id.json")
-    boot = [1000]
-    e = encontro.Encontro(GerenteFalso(), url="http://127.0.0.1:9/api", arquivo=arq, boot=lambda: boot[0])
+    agora = [time.time()]
+    e = encontro.Encontro(GerenteFalso(), url="http://127.0.0.1:9/api", arquivo=arq, agora=lambda: agora[0])
     i, c = e.id, e.chave
     assert len(i) == 9 and i.isdigit() and len(c) >= 32
-    assert encontro.Encontro(GerenteFalso(), arquivo=arq, boot=lambda: boot[0]).id == i        # serviço reiniciou: mesmo ID
-    boot[0] = 2000
-    assert encontro.Encontro(GerenteFalso(), arquivo=arq, boot=lambda: boot[0]).id != i        # PC reiniciou: ID novo
+    assert encontro.Encontro(GerenteFalso(), arquivo=arq, agora=lambda: agora[0]).id == i      # serviço reiniciou: mesmo ID
+    agora[0] += 86400 * 1.5
+    assert encontro.Encontro(GerenteFalso(), arquivo=arq, agora=lambda: agora[0]).id != i      # virou o dia: ID novo
     st = e.estado()
     assert st["id"] == encontro.formatar_id(i) and len(st["senha"]) == 9 and st["senha"] in st["texto"] and st["id"] in st["texto"]
     s = e.senha

@@ -1,0 +1,1091 @@
+/* Fluxo de chamadas: diagrama em escada (participantes em colunas, mensagens em linhas) com painel de detalhes.
+   Usa só tokens da fundação (_fundacao/nucleo). */
+.cnt-chamada {
+  --cnt-chamada-altura: 30rem;
+  --cnt-chamada-painel-largura: 21rem;
+  --cnt-chamada-coluna-min: 7.5rem;
+  --cnt-chamada-tempo-largura: 5rem;
+
+  position: relative;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  height: var(--cnt-chamada-altura);
+  overflow: hidden;
+  background: var(--cnt-cor-fundo);
+  border: 1px solid var(--cnt-cor-borda);
+  border-radius: var(--cnt-raio-gd);
+  color: var(--cnt-cor-texto);
+  font-family: var(--cnt-fonte-base);
+  font-size: var(--cnt-texto-xs);
+  line-height: var(--cnt-linha-compacta);
+}
+
+.cnt-chamada.is-detalhe {
+  grid-template-columns: minmax(0, 1fr) var(--cnt-chamada-painel-largura);
+}
+
+.cnt-chamada__principal {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Tons: cada elemento colorido define os três e usa só eles. */
+.cnt-chamada__tom--primaria {
+  --cnt-chamada-tom: var(--cnt-cor-primaria);
+  --cnt-chamada-tom-texto: var(--cnt-cor-primaria);
+  --cnt-chamada-tom-suave: var(--cnt-cor-primaria-suave);
+}
+
+.cnt-chamada__tom--sucesso {
+  --cnt-chamada-tom: var(--cnt-cor-sucesso);
+  --cnt-chamada-tom-texto: var(--cnt-cor-sucesso);
+  --cnt-chamada-tom-suave: var(--cnt-cor-sucesso-suave);
+}
+
+.cnt-chamada__tom--alerta {
+  --cnt-chamada-tom: var(--cnt-cor-alerta);
+  --cnt-chamada-tom-texto: var(--cnt-cor-alerta);
+  --cnt-chamada-tom-suave: var(--cnt-cor-alerta-suave);
+}
+
+.cnt-chamada__tom--perigo {
+  --cnt-chamada-tom: var(--cnt-cor-perigo);
+  --cnt-chamada-tom-texto: var(--cnt-cor-perigo);
+  --cnt-chamada-tom-suave: var(--cnt-cor-perigo-suave);
+}
+
+.cnt-chamada__tom--info {
+  --cnt-chamada-tom: var(--cnt-cor-info);
+  --cnt-chamada-tom-texto: var(--cnt-cor-info);
+  --cnt-chamada-tom-suave: var(--cnt-cor-info-suave);
+}
+
+.cnt-chamada__tom--neutro {
+  --cnt-chamada-tom: var(--cnt-cor-borda-forte);
+  --cnt-chamada-tom-texto: var(--cnt-cor-texto-suave);
+  --cnt-chamada-tom-suave: var(--cnt-cor-superficie-2);
+}
+
+/* Topo: título, resumo e reprodução */
+.cnt-chamada__topo {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cnt-espaco-2) var(--cnt-espaco-4);
+  padding: var(--cnt-espaco-2) var(--cnt-espaco-4);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--cnt-cor-primaria) 7%, var(--cnt-cor-superficie)), var(--cnt-cor-superficie));
+  border-block-end: 1px solid var(--cnt-cor-borda);
+}
+
+.cnt-chamada__titulos {
+  display: grid;
+  flex: 1;
+  gap: var(--cnt-espaco-1);
+  min-width: 12rem;
+}
+
+.cnt-chamada__titulo {
+  margin: 0;
+  font-size: var(--cnt-texto-md);
+  font-weight: var(--cnt-peso-forte);
+  overflow-wrap: anywhere;
+}
+
+.cnt-chamada__subtitulo {
+  margin: 0;
+  color: var(--cnt-cor-texto-suave);
+  font-size: var(--cnt-texto-xs);
+  overflow-wrap: anywhere;
+}
+
+.cnt-chamada__resumo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cnt-espaco-2) var(--cnt-espaco-5);
+  margin: 0;
+}
+
+.cnt-chamada__resumo-item {
+  display: grid;
+  gap: var(--cnt-espaco-1);
+}
+
+.cnt-chamada__resumo dt {
+  color: var(--cnt-cor-texto-suave);
+  font-size: var(--cnt-texto-xs);
+  font-weight: var(--cnt-peso-medio);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cnt-chamada__resumo dd {
+  margin: 0;
+  font-size: var(--cnt-texto-sm);
+  font-weight: var(--cnt-peso-forte);
+}
+
+/* Legenda das cores (padrão do sngrep): requisição, resposta e RTP */
+.cnt-chamada__legenda-cores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cnt-espaco-1) var(--cnt-espaco-3);
+  margin: 0;
+  padding: 0;
+  color: var(--cnt-cor-texto-suave);
+  font-size: 0.6875rem;
+  list-style: none;
+}
+
+.cnt-chamada__legenda-cores li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cnt-espaco-1);
+}
+
+.cnt-chamada__legenda-cores li::before {
+  width: 1.25rem;
+  height: 0;
+  border-top: 2px solid var(--cnt-chamada-tom);
+  content: "";
+}
+
+.cnt-chamada__legenda-cores .cnt-chamada__msg--rtp::before {
+  border-top-style: dashed;
+}
+
+.cnt-chamada__ferramentas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cnt-espaco-1);
+}
+
+.cnt-chamada__botao[aria-pressed="true"] {
+  background: var(--cnt-cor-primaria-suave);
+  border-color: var(--cnt-cor-primaria);
+  color: var(--cnt-cor-texto);
+}
+
+/* Botões */
+.cnt-chamada__botao {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cnt-espaco-2);
+  box-sizing: border-box;
+  min-width: var(--cnt-altura-controle-pq);
+  height: var(--cnt-altura-controle-pq);
+  padding: 0 var(--cnt-espaco-3);
+  background: var(--cnt-cor-superficie);
+  border: 1px solid var(--cnt-cor-borda-forte);
+  border-radius: var(--cnt-raio-md);
+  color: var(--cnt-cor-texto);
+  font: inherit;
+  font-weight: var(--cnt-peso-medio);
+  cursor: pointer;
+  transition: background var(--cnt-duracao-rapida) var(--cnt-curva);
+}
+
+.cnt-chamada__botao:hover {
+  background: var(--cnt-cor-superficie-2);
+}
+
+.cnt-chamada__botao:disabled {
+  color: var(--cnt-cor-texto-desativado);
+  cursor: not-allowed;
+}
+
+.cnt-chamada__botao--primario {
+  background: var(--cnt-cor-primaria);
+  border-color: var(--cnt-cor-primaria);
+  color: var(--cnt-cor-primaria-contraste);
+}
+
+.cnt-chamada__botao--primario:hover {
+  background: var(--cnt-cor-primaria-hover);
+}
+
+.cnt-chamada__botao--icone {
+  padding: 0;
+  background: transparent;
+  border-color: transparent;
+}
+
+.cnt-chamada__botao > svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.cnt-chamada__botao:focus-visible,
+.cnt-chamada__participante:focus-visible,
+.cnt-chamada__rota-no:focus-visible,
+.cnt-chamada__lista-item:focus-visible,
+.cnt-chamada__painel:focus-visible {
+  outline: var(--cnt-foco-largura) solid var(--cnt-cor-primaria);
+  outline-offset: var(--cnt-foco-distancia);
+}
+
+/* Área rolável: o cabeçalho com os participantes fica preso no alto, a coluna de tempo à esquerda. */
+.cnt-chamada__rolagem {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: var(--cnt-cor-fundo);
+}
+
+.cnt-chamada__diagrama {
+  position: relative;
+  min-width: calc(var(--cnt-chamada-tempo-largura) + var(--cnt-chamada-colunas, 2) * var(--cnt-chamada-coluna-min));
+}
+
+.cnt-chamada__participantes,
+.cnt-chamada__vidas,
+.cnt-chamada__item {
+  display: grid;
+  grid-template-columns: var(--cnt-chamada-tempo-largura) repeat(var(--cnt-chamada-colunas, 2), minmax(0, 1fr));
+}
+
+.cnt-chamada__participantes {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding-block: var(--cnt-espaco-2);
+  background: var(--cnt-cor-superficie);
+  border-block-end: 1px solid var(--cnt-cor-borda);
+  box-shadow: var(--cnt-sombra-1);
+}
+
+.cnt-chamada__canto {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  padding-inline: var(--cnt-espaco-3);
+  background: var(--cnt-cor-superficie);
+  color: var(--cnt-cor-texto-suave);
+  font-size: var(--cnt-texto-xs);
+  font-weight: var(--cnt-peso-medio);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cnt-chamada__coluna {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  padding-inline: var(--cnt-espaco-1);
+}
+
+/* Participante */
+.cnt-chamada__participante {
+  display: grid;
+  justify-items: center;
+  gap: var(--cnt-espaco-1);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 9.5rem;
+  padding: var(--cnt-espaco-1) var(--cnt-espaco-2);
+  background: var(--cnt-cor-superficie);
+  border: 1px solid var(--cnt-cor-borda);
+  border-radius: var(--cnt-raio-gd);
+  box-shadow: var(--cnt-sombra-1);
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--cnt-duracao-rapida) var(--cnt-curva), box-shadow var(--cnt-duracao-rapida) var(--cnt-curva);
+}
+
+.cnt-chamada__participante:hover {
+  border-color: var(--cnt-cor-borda-forte);
+}
+
+.cnt-chamada__participante.is-envolvido {
+  border-color: var(--cnt-cor-primaria);
+}
+
+.cnt-chamada__participante.is-selecionado {
+  border-color: var(--cnt-cor-primaria);
+  box-shadow: 0 0 0 1px var(--cnt-cor-primaria), var(--cnt-sombra-2);
+}
+
+.cnt-chamada__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.625rem;
+  height: 1.625rem;
+  background: var(--cnt-chamada-tom-suave);
+  border-radius: var(--cnt-raio-total);
+  color: var(--cnt-chamada-tom-texto);
+}
+
+.cnt-chamada__avatar > svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.cnt-chamada__nome {
+  max-width: 100%;
+  overflow: hidden;
+  font-weight: var(--cnt-peso-forte);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cnt-chamada__endereco {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--cnt-cor-texto-suave);
+  font-family: var(--cnt-fonte-mono);
+  font-size: var(--cnt-texto-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Linhas de vida: uma por participante, atrás das mensagens. */
+.cnt-chamada__corpo {
+  position: relative;
+  padding-block: var(--cnt-espaco-2) var(--cnt-espaco-4);
+}
+
+.cnt-chamada__vidas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.cnt-chamada__vida {
+  position: relative;
+}
+
+.cnt-chamada__vida::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  border-left: 2px dashed var(--cnt-cor-borda);
+  content: "";
+  transform: translateX(-1px);
+  transition: border-color var(--cnt-duracao-base) var(--cnt-curva);
+}
+
+.cnt-chamada__vida.is-envolvida::before {
+  border-left-color: var(--cnt-cor-primaria);
+}
+
+/* Mensagens */
+.cnt-chamada__lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cnt-chamada__item {
+  position: relative;
+  min-height: 2.75rem;
+}
+
+.cnt-chamada__item.is-oculto {
+  visibility: hidden;
+}
+
+/* Faixa que acompanha o mouse e a seleção, translúcida para as linhas de vida continuarem aparecendo. */
+.cnt-chamada__item::before {
+  position: absolute;
+  inset: 0 0 0 var(--cnt-chamada-tempo-largura);
+  background: transparent;
+  content: "";
+  pointer-events: none;
+  transition: background var(--cnt-duracao-rapida) var(--cnt-curva);
+}
+
+.cnt-chamada__item:hover::before,
+.cnt-chamada__item:focus-within::before {
+  background: color-mix(in srgb, var(--cnt-cor-texto) 5%, transparent);
+}
+
+.cnt-chamada__item.is-selecionado::before {
+  background: color-mix(in srgb, var(--cnt-cor-primaria) 11%, transparent);
+}
+
+.cnt-chamada__tempo {
+  grid-row: 1;
+  grid-column: 1;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--cnt-espaco-1);
+  padding: var(--cnt-espaco-1) var(--cnt-espaco-2);
+  background: var(--cnt-cor-fundo);
+  font-family: var(--cnt-fonte-mono);
+  font-size: 0.6875rem;
+  transition: background var(--cnt-duracao-rapida) var(--cnt-curva);
+}
+
+.cnt-chamada__item:hover .cnt-chamada__tempo {
+  background: var(--cnt-cor-superficie-2);
+}
+
+.cnt-chamada__item.is-selecionado .cnt-chamada__tempo {
+  background: var(--cnt-cor-primaria-suave);
+  box-shadow: inset 3px 0 0 var(--cnt-cor-primaria);
+}
+
+.cnt-chamada__hora {
+  font-weight: var(--cnt-peso-forte);
+}
+
+.cnt-chamada__intervalo {
+  color: var(--cnt-cor-texto-suave);
+}
+
+.cnt-chamada__msg {
+  grid-row: 1;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  /* O traço vai de uma linha de vida à outra: a margem lateral é meia coluna. */
+  padding: var(--cnt-espaco-2) calc(100% / (2 * var(--cnt-chamada-span, 1))) var(--cnt-espaco-1);
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+/* O foco aparece no rótulo, que é o que a pessoa lê. */
+.cnt-chamada__msg:focus-visible {
+  outline: none;
+}
+
+.cnt-chamada__msg:focus-visible .cnt-chamada__rotulo {
+  outline: var(--cnt-foco-largura) solid var(--cnt-cor-primaria);
+  outline-offset: var(--cnt-foco-distancia);
+}
+
+.cnt-chamada__rotulo {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  max-width: 100%;
+  height: 1.25rem;
+  padding: 0 var(--cnt-espaco-2);
+  overflow: hidden;
+  background: var(--cnt-chamada-tom-suave);
+  border: 1px solid color-mix(in srgb, var(--cnt-chamada-tom) 30%, transparent);
+  border-radius: var(--cnt-raio-total);
+  color: var(--cnt-chamada-tom-texto);
+  font-size: var(--cnt-texto-xs);
+  font-weight: var(--cnt-peso-forte);
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: box-shadow var(--cnt-duracao-rapida) var(--cnt-curva);
+}
+
+.cnt-chamada__msg:hover .cnt-chamada__rotulo,
+.cnt-chamada__item.is-selecionado .cnt-chamada__rotulo {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cnt-chamada-tom) 22%, transparent);
+}
+
+/* A linha é traçada da origem para o destino; a seta fica na chegada e os movimentos seguem o mesmo sentido. */
+.cnt-chamada__linha {
+  position: relative;
+  width: 100%;
+  height: 2px;
+  margin-block: var(--cnt-espaco-1);
+  background: var(--cnt-chamada-tom);
+  border-radius: 2px;
+  transition: height var(--cnt-duracao-rapida) var(--cnt-curva);
+}
+
+.cnt-chamada__item.is-selecionado .cnt-chamada__linha {
+  height: 3px;
+}
+
+.cnt-chamada__linha::after {
+  position: absolute;
+  top: 50%;
+  width: 0;
+  height: 0;
+  margin-top: -5px;
+  border: 5px solid transparent;
+  content: "";
+}
+
+.cnt-chamada__msg--direita .cnt-chamada__linha::after {
+  right: -1px;
+  border-right: 0;
+  border-left: 9px solid var(--cnt-chamada-tom);
+}
+
+.cnt-chamada__msg--esquerda .cnt-chamada__linha::after {
+  left: -1px;
+  border-left: 0;
+  border-right: 9px solid var(--cnt-chamada-tom);
+}
+
+/* Pontilhada (ex.: áudio, retorno, opcional): os traços correm da origem para o destino. */
+.cnt-chamada__msg--pontilhada .cnt-chamada__linha {
+  background: repeating-linear-gradient(90deg, var(--cnt-chamada-tom) 0 7px, transparent 7px 12px);
+}
+
+.cnt-chamada__msg--pontilhada.cnt-chamada__msg--direita .cnt-chamada__linha {
+  animation: cnt-chamada-correr-direita 0.6s linear infinite;
+}
+
+.cnt-chamada__msg--pontilhada.cnt-chamada__msg--esquerda .cnt-chamada__linha {
+  animation: cnt-chamada-correr-esquerda 0.6s linear infinite;
+}
+
+/* RTP: seta tracejada em tom neutro (como no sngrep), com as portas nas pontas. */
+.cnt-chamada__msg--rtp {
+  padding-block-end: var(--cnt-espaco-3);
+  --cnt-chamada-tom: var(--cnt-cor-texto-suave);
+  --cnt-chamada-tom-texto: var(--cnt-cor-texto);
+}
+
+.cnt-chamada__msg--rtp .cnt-chamada__rotulo {
+  background: transparent;
+  border-style: dashed;
+}
+
+.cnt-chamada__msg--rtp .cnt-chamada__legenda {
+  display: none;
+}
+
+.cnt-chamada__porta {
+  position: absolute;
+  top: 100%;
+  margin-top: 0.125rem;
+  color: var(--cnt-cor-texto-suave);
+  font-family: var(--cnt-fonte-mono);
+  font-size: 0.625rem;
+  line-height: 1;
+}
+
+.cnt-chamada__porta--origem { left: 0; }
+.cnt-chamada__porta--destino { right: 0; }
+
+.cnt-chamada.is-sem-rtp .cnt-chamada__item--rtp {
+  display: none;
+}
+
+/* Sólida: um ponto percorre a linha da origem para o destino. */
+.cnt-chamada__pulso {
+  position: absolute;
+  top: 50%;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-top: -0.25rem;
+  background: var(--cnt-chamada-tom);
+  border-radius: var(--cnt-raio-total);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cnt-chamada-tom) 25%, transparent);
+  animation-duration: 1.8s;
+  animation-delay: calc(var(--cnt-chamada-n, 0) * -0.23s);
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+
+.cnt-chamada__msg--direita .cnt-chamada__pulso {
+  animation-name: cnt-chamada-pulsar-direita;
+}
+
+.cnt-chamada__msg--esquerda .cnt-chamada__pulso {
+  animation-name: cnt-chamada-pulsar-esquerda;
+}
+
+.cnt-chamada__msg--pontilhada .cnt-chamada__pulso {
+  display: none;
+}
+
+.cnt-chamada__legenda {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--cnt-cor-texto-suave);
+  font-size: var(--cnt-texto-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Mensagem de um participante para ele mesmo: laço ao lado da linha de vida. */
+.cnt-chamada__msg--propria {
+  display: grid;
+  grid-template-columns: 2.5rem auto;
+  align-items: center;
+  justify-content: start;
+  justify-items: start;
+  column-gap: var(--cnt-espaco-2);
+  padding-inline: 50% var(--cnt-espaco-2);
+  text-align: start;
+}
+
+.cnt-chamada__msg--propria .cnt-chamada__rotulo {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.cnt-chamada__msg--propria .cnt-chamada__linha {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  height: 1.5rem;
+  margin: 0;
+  background: transparent;
+  border: 2px solid var(--cnt-chamada-tom);
+  border-left: 0;
+  border-radius: 0 var(--cnt-raio-md) var(--cnt-raio-md) 0;
+  animation: none;
+}
+
+.cnt-chamada__item.is-selecionado .cnt-chamada__msg--propria .cnt-chamada__linha {
+  height: 1.5rem;
+  border-width: 3px;
+}
+
+.cnt-chamada__msg--propria.cnt-chamada__msg--pontilhada .cnt-chamada__linha {
+  border-style: dashed;
+  border-left: 0;
+}
+
+.cnt-chamada__msg--propria .cnt-chamada__linha::after {
+  top: auto;
+  bottom: -7px;
+  left: -1px;
+  margin-top: 0;
+  border-right: 9px solid var(--cnt-chamada-tom);
+  border-left: 0;
+}
+
+.cnt-chamada__msg--propria .cnt-chamada__legenda {
+  grid-column: 2;
+  grid-row: 2;
+  overflow: visible;
+}
+
+.cnt-chamada__msg--propria .cnt-chamada__pulso {
+  display: none;
+}
+
+/* Chegada: cada mensagem entra em sequência (ao abrir e na reprodução). */
+.cnt-chamada__item.is-chegando {
+  animation: cnt-chamada-entrar var(--cnt-duracao-base) var(--cnt-curva) both;
+  animation-delay: calc(min(var(--cnt-chamada-i, 0), 14) * 45ms);
+}
+
+/* Painel de detalhes */
+.cnt-chamada__painel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--cnt-cor-superficie);
+  border-inline-start: 1px solid var(--cnt-cor-borda);
+  animation: cnt-chamada-painel var(--cnt-duracao-base) var(--cnt-curva);
+}
+
+.cnt-chamada__painel[hidden] {
+  display: none;
+}
+
+.cnt-chamada__painel-topo {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--cnt-espaco-1);
+  padding: var(--cnt-espaco-2) var(--cnt-espaco-3) var(--cnt-espaco-2) var(--cnt-espaco-4);
+  border-block-end: 1px solid var(--cnt-cor-borda);
+}
+
+.cnt-chamada__painel-tipo {
+  flex: 1;
+  min-width: 0;
+  color: var(--cnt-cor-texto-suave);
+  font-size: var(--cnt-texto-xs);
+  font-weight: var(--cnt-peso-forte);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cnt-chamada__painel-corpo {
+  display: grid;
+  flex: 1;
+  align-content: start;
+  gap: var(--cnt-espaco-4);
+  padding: var(--cnt-espaco-4);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.cnt-chamada__painel-titulo {
+  display: grid;
+  gap: var(--cnt-espaco-2);
+  justify-items: start;
+}
+
+.cnt-chamada__painel-nome {
+  margin: 0;
+  font-size: var(--cnt-texto-lg);
+  font-weight: var(--cnt-peso-forte);
+  line-height: var(--cnt-linha-compacta);
+  overflow-wrap: anywhere;
+}
+
+.cnt-chamada__painel-texto {
+  margin: 0;
+  color: var(--cnt-cor-texto-suave);
+  line-height: var(--cnt-linha-base);
+  overflow-wrap: anywhere;
+}
+
+/* Origem → destino: cada ponta abre os detalhes do participante. */
+.cnt-chamada__rota {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cnt-espaco-2);
+}
+
+.cnt-chamada__rota-no {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cnt-espaco-2);
+  min-width: 0;
+  padding: var(--cnt-espaco-1) var(--cnt-espaco-3) var(--cnt-espaco-1) var(--cnt-espaco-1);
+  background: var(--cnt-cor-superficie);
+  border: 1px solid var(--cnt-cor-borda);
+  border-radius: var(--cnt-raio-total);
+  color: inherit;
+  font: inherit;
+  font-weight: var(--cnt-peso-medio);
+  cursor: pointer;
+}
+
+.cnt-chamada__rota-no:hover {
+  border-color: var(--cnt-cor-borda-forte);
+}
+
+.cnt-chamada__rota-no .cnt-chamada__avatar {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.cnt-chamada__rota-no .cnt-chamada__avatar > svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.cnt-chamada__rota-seta {
+  display: inline-flex;
+  color: var(--cnt-chamada-tom);
+}
+
+.cnt-chamada__rota-seta > svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.cnt-chamada__fatos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--cnt-espaco-2);
+  margin: 0;
+}
+
+.cnt-chamada__fato {
+  display: grid;
+  align-content: start;
+  gap: var(--cnt-espaco-1);
+  min-width: 0;
+  padding: var(--cnt-espaco-3);
+  background: var(--cnt-cor-superficie-2);
+  border-radius: var(--cnt-raio-md);
+}
+
+.cnt-chamada__fato dt {
+  color: var(--cnt-cor-texto-suave);
+  font-size: var(--cnt-texto-xs);
+  font-weight: var(--cnt-peso-medio);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cnt-chamada__fato dd {
+  margin: 0;
+  font-weight: var(--cnt-peso-forte);
+  overflow-wrap: anywhere;
+}
+
+.cnt-chamada__fato--mono dd {
+  font-family: var(--cnt-fonte-mono);
+  font-size: var(--cnt-texto-xs);
+}
+
+.cnt-chamada__secao {
+  display: grid;
+  gap: var(--cnt-espaco-2);
+}
+
+.cnt-chamada__secao-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cnt-espaco-2);
+}
+
+.cnt-chamada__secao-titulo {
+  margin: 0;
+  color: var(--cnt-cor-texto-suave);
+  font-size: var(--cnt-texto-xs);
+  font-weight: var(--cnt-peso-forte);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cnt-chamada__linhas {
+  display: grid;
+  margin: 0;
+  border: 1px solid var(--cnt-cor-borda);
+  border-radius: var(--cnt-raio-md);
+}
+
+.cnt-chamada__linhas > div {
+  display: grid;
+  grid-template-columns: minmax(6rem, 38%) minmax(0, 1fr);
+  gap: var(--cnt-espaco-3);
+  padding: var(--cnt-espaco-2) var(--cnt-espaco-3);
+}
+
+.cnt-chamada__linhas > div + div {
+  border-block-start: 1px solid var(--cnt-cor-borda);
+}
+
+.cnt-chamada__linhas dt {
+  color: var(--cnt-cor-texto-suave);
+  overflow-wrap: anywhere;
+}
+
+.cnt-chamada__linhas dd {
+  margin: 0;
+  font-weight: var(--cnt-peso-medio);
+  overflow-wrap: anywhere;
+}
+
+.cnt-chamada__linhas--mono dd {
+  font-family: var(--cnt-fonte-mono);
+  font-size: var(--cnt-texto-xs);
+}
+
+/* Texto completo da mensagem, com o nome de cada campo em destaque. */
+.cnt-chamada__bruto {
+  margin: 0;
+  max-height: 18rem;
+  padding: var(--cnt-espaco-3);
+  overflow: auto;
+  background: var(--cnt-cor-superficie-2);
+  border-radius: var(--cnt-raio-md);
+  font-family: var(--cnt-fonte-mono);
+  font-size: var(--cnt-texto-xs);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.cnt-chamada__bruto-linha {
+  display: block;
+}
+
+.cnt-chamada__bruto-linha--primeira {
+  font-weight: var(--cnt-peso-forte);
+}
+
+.cnt-chamada__bruto-chave {
+  color: var(--cnt-cor-info);
+  font-weight: var(--cnt-peso-medio);
+}
+
+/* Mensagens de um participante */
+.cnt-chamada__lista-mensagens {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--cnt-cor-borda);
+  border-radius: var(--cnt-raio-md);
+  list-style: none;
+}
+
+.cnt-chamada__lista-mensagens > li + li {
+  border-block-start: 1px solid var(--cnt-cor-borda);
+}
+
+.cnt-chamada__lista-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--cnt-espaco-3);
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--cnt-espaco-2) var(--cnt-espaco-3);
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.cnt-chamada__lista-item:hover {
+  background: var(--cnt-cor-superficie-2);
+}
+
+.cnt-chamada__lista-hora {
+  color: var(--cnt-cor-texto-suave);
+  font-family: var(--cnt-fonte-mono);
+  font-size: var(--cnt-texto-xs);
+}
+
+.cnt-chamada__lista-com {
+  overflow: hidden;
+  color: var(--cnt-cor-texto-suave);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cnt-chamada__vazio {
+  margin: 0;
+  padding: var(--cnt-espaco-6) var(--cnt-espaco-4);
+  color: var(--cnt-cor-texto-suave);
+  text-align: center;
+}
+
+/* Avisos só para leitor de tela */
+.cnt-chamada__aviso {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@keyframes cnt-chamada-entrar {
+  from { opacity: 0; transform: translateY(0.5rem); }
+}
+
+@keyframes cnt-chamada-painel {
+  from { opacity: 0; transform: translateX(1rem); }
+}
+
+@keyframes cnt-chamada-painel-subir {
+  from { opacity: 0; transform: translateY(1rem); }
+}
+
+@keyframes cnt-chamada-correr-direita {
+  to { background-position-x: 12px; }
+}
+
+@keyframes cnt-chamada-correr-esquerda {
+  to { background-position-x: -12px; }
+}
+
+@keyframes cnt-chamada-pulsar-direita {
+  from { left: 0; opacity: 0; }
+  15%, 85% { opacity: 1; }
+  to { left: calc(100% - 0.5rem); opacity: 0; }
+}
+
+@keyframes cnt-chamada-pulsar-esquerda {
+  from { left: calc(100% - 0.5rem); opacity: 0; }
+  15%, 85% { opacity: 1; }
+  to { left: 0; opacity: 0; }
+}
+
+@media (max-width: 1024px) {
+  .cnt-chamada {
+    --cnt-chamada-painel-largura: 19rem;
+  }
+}
+
+/* Tela estreita: o painel sobe de baixo, sobre o diagrama. */
+@media (max-width: 768px) {
+  .cnt-chamada.is-detalhe {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cnt-chamada__painel {
+    position: absolute;
+    inset: auto 0 0 0;
+    z-index: 5;
+    max-height: 78%;
+    border-block-start: 1px solid var(--cnt-cor-borda);
+    border-inline-start: 0;
+    border-radius: var(--cnt-raio-gd) var(--cnt-raio-gd) 0 0;
+    box-shadow: var(--cnt-sombra-3);
+    animation-name: cnt-chamada-painel-subir;
+  }
+}
+
+@media (max-width: 640px) {
+  .cnt-chamada {
+    --cnt-chamada-tempo-largura: 4.75rem;
+  }
+
+  .cnt-chamada__topo {
+    padding: var(--cnt-espaco-3) var(--cnt-espaco-4);
+  }
+
+  .cnt-chamada__painel-topo {
+    padding-inline-start: var(--cnt-espaco-4);
+  }
+
+  .cnt-chamada__painel-corpo {
+    padding: var(--cnt-espaco-4);
+  }
+
+  .cnt-chamada__linhas > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--cnt-espaco-1);
+  }
+}
+
+/* Sem movimento: os traços e os pontos ficam parados e a seta continua mostrando o sentido. */
+@media (prefers-reduced-motion: reduce) {
+  .cnt-chamada__item.is-chegando,
+  .cnt-chamada__painel,
+  .cnt-chamada__msg--pontilhada .cnt-chamada__linha,
+  .cnt-chamada__pulso {
+    animation: none;
+  }
+
+  .cnt-chamada__pulso {
+    display: none;
+  }
+
+  .cnt-chamada__vida::before,
+  .cnt-chamada__participante,
+  .cnt-chamada__item::before,
+  .cnt-chamada__tempo,
+  .cnt-chamada__linha,
+  .cnt-chamada__rotulo,
+  .cnt-chamada__botao {
+    transition: none;
+  }
+}

@@ -19,7 +19,7 @@ rm -rf dist-linux build/pyi-linux pacote
 GEOIP=()
 [ -d geoip ] && GEOIP=(--add-data "$RAIZ/geoip:geoip")
 "${PYI[@]}" --name cnt-monitor-servico --hidden-import maxminddb --collect-submodules paramiko \
-    --collect-submodules qrcode --add-data "$RAIZ/src/ui:ui" "${GEOIP[@]}" src/servico.py
+    --collect-submodules qrcode --collect-all aiortc --collect-all av --collect-all aioice --collect-all pylibsrtp --add-data "$RAIZ/src/ui:ui" "${GEOIP[@]}" src/servico.py
 # ícone pelo AppIndicator (ou GTK); o modo X11 do pystray não vai junto: ele congela o servidor gráfico (bandeja.py)
 "${PYI[@]}" --name cnt-monitor --hidden-import pystray._appindicator --hidden-import pystray._gtk \
     --exclude-module pystray._xorg --hidden-import PIL.ImageTk --collect-submodules Xlib \

@@ -5,6 +5,7 @@ import os
 import sys
 import math
 import time
+import struct
 import random
 import tempfile
 
@@ -13,7 +14,7 @@ sys.path.insert(0, os.path.join(AQUI, "..", "src"))
 os.environ.setdefault("MONITORPC_DADOS", os.path.join(tempfile.gettempdir(), "monitorpc-demo"))
 
 import psutil  # noqa: E402
-from monitorpc import config, banco, motor, servidor, temperatura, rede, gpu, inicializacao, energia, servicos, icones, ventoinhas  # noqa: E402
+from monitorpc import config, configuracao, banco, motor, servidor, temperatura, rede, gpu, inicializacao, energia, servicos, icones, ventoinhas, sinalizacao  # noqa: E402
 
 PROGS = ["Claude", "Google Chrome", "WSL (Linux)", "Maestri", "Vynex Forge", "Discord", "OneDrive",
          "Antivírus (Defender)", "MobaXterm", "Spotify"]
@@ -173,6 +174,34 @@ def servicos_fake(forcar=False):
              "inicio_txt": "Automático", "pid": 0, "usuario": "LocalSystem", "descricao": "Gerencia impressão", "binpath": "", "exe": "", "protegido": "Serviço do Windows"}]
 
 
+def voip_fake(v):
+    """Chamadas SIP/PJSIP/WebRTC de mentira (sem captura de rede), passando pelo mesmo caminho dos pacotes reais."""
+    def sip(ini, cid, cseq, de, para, sdp=""):
+        h = [ini, "Via: SIP/2.0/UDP 10.0.0.1:5060;branch=z9hG4bK1", f"From: <sip:{de}@pbx.local>;tag=a", f"To: <sip:{para}@pbx.local>",
+             f"Call-ID: {cid}", f"CSeq: {cseq}", "User-Agent: PJSIP-2.14"] + (["Content-Type: application/sdp"] if sdp else [])
+        return ("\r\n".join(h) + "\r\n\r\n" + sdp).encode()
+    sdp = lambda ip, porta: f"v=0\r\nc=IN IP4 {ip}\r\nm=audio {porta} RTP/AVP 0 8\r\na=rtpmap:0 PCMU/8000\r\n"
+    t, a, b = time.time() - 40, ("10.0.0.1", 5062), ("10.0.0.2", 15060)
+    v.pacote(t, "UDP", *a, *b, sip("INVITE sip:2002@pbx.local SIP/2.0", "demo-1", "1 INVITE", "1001", "2002", sdp(a[0], 4000)))
+    v.pacote(t + .1, "UDP", *b, *a, sip("SIP/2.0 100 Trying", "demo-1", "1 INVITE", "1001", "2002"))
+    v.pacote(t + .6, "UDP", *b, *a, sip("SIP/2.0 180 Ringing", "demo-1", "1 INVITE", "1001", "2002"))
+    v.pacote(t + 3, "UDP", *b, *a, sip("SIP/2.0 200 OK", "demo-1", "1 INVITE", "1001", "2002", sdp(b[0], 5000)))
+    v.pacote(t + 3.1, "UDP", *a, *b, sip("ACK sip:2002@pbx.local SIP/2.0", "demo-1", "1 ACK", "1001", "2002"))
+    for i in range(1500):
+        v.pacote(t + 3.2 + i * .02, "UDP", b[0], 5000, a[0], 4000,
+                 struct.pack(">BBHII", 0x80, 0, i, i * 160, 7) + bytes(160), mono=i * .02 + random.random() * .002)
+    v.pacote(t + 40, "UDP", *a, *b, sip("INVITE sip:2003@pbx.local SIP/2.0", "demo-2", "1 INVITE", "1001", "2003", sdp(a[0], 4002)))
+    v.pacote(t + 40.2, "UDP", *b, *a, sip("SIP/2.0 486 Busy Here", "demo-2", "1 INVITE", "1001", "2003"))
+    v.pacote(t + 41.5, "UDP", *a, *b, sip("INVITE sip:2004@pbx.local SIP/2.0", "demo-3", "1 INVITE", "1002", "2004", sdp(a[0], 4004)))
+    v.pacote(t + 41.7, "UDP", *b, *a, sip("SIP/2.0 180 Ringing", "demo-3", "1 INVITE", "1002", "2004"))
+    v.pacote(t - 30, "UDP", *a, *b, sip("INVITE sip:2005@pbx.local SIP/2.0", "demo-4", "1 INVITE", "1003", "2005", sdp(a[0], 4006)))
+    v.pacote(t - 29, "UDP", *b, *a, sip("SIP/2.0 200 OK", "demo-4", "1 INVITE", "1003", "2005", sdp(b[0], 5006)))
+    v.pacote(t - 28.9, "UDP", *a, *b, sip("ACK sip:2005@pbx.local SIP/2.0", "demo-4", "1 ACK", "1003", "2005"))
+    v.pacote(t - 10, "UDP", *b, *a, sip("BYE sip:1003@pbx.local SIP/2.0", "demo-4", "2 BYE", "2005", "1003"))
+    v.pacote(t - 9.9, "UDP", *a, *b, sip("SIP/2.0 200 OK", "demo-4", "2 BYE", "2005", "1003"))
+    v.varrer(tudo=False)
+
+
 if __name__ == "__main__":
     banco.iniciar()
     if banco.info()["registros"] < 100:
@@ -182,6 +211,10 @@ if __name__ == "__main__":
     m.vent = VentoinhasFake(m.sens, m.vent._ler_cfg, m.vent._gravar_cfg)
     m.rede = RedeFake()
     m.gpu = GPUFake()
+    configuracao.salvar({"callflow": True})       # a tela Chamadas só existe com o Call flow ligado
+    m.voip = sinalizacao.Voip(captura=False)
+    m.voip.iniciar()
+    voip_fake(m.voip)
     inicializacao.listar = ini_fake
     energia.estado = energia_fake
     energia.planos = lambda: energia_fake()["planos"]
