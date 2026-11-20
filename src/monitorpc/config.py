@@ -2,7 +2,7 @@
 import os
 import sys
 
-VERSAO = "3.8.0"
+VERSAO = "3.9.0"
 WIN = os.name == "nt"
 
 # Linux: o serviço (root) e o ícone de cada usuário leem a mesma pasta, como o ProgramData do Windows.
@@ -41,6 +41,7 @@ PADRAO = {
     "intervalo_ms": 1000,
     "intervalo_1s_aplicado": False,   # marca a migração única (3.7.0) que levou todo PC para 1 s; depois vale a escolha da pessoa
     "modo_debug": False,              # registra no servico.log e no bandeja.log o que o acesso remoto faz passo a passo
+    "callflow": False,                # tela Chamadas (fluxo de chamadas VoIP) e a API de captura; desligado, a captura para
     "iniciar_com_windows": True,
     "abrir_janela_ao_iniciar": False,
     "tema": "auto",

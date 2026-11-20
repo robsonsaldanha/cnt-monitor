@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="/cnt/topbar.css">
 <link rel="stylesheet" href="/cnt/modal.css">
 <link rel="stylesheet" href="/cnt/fluxo.css">
+<link rel="stylesheet" href="/cnt/chamada.css">
 <script src="/cnt/_estilos/estilos.js"></script>
 <script src="/cnt/tema.js"></script>
 <style>
@@ -45,6 +46,15 @@
 .fluxo-app{--cnt-fluxo-no-largura:11.5rem;margin:var(--cnt-espaco-3)}
 .fluxo-app .cnt-fluxo__no{cursor:pointer}
 .fluxo-app .cnt-fluxo__no.fluxo-desligado{opacity:.45}
+.voip-grade{display:grid;grid-template-columns:minmax(0,1fr) 22rem;gap:var(--cnt-espaco-3);align-items:start;padding:var(--cnt-espaco-3)}
+.voip-grade .fluxo-app{margin:0}
+.voip-ladder{--cnt-chamada-altura:44rem;margin:var(--cnt-espaco-3)}
+@media (max-width:1100px){.voip-grade{grid-template-columns:minmax(0,1fr)}}
+.voip-lado{border:1px solid var(--cnt-cor-borda);border-radius:var(--cnt-raio-md);background:var(--cnt-cor-superficie-2);padding:var(--cnt-espaco-3);max-height:46rem;overflow:auto;font-size:13px;min-width:0}
+.voip-lado h3{margin:0 0 8px;font-size:var(--cnt-texto-md)}.voip-lado h4{margin:12px 0 6px;font-size:var(--cnt-texto-sm);color:var(--cnt-cor-texto-suave)}
+.voip-kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;margin:0 0 10px}.voip-kv dt{color:var(--cnt-cor-texto-suave)}.voip-kv dd{margin:0;word-break:break-all}
+.voip-raw{white-space:pre-wrap;word-break:break-all;font:12px/1.45 var(--cnt-fonte-mono);max-height:20rem;overflow:auto;margin:0;padding:8px;border:1px solid var(--cnt-cor-borda);border-radius:var(--cnt-raio-md)}
+.voip-chave{filter:blur(7px);user-select:none;pointer-events:none;font:600 15px var(--cnt-fonte-mono);padding:4px 8px}
 @keyframes fluxo-alvo{from{box-shadow:0 0 0 3px var(--cnt-cor-primaria)}to{box-shadow:0 0 0 3px transparent}}
 .fluxo-alvo{animation:fluxo-alvo 1.6s var(--cnt-curva)}
 @media (prefers-reduced-motion:reduce){.fluxo-alvo{animation:none;outline:2px solid var(--cnt-cor-primaria)}}
@@ -264,7 +274,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--cnt-cor-primaria)}
 .aj-meu>b,.aj-outro>b{font-size:var(--cnt-texto-lg);font-weight:700;line-height:1.2}
 .aj-cred{display:flex;gap:28px;flex-wrap:wrap;justify-content:center}
 .aj-cred small{display:block;color:var(--cnt-cor-texto-suave);font-weight:600;text-transform:uppercase;letter-spacing:.6px}
-.aj-num{font:700 34px/1.15 var(--cnt-fonte-mono);letter-spacing:1px;user-select:all}
+.aj-num{font:700 34px/1.15 var(--cnt-fonte-mono);letter-spacing:1px;user-select:all;cursor:copy}
 .aj-sit{margin:0;font-weight:600}.aj-sit.ok{color:var(--cnt-cor-sucesso)}.aj-sit.fora{color:var(--cnt-cor-perigo)}
 .aj-bts{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:auto}
 .aj-teste{margin:0;padding:0;list-style:none;display:grid;gap:4px}.aj-teste .ok{color:var(--cnt-cor-sucesso)}.aj-teste .fora{color:var(--cnt-cor-perigo)}
@@ -495,6 +505,7 @@ body:not([data-so="linux"]) .so-lin{display:none!important}
       <li><button class="cnt-sidebar__item" type="button" data-v="historico"><span class="cnt-sidebar__icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l5-6 4 4 8-9"/><path d="M3 21h18"/></svg></span><span class="cnt-sidebar__rotulo">Histórico</span></button></li>
       <li><button class="cnt-sidebar__item" type="button" data-v="lentidao"><span class="cnt-sidebar__icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg></span><span class="cnt-sidebar__rotulo">Lentidão</span><span class="cnt-sidebar__selo selo-perigo" id="contLent" hidden></span></button></li>
       <li><button class="cnt-sidebar__item" type="button" data-v="alertas"><span class="cnt-sidebar__icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></span><span class="cnt-sidebar__rotulo">Alertas</span></button></li>
+      <li id="navVoip" hidden><button class="cnt-sidebar__item" type="button" data-v="voip"><span class="cnt-sidebar__icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg></span><span class="cnt-sidebar__rotulo">Chamadas</span><span class="cnt-sidebar__selo selo-sucesso" id="voipTag" hidden>ON</span></button></li>
       <li><button class="cnt-sidebar__item" type="button" data-v="relatorio"><span class="cnt-sidebar__icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg></span><span class="cnt-sidebar__rotulo">Relatório</span></button></li>
       <li><button class="cnt-sidebar__item" type="button" data-v="comparar"><span class="cnt-sidebar__icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4v16M16 4v16"/><path d="M4 8h4M16 12h4M4 15h4M16 17h4"/></svg></span><span class="cnt-sidebar__rotulo">Comparar períodos</span></button></li>
     </ul>
@@ -741,6 +752,44 @@ body:not([data-so="linux"]) .so-lin{display:none!important}
   <div class="cnt-cartao secao"><div class="cnt-cartao__topo"><h2>O que as regras fizeram</h2></div><div class="tw curta" id="regLog"></div></div>
 </section>
 
+<section id="v-voip" hidden>
+  <h1>Chamadas</h1><p class="sub">Fluxo das chamadas VoIP ao vivo e histórico, como no sngrep: SIP e PJSIP em qualquer porta (UDP e TCP), WebRTC por WebSocket sem TLS e HEP (para WSS e SIP-TLS, que vão criptografados: configure o servidor para mandar HEP para este PC). A mídia (RTP) é ligada à chamada pelo SDP e mostra jitter, perda e MOS. Precisa estar no caminho do tráfego, por exemplo no próprio servidor da PBX.</p>
+  <div class="cnt-cartao"><div class="cnt-cartao__topo"><h2>Captura</h2><span class="cnt-cartao__apoio" id="voipInfo"></span></div>
+    <div class="linha-bts"><button class="cnt-botao cnt-botao--pq cnt-botao--primario" id="voipLigar">Ligar captura</button><button class="cnt-botao cnt-botao--pq cnt-botao--secundario" id="voipCsv">Exportar relatório (CSV)</button><button class="cnt-botao cnt-botao--pq cnt-botao--secundario" id="voipSair" hidden>Parar de ver o outro computador</button><button class="cnt-botao cnt-botao--pq cnt-botao--perigo" id="voipApagar">Apagar chamadas</button></div>
+    <p class="mut2" id="voipErro" style="font-size:12.5px;margin:0 14px 14px" hidden></p></div>
+  <div class="seg secao" id="segVoip" style="margin-bottom:14px"><button data-f="vivo" aria-pressed="true">Ao vivo</button><button data-f="hist" aria-pressed="false">Histórico</button><button data-f="mon" aria-pressed="false">Monitoramento</button><button data-f="api" aria-pressed="false">API</button></div>
+
+  <div id="voipPLista">
+    <div class="cnt-cartao"><div class="cnt-cartao__topo"><h2 id="voipTit">Chamadas ao vivo</h2><span class="cnt-cartao__apoio" id="voipCont"></span><div class="dir"><input class="cnt-campo__controle" id="voipBusca" type="search" placeholder="Filtrar (número, IP, Call-ID, estado, quem desligou)" aria-label="Filtrar chamadas" style="max-width:340px"></div></div>
+      <p class="mut2" id="voipResumo" style="font-size:12.5px;margin:0 14px 8px" hidden></p><div class="tw curta" id="voipLista"></div></div>
+  </div>
+
+  <div id="voipPMon" hidden>
+    <div class="cnt-cartao"><div class="cnt-cartao__topo"><h2>Computadores monitorados</h2><span class="cnt-cartao__apoio" id="vmInfo"></span></div>
+      <p class="mut2" style="font-size:12.5px;margin:0 14px 10px">Cadastre quantos computadores quiser com o ID do compartilhamento online e a chave gerada na aba API de cada um (a conexão é direta, como no acesso remoto). A cada 30 segundos pedimos a cada computador o histórico que falta: mandamos o Call-ID da última chamada que já temos e ele responde só com as seguintes.</p>
+      <div class="linha-bts"><input class="cnt-campo__controle" id="vmNome" placeholder="Nome (opcional)" style="width:170px" aria-label="Nome do computador"><input class="cnt-campo__controle" id="vmUrl" placeholder="ID do compartilhamento online" style="width:230px" aria-label="ID do compartilhamento online do computador" inputmode="numeric" autocomplete="off"><input class="cnt-campo__controle" id="vmChave" type="password" autocomplete="off" placeholder="Chave da API" style="width:230px" aria-label="Chave da API do computador"><button class="cnt-botao cnt-botao--pq cnt-botao--primario" id="vmAdd">Adicionar</button><button class="cnt-botao cnt-botao--pq cnt-botao--secundario" id="vmAgora">Coletar agora</button></div>
+      <div class="tw curta" id="vmLista"></div></div>
+    <div class="cnt-cartao"><div class="cnt-cartao__topo"><h2>Chamadas coletadas</h2><span class="cnt-cartao__apoio" id="vmCont"></span><div class="dir"><input class="cnt-campo__controle" id="vmBusca" type="search" placeholder="Filtrar (computador, número, IP, Call-ID…)" aria-label="Filtrar chamadas coletadas" style="max-width:340px"></div></div><div class="tw curta" id="vmChamadas"></div></div>
+  </div>
+
+  <div id="voipPApi" hidden>
+    <div class="cnt-cartao"><div class="cnt-cartao__topo"><h2>Chave deste computador</h2><span class="cnt-cartao__apoio" id="vaValid"></span></div>
+      <p class="mut2" style="font-size:12.5px;margin:0 14px 10px">Passe esta chave para o outro computador. Com ela ele liga e desliga a captura daqui e lê o fluxo das chamadas. A chave muda sozinha todo dia e quando vence. O outro computador conecta pelo ID do compartilhamento online abaixo, direto e sem abrir porta; por isso este computador precisa estar online.</p>
+      <div class="linha-bts" style="align-items:center"><code class="voip-chave" id="vaChave" aria-label="Chave escondida">••••••••••••••••••••••••••••</code><button class="cnt-botao cnt-botao--pq cnt-botao--primario" id="vaCopiar">Copiar chave</button><button class="cnt-botao cnt-botao--pq cnt-botao--secundario" id="vaNova">Gerar chave nova</button></div>
+      <div class="linha-bts" style="align-items:center"><label for="vaHoras" class="mut2" style="font-size:12.5px">Validade (horas)</label><input class="cnt-campo__controle" id="vaHoras" type="number" min="1" max="720" style="width:96px"><button class="cnt-botao cnt-botao--pq cnt-botao--secundario" id="vaSalvarH">Salvar validade</button><span class="mut2" style="font-size:12.5px">Padrão 6 h. Até 720 h (30 dias); a chave também muda na virada do dia.</span></div></div>
+    <div class="cnt-cartao"><div class="cnt-cartao__topo"><h2>ID do compartilhamento online (para o outro computador usar)</h2></div><div class="linha-bts" id="vaEnd"></div><p class="mut2" id="vaErro" style="font-size:12.5px;margin:0 14px 14px" hidden></p></div>
+    <div class="cnt-cartao"><div class="cnt-cartao__topo"><h2>Conectar a outro computador</h2><span class="cnt-cartao__apoio" id="vaAlvo"></span></div>
+      <p class="mut2" style="font-size:12.5px;margin:0 14px 10px">Digite o ID do compartilhamento online e cole a chave do outro computador (PC B). Depois de conectar, Ao vivo e Histórico mostram as chamadas dele e o botão Ligar captura controla a captura dele. Para guardar o histórico de vários computadores, use a aba Monitoramento.</p>
+      <div class="linha-bts"><input class="cnt-campo__controle" id="vaUrl" placeholder="ID do compartilhamento online" style="width:240px" aria-label="ID do compartilhamento online do outro computador" inputmode="numeric" autocomplete="off"><input class="cnt-campo__controle" id="vaCh" type="password" autocomplete="off" placeholder="Chave da API" style="width:240px" aria-label="Chave do outro computador"><button class="cnt-botao cnt-botao--pq cnt-botao--primario" id="vaConectar">Conectar</button></div></div>
+    <div class="cnt-cartao"><div class="cnt-cartao__topo"><h2>Usar a API direto</h2></div>
+      <p class="mut2" style="font-size:12.5px;margin:0 14px 14px">Envie a chave no cabeçalho <code>X-Voip-Key</code>. <code>GET /api/chamadas/estado</code> (ao vivo e estado da captura), <code>GET /api/chamadas/historico?busca=&amp;limite=</code>, <code>GET /api/chamadas/chamada?id=&lt;Call-ID&gt;</code>, <code>GET /api/chamadas/sincronizar?desde=&lt;Call-ID&gt;&amp;limite=</code> (só o que vem depois dele) e <code>POST /api/chamadas/captura</code> com <code>{"ligar": true|false}</code>. Dez chaves erradas bloqueiam o IP por 5 minutos.</p></div>
+  </div>
+
+  <div class="cnt-cartao secao" id="voipDet" hidden><div class="cnt-cartao__topo"><h2>Fluxo da chamada</h2><span class="cnt-cartao__apoio" id="voipDetInfo"></span><div class="seg" id="segVoipVisao" style="margin-left:auto"><button data-f="ladder" aria-pressed="true" title="Diagrama em escada (padrão)">Ladder</button><button data-f="cards" aria-pressed="false" title="Cards em sequência: ordem das ações">Cards</button></div></div>
+    <div class="voip-ladder" id="voipLadder"></div>
+    <div class="voip-grade" id="voipCards" style="display:none"><div class="fluxo-app" id="voipQuadro" aria-label="Fluxo da chamada"></div><aside class="voip-lado" id="voipLado" aria-live="polite"></aside></div></div>
+</section>
+
 <section id="v-vps" hidden>
   <h1>Servidores (VPS)</h1><p class="sub">Acompanhe seus servidores Linux por SSH: CPU, memória, disco, rede, serviços, containers e sites. As senhas e chaves ficam criptografadas neste PC (só a conta do Windows consegue abrir).</p>
   <div class="rel-cab"><button class="cnt-botao cnt-botao--pq cnt-botao--primario" id="vpsNovo">Adicionar servidor</button></div>
@@ -811,6 +860,7 @@ body:not([data-so="linux"]) .so-lin{display:none!important}
 <script src="/cnt/sidebar.js"></script>
 <script src="/cnt/topbar.js"></script>
 <script src="/cnt/fluxo.js"></script>
+<script src="/cnt/chamada.js"></script>
 
 <script>
 'use strict';
@@ -998,7 +1048,7 @@ const eixoPct=v=>nf0.format(v)+'%', eixoB=v=>v>=GB?nf1.format(v/GB)+' GB':nf0.fo
 const eixoN=v=>CFG.rede_em_bits?(v*8>=1e6?nf1.format(v*8/1e6)+' Mb/s':nf0.format(v*8/1e3)+' Kb/s'):eixoR(v);
 
 /* =================== navegação =================== */
-const VISTAS=['geral','recurso','programas','processos','capturas','editor','jogo','otimizar','regras','inicializacao','energia','audio','personalizar','servicos','rede','hardware','ventoinhas','historico','lentidao','alertas','relatorio','comparar','vps','ajuda','config','logs'];
+const VISTAS=['geral','recurso','programas','processos','capturas','editor','jogo','otimizar','regras','inicializacao','energia','audio','personalizar','servicos','rede','hardware','ventoinhas','historico','lentidao','alertas','relatorio','comparar','voip','vps','ajuda','config','logs'];
 let vista='geral', recurso='cpu', ED_ID=0, CAP_ABA='capturar';
 function ir(h){ h=(h||'geral').replace(/^#/,''); let v=h, r=null; if(h.startsWith('recurso/')){ v='recurso'; r=h.split('/')[1]; }
   if(h==='capturas'||h.startsWith('capturas/')){ v='capturas'; CAP_ABA=h==='capturas/opcoes'?'opcoes':h==='capturas/estatisticas'?'estatisticas':'capturar'; }
@@ -1047,6 +1097,7 @@ function ajRender(){ const el=$('#ajCorpo'); ajTag(); if(AJU.modo==='pedir') ret
     <div class="aj-arq" id="ajArq"></div>`;
   ajMeuAtualizar(); ajArquivos();
   $('#ajCopTxt').onclick=()=>{ if(AJU.meu) ajCopiar(AJU.meu.texto); };
+  ['ajMeuId','ajMeuSenha'].forEach(i=>{ const e=$('#'+i); e.title='Clique para copiar'; e.onclick=()=>{ const t=e.textContent.trim(); if(t&&t!=='…') ajCopiar(t); }; });
   $('#ajTestar').onclick=ajTestar;
   const id=$('#ajIdT'), sn=$('#ajSenhaId'), go=()=>ajAbrirSessao(id.value, sn.value);
   id.oninput=()=>{ const d=id.value.replace(/\D/g,'').slice(0,9); id.value=d.replace(/(\d{3})(?=\d)/g,'$1 '); };
@@ -1416,7 +1467,7 @@ function entrar(){ fecharMenu();
   if(vista==='personalizar') vPersonalizar();
   if(vista==='historico') vHistorico(); if(vista==='lentidao') vLentidao(); if(vista==='relatorio') vRelatorio(); if(vista==='config') vConfig(); if(vista==='logs') vLogs();
   if(vista==='jogo') vJogo(true); if(vista==='energia') vEnergia(); if(vista==='audio') vAudio(); if(vista==='servicos') vServicos(); if(vista==='alertas') vAlertas();
-  if(vista==='otimizar') vOtimizar(); if(vista==='regras') vRegras(); if(vista==='vps') vVps(true); if(vista==='ajuda') vAjuda(); if(vista==='comparar') vComparar();
+  if(vista==='otimizar') vOtimizar(); if(vista==='regras') vRegras(); if(vista==='vps') vVps(true); if(vista==='ajuda') vAjuda(); if(vista==='comparar') vComparar(); if(vista==='voip') vVoip();
   if(vista==='capturas'){ abaCaptura(CAP_ABA); vCapturas(true); } if(vista==='editor') vEditor(); }
 async function cicloStatus(){ try{ STATUS=await API('status'); definirSO(); avisos(); $('#rodInfo').innerHTML=`v${esc(STATUS.versao)} · histórico de ${STATUS.banco.desde?dur(Date.now()/1000-STATUS.banco.desde):'0 min'}<br>${fB(STATUS.banco.tamanho)} em disco`; }catch(_){} }
 // Linux: os textos que falam deste computador dizem "Linux" e o que não existe lá (Captura de tela, ajustes e modo
@@ -1808,7 +1859,7 @@ const CFG_DEF=[
 ];
 function aplicarTema(){ if(window.cntTema) cntTema.aplicar({tema:CFG.tema||'auto', estilo:CFG.estilo||'personalizado'}); }
 document.documentElement.addEventListener('cnt:tema',e=>{ const t=e.detail.tema; if(t!==CFG.tema && ['auto','claro','escuro'].includes(t)) POST('config',{tema:t}).then(r=>{ if(r&&r.valores){ CFG=r.valores; if(vista==='config') vConfig(); } }).catch(()=>{}); });
-async function carregarCfg(){ try{ const d=await API('config'); CFG=d.valores; aplicarTema(); logsMenu(); }catch(_){} }
+async function carregarCfg(){ try{ const d=await API('config'); CFG=d.valores; aplicarTema(); logsMenu(); callflowMenu(); }catch(_){} }
 // Tela Logs: só com o Modo debug ligado e só neste computador (a leitura pede o token do ícone).
 const LOGS={arq:'servico',linhas:[],existe:true,bytes:0};
 function logsMenu(){ const pode=!!CFG.modo_debug&&!REMOTO; $('#navLogs').hidden=!pode; if(vista==='logs'){ if(pode) vLogs(); else ir('config'); } }
@@ -1844,6 +1895,7 @@ async function atuPasso(){ let d=null; try{ d=await API('atualizacao'); }catch(_
 function atuRender(){ const el=$('#atuPainel'); if(!el) return; const s=STATUS||{};
   if(!ATU.ativo){ el.innerHTML=`<div class="item"><b>Versão instalada: ${esc(CFG_ATU.versao_atual||s.versao||'—')}</b><div class="ctl" style="display:flex;gap:8px"><button class="cnt-botao cnt-botao--pq cnt-botao--secundario" id="atuVer">Procurar agora</button><button class="cnt-botao cnt-botao--pq cnt-botao--primario" id="atuInst" ${CFG_ATU.disponivel?'':'disabled'}>${CFG_ATU.disponivel?'Atualizar para '+esc(CFG_ATU.disponivel.versao):'Atualizar'}</button></div><small>${CFG_ATU.erro?esc(CFG_ATU.erro):CFG_ATU.disponivel?'Versão nova disponível.':CFG_ATU.ultima_verificacao?'Última verificação: '+quando(CFG_ATU.ultima_verificacao)+' — você está na versão mais nova.':'Ainda não verificado.'}</small></div>
       <div class="item"><b>Atualizar automaticamente</b><div class="ctl"><label class="sw"><input type="checkbox" data-cfg="atualizacao_auto" ${CFG.atualizacao_auto?'checked':''}><span></span></label></div><small>Procura versão nova no GitHub a cada 1 hora e instala sozinho (nunca durante o Modo Jogo nem com um pedido de ajuda aberto no Acesso remoto).</small></div>
+      <div class="item"><b>Call flow (chamadas VoIP)</b><div class="ctl"><label class="sw"><input type="checkbox" data-cfg="callflow" ${CFG.callflow?'checked':''}><span></span></label></div><small>Desligado por padrão. Ligado, aparece a guia <b>Chamadas</b> no menu (fluxo ao vivo, histórico, monitoramento de outros computadores e API com chave). Desligar para a captura de chamadas na hora. Ligado, este computador também aceita a API de chamadas pela rede, só com a chave.</small></div>
       <div class="item"><b>Modo debug</b><div class="ctl"><label class="sw"><input type="checkbox" data-cfg="modo_debug" ${CFG.modo_debug?'checked':''}><span></span></label></div><small>Desligado por padrão. Ligado, o programa grava cada passo nos arquivos de log (ações pedidas, acesso remoto, erros) e aparece a tela <b>Logs</b> no menu, para ver e copiar os registros sem rodar comando. Não grava senha. Desligue depois do teste.</small></div>`;
     $('#atuVer').onclick=async()=>{ $('#atuVer').disabled=true; const r=await POST('acao',{tipo:'atualizar_verificar'}).catch(()=>null); if(r) toast(r.msg,!r.ok); CFG_ATU=await API('atualizacao').catch(()=>CFG_ATU); atuRender(); };
     $('#atuInst').onclick=async()=>{ if(!await confirmar('Atualizar agora?','O CNT Monitor vai baixar a versão nova, conferir a assinatura e instalar. O andamento aparece aqui; no fim, use o botão Recarregar.','Atualizar')) return;
@@ -1883,7 +1935,7 @@ async function salvarCampoCfg(e, depois){ const el=e.target.closest('[data-cfg],
   let v = el.type==='checkbox'?el.checked:el.type==='number'?+el.value:el.value; if(el.tagName==='SELECT' && /^\d+$/.test(v)) v=+v;
   if(el.dataset.mini){ const l=[...document.querySelectorAll('[data-mini]')].filter(x=>x.checked).map(x=>x.dataset.mini); k='mini_itens'; v=l; }
   const r=await POST('config',{[k]:v}).catch(()=>null);
-  if(r&&r.valores){ CFG=r.valores; aplicarTema(); logsMenu(); if(k==='captura_pasta'&&String(v).trim()&&!CFG.captura_pasta) toast('Use um caminho completo, como D:\\Prints (ou o botão “Escolher pasta…”).',1); else toast('Configuração salva.'); }
+  if(r&&r.valores){ CFG=r.valores; aplicarTema(); logsMenu(); callflowMenu(); if(k==='captura_pasta'&&String(v).trim()&&!CFG.captura_pasta) toast('Use um caminho completo, como D:\\Prints (ou o botão “Escolher pasta…”).',1); else toast('Configuração salva.'); }
   else toast(r&&r.erro?r.erro:'Não consegui salvar.',1); depois(); }
 $('#cfgCorpo').addEventListener('change',e=>salvarCampoCfg(e,vConfig));
 $('#capOpcoes').addEventListener('change',e=>salvarCampoCfg(e,renderCapOpcoes));
@@ -2900,6 +2952,127 @@ async function diagnostico(){ const it=[]; const add=(nivel,txt,ir,bt)=>it.push(
   const tot=LIMP?LIMP.categorias.reduce((s,x)=>s+x.bytes,0):0; if(tot>2*GB) add('quente',`${fB(tot)} em arquivos temporários e restos de atualização podem ser apagados com segurança (abaixo).`,null,null);
   $('#otDiagCorpo').innerHTML=it.length?'<ul class="lista">'+it.map(x=>`<li><span style="white-space:normal" class="${x.nivel}">${esc(x.txt)}</span>${x.ir?`<button class="cnt-botao cnt-botao--pq cnt-botao--secundario" data-ir="${x.ir}">${esc(x.bt)}</button>`:'<span></span>'}</li>`).join('')+'</ul>'
     :'<div class="vazio"><b class="ok" style="display:block;margin-bottom:4px">Tudo em ordem</b>Nenhum problema encontrado agora: disco com espaço, memória e temperatura normais.</div>'; }
+
+/* =================== CHAMADAS (CALL FLOW) =================== */
+let VOIP_VISAO='ladder', VOIP_LAD=null, VOIP_LADNO=null, VOIP_ABA='vivo', VOIP_SEL=null, VOIP_NO=null, VOIP_OCUPADO=false, VOIP_ASSIN='', VOIP_DET=null, VOIP_ITENS={}, VOIP_LISTA=[], VOIP_CHAVE='';
+function callflowMenu(){ const pode=!!CFG.callflow&&!REMOTO; $('#navVoip').hidden=!pode; if(vista==='voip'&&!pode) ir('config'); }
+const voipHora=ts=>{ const d=new Date(ts*1000); return d.toLocaleTimeString('pt-BR',{hour12:false})+'.'+String(d.getMilliseconds()).padStart(3,'0'); };
+const voipIp=p=>String(p||'').replace(/:\d+$/,'').replace(/^\[|\]$/g,'');
+const voipRuim=e=>/falhou|ocupado|recusada|cancelada|não encontrada|indispon|sem resposta|mídia recusada|sem bye/i.test(e||'');
+const voipCor=e=>voipRuim(e)?'#d64545':/andamento|registrado|^ok/i.test(e||'')?'#2e9e5b':'inherit';
+const voipDelta=s=>s<1?(s*1000).toFixed(0)+' ms':s.toFixed(2)+' s';
+function voipTabela(lista,mon){ if(!lista.length) return '<p class="mut2" style="padding:0 14px 14px">Nenhuma chamada.</p>';
+  const cab=(mon?['Computador']:[]).concat(['Início','Tipo','De','Para','Origem','Destino','Estado','Duração','Quem desligou','Motivo','MOS']);
+  const td=x=>`<td class="cnt-tabela__cel e">${x}</td>`;
+  return '<table class="cnt-tabela"><thead><tr>'+cab.map(h=>`<th class="cnt-tabela__cab">${h}</th>`).join('')+'</tr></thead><tbody>'+lista.map(c=>{ const sel=VOIP_SEL&&VOIP_SEL.id===c.id&&String(VOIP_SEL.pc||'')===String(c.pc||'');
+    return `<tr class="cnt-tabela__linha" data-vid="${esc(c.id)}" data-pc="${esc(c.pc||'')}" style="cursor:pointer${sel?';background:rgba(79,140,255,.14)':''}">${mon?td(esc(c.pc_nome)):''}${td(quando(c.inicio))}${td(esc(c.tipo))}${td(esc(c.de))}${td(esc(c.para))}${td(esc(c.origem))}${td(esc(c.destino))}<td class="cnt-tabela__cel e" style="color:${voipCor(c.estado)}"><b>${esc(c.estado)}</b></td>${td(c.duracao?dur(c.duracao):'—')}${td(esc(c.desligou)||'—')}${td(esc(c.motivo)||'—')}${td(c.mos==null?'—':c.mos)}</tr>`; }).join('')+'</tbody></table>'; }
+// Eventos da chamada em ordem de tempo -> nós e conexões do canvas de fluxo CNT (uma coluna por endereço IP).
+function voipNos(d){ const ev=[]; (d.msgs||[]).forEach((m,i)=>ev.push({t:m.ts,k:'sip',m,id:'s'+i})); (d.rtp||[]).forEach((f,i)=>{ if(f.t0) ev.push({t:f.t0,k:'rtp',f,id:'r'+i}); });
+  ev.sort((a,b)=>a.t-b.t); const faixas=[], faixa=ip=>{ let i=faixas.indexOf(ip); if(i<0){ i=faixas.length; faixas.push(ip); } return i; };
+  ev.forEach(e=>{ const o=e.k==='sip'?e.m:e.f; faixa(voipIp(o.de)); faixa(voipIp(o.para)); });
+  const nos=[], con=[], itens={}; let ant=null;
+  ev.forEach((e,j)=>{ let no;
+    if(e.k==='sip'){ const m=e.m, cod=/^(\d{3})/.exec(m.rotulo), n=cod?+cod[1]:0, req=!cod;
+      no={id:e.id,tipo:req?(m.rotulo==='INVITE'?'gatilho':/^(BYE|CANCEL)$/.test(m.rotulo)?'condicao':'acao'):'etapa',titulo:m.rotulo+(m.retx?' (repetida)':''),descricao:`${voipHora(m.ts)} · ${voipIp(m.de)} → ${voipIp(m.para)}`,x:faixa(voipIp(m.de))*250,y:j*108};
+      if(!req) no.estado=n>=300?'erro':n>=200?'concluido':'andamento'; itens[e.id]={k:'sip',m}; }
+    else { const f=e.f, ruim=(f.mos!=null&&f.mos<3.5)||f.perda>5;
+      no={id:e.id,tipo:'acao',titulo:'RTP '+(f.codec||''),descricao:`${f.recebidos} pacotes · perda ${f.perda}% · MOS ${f.mos==null?'—':f.mos}`,estado:ruim?'erro':'concluido',x:faixa(voipIp(f.de))*250,y:j*108}; itens[e.id]={k:'rtp',f}; }
+    nos.push(no); if(ant) con.push({de:ant.id,para:no.id,tipo:e.k==='rtp'?'pontilhada':'solida',rotulo:'+'+voipDelta(Math.max(0,e.t-ant.t))}); ant={id:no.id,x:no.x,t:e.t}; });
+  if(ant&&!d.ativa&&d.desligou){ nos.push({id:'fim',tipo:'pessoa',titulo:'Desligou: '+d.desligou,descricao:(d.motivo||'').slice(0,70),estado:voipRuim(d.estado)?'erro':'concluido',x:ant.x,y:nos.length*108}); con.push({de:ant.id,para:'fim'}); itens.fim={k:'fim'}; }
+  return {nos,con,itens}; }
+function voipQuadro(d){ const el=$('#voipQuadro'); if(el.cntFluxo) el.cntFluxo.destruir(); if(el._ro) el._ro.disconnect();
+  const g=voipNos(d); VOIP_ITENS=g.itens; el.style.setProperty('--cnt-fluxo-altura',Math.max(420,Math.min(720,g.nos.length*108+110))+'px');
+  const f=cntFluxo.criar(el,{nos:g.nos,conexoes:g.con,somenteLeitura:true,rotulo:'Fluxo da chamada '+d.id}); voipMarcar();
+  if(!el._ligado){ el._ligado=1; let ini=null; el.addEventListener('wheel',e=>{ if(!e.ctrlKey&&!e.metaKey) e.stopPropagation(); },{capture:true});
+    el.addEventListener('pointerdown',e=>{ ini=[e.clientX,e.clientY]; });
+    const abrir=n=>{ VOIP_NO=n.dataset.id; voipMarcar(); voipLado(VOIP_DET); };
+    el.addEventListener('click',e=>{ const n=e.target.closest('.cnt-fluxo__no'); if(n&&ini&&Math.hypot(e.clientX-ini[0],e.clientY-ini[1])<5) abrir(n); });
+    el.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.classList.contains('cnt-fluxo__no')) abrir(e.target); }); }
+  let w=0; el._ro=new ResizeObserver(()=>{ const q=el.querySelector('.cnt-fluxo__quadro'); if(q&&q.clientWidth&&q.clientWidth!==w){ w=q.clientWidth; f.ajustar(); } }); el._ro.observe(el); }
+const voipPorta=p=>{ const m=/:(\d+)$/.exec(String(p||'')); return m?+m[1]:null; };
+const voipRel=(t,t0)=>{ const x=Math.max(0,t-t0), m=Math.floor(x/60); return String(m).padStart(2,'0')+':'+(x%60).toFixed(3).padStart(6,'0'); };
+// Chamada -> dados do ladder CNT (base-chamadas): uma coluna por IP, mensagens SIP e fluxos RTP em ordem de tempo.
+function voipLadderDados(d){ const ev=[]; (d.msgs||[]).forEach((m,i)=>ev.push({t:m.ts,k:'sip',m,id:'s'+i})); (d.rtp||[]).forEach((f,i)=>{ if(f.t0) ev.push({t:f.t0,k:'rtp',f,id:'r'+i}); });
+  ev.sort((a,b)=>a.t-b.t); const ips=[], vistos={}; ev.forEach(e=>{ const o=e.k==='sip'?e.m:e.f; [voipIp(o.de),voipIp(o.para)].forEach(ip=>{ if(ip&&!(ip in vistos)){ vistos[ip]=ips.length; ips.push(ip); } }); });
+  const t0=ev.length?ev[0].t:0; let ant=null;
+  const mensagens=ev.map(e=>{ const o=e.k==='sip'?e.m:e.f, base={id:e.id,de:voipIp(o.de),para:voipIp(o.para),tempo:voipRel(e.t,t0),intervalo:ant==null?'':'+'+voipDelta(Math.max(0,e.t-ant))}; ant=e.t;
+    if(e.k==='rtp'){ const f=e.f; return Object.assign(base,{tipo:'rtp',rotulo:`RTP (${f.codec||'?'}) ${f.recebidos}`,titulo:'Fluxo de mídia (RTP)',portas:[voipPorta(f.de),voipPorta(f.para)],
+      campos:[{rotulo:'Codec',valor:f.codec||'—'},{rotulo:'Pacotes',valor:String(f.recebidos)},{rotulo:'Perda',valor:f.perda+'%'},{rotulo:'Jitter',valor:f.jitter_ms==null?'—':f.jitter_ms+' ms'},{rotulo:'MOS',valor:f.mos==null?'—':String(f.mos)}],
+      secoes:[{titulo:'Fluxo',campos:[{rotulo:'SSRC',valor:String(f.ssrc??'—')},{rotulo:'Início',valor:voipHora(f.t0)},{rotulo:'Fim',valor:f.t1?voipHora(f.t1):'—'},{rotulo:'Esperados',valor:String(f.esperados??'—')},{rotulo:'Perdidos',valor:String(f.perdidos??'—')},{rotulo:'Fora de ordem',valor:String(f.fora_de_ordem??'—')},{rotulo:'Duplicados',valor:String(f.duplicados??'—')}]}]}); }
+    const m=e.m, cod=/^(\d{3})/.exec(m.rotulo), n=cod?+cod[1]:0;
+    const r=Object.assign(base,{rotulo:m.rotulo+(m.retx?' (repetida)':''),titulo:m.rotulo,requisicao:!cod,resumo:`${voipIp(m.de)} → ${voipIp(m.para)}`,
+      campos:[{rotulo:'Hora',valor:voipHora(m.ts)},{rotulo:'Transporte',valor:m.via||'—'},{rotulo:'CSeq',valor:m.cseq||'—',mono:true}],
+      secoes:(m.sdp||[]).map(x=>({titulo:'Mídia anunciada (SDP)',mono:true,campos:[{rotulo:'Tipo',valor:x.tipo},{rotulo:'Endereço',valor:`${x.ip}:${x.porta}`},{rotulo:'Codecs',valor:String(x.codecs||'')}]})),bruto:m.txt||''});
+    if(m.retx) r.tom='alerta'; else if(n>=400) r.tom='perigo'; return r; });
+  const resumo=[['Estado',d.estado],['Duração',d.duracao?dur(d.duracao):''],['Mensagens',(d.msgs||[]).length],['Quem desligou',d.desligou],['Motivo',d.motivo]].filter(x=>x[1]!==''&&x[1]!=null).map(([rotulo,valor])=>({rotulo,valor:String(valor)}));
+  return {titulo:`${d.de||'?'} → ${d.para||'?'}`,subtitulo:`Call-ID ${d.id}`+(d.pc_nome?' · '+d.pc_nome:'')+(d.agente?' · '+d.agente:''),resumo,
+    participantes:ips.map((ip,i)=>({id:ip,nome:ip,detalhe:i===0?'origem':i===ips.length-1?'destino':'intermediário',tipo:i===0?'telefone':'servidor'})),mensagens}; }
+function voipLadder(d){ const el=$('#voipLadder'), dados=voipLadderDados(d);
+  if(!VOIP_LAD){ VOIP_LAD=cntChamada.criar(el,dados); el.addEventListener('cnt:chamada:abriu',e=>{ VOIP_LADNO=e.detail.tipo==='mensagem'?e.detail.id:null; }); el.addEventListener('cnt:chamada:fechou',()=>{ VOIP_LADNO=null; }); }
+  else { VOIP_LAD.carregar(dados); if(VOIP_LADNO&&dados.mensagens.some(m=>m.id===VOIP_LADNO)) VOIP_LAD.abrir(VOIP_LADNO); } }
+function voipVisao(){ const lad=VOIP_VISAO==='ladder'; $('#voipLadder').style.display=lad?'':'none'; $('#voipCards').style.display=lad?'none':''; }
+function voipMarcar(){ $('#voipQuadro').querySelectorAll('.cnt-fluxo__no').forEach(n=>n.classList.toggle('is-selecionado',n.dataset.id===VOIP_NO)); }
+const voipKv=l=>'<dl class="voip-kv">'+l.filter(x=>x[1]!==''&&x[1]!=null).map(([a,b])=>`<dt>${a}</dt><dd>${esc(b)}</dd>`).join('')+'</dl>';
+function voipLado(d){ if(!d) return; const it=VOIP_ITENS[VOIP_NO]; let h='';
+  if(!it) h='<h3>Resumo da chamada</h3>'+voipKv([['Call-ID',d.id],['De',d.de],['Para',d.para],['Origem',d.origem],['Destino',d.destino],['Estado',d.estado],['Duração',d.duracao?dur(d.duracao):'—'],['Mensagens',(d.msgs||[]).length],['Quem desligou',d.desligou],['Motivo',d.motivo],['Programa',d.agente]])+'<p class="mut2" style="font-size:12.5px">Clique numa requisição, resposta ou fluxo de mídia do quadro para ver os detalhes aqui.</p>';
+  else if(it.k==='sip'){ const m=it.m; h=`<h3>${esc(m.rotulo)}${m.retx?' <span class="cnt-selo">repetida</span>':''}</h3>`+voipKv([['Hora',voipHora(m.ts)],['De',m.de],['Para',m.para],['Transporte',m.via],['CSeq',m.cseq]]);
+    if((m.sdp||[]).length) h+='<h4>Mídia anunciada (SDP)</h4>'+m.sdp.map(s=>voipKv([['Tipo',s.tipo],['Endereço',`${s.ip}:${s.porta}`],['Codecs',s.codecs]])).join('');
+    h+=`<h4>Mensagem</h4><pre class="voip-raw">${esc(m.txt)}</pre>`; }
+  else if(it.k==='rtp'){ const f=it.f; h='<h3>Fluxo de mídia (RTP)</h3>'+voipKv([['De',f.de],['Para',f.para],['Codec',f.codec],['SSRC',f.ssrc],['Início',f.t0?voipHora(f.t0):''],['Fim',f.t1?voipHora(f.t1):''],['Duração',f.t0&&f.t1?voipDelta(f.t1-f.t0):''],['Pacotes recebidos',f.recebidos],['Esperados',f.esperados],['Perdidos',f.perdidos],['Perda',f.perda+'%'],['Fora de ordem',f.fora_de_ordem],['Duplicados',f.duplicados],['Jitter',f.jitter_ms==null?'':f.jitter_ms+' ms'],['MOS',f.mos==null?'':f.mos]]); }
+  else h='<h3>Desligamento</h3>'+voipKv([['Quem desligou',d.desligou],['Motivo',d.motivo],['Estado final',d.estado]]);
+  $('#voipLado').innerHTML=h; }
+async function voipDetalhe(){ if(!VOIP_SEL||VOIP_ABA==='api') return $('#voipDet').hidden=true;
+  const q=encodeURIComponent(VOIP_SEL.id); let d; try{ d=await API(VOIP_SEL.pc?`voip/monitor/chamada?pc=${encodeURIComponent(VOIP_SEL.pc)}&id=${q}`:'voip/chamada?id='+q); }catch(_){ $('#voipDet').hidden=true; return; }
+  $('#voipDet').hidden=false; VOIP_DET=d;
+  $('#voipDetInfo').textContent=`${d.de||'?'} → ${d.para||'?'} · ${d.estado||'—'} · ${(d.msgs||[]).length} mensagens${d.pc_nome?' · '+d.pc_nome:''}${d.agente?' · '+d.agente:''}`;
+  const as=[VOIP_SEL.pc,d.id,(d.msgs||[]).length,(d.rtp||[]).map(f=>f.recebidos).join(','),d.estado,d.desligou].join('|');
+  voipVisao(); if(as!==VOIP_ASSIN){ VOIP_ASSIN=as; if(VOIP_VISAO==='ladder') voipLadder(d); else voipQuadro(d); } if(VOIP_VISAO==='cards') voipLado(d); }
+function voipResumo(l){ const ch=l.filter(c=>c.tipo==='chamada'), n={}; ch.forEach(c=>{ const k=c.desligou||'(em andamento)'; n[k]=(n[k]||0)+1; });
+  return `${ch.length} chamada(s) · ${ch.filter(c=>c.duracao>0).length} atendida(s) · quem desligou: `+(Object.keys(n).map(k=>`${k} ${n[k]}`).join(' · ')||'—'); }
+async function vVoip(){ if(VOIP_OCUPADO||!CFG.callflow) return; VOIP_OCUPADO=true;
+  try{ const aba=VOIP_ABA; $('#voipPLista').hidden=!(aba==='vivo'||aba==='hist'); $('#voipPMon').hidden=aba!=='mon'; $('#voipPApi').hidden=aba!=='api';
+    const b=$('#voipBusca').value.trim(); let v; try{ v=await API('voip?busca='+encodeURIComponent(b)); }catch(_){ return; }
+    const lig=v.ativo, r=v.recebidos||{}; $('#voipTag').hidden=!lig; $('#voipLigar').textContent=lig?'Desligar captura':'Ligar captura';
+    $('#voipSair').hidden=!v.alvo; $('#voipApagar').hidden=!!v.alvo; $('#voipInfo').textContent=(v.alvo?`vendo ${v.alvo} · `:'')+(lig?`ligada · SIP ${r.sip} · WebSocket ${r.ws} · HEP ${r.hep} · RTP ${r.rtp}`:'desligada');
+    $('#voipErro').hidden=!v.erro; $('#voipErro').textContent=v.erro||'';
+    if(aba==='vivo'||aba==='hist'){ let lista=v.chamadas; if(aba==='hist'){ try{ lista=await API('voip/historico?busca='+encodeURIComponent(b)); }catch(_){ return; } }
+      VOIP_LISTA=lista; $('#voipTit').textContent=aba==='vivo'?'Chamadas ao vivo':'Histórico e relatório (últimos 7 dias)'; $('#voipCont').textContent=lista.length+' registro(s)'+(aba==='vivo'?` · ${v.ativas} chamada(s) ativa(s)`:'');
+      $('#voipResumo').hidden=aba!=='hist'; $('#voipResumo').textContent=voipResumo(lista); $('#voipLista').innerHTML=voipTabela(lista,false); }
+    else if(aba==='mon') await vVoipMon(); else await vVoipApi();
+    await voipDetalhe();
+  } finally { VOIP_OCUPADO=false; } }
+async function vVoipMon(){ let m, l; try{ m=await API('voip/monitor'); l=await API('voip/monitor/chamadas?busca='+encodeURIComponent($('#vmBusca').value.trim())); }catch(_){ return; } const pcs=m.computadores||[];
+  VOIP_LISTA=l; $('#vmInfo').textContent=`${pcs.length} computador(es) · coleta a cada ${m.intervalo_s} s`; $('#vmCont').textContent=l.length+' registro(s)';
+  $('#vmLista').innerHTML=pcs.length?'<table class="cnt-tabela"><thead><tr>'+['Computador','ID','Último Call-ID coletado','Chamadas','Última coleta','Situação',''].map(h=>`<th class="cnt-tabela__cab">${h}</th>`).join('')+'</tr></thead><tbody>'+pcs.map(p=>`<tr class="cnt-tabela__linha"><td class="cnt-tabela__cel e"><b>${esc(p.nome)}</b></td><td class="cnt-tabela__cel e">${esc(/^id:\d{9}$/.test(p.url)?ajFmtId(p.url.slice(3)):p.url)}</td><td class="cnt-tabela__cel e">${esc(p.ultimo)||'—'}</td><td class="cnt-tabela__cel e">${p.total}</td><td class="cnt-tabela__cel e">${p.sync?quando(p.sync):'aguardando'}</td><td class="cnt-tabela__cel e" style="color:${p.erro?'#d64545':'#2e9e5b'}">${p.sync?(p.erro?esc(p.erro):'em dia'):'—'}</td><td class="cnt-tabela__cel e"><button class="cnt-botao cnt-botao--pq cnt-botao--perigo" data-vmrem="${p.id}" data-nome="${esc(p.nome)}">Remover</button></td></tr>`).join('')+'</tbody></table>':'<p class="mut2" style="padding:0 14px 14px">Nenhum computador cadastrado.</p>';
+  $('#vmChamadas').innerHTML=voipTabela(l,true); }
+async function vVoipApi(){ let a; try{ a=await API('voip/api'); }catch(_){ return; } VOIP_CHAVE=a.chave;
+  $('#vaValid').textContent=`vence ${quando(a.expira)} · em ${dur(a.expira-Date.now()/1000)}`; if(document.activeElement!==$('#vaHoras')) $('#vaHoras').value=a.horas;
+  $('#vaEnd').innerHTML=`<button class="cnt-botao cnt-botao--pq cnt-botao--primario" data-cop="${esc(a.id_online)}" title="Clique para copiar o ID">${esc(a.id_online)}</button><span class="mut2" style="font-size:12.5px">${a.online==='online'?'online: o outro computador já pode conectar':'compartilhamento online '+esc(a.online||'desligado')+': o outro computador não consegue conectar agora'}</span>`
+    +(a.enderecos||[]).map(x=>`<button class="cnt-botao cnt-botao--pq cnt-botao--secundario" data-cop="${esc(x)}" title="Endereço na rede local (alternativa)">${esc(x)}</button>`).join('');
+  const er=a.rodando&&a.rodando.erro; $('#vaErro').hidden=!er; $('#vaErro').textContent=er||'';
+  $('#vaAlvo').textContent=a.alvo?'conectado a '+a.alvo:'não conectado'; $('#vaConectar').textContent=a.alvo?'Trocar de computador':'Conectar'; }
+async function voipAcao(corpo){ const r=await POST('acao',corpo).catch(()=>null); toast(r?r.msg:'O serviço não respondeu.',!(r&&r.ok)); return r; }
+seg($('#segVoipVisao'),d=>{ VOIP_VISAO=d.f; VOIP_ASSIN=''; voipDetalhe(); });
+seg($('#segVoip'),d=>{ VOIP_ABA=d.f; VOIP_SEL=null; VOIP_LADNO=null; if(VOIP_LAD){ VOIP_LAD.destruir(); VOIP_LAD=null; } VOIP_ASSIN=''; $('#voipDet').hidden=true; vVoip(); });
+$('#voipBusca').addEventListener('input',()=>vVoip()); $('#vmBusca').addEventListener('input',()=>vVoip());
+const voipClique=e=>{ const t=e.target.closest('[data-vid]'); if(!t) return; VOIP_SEL={id:t.dataset.vid,pc:t.dataset.pc||''}; VOIP_NO=null; VOIP_LADNO=null; VOIP_ASSIN=''; vVoip(); };
+$('#voipLista').addEventListener('click',voipClique); $('#vmChamadas').addEventListener('click',voipClique);
+$('#voipLigar').onclick=async()=>{ const lig=$('#voipLigar').textContent.startsWith('Desligar'); await voipAcao({tipo:lig?'voip_parar':'voip_iniciar'}); vVoip(); };
+$('#voipApagar').onclick=async()=>{ if(!await confirmar('Apagar as chamadas?','O histórico de chamadas deste computador será apagado.','Apagar',1)) return; const r=await voipAcao({tipo:'voip_apagar'}); if(r&&r.ok) VOIP_SEL=null; vVoip(); };
+$('#voipSair').onclick=async()=>{ await voipAcao({tipo:'voip_desconectar'}); VOIP_SEL=null; vVoip(); };
+$('#voipCsv').onclick=()=>{ if(!VOIP_LISTA.length) return toast('Não há chamadas para exportar.',1); const c=x=>'"'+String(x==null?'':x).replace(/"/g,'""')+'"';
+  const col=(VOIP_ABA==='mon'?[['Computador','pc_nome']]:[]).concat([['Call-ID','id'],['Início',null],['Tipo','tipo'],['De','de'],['Para','para'],['Origem','origem'],['Destino','destino'],['Estado','estado'],['Duração (s)','duracao'],['Quem desligou','desligou'],['Motivo','motivo'],['MOS','mos'],['Perda (%)','perda'],['Jitter (ms)','jitter_ms']]);
+  const csv='﻿'+col.map(x=>c(x[0])).join(';')+'\n'+VOIP_LISTA.map(r=>col.map(([n,k])=>c(k?r[k]:new Date(r.inicio*1000).toLocaleString('pt-BR'))).join(';')).join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})); a.download='chamadas-'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); };
+$('#vmAdd').onclick=async()=>{ const r=await voipAcao({tipo:'voip_mon_add',nome:$('#vmNome').value,url:$('#vmUrl').value,chave:$('#vmChave').value}); if(r&&r.ok){ $('#vmNome').value=$('#vmUrl').value=$('#vmChave').value=''; } vVoip(); };
+$('#vmAgora').onclick=async()=>{ await voipAcao({tipo:'voip_mon_agora'}); setTimeout(vVoip,1500); };
+$('#vmLista').addEventListener('click',async e=>{ const b=e.target.closest('[data-vmrem]'); if(!b) return; if(!await confirmar('Remover “'+b.dataset.nome+'”?','As chamadas já coletadas desse computador também saem daqui.','Remover',1)) return; await voipAcao({tipo:'voip_mon_remover',id:+b.dataset.vmrem}); if(VOIP_SEL&&String(VOIP_SEL.pc)===b.dataset.vmrem) VOIP_SEL=null; vVoip(); });
+$('#vaCopiar').onclick=()=>{ if(VOIP_CHAVE) copiar(VOIP_CHAVE); };
+$('#vaNova').onclick=async()=>{ if(!await confirmar('Gerar uma chave nova?','A chave atual deixa de valer: os computadores que a usam precisam receber a nova.','Gerar')) return; await voipAcao({tipo:'voip_chave_nova'}); vVoip(); };
+$('#vaSalvarH').onclick=async()=>{ await voipAcao({tipo:'voip_chave_horas',horas:$('#vaHoras').value}); vVoip(); };
+$('#vaEnd').addEventListener('click',e=>{ const b=e.target.closest('[data-cop]'); if(b) copiar(b.dataset.cop); });
+$('#vaConectar').onclick=async()=>{ const r=await voipAcao({tipo:'voip_conectar',url:$('#vaUrl').value,chave:$('#vaCh').value}); if(r&&r.ok){ $('#vaCh').value=''; VOIP_ABA='vivo'; $('#segVoip').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.f==='vivo')); } vVoip(); };
+setInterval(()=>{ if(vista==='voip'&&!document.hidden) vVoip(); },1500);
 
 /* =================== REGRAS POR PROGRAMA =================== */
 let REG=null, REG_EDIT=null;

@@ -19,7 +19,7 @@ import subprocess
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs, unquote
 
-from . import config, configuracao, banco, icones, energia, servicos, alertas, regras, limpeza, captura, envio, registro
+from . import config, configuracao, banco, icones, energia, servicos, alertas, regras, limpeza, captura, envio, registro, sinalizacao, encontro
 
 HOSTS_OK = {f"127.0.0.1:{config.PORTA}", f"localhost:{config.PORTA}"}
 ORIGENS_OK = {f"http://127.0.0.1:{config.PORTA}", f"http://localhost:{config.PORTA}"}
@@ -67,6 +67,7 @@ def confere_senha(senha, guardado):
 
 SESSOES = {}          # token -> expira
 TENTATIVAS = {}       # ip -> [ts...]
+TENTATIVAS_VOIP = {}  # ip -> [ts...] de chaves da API de chamadas recusadas
 
 
 def _limpar_sessoes(t):
@@ -361,6 +362,13 @@ def fabrica(motor, TOKEN, remoto=False):
                     return self._env(200, dados, TIPOS_ARQ[os.path.splitext(arq)[1]], {"Cache-Control": "no-cache"})
                 if remoto and r == "/login":
                     return self._env(200, login_html().encode(), "text/html; charset=utf-8")
+                if r.startswith("/api/chamadas/"):
+                    if not self._chave_voip():
+                        return
+                    rota = r[len("/api/chamadas/"):]
+                    if rota not in ("estado", "historico", "chamada", "sincronizar"):
+                        return self._json({"erro": "recurso não encontrado"}, 404)
+                    return self._chamadas_dados(rota, q)
                 if r.startswith("/api/v1"):
                     if not self._pode_ler(q, v1=True):
                         return self._json({"erro": "não autorizado — use a chave da API (X-API-Key)"}, 401)
@@ -396,6 +404,44 @@ def fabrica(motor, TOKEN, remoto=False):
                     return self._json({"erro": str(e)}, 500)
                 except Exception:
                     pass
+
+        # ---- API de chamadas (outro PC com a chave): liga/desliga a captura e lê o fluxo
+        def _chamadas_dados(self, rota, q, via_alvo=False):
+            m = motor
+            nome = rota
+            try:
+                if via_alvo:
+                    d = m.voip_alvo.get(nome, busca=q.get("busca"), tipo=q.get("tipo"), limite=q.get("limite"), id=q.get("id"))
+                    if nome == "estado":
+                        d["alvo"] = m.voip_alvo.rotulo()
+                    return self._json(d)
+            except RuntimeError as e:
+                return self._json({"erro": str(e)}, 502)
+            if nome == "estado":
+                return self._json({**m.voip.ao_vivo(q.get("busca", "")), "alvo": None})
+            if nome == "historico":
+                return self._json(m.voip.historico(q.get("busca", ""), q.get("tipo", ""), _num(q, "limite", 300, int)))
+            if nome == "sincronizar":
+                return self._json(m.voip.desde(q.get("desde", ""), _num(q, "limite", 200, int)))
+            d = m.voip.detalhe(q.get("id", ""))
+            return self._json(d) if d else self._json({"erro": "chamada não encontrada"}, 404)
+
+        def _chave_voip(self):
+            """True se o pedido traz uma chave válida; senão já respondeu o erro. Erros repetidos bloqueiam o IP por 5 min."""
+            ip, t = self.client_address[0], time.time()
+            ts = [x for x in TENTATIVAS_VOIP.get(ip, []) if t - x < 300]
+            TENTATIVAS_VOIP[ip] = ts
+            if len(ts) >= 10:
+                self._json({"erro": "Muitas tentativas com chave errada. Espere 5 minutos."}, 429)
+                return False
+            if not configuracao.obter("callflow"):
+                self._json({"erro": "O Call flow está desabilitado nesse computador."}, 403)
+                return False
+            if not motor.voip_chave.confere(self.headers.get("X-Voip-Key", "")):
+                ts.append(t)
+                self._json({"erro": "Chave inválida ou vencida. Peça a chave atual ao outro computador."}, 401)
+                return False
+            return True
 
         def _get_api(self, r, q):
             m = motor
@@ -435,6 +481,25 @@ def fabrica(motor, TOKEN, remoto=False):
                     return self._json({"erro": "monitoramento não encontrado"}, 404)
                 return self._env(200, d[1].encode("utf-8"), "text/plain; charset=utf-8",
                                  {"Content-Disposition": f'attachment; filename="{d[0]}"'})
+            if r.startswith("/api/voip"):          # números e IPs das chamadas: só neste computador
+                if remoto:
+                    return self._json({"erro": "só no próprio computador"}, 403)
+                if not configuracao.obter("callflow"):
+                    return self._json({"erro": "Habilite o Call flow nas Configurações."}, 403)
+                if r == "/api/voip/api":
+                    return self._json({**m.voip_chave.estado(), "porta": configuracao.obter("acesso_porta"),
+                                       "enderecos": [f'{x["ip"]}:{configuracao.obter("acesso_porta")}' for x in ips_rede()],
+                                       "rodando": m.remoto_rodando(), "alvo": m.voip_alvo.rotulo() if m.voip_alvo.url else None,
+                                       "id_online": encontro.formatar_id(m.encontro.id), "online": m.encontro.situacao})
+                if r == "/api/voip/monitor":
+                    return self._json({"computadores": m.voip_mon.listar(), "intervalo_s": sinalizacao.INTERVALO_MON_S})
+                if r == "/api/voip/monitor/chamadas":
+                    return self._json(m.voip_mon.historico(q.get("pc", ""), q.get("busca", ""), _num(q, "limite", 300, int)))
+                if r == "/api/voip/monitor/chamada":
+                    d = m.voip_mon.detalhe(_num(q, "pc", 0, int), q.get("id", ""))
+                    return self._json(d) if d else self._json({"erro": "chamada não encontrada"}, 404)
+                if r in ("/api/voip", "/api/voip/historico", "/api/voip/chamada"):
+                    return self._chamadas_dados(r[len("/api/voip"):].lstrip("/") or "estado", q, via_alvo=m.voip_alvo.ativo)
             if r == "/api/hardware":
                 return self._json(m.hardware())
             if r == "/api/ventoinhas":
@@ -653,6 +718,15 @@ def fabrica(motor, TOKEN, remoto=False):
             bruto = self.rfile.read(n) if n else b""
             if remoto and r == "/login":
                 return self._login(bruto)
+            if r == "/api/chamadas/captura":
+                if not self._chave_voip():
+                    return
+                try:
+                    ligar = bool(json.loads(bruto or b"{}").get("ligar"))
+                except (ValueError, AttributeError):
+                    return self._json({"erro": "pedido inválido"}, 400)
+                ok, msg = motor.voip.iniciar() if ligar else motor.voip.parar()
+                return self._json({"ok": ok, "msg": msg, "ativo": motor.voip.ativo})
             if not self._pode_alterar():
                 return self._json({"erro": "não autorizado" + (" (acesso pela rede está como “somente ver”)" if remoto else "")}, 403)
             try:
@@ -667,7 +741,7 @@ def fabrica(motor, TOKEN, remoto=False):
                     if remoto:
                         # pela rede: nada de ventoinhas, capturas nem personalizar (tela, registro e arquivos do usuário), e "abrir"
                         # só vale para programa que o Monitor já conhece, nunca para um caminho mandado de fora
-                        if str(corpo.get("tipo", "")).startswith(("vent_", "captura", "ajuda_", "pers_")):
+                        if str(corpo.get("tipo", "")).startswith(("vent_", "captura", "ajuda_", "pers_", "voip_")):
                             return self._json({"erro": "só no próprio computador"}, 403)
                         corpo.pop("caminho", None)
                     elif corpo.get("tipo") == "ajuda_aceitar" and not veio_do_icone(self.client_address[1]):
@@ -769,7 +843,7 @@ class Servidores:
     def aplicar(self):
         """Liga/desliga o acesso pela rede conforme as Configurações."""
         c = configuracao.obter()
-        quer = c["acesso_remoto"] and bool(c["acesso_senha"])
+        quer = (c["acesso_remoto"] and bool(c["acesso_senha"])) or c["callflow"]   # o Call flow precisa da porta para a API de chamadas
         if self.remoto and (not quer or self.porta_remota != c["acesso_porta"]):
             try:
                 self.remoto.shutdown()

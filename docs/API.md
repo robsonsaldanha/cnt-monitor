@@ -60,6 +60,10 @@ Fora da v1 (usados pela janela do programa, podem mudar entre versões), também
 |---|---|
 | `/api/rede/conexoes` | conexões em andamento com taxa, pacotes/s, RTT e retransmissões TCP, jitter UDP, ping e MOS |
 | `/api/rede/programas/log?id=atual` | o `.log` do monitoramento por programa em andamento (ou `id` de um salvo): cabeçalho com o resumo e uma linha por segundo separada por TAB |
+| `/api/voip?busca=` | chamadas VoIP ao vivo (SIP/PJSIP em qualquer porta, WebSocket sem TLS e HEP) com estado, duração, MOS e quem desligou; a captura liga por `POST /api/acao` `{"tipo":"voip_iniciar"}` (e `voip_parar`, `voip_apagar`) |
+| `/api/voip/historico?busca=&tipo=` | histórico das chamadas (7 dias): `tipo` = `chamada` ou `registro` |
+| `/api/voip/chamada?id=<Call-ID>` | fluxo completo: mensagens (com o texto SIP), pontos, SDP e fluxos RTP com jitter, perda e MOS |
+| `/api/chamadas/*` | **API com chave** (cabeçalho `X-Voip-Key`, a chave da aba Chamadas › API; vale 6 h por padrão e muda todo dia; precisa do Call flow ligado, vem pela porta do acesso pela rede): `GET estado`, `GET historico?busca=&limite=`, `GET chamada?id=`, `GET sincronizar?desde=<Call-ID>&limite=` (só as chamadas guardadas depois dessa) e `POST captura` `{"ligar": true|false}`. Dez chaves erradas bloqueiam o IP por 5 minutos. Os mesmos recursos também chegam por **canal direto P2P** pelo ID do compartilhamento online (o do acesso remoto): a tela e o monitoramento usam o ID no lugar do IP, sem abrir porta; a chave nunca passa pelo servidor de encontro (`src/monitorpc/p2p.py`) |
 
 ## Exemplos
 
