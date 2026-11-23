@@ -5,8 +5,9 @@ para cá. A tela e os comandos vão direto de um PC ao outro, e a senha nunca pa
 prova que sabe a senha pela conexão já criptografada, amarrada aos certificados dos dois lados
 (remoto.py); o servidor não consegue se passar por ninguém.
 
-  - ID: 9 números, troca quando o PC reinicia ou pelo botão. Fica em BASE/remoto_id.json junto com a chave
-    que prova ao servidor que o ID é deste PC (a pasta só é legível pelo serviço e por administradores).
+  - ID: 9 números, fixo por computador: sai do UUID da placa-mãe (maquina.py), então é o mesmo depois de
+    formatar. A chave que prova ao servidor que o ID é deste PC sai do mesmo UUID. Só sem UUID o ID é
+    sorteado e guardado em BASE/remoto_id.json (a pasta só é legível pelo serviço e por administradores).
   - Senha: 8 letras e números, só na memória. Troca depois de cada sessão, depois de 3 senhas erradas,
     quando o serviço reinicia e pelo botão.
 """
@@ -14,6 +15,8 @@ import os
 import json
 import time
 import socket
+import base64
+import hashlib
 import secrets
 import threading
 import http.client
@@ -21,7 +24,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from . import config, remoto
+from . import config, maquina, remoto
 
 SERVIDOR = "https://monitor.cntoficial.com.br/api"
 ARQUIVO = os.path.join(config.BASE, "remoto_id.json")
@@ -87,6 +90,15 @@ def novo_id():
     return str(secrets.randbelow(900000000) + 100000000)
 
 
+def id_da_maquina(identidade, n=0):
+    """O mesmo computador dá sempre o mesmo ID. n só sobe se outro PC já tiver o ID (colisão, rara)."""
+    h = hashlib.sha256(f"cnt-monitor-id|{identidade}|{n}".encode()).digest()
+    return str(100000000 + int.from_bytes(h[:8], "big") % 900000000)
+
+def chave_da_maquina(identidade):
+    h = hashlib.sha256(f"cnt-monitor-chave|{identidade}".encode()).digest()
+    return base64.urlsafe_b64encode(h).decode().rstrip("=")
+
 def formatar_id(i):
     i = str(i or "")
     return " ".join(i[k:k + 3] for k in range(0, len(i), 3))
@@ -104,15 +116,13 @@ def validade_turn(turn):
         return 0
 
 
-def _dia(agora):
-    return time.strftime("%Y-%m-%d", time.localtime(agora))
-
 
 class Encontro:
     """Mantém este PC registrado e atende os pedidos de conexão que chegam pelo ID."""
 
-    def __init__(self, gerente, url=SERVIDOR, arquivo=ARQUIVO, agora=time.time):
+    def __init__(self, gerente, url=SERVIDOR, arquivo=ARQUIVO, agora=time.time, identidade=maquina.identidade):
         self.gerente = gerente
+        self._ident = identidade()
         self.url = url.rstrip("/")
         self.arquivo = arquivo
         self._agora = agora
@@ -135,42 +145,34 @@ class Encontro:
                 d = json.load(f)
         except (OSError, ValueError):
             pass
-        if (isinstance(d, dict) and str(d.get("id", "")).isdigit() and len(str(d["id"])) == 9
-                and isinstance(d.get("chave"), str) and len(d["chave"]) >= 32 and d.get("dia") == _dia(self._agora())):
-            self.id, self.chave, self._dia_id = str(d["id"]), d["chave"], d["dia"]
+        if not isinstance(d, dict):
+            d = {}
+        self._n = d["n"] if isinstance(d.get("n"), int) and 0 <= d["n"] < 1000 else 0
+        if self._ident:
+            self._definir()
+        elif (str(d.get("id", "")).isdigit() and len(str(d["id"])) == 9
+                and isinstance(d.get("chave"), str) and len(d["chave"]) >= 32):
+            self.id, self.chave = str(d["id"]), d["chave"]
         else:
-            self._gerar_id()
+            self._definir()
 
-    def _gerar_id(self):
-        """O ID vale o dia inteiro (reinício do PC e conexões não o mudam): vira outro na virada do dia."""
-        self.id, self.chave, self._dia_id = novo_id(), secrets.token_urlsafe(32), _dia(self._agora())
+    def _definir(self):
+        """Com a identidade da placa-mãe o ID e a chave são sempre os mesmos; sem ela, sorteia e guarda."""
+        if self._ident:
+            self.id, self.chave = id_da_maquina(self._ident, self._n), chave_da_maquina(self._ident)
+        else:
+            self.id, self.chave = novo_id(), secrets.token_urlsafe(32)
         try:
             os.makedirs(os.path.dirname(self.arquivo), exist_ok=True)
             with open(self.arquivo, "w", encoding="utf-8") as f:
-                json.dump({"id": self.id, "chave": self.chave, "dia": self._dia_id}, f)
+                json.dump({"id": self.id, "chave": self.chave, "n": self._n}, f)
         except OSError:
-            pass                         # sem gravar, o ID só dura até o serviço reiniciar
+            pass                         # sem gravar, um ID sorteado só dura até o serviço reiniciar
 
-    def trocar_id(self):
-        """O ID novo é registrado aqui mesmo, antes de voltar à tela: se ficasse para o laço principal (que
-        está no meio de uma espera longa), quem digitasse o ID novo logo em seguida ouviria "Não encontrei"."""
-        with self._lock:
-            antigo = (self.id, self.chave)
-            self._gerar_id()
-            self.situacao = "conectando"
-        try:
-            self._registrar()
-        except Exception:  # noqa: BLE001  (sem internet agora: o laço principal tenta de novo)
-            pass
-        self._novo.set()
-        threading.Thread(target=self._sair, args=antigo, daemon=True, name="encontro-sair").start()
-        return self.id
-
-    def _sair(self, i, c):
-        try:
-            self._post("/sair", {"id": i, "chave": c}, falha_ok=True)
-        except Exception:  # noqa: BLE001  (sem internet: o servidor esquece o ID antigo sozinho)
-            pass
+    def _outro_id(self):
+        """O servidor diz que o ID é de outro PC: com identidade, tira o próximo da sequência (a mesma sempre)."""
+        self._n += 1
+        self._definir()
 
     def trocar_senha(self):
         with self._lock:
@@ -213,7 +215,7 @@ class Encontro:
             except _Recusa as e:
                 if e.codigo != 409:
                     raise
-                self._gerar_id()         # ID sorteado já existe lá: sorteia outro
+                self._outro_id()         # o ID já é de outro PC lá: usa o próximo
 
     def turn_atual(self):
         """A credencial do retransmissor chega no registro e vence em 12 h, mas o registro só se repete quando o
@@ -271,8 +273,6 @@ class Encontro:
     def _vigiar_sempre(self):
         while not self._parar.wait(1):
             self.vigiar()
-            if _dia(self._agora()) != self._dia_id and self._pedido is None:
-                self.trocar_id()
 
     def parar(self):
         self._parar.set()
