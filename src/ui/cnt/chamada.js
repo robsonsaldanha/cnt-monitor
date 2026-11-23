@@ -9,7 +9,8 @@
                    requisicao: true | false, portas: [origem, destino],
                    campos: [{ rotulo, valor, mono }], secoes: [{ titulo, mono, campos: [{ rotulo, valor }] }], bruto }],
      detalhe: true,                // clique abre o painel de detalhes; false = só seleciona
-     rotulo: "Fluxo de chamadas"   // nome do diagrama para leitor de tela
+     rotulo: "Fluxo de chamadas",  // nome do diagrama para leitor de tela
+     gerarPdf: function (html, titulo) { return Promise<boolean> }  // opcional: gera o PDF por fora (false = usa a janela de impressão)
    });
 
    A ordem das mensagens na lista é a ordem de cima para baixo; a dos participantes, da esquerda para a direita.
@@ -951,24 +952,24 @@
       }).join("");
 
       var estilo = "@page{size:A4 landscape;margin:12mm}*{box-sizing:border-box}" +
-        "body{margin:0;color:" + PAPEL.texto + ";font:12px/1.45 " + PAPEL.fonte + ";-webkit-print-color-adjust:exact;print-color-adjust:exact}" +
-        "a{color:inherit;text-decoration:none}.dica{margin:6px 0 10px;color:" + PAPEL.suave + ";font-size:11px}" +
+        "body{margin:0;color:" + PAPEL.texto + ";font:10px/1.4 " + PAPEL.fonte + ";-webkit-print-color-adjust:exact;print-color-adjust:exact}" +
+        "a{color:inherit;text-decoration:none}.dica{margin:6px 0 10px;color:" + PAPEL.suave + ";font-size:10px}" +
         ".diagrama{position:relative;max-width:900px;margin:0 auto}.diagrama svg{display:block;width:100%;height:auto}.zona{position:absolute;display:block;border-radius:6px}.zona:hover{background:" + PAPEL.primaria + "1a}" +
-        "h2{margin:18px 0 8px;font-size:15px;break-after:avoid}" +
+        "h2{margin:18px 0 8px;font-size:13px;break-after:avoid}" +
         ".cartao{break-inside:avoid;margin:0 0 12px;padding:10px 12px;border:1px solid " + PAPEL.borda + ";border-left:4px solid var(--tom);border-radius:8px;background:" + PAPEL.fundo + "}" +
-        ".cartao>header{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px}.cartao>header small{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:" + PAPEL.suave + "}" +
-        "nav{display:flex;gap:6px}nav a{padding:1px 8px;border:1px solid " + PAPEL.borda + ";border-radius:999px;font-size:10px;font-weight:600;color:" + PAPEL.primaria + "}" +
-        ".titulo{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:6px}h3{margin:0;font-size:15px;color:var(--tom)}" +
-        ".rotulo{padding:1px 9px;border:1px solid var(--tom);border-radius:999px;background:" + PAPEL.superficie + ";font-size:11px;font-weight:700;color:var(--tom)}" +
-        ".endereco{font:11px " + PAPEL.mono + ";color:" + PAPEL.suave + "}.texto{margin:4px 0;color:" + PAPEL.suave + "}" +
+        ".cartao>header{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px}.cartao>header small{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:" + PAPEL.suave + "}" +
+        "nav{display:flex;gap:6px}nav a{padding:1px 8px;border:1px solid " + PAPEL.borda + ";border-radius:999px;font-size:9px;font-weight:600;color:" + PAPEL.primaria + "}" +
+        ".titulo{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:6px}h3{margin:0;font-size:13px;color:var(--tom)}" +
+        ".rotulo{padding:1px 9px;border:1px solid var(--tom);border-radius:999px;background:" + PAPEL.superficie + ";font-size:9px;font-weight:700;color:var(--tom)}" +
+        ".endereco{font:10px " + PAPEL.mono + ";color:" + PAPEL.suave + "}.texto{margin:4px 0;color:" + PAPEL.suave + "}" +
         ".rota{display:flex;align-items:center;gap:8px;margin:4px 0 8px}.seta{color:var(--tom);font-weight:700}" +
         ".no{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;border:1px solid " + PAPEL.borda + ";border-radius:999px;background:" + PAPEL.superficie + ";font-weight:600}" +
         ".no i{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--tom);color:#fff;font-style:normal;font-size:10px}" +
         ".fatos{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px;margin:6px 0}.fatos div{padding:5px 9px;border:1px solid " + PAPEL.borda + ";border-radius:6px;background:" + PAPEL.superficie + "}" +
-        "dt{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:" + PAPEL.suave + "}dd{margin:0;font-weight:600;overflow-wrap:anywhere}.mono,.mono dd{font-family:" + PAPEL.mono + "}" +
+        "dt{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:" + PAPEL.suave + "}dd{margin:0;font-weight:600;overflow-wrap:anywhere}.mono,.mono dd{font-family:" + PAPEL.mono + "}" +
         ".secao{margin-top:8px}.secao h4{margin:0 0 4px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:" + PAPEL.suave + "}" +
-        ".linhas{margin:0}.linhas div{display:flex;gap:12px;padding:2px 0;border-bottom:1px dashed " + PAPEL.borda + "}.linhas dt{flex:0 0 28%;text-transform:none;letter-spacing:0;font-size:11px;font-weight:600}.linhas dd{font-weight:400}" +
-        "pre{margin:0;padding:8px 10px;border:1px solid " + PAPEL.borda + ";border-radius:6px;background:" + PAPEL.superficie + ";font:11px/1.5 " + PAPEL.mono + ";white-space:pre-wrap;overflow-wrap:anywhere}" +
+        ".linhas{margin:0}.linhas div{display:flex;gap:12px;padding:2px 0;border-bottom:1px dashed " + PAPEL.borda + "}.linhas dt{flex:0 0 28%;text-transform:none;letter-spacing:0;font-size:9px;font-weight:600}.linhas dd{font-weight:400}" +
+        "pre{margin:0;padding:8px 10px;border:1px solid " + PAPEL.borda + ";border-radius:6px;background:" + PAPEL.superficie + ";font:10px/1.5 " + PAPEL.mono + ";white-space:pre-wrap;overflow-wrap:anywhere}" +
         "pre span{display:block}pre .primeira{font-weight:700;color:var(--tom)}pre b{color:" + PAPEL.info + ";font-weight:600}" +
         ".lista{list-style:none;margin:0;padding:0}.lista a{display:flex;gap:10px;align-items:baseline;padding:3px 0;border-bottom:1px dashed " + PAPEL.borda + "}.lista b{color:var(--tom)}.lista .hora{font-family:" + PAPEL.mono + ";color:" + PAPEL.suave + "}";
 
@@ -999,6 +1000,14 @@
       if (!msgs.length) return Promise.resolve();
       formato = formato === "pdf" ? "pdf" : "png";
       emitir("exportou", { formato: formato });
+      if (formato === "pdf" && typeof opcoes.gerarPdf === "function") {
+        avisar("Gerando o PDF…");
+        return Promise.resolve(opcoes.gerarPdf(relatorio(), cabecalho.titulo)).then(function (feito) {
+          if (feito) { avisar("PDF salvo."); return; }
+          avisar("Relatório aberto para imprimir ou salvar como PDF.");
+          return exportarPdf();
+        });
+      }
       avisar(formato === "pdf" ? "Relatório aberto para imprimir ou salvar como PDF." : "Imagem do diagrama baixada.");
       return formato === "pdf" ? exportarPdf() : exportarPng();
     }

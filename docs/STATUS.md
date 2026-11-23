@@ -4,7 +4,7 @@ Atualizado em 2026-11-18. As funcionalidades completas estão no [README](../REA
 
 ## Versão atual
 
-- **3.9.0** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.9.0`. A release no GitHub traz
+- **3.10.0** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.10.0`. A release no GitHub traz
   `CNTMonitor-Setup-<versão>.exe`, `MonitorDoPC-Setup-<versão>.exe` (nome antigo, para instalações antigas) e
   `cnt-monitor_<versão>_amd64.deb`.
 - Repositório: `robsonsaldanha/cnt-monitor` (público, GPL v3 ou posterior).
@@ -36,6 +36,7 @@ Atualizado em 2026-11-18. As funcionalidades completas estão no [README](../REA
 | 3.7.4 | Tela **Logs** (aparece no menu com o Modo debug ligado): mostra, filtra e copia o fim do `servico.log`, do `bandeja.log` e do log da atualização, só neste computador (`/api/logs`, com o token do ícone). No modo debug cada linha dos logs leva data e hora, as ações pedidas são registradas e o agente do acesso remoto grava o que o aioice/aiortc registram (cada teste de caminho, o retransmissor, erros do asyncio). |
 | 3.8.0 | Acesso remoto passa a usar o retransmissor TURN por TLS na porta 443 (coturn em 5349, atrás do `stream` do nginx por SNI `turn.cntoficial.com.br`), para redes que só liberam web. O agente testa as opções TCP e coloca primeiro a que responde (o aiortc só usa o primeiro TURN); o diagnóstico ganhou "Retransmissor seguro por TLS (porta 443)"; o ponto de encontro devolve também `turns:`. |
 | 3.9.0 | Tela **Chamadas** (Call flow, ligado em Configurações): captura SIP/PJSIP/WebSocket/HEP em qualquer porta, ladder e fluxo de cards, histórico com quem desligou, API com chave (validade padrão 6 h), monitoramento de outros PCs pelo ID do compartilhamento online (P2P, `aiortc`) com sincronização a cada 30 s por Call-ID; ID do acesso remoto passa a mudar só na virada do dia e clicar no ID/senha copia o valor. Exige `servidor-vps/encontro.js` novo na VPS. |
+| 3.10.0 | Chamadas: o fluxo abre em pop-up com resumo no topo (origem, destino, tempo total e de conversa, quem desligou); cards movíveis e setas que saem pelo lado e chegam por cima; textos e gráficos menores. PDF gerado pelo Chrome (ou Edge) em segundo plano (`src/monitorpc/pdf.py`, `POST /api/pdf`), com links clicáveis entre o fluxo e os detalhes de cada mensagem; sem navegador, cai na janela de impressão. ID do acesso remoto fixo por computador (UUID da placa-mãe, `src/monitorpc/maquina.py`), igual depois de formatar; a troca diária e a ação `ajuda_trocar_id` saíram (a senha continua nova a cada sessão). |
 
 ## Como publicar uma versão
 

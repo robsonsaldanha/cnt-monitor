@@ -433,9 +433,6 @@ class Motor:
                 r = estado()
                 r["dados"]["meu"] = self.encontro.estado()
                 return r
-            if tipo == "ajuda_trocar_id":
-                self.encontro.trocar_id()
-                return {"ok": True, "msg": "", "dados": {"meu": self.encontro.estado()}}
             if tipo == "ajuda_trocar_senha":
                 self.encontro.trocar_senha()
                 return {"ok": True, "msg": "", "dados": {"meu": self.encontro.estado()}}

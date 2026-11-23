@@ -48,7 +48,18 @@
 .fluxo-app .cnt-fluxo__no.fluxo-desligado{opacity:.45}
 .voip-grade{display:grid;grid-template-columns:minmax(0,1fr) 22rem;gap:var(--cnt-espaco-3);align-items:start;padding:var(--cnt-espaco-3)}
 .voip-grade .fluxo-app{margin:0}
-.voip-ladder{--cnt-chamada-altura:44rem;margin:var(--cnt-espaco-3)}
+.voip-modal{--cnt-modal-largura:100rem}
+.voip-modal .cnt-modal__caixa{height:100%}
+.voip-modal .cnt-modal__corpo{padding:var(--cnt-espaco-3)}
+.voip-modal .seg{margin-left:auto;align-self:center}
+.voip-topo{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:1px;background:var(--cnt-cor-borda);border-bottom:1px solid var(--cnt-cor-borda)}
+.voip-topo__it{display:flex;flex-direction:column;gap:2px;background:var(--cnt-cor-superficie-2);padding:var(--cnt-espaco-1) var(--cnt-espaco-3);min-width:0}
+.voip-topo__it span{font-size:.625rem;color:var(--cnt-cor-texto-suave);text-transform:uppercase;letter-spacing:.04em}
+.voip-topo__it b{font-size:var(--cnt-texto-sm);overflow-wrap:anywhere}
+.voip-topo__it small{font-size:.625rem;color:var(--cnt-cor-texto-suave);overflow-wrap:anywhere}
+#voipQuadro .cnt-fluxo__no{cursor:grab}
+.voip-ladder{--cnt-chamada-altura:min(44rem,62dvh);margin:0;zoom:.85}
+.voip-modal .voip-lado{zoom:.88}
 @media (max-width:1100px){.voip-grade{grid-template-columns:minmax(0,1fr)}}
 .voip-lado{border:1px solid var(--cnt-cor-borda);border-radius:var(--cnt-raio-md);background:var(--cnt-cor-superficie-2);padding:var(--cnt-espaco-3);max-height:46rem;overflow:auto;font-size:13px;min-width:0}
 .voip-lado h3{margin:0 0 8px;font-size:var(--cnt-texto-md)}.voip-lado h4{margin:12px 0 6px;font-size:var(--cnt-texto-sm);color:var(--cnt-cor-texto-suave)}
@@ -785,9 +796,11 @@ body:not([data-so="linux"]) .so-lin{display:none!important}
       <p class="mut2" style="font-size:12.5px;margin:0 14px 14px">Envie a chave no cabeçalho <code>X-Voip-Key</code>. <code>GET /api/chamadas/estado</code> (ao vivo e estado da captura), <code>GET /api/chamadas/historico?busca=&amp;limite=</code>, <code>GET /api/chamadas/chamada?id=&lt;Call-ID&gt;</code>, <code>GET /api/chamadas/sincronizar?desde=&lt;Call-ID&gt;&amp;limite=</code> (só o que vem depois dele) e <code>POST /api/chamadas/captura</code> com <code>{"ligar": true|false}</code>. Dez chaves erradas bloqueiam o IP por 5 minutos.</p></div>
   </div>
 
-  <div class="cnt-cartao secao" id="voipDet" hidden><div class="cnt-cartao__topo"><h2>Fluxo da chamada</h2><span class="cnt-cartao__apoio" id="voipDetInfo"></span><div class="seg" id="segVoipVisao" style="margin-left:auto"><button data-f="ladder" aria-pressed="true" title="Diagrama em escada (padrão)">Ladder</button><button data-f="cards" aria-pressed="false" title="Cards em sequência: ordem das ações">Cards</button></div></div>
+  <dialog class="cnt-modal voip-modal" id="voipDet" aria-labelledby="voipDetTit"><div class="cnt-modal__caixa"><div class="cnt-modal__topo"><div class="cnt-modal__cabeca"><h2 class="cnt-modal__titulo" id="voipDetTit">Fluxo da chamada</h2><p class="cnt-modal__subtitulo" id="voipDetInfo"></p></div><div class="seg" id="segVoipVisao"><button data-f="ladder" aria-pressed="true" title="Diagrama em escada (padrão)">Ladder</button><button data-f="cards" aria-pressed="false" title="Cards em sequência: ordem das ações">Cards</button></div><button class="cnt-modal__fechar" id="voipDetFechar" type="button" aria-label="Fechar o fluxo da chamada" title="Fechar (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="voip-topo" id="voipTopo"></div>
+    <div class="cnt-modal__corpo">
     <div class="voip-ladder" id="voipLadder"></div>
-    <div class="voip-grade" id="voipCards" style="display:none"><div class="fluxo-app" id="voipQuadro" aria-label="Fluxo da chamada"></div><aside class="voip-lado" id="voipLado" aria-live="polite"></aside></div></div>
+    <div class="voip-grade" id="voipCards" style="display:none"><div class="fluxo-app" id="voipQuadro" aria-label="Fluxo da chamada"></div><aside class="voip-lado" id="voipLado" aria-live="polite"></aside></div></div></div></dialog>
 </section>
 
 <section id="v-vps" hidden>
@@ -2973,16 +2986,16 @@ function voipNos(d){ const ev=[]; (d.msgs||[]).forEach((m,i)=>ev.push({t:m.ts,k:
   const nos=[], con=[], itens={}; let ant=null;
   ev.forEach((e,j)=>{ let no;
     if(e.k==='sip'){ const m=e.m, cod=/^(\d{3})/.exec(m.rotulo), n=cod?+cod[1]:0, req=!cod;
-      no={id:e.id,tipo:req?(m.rotulo==='INVITE'?'gatilho':/^(BYE|CANCEL)$/.test(m.rotulo)?'condicao':'acao'):'etapa',titulo:m.rotulo+(m.retx?' (repetida)':''),descricao:`${voipHora(m.ts)} · ${voipIp(m.de)} → ${voipIp(m.para)}`,x:faixa(voipIp(m.de))*250,y:j*108};
+      no={id:e.id,tipo:req?(m.rotulo==='INVITE'?'gatilho':/^(BYE|CANCEL)$/.test(m.rotulo)?'condicao':'acao'):'etapa',titulo:m.rotulo+(m.retx?' (repetida)':''),descricao:`${voipHora(m.ts)} · ${voipIp(m.de)} → ${voipIp(m.para)}`,x:faixa(voipIp(m.de))*250,y:j*130};
       if(!req) no.estado=n>=300?'erro':n>=200?'concluido':'andamento'; itens[e.id]={k:'sip',m}; }
     else { const f=e.f, ruim=(f.mos!=null&&f.mos<3.5)||f.perda>5;
-      no={id:e.id,tipo:'acao',titulo:'RTP '+(f.codec||''),descricao:`${f.recebidos} pacotes · perda ${f.perda}% · MOS ${f.mos==null?'—':f.mos}`,estado:ruim?'erro':'concluido',x:faixa(voipIp(f.de))*250,y:j*108}; itens[e.id]={k:'rtp',f}; }
+      no={id:e.id,tipo:'acao',titulo:'RTP '+(f.codec||''),descricao:`${f.recebidos} pacotes · perda ${f.perda}% · MOS ${f.mos==null?'—':f.mos}`,estado:ruim?'erro':'concluido',x:faixa(voipIp(f.de))*250,y:j*130}; itens[e.id]={k:'rtp',f}; }
     nos.push(no); if(ant) con.push({de:ant.id,para:no.id,tipo:e.k==='rtp'?'pontilhada':'solida',rotulo:'+'+voipDelta(Math.max(0,e.t-ant.t))}); ant={id:no.id,x:no.x,t:e.t}; });
-  if(ant&&!d.ativa&&d.desligou){ nos.push({id:'fim',tipo:'pessoa',titulo:'Desligou: '+d.desligou,descricao:(d.motivo||'').slice(0,70),estado:voipRuim(d.estado)?'erro':'concluido',x:ant.x,y:nos.length*108}); con.push({de:ant.id,para:'fim'}); itens.fim={k:'fim'}; }
+  if(ant&&!d.ativa&&d.desligou){ nos.push({id:'fim',tipo:'pessoa',titulo:'Desligou: '+d.desligou,descricao:(d.motivo||'').slice(0,70),estado:voipRuim(d.estado)?'erro':'concluido',x:ant.x,y:nos.length*130}); con.push({de:ant.id,para:'fim'}); itens.fim={k:'fim'}; }
   return {nos,con,itens}; }
 function voipQuadro(d){ const el=$('#voipQuadro'); if(el.cntFluxo) el.cntFluxo.destruir(); if(el._ro) el._ro.disconnect();
-  const g=voipNos(d); VOIP_ITENS=g.itens; el.style.setProperty('--cnt-fluxo-altura',Math.max(420,Math.min(720,g.nos.length*108+110))+'px');
-  const f=cntFluxo.criar(el,{nos:g.nos,conexoes:g.con,somenteLeitura:true,rotulo:'Fluxo da chamada '+d.id}); voipMarcar();
+  const g=voipNos(d); VOIP_ITENS=g.itens; el.style.setProperty('--cnt-fluxo-altura',Math.max(420,Math.min(720,g.nos.length*130+110))+'px');
+  const f=cntFluxo.criar(el,{nos:g.nos,conexoes:g.con,somenteLeitura:true,arrastar:true,ligacao:'lateral',rotulo:'Fluxo da chamada '+d.id}); voipMarcar();
   if(!el._ligado){ el._ligado=1; let ini=null; el.addEventListener('wheel',e=>{ if(!e.ctrlKey&&!e.metaKey) e.stopPropagation(); },{capture:true});
     el.addEventListener('pointerdown',e=>{ ini=[e.clientX,e.clientY]; });
     const abrir=n=>{ VOIP_NO=n.dataset.id; voipMarcar(); voipLado(VOIP_DET); };
@@ -3008,7 +3021,7 @@ function voipLadderDados(d){ const ev=[]; (d.msgs||[]).forEach((m,i)=>ev.push({t
   return {titulo:`${d.de||'?'} → ${d.para||'?'}`,subtitulo:`Call-ID ${d.id}`+(d.pc_nome?' · '+d.pc_nome:'')+(d.agente?' · '+d.agente:''),resumo,
     participantes:ips.map((ip,i)=>({id:ip,nome:ip,detalhe:i===0?'origem':i===ips.length-1?'destino':'intermediário',tipo:i===0?'telefone':'servidor'})),mensagens}; }
 function voipLadder(d){ const el=$('#voipLadder'), dados=voipLadderDados(d);
-  if(!VOIP_LAD){ VOIP_LAD=cntChamada.criar(el,dados); el.addEventListener('cnt:chamada:abriu',e=>{ VOIP_LADNO=e.detail.tipo==='mensagem'?e.detail.id:null; }); el.addEventListener('cnt:chamada:fechou',()=>{ VOIP_LADNO=null; }); }
+  if(!VOIP_LAD){ VOIP_LAD=cntChamada.criar(el,Object.assign({gerarPdf:(html,t)=>salvarPdf(html,t||'chamada')},dados)); el.addEventListener('cnt:chamada:abriu',e=>{ VOIP_LADNO=e.detail.tipo==='mensagem'?e.detail.id:null; }); el.addEventListener('cnt:chamada:fechou',()=>{ VOIP_LADNO=null; }); }
   else { VOIP_LAD.carregar(dados); if(VOIP_LADNO&&dados.mensagens.some(m=>m.id===VOIP_LADNO)) VOIP_LAD.abrir(VOIP_LADNO); } }
 function voipVisao(){ const lad=VOIP_VISAO==='ladder'; $('#voipLadder').style.display=lad?'':'none'; $('#voipCards').style.display=lad?'none':''; }
 function voipMarcar(){ $('#voipQuadro').querySelectorAll('.cnt-fluxo__no').forEach(n=>n.classList.toggle('is-selecionado',n.dataset.id===VOIP_NO)); }
@@ -3021,9 +3034,16 @@ function voipLado(d){ if(!d) return; const it=VOIP_ITENS[VOIP_NO]; let h='';
   else if(it.k==='rtp'){ const f=it.f; h='<h3>Fluxo de mídia (RTP)</h3>'+voipKv([['De',f.de],['Para',f.para],['Codec',f.codec],['SSRC',f.ssrc],['Início',f.t0?voipHora(f.t0):''],['Fim',f.t1?voipHora(f.t1):''],['Duração',f.t0&&f.t1?voipDelta(f.t1-f.t0):''],['Pacotes recebidos',f.recebidos],['Esperados',f.esperados],['Perdidos',f.perdidos],['Perda',f.perda+'%'],['Fora de ordem',f.fora_de_ordem],['Duplicados',f.duplicados],['Jitter',f.jitter_ms==null?'':f.jitter_ms+' ms'],['MOS',f.mos==null?'':f.mos]]); }
   else h='<h3>Desligamento</h3>'+voipKv([['Quem desligou',d.desligou],['Motivo',d.motivo],['Estado final',d.estado]]);
   $('#voipLado').innerHTML=h; }
-async function voipDetalhe(){ if(!VOIP_SEL||VOIP_ABA==='api') return $('#voipDet').hidden=true;
-  const q=encodeURIComponent(VOIP_SEL.id); let d; try{ d=await API(VOIP_SEL.pc?`voip/monitor/chamada?pc=${encodeURIComponent(VOIP_SEL.pc)}&id=${q}`:'voip/chamada?id='+q); }catch(_){ $('#voipDet').hidden=true; return; }
-  $('#voipDet').hidden=false; VOIP_DET=d;
+function voipAbrirModal(){ const m=$('#voipDet'); if(!m.open) m.showModal(); requestAnimationFrame(()=>m.classList.add('is-aberto')); }
+function voipFecharModal(){ const m=$('#voipDet'), tinha=!!VOIP_SEL; VOIP_SEL=null; VOIP_NO=null; VOIP_LADNO=null; VOIP_ASSIN=''; m.classList.remove('is-aberto'); if(m.open) m.close(); if(tinha) vVoip(); }
+function voipTopo(d){ const ts=[...(d.msgs||[]).map(m=>m.ts),...(d.rtp||[]).flatMap(f=>[f.t0,f.t1])].filter(Boolean), ini=ts.length?Math.min(...ts):0, total=ts.length?Math.max(...ts)-ini:0, rtp=(d.rtp||[]).length;
+  const it=[['Origem',d.de,d.origem],['Destino',d.para,d.destino],['Início',ini?voipHora(ini):'',''],['Tempo total',ts.length?voipDelta(total):'',d.duracao?'conversa '+dur(d.duracao):'sem conversa'],['Estado',d.estado,''],
+    ['Quem desligou',d.desligou||(d.ativa?'em andamento':'—'),d.motivo],['Mensagens',(d.msgs||[]).length,rtp?rtp+' fluxo(s) de mídia (RTP)':''],['Programa',d.agente,d.pc_nome]];
+  return it.filter(x=>x[1]!==''&&x[1]!=null).map(([r,v,s])=>`<div class="voip-topo__it"><span>${r}</span><b>${esc(String(v))}</b>${s?`<small>${esc(String(s))}</small>`:''}</div>`).join(''); }
+async function voipDetalhe(){ if(!VOIP_SEL||VOIP_ABA==='api') return voipFecharModal();
+  const q=encodeURIComponent(VOIP_SEL.id); let d; try{ d=await API(VOIP_SEL.pc?`voip/monitor/chamada?pc=${encodeURIComponent(VOIP_SEL.pc)}&id=${q}`:'voip/chamada?id='+q); }catch(_){ voipFecharModal(); return; }
+  if(!VOIP_SEL) return;
+  voipAbrirModal(); VOIP_DET=d; $('#voipTopo').innerHTML=voipTopo(d);
   $('#voipDetInfo').textContent=`${d.de||'?'} → ${d.para||'?'} · ${d.estado||'—'} · ${(d.msgs||[]).length} mensagens${d.pc_nome?' · '+d.pc_nome:''}${d.agente?' · '+d.agente:''}`;
   const as=[VOIP_SEL.pc,d.id,(d.msgs||[]).length,(d.rtp||[]).map(f=>f.recebidos).join(','),d.estado,d.desligou].join('|');
   voipVisao(); if(as!==VOIP_ASSIN){ VOIP_ASSIN=as; if(VOIP_VISAO==='ladder') voipLadder(d); else voipQuadro(d); } if(VOIP_VISAO==='cards') voipLado(d); }
@@ -3053,8 +3073,11 @@ async function vVoipApi(){ let a; try{ a=await API('voip/api'); }catch(_){ retur
   $('#vaAlvo').textContent=a.alvo?'conectado a '+a.alvo:'não conectado'; $('#vaConectar').textContent=a.alvo?'Trocar de computador':'Conectar'; }
 async function voipAcao(corpo){ const r=await POST('acao',corpo).catch(()=>null); toast(r?r.msg:'O serviço não respondeu.',!(r&&r.ok)); return r; }
 seg($('#segVoipVisao'),d=>{ VOIP_VISAO=d.f; VOIP_ASSIN=''; voipDetalhe(); });
-seg($('#segVoip'),d=>{ VOIP_ABA=d.f; VOIP_SEL=null; VOIP_LADNO=null; if(VOIP_LAD){ VOIP_LAD.destruir(); VOIP_LAD=null; } VOIP_ASSIN=''; $('#voipDet').hidden=true; vVoip(); });
+seg($('#segVoip'),d=>{ VOIP_ABA=d.f; VOIP_SEL=null; VOIP_LADNO=null; if(VOIP_LAD){ VOIP_LAD.destruir(); VOIP_LAD=null; } VOIP_ASSIN=''; voipFecharModal(); vVoip(); });
 $('#voipBusca').addEventListener('input',()=>vVoip()); $('#vmBusca').addEventListener('input',()=>vVoip());
+$('#voipDetFechar').onclick=voipFecharModal;
+$('#voipDet').addEventListener('click',e=>{ if(e.target===e.currentTarget) voipFecharModal(); });
+$('#voipDet').addEventListener('close',voipFecharModal);
 const voipClique=e=>{ const t=e.target.closest('[data-vid]'); if(!t) return; VOIP_SEL={id:t.dataset.vid,pc:t.dataset.pc||''}; VOIP_NO=null; VOIP_LADNO=null; VOIP_ASSIN=''; vVoip(); };
 $('#voipLista').addEventListener('click',voipClique); $('#vmChamadas').addEventListener('click',voipClique);
 $('#voipLigar').onclick=async()=>{ const lig=$('#voipLigar').textContent.startsWith('Desligar'); await voipAcao({tipo:lig?'voip_parar':'voip_iniciar'}); vVoip(); };
@@ -3298,8 +3321,13 @@ ul.lista{margin:0;padding:8px 16px 10px 34px}ul.lista li{margin:5px 0}
 <main class="conteudo">${corpo}</main><div class="rod">Relatório gerado automaticamente pelo CNT Monitor. Valores de memória e CPU são médias de amostras gravadas a cada poucos segundos.</div></div></body></html>`; }
 async function baixarHtml(titulo, sub, corpo, arquivo){ const doc=await montarDoc(titulo,sub,corpo);
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([doc],{type:'text/html;charset=utf-8'})); a.download=arquivo; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),5000); toast('Relatório baixado. Abra o arquivo para ver ou imprimir.'); }
-async function imprimirDoc(titulo, sub, corpo){ toast('Preparando o PDF… na janela de impressão escolha “Salvar como PDF”.');
-  const doc=await montarDoc(titulo,sub,corpo); const f=document.createElement('iframe'); f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+// PDF sempre pela impressora de PDF do Chrome (headless, sem janela): mantém os links. true = salvou; false = sem Chrome/Edge.
+async function salvarPdf(html, nome){ try{ const r=await fetch('/api/pdf',{method:'POST',headers:{'X-Token':TOKEN,'Content-Type':'application/json'},body:JSON.stringify({html})}); if(!r.ok) return false;
+    const a=document.createElement('a'); a.href=URL.createObjectURL(await r.blob()); a.download=String(nome||'relatorio').replace(/[\\/:*?"<>|\s]+/g,'-').slice(0,80)+'.pdf'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),10000); return true; }
+  catch(_){ return false; } }
+async function imprimirDoc(titulo, sub, corpo){ toast('Gerando o PDF…');
+  const doc=await montarDoc(titulo,sub,corpo); if(await salvarPdf(doc,titulo)){ toast('PDF salvo (impressora de PDF do Chrome).'); return; }
+  toast('Chrome não encontrado: na janela de impressão escolha “Salvar como PDF”.', true); const f=document.createElement('iframe'); f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
   f.srcdoc=doc; document.body.appendChild(f);
   f.onload=async()=>{ try{ await f.contentDocument.fonts.ready; }catch(_){} setTimeout(()=>{ f.contentWindow.focus(); f.contentWindow.print(); setTimeout(()=>f.remove(),60000); },150); }; }
 function htmlRelatorioCompleto(r){ const g=r.geral; if(!g) return '<div class="vazio">Sem dados no período.</div>'; const m=r.maquina||{};

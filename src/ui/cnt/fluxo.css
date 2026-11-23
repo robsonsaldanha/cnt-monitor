@@ -144,6 +144,10 @@
   cursor: default;
 }
 
+.cnt-fluxo--leitura.cnt-fluxo--arrastavel .cnt-fluxo__no {
+  cursor: grab;
+}
+
 .cnt-fluxo__no:hover {
   border-color: var(--cnt-cor-borda-forte);
 }

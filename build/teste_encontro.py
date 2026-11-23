@@ -204,19 +204,38 @@ def _receber_ate(url, pedido, tipo):
 
 def teste_id_e_senha_do_servico():
     arq = os.path.join(DADOS, "id.json")
-    agora = [time.time()]
-    e = encontro.Encontro(GerenteFalso(), url="http://127.0.0.1:9/api", arquivo=arq, agora=lambda: agora[0])
+    e = encontro.Encontro(GerenteFalso(), url="http://127.0.0.1:9/api", arquivo=arq, identidade=lambda: "smbios:aaa")
     i, c = e.id, e.chave
     assert len(i) == 9 and i.isdigit() and len(c) >= 32
-    assert encontro.Encontro(GerenteFalso(), arquivo=arq, agora=lambda: agora[0]).id == i      # serviço reiniciou: mesmo ID
-    agora[0] += 86400 * 1.5
-    assert encontro.Encontro(GerenteFalso(), arquivo=arq, agora=lambda: agora[0]).id != i      # virou o dia: ID novo
+    assert encontro.Encontro(GerenteFalso(), arquivo=arq, identidade=lambda: "smbios:aaa").id == i       # reiniciou: mesmo ID
+    os.remove(arq)                                                                                       # formatou: sem arquivo nenhum
+    f = encontro.Encontro(GerenteFalso(), arquivo=arq, identidade=lambda: "smbios:aaa")
+    assert (f.id, f.chave) == (i, c)                                                                     # mesmo ID e mesma chave
+    assert encontro.Encontro(GerenteFalso(), arquivo=arq, identidade=lambda: "smbios:bbb").id != i       # outro PC: outro ID
     st = e.estado()
     assert st["id"] == encontro.formatar_id(i) and len(st["senha"]) == 9 and st["senha"] in st["texto"] and st["id"] in st["texto"]
     s = e.senha
     assert e.trocar_senha() != s
-    assert e.trocar_id() != i
 
+def teste_id_sem_identidade_e_sorteado_e_guardado():
+    arq = os.path.join(DADOS, "id_sem.json")
+    e = encontro.Encontro(GerenteFalso(), url="http://127.0.0.1:9/api", arquivo=arq, identidade=lambda: "")
+    assert len(e.id) == 9 and len(e.chave) >= 32
+    assert encontro.Encontro(GerenteFalso(), arquivo=arq, identidade=lambda: "").id == e.id
+
+def teste_id_ja_de_outro_pc_usa_o_proximo_da_sequencia():
+    p, url = _servidor()
+    try:
+        a = encontro.Encontro(GerenteFalso(), url=url, arquivo=os.path.join(DADOS, "id_a.json"), identidade=lambda: "smbios:ccc")
+        a._registrar()
+        # outro PC cujo ID bate com o de "a": a chave dele é outra, o servidor recusa (409) e ele passa ao próximo
+        b = encontro.Encontro(GerenteFalso(), url=url, arquivo=os.path.join(DADOS, "id_b.json"), identidade=lambda: "smbios:ddd")
+        b.id = a.id
+        b._registrar()
+        assert b.id == encontro.id_da_maquina("smbios:ddd", 1) and b.id != a.id
+        assert encontro.Encontro(GerenteFalso(), url=url, arquivo=os.path.join(DADOS, "id_b.json"), identidade=lambda: "smbios:ddd").id == b.id
+    finally:
+        p.kill()
 
 def teste_pedido_pelo_id():
     p, url = _servidor()
@@ -261,24 +280,6 @@ def teste_pedido_pelo_id():
         _receber_ate(url, d["pedido"], "convite")
         agora[0] += encontro.ESPERA_RESPOSTA + 1
         _ate(lambda: g.chamadas[-1] == ("parar", None))
-    finally:
-        e.parar()
-        p.kill()
-
-
-def teste_id_trocado_vale_na_hora():
-    """Quem digita o ID novo logo depois de "Trocar ID" encontra o computador; o antigo deixa de valer."""
-    p, url = _servidor()
-    e = encontro.Encontro(GerenteFalso(), url=url, arquivo=os.path.join(DADOS, "id4.json"))
-    e.iniciar()
-    try:
-        _ate(lambda: e.situacao == "online")
-        antigo = e.id
-        time.sleep(0.3)                                   # o laço principal já está na espera longa do ID antigo
-        novo = e.trocar_id()
-        assert novo != antigo and e.situacao == "online"
-        assert _req(url, "/conectar", {"id": novo})[0] == 200
-        _ate(lambda: _req(url, "/conectar", {"id": antigo})[0] == 404, 5)
     finally:
         e.parar()
         p.kill()

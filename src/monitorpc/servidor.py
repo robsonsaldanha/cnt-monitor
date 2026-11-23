@@ -19,7 +19,7 @@ import subprocess
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs, unquote
 
-from . import config, configuracao, banco, icones, energia, servicos, alertas, regras, limpeza, captura, envio, registro, sinalizacao, encontro
+from . import config, configuracao, banco, icones, energia, servicos, alertas, regras, limpeza, captura, envio, registro, sinalizacao, encontro, pdf
 
 HOSTS_OK = {f"127.0.0.1:{config.PORTA}", f"localhost:{config.PORTA}"}
 ORIGENS_OK = {f"http://127.0.0.1:{config.PORTA}", f"http://localhost:{config.PORTA}"}
@@ -27,7 +27,7 @@ WIN = os.name == "nt"
 SEM_JANELA = 0x08000000 if WIN else 0
 TIPOS_ARQ = {".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8",
              ".png": "image/png", ".svg": "image/svg+xml"}
-POST_GRANDE = {"/api/capturas/conteudo", "/api/capturas/editada"}   # imagens inteiras (até 64 MB)
+POST_GRANDE = {"/api/capturas/conteudo", "/api/capturas/editada", "/api/pdf"}   # imagens inteiras e relatórios (até 64 MB)
 
 
 def exe_do_icone():
@@ -751,6 +751,11 @@ def fabrica(motor, TOKEN, remoto=False):
                         configuracao.depurar("ação:", corpo.get("tipo"), "->",
                                              "ok" if res.get("ok") else f"recusada: {str(res.get('msg') or '')[:200]}")
                     return self._json(res)
+                if r == "/api/pdf":
+                    dados = pdf.renderizar(corpo.get("html")) if isinstance(corpo, dict) else None
+                    if dados is None:
+                        return self._json({"erro": "sem Chrome ou Edge para gerar o PDF"}, 503)
+                    return self._env(200, dados, "application/pdf")
                 if r == "/api/config":
                     final = configuracao.salvar_publico(corpo, remoto=remoto)
                     m.config_mudou()

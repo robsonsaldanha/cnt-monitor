@@ -5,6 +5,8 @@
      conexoes: [{ id, de, para, tipo: "solida" | "pontilhada", rotulo }],
      direcao: "horizontal" | "vertical",
      somenteLeitura: false,
+     arrastar: false,              // em somenteLeitura, permite mover os cartões
+     ligacao: "padrao" | "lateral", // lateral: a linha sai pelo lado do destino e chega por cima
      tipoConexao: "solida",        // tipo das conexões criadas pela pessoa
      rotulo: "Fluxo"               // nome do quadro para leitor de tela
    });
@@ -59,6 +61,8 @@
 
     var vertical = opcoes.direcao === "vertical";
     var leitura = !!opcoes.somenteLeitura;
+    var arrastavel = !leitura || !!opcoes.arrastar; // em só leitura, "arrastar" ainda deixa mover os cartões
+    var lateral = opcoes.ligacao === "lateral";     // sai pelo lado do destino e chega por cima
     var tipoPadrao = opcoes.tipoConexao === "pontilhada" ? "pontilhada" : "solida";
     var uid = "cnt-fluxo-" + (++instancias);
     var nos = {};      // id -> { dado, el }
@@ -73,6 +77,7 @@
     raiz.classList.add("cnt-fluxo");
     raiz.classList.toggle("cnt-fluxo--vertical", vertical);
     raiz.classList.toggle("cnt-fluxo--leitura", leitura);
+    raiz.classList.toggle("cnt-fluxo--arrastavel", arrastavel);
 
     var quadro = el("div", "cnt-fluxo__quadro");
     quadro.setAttribute("role", "group");
@@ -199,19 +204,28 @@
 
     /* Traçado: sempre da saída da origem para a entrada do destino.
        É esse sentido que as animações do CSS seguem, em qualquer posição dos nós. */
-    function saida(no) {
+    function saida(no, alvo) {
+      if (lateral && alvo) {
+        var direita = alvo.dado.x + alvo.el.offsetWidth / 2 >= no.dado.x + no.el.offsetWidth / 2;
+        return [no.dado.x + (direita ? no.el.offsetWidth : 0), no.dado.y + no.el.offsetHeight / 2];
+      }
       return vertical
         ? [no.dado.x + no.el.offsetWidth / 2, no.dado.y + no.el.offsetHeight]
         : [no.dado.x + no.el.offsetWidth, no.dado.y + no.el.offsetHeight / 2];
     }
 
     function entrada(no) {
-      return vertical
+      return vertical || lateral
         ? [no.dado.x + no.el.offsetWidth / 2, no.dado.y - RECUO_SETA]
         : [no.dado.x - RECUO_SETA, no.dado.y + no.el.offsetHeight / 2];
     }
 
     function curva(a, b) {
+      if (lateral) {
+        var sentido = b[0] >= a[0] ? 1 : -1;
+        var f = limitar(Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1])) / 2, 40, 160);
+        return "M" + a[0] + " " + a[1] + " C" + (a[0] + sentido * f) + " " + a[1] + " " + b[0] + " " + (b[1] - f) + " " + b[0] + " " + b[1];
+      }
       // Limitada para a curva não abrir demais quando o destino está longe ou atrás da origem.
       var folga = limitar(Math.abs(vertical ? b[1] - a[1] : b[0] - a[0]) / 2, 40, 160);
       // Destino atrás da origem: a curva desvia para o lado, em vez de passar por trás dos nós.
@@ -222,7 +236,7 @@
     }
 
     function desenhar(conexao) {
-      var d = curva(saida(nos[conexao.dado.de]), entrada(nos[conexao.dado.para]));
+      var d = curva(saida(nos[conexao.dado.de], nos[conexao.dado.para]), entrada(nos[conexao.dado.para]));
       conexao.alvo.setAttribute("d", d);
       conexao.linha.setAttribute("d", d);
       if (conexao.pulso) conexao.pulso.setAttribute("d", d);
@@ -422,7 +436,7 @@
       } else if (item) {
         var no = nos[item.getAttribute("data-id")];
         selecionar("no", no.dado.id);
-        if (leitura) return;
+        if (!arrastavel) return;
         var p = ponto(evento);
         arrasto = { modo: "no", no: no, dx: p.x - no.dado.x, dy: p.y - no.dado.y, moveu: false };
       } else if (alvo) {
