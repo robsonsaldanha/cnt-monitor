@@ -1,6 +1,6 @@
 [Unit]
 Description=CNT Monitor (monitor do computador e acesso remoto)
-Documentation=https://monitor.cntoficial.com.br
+Documentation=https://cntoficial.com.br
 After=network-online.target systemd-logind.service
 Wants=network-online.target
 

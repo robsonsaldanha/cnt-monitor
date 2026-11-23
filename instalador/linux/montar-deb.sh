@@ -56,7 +56,7 @@ Recommends: xclip, wl-clipboard, xdg-desktop-portal, gstreamer1.0-tools, gstream
 Suggests: gnome-shell-extension-appindicator
 Section: utils
 Priority: optional
-Homepage: https://monitor.cntoficial.com.br
+Homepage: https://cntoficial.com.br
 Description: Monitor do computador e acesso remoto (CNT Monitor)
  CPU, memória, disco, rede por programa, temperatura e GPU, histórico de 7 dias,
  alertas, regras por programa, otimização, monitoramento de VPS e acesso remoto

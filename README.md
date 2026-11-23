@@ -7,7 +7,7 @@ remoto por ID e senha, acesso pelo celular e monitoramento de servidores (VPS).
 **Software livre e 100% gratuito**, sob a licença [GNU GPL v3](LICENSE): sem anúncios, sem conta, sem versão paga.
 Você pode usar, estudar, modificar e redistribuir, desde que as versões redistribuídas continuem livres sob a mesma licença.
 
-**Baixar:** https://monitor.cntoficial.com.br/baixar (entrega o arquivo do seu sistema) ou a
+**Baixar:** https://cntoficial.com.br/baixar (entrega o arquivo do seu sistema) ou a
 [última versão](https://github.com/robsonsaldanha/cnt-monitor/releases/latest):
 
 - **Windows:** `CNTMonitor-Setup-x.y.z.exe`.
@@ -202,8 +202,8 @@ histórico, processos, serviços e alertas (ex.: disco cheio). A identidade do s
 - Dados em `C:\ProgramData\MonitorPC` (`historico.db`, `config.json`, `servico.log`). Os nomes internos (serviço
   `MonitorPC`, pasta de dados, executáveis) continuam os da época em que o programa se chamava Monitor do PC, para
   as instalações antigas seguirem atualizando.
-- `servidor-vps/`: o que roda em https://monitor.cntoficial.com.br (`/var/www/html_cntmonitor`, clone deste
-  repositório): site com o download, ponto de encontro do acesso por ID (`encontro.js`, Node sem dependências,
+- `servidor-vps/`: o que roda na VPS (`/var/www/html_cntmonitor`, clone deste
+  repositório): download dos instaladores (o site é o cntoficial.com.br, hub CNT fora deste repositório), ponto de encontro do acesso por ID (`encontro.js`, Node sem dependências,
   serviço `cnt-monitor-encontro`, que também responde o eco UDP na porta 48790 usado como referência nos testes UDP)
   e a configuração do coturn (retransmissor). Atualizar: `git pull` na VPS e
   `sudo systemctl restart cnt-monitor-encontro`; a porta 48790/udp precisa estar liberada no firewall da VPS.
