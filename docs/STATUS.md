@@ -8,7 +8,7 @@ Atualizado em 2026-11-18. As funcionalidades completas estão no [README](../REA
   `CNTMonitor-Setup-<versão>.exe`, `MonitorDoPC-Setup-<versão>.exe` (nome antigo, para instalações antigas) e
   `cnt-monitor_<versão>_amd64.deb`.
 - Repositório: `robsonsaldanha/cnt-monitor` (público, GPL v3 ou posterior).
-- Download público: https://monitor.cntoficial.com.br/baixar (servido pela VPS, cópia conferida da última release).
+- Download público: https://cntoficial.com.br/baixar (servido pela VPS, cópia conferida da última release).
 
 ## Linha do tempo resumida
 
