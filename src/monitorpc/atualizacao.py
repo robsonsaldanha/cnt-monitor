@@ -17,6 +17,10 @@ import urllib.request
 from . import config
 
 REPO = "robsonsaldanha/cnt-monitor"
+# A VPS guarda uma cópia da última release (servidor-vps/baixar-instalador.py). É a primeira fonte da atualização;
+# o GitHub é só o plano B. A assinatura Ed25519 vale do mesmo jeito: a cópia da VPS não consegue ser trocada por outra.
+SITE = "https://cntoficial.com.br"
+MANIFESTO = SITE + "/download/ultima.json"
 PASTA = os.path.join(config.BASE, "atualizacao")
 FLAG_REABRIR = os.path.join(config.BASE, "reabrir_icone.flag")
 PREFIXOS = ("CNTMonitor-Setup", "MonitorDoPC-Setup")   # nome atual primeiro; o antigo vale para releases até a 2.6.x
@@ -122,6 +126,9 @@ class Atualizador:
             return self.disponivel
         limpar_pasta()
         self.situacao = "verificando"
+        info = self._da_vps()
+        if info:
+            return self._concluir(info)
         try:
             cab = {"User-Agent": "MonitorDoPC/" + config.VERSAO, "Accept": "application/vnd.github+json"}
             if self._etag and self._resposta is not None:
@@ -150,6 +157,33 @@ class Atualizador:
             self.ultima_verificacao = time.time()
             return None
         return self._avaliar(d)
+
+    def _da_vps(self):
+        """Informações da última versão pela cópia da VPS, ou None se ela não responder ou não tiver assinatura."""
+        try:
+            req = urllib.request.Request(MANIFESTO, headers={"User-Agent": "MonitorDoPC/" + config.VERSAO})
+            with urllib.request.urlopen(req, timeout=15) as r:
+                d = json.loads(r.read(1 << 16))
+            item = d if WIN else d.get("linux")
+            if not item or not item.get("assinatura") or not re.fullmatch(r"[0-9a-fA-F]{64}", item.get("sha256") or ""):
+                return None
+            nome, ass = item["arquivo"], item["assinatura"]
+            if "/" in nome or "/" in ass:
+                return None
+            return {"versao": str(item["versao"]), "nome": "CNT Monitor " + str(item["versao"]), "notas": "",
+                    "url": f"{SITE}/download/{nome}", "tamanho": int(item["tamanho"]), "arquivo": nome,
+                    "assinatura": f"{SITE}/download/{ass}", "sha256": item["sha256"].lower(),
+                    "pagina": f"{SITE}/monitor/changelog/#v{item['versao']}"}
+        except Exception:  # noqa: BLE001
+            return None
+
+    def _concluir(self, info):
+        self.ultima_verificacao = time.time()
+        self.erro = None
+        nova = _versao(info["versao"]) > _versao(config.VERSAO)
+        self.disponivel = info if nova and info["url"] else None
+        self.situacao = "nova versão disponível" if self.disponivel else "atualizado"
+        return self.disponivel
 
     def _avaliar(self, d):
         self.ultima_verificacao = time.time()

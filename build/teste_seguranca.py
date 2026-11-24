@@ -464,6 +464,7 @@ def teste_atualizacao_procura_de_hora_em_hora():
     resultado continua sendo o da última resposta inteira. Cota esgotada (403/429) vira um aviso que explica."""
     import io
     assert atualizacao.VERIFICAR_CADA == 3600
+    atualizacao.Atualizador._da_vps = lambda self: None   # aqui o assunto é o plano B (GitHub); a VPS tem teste próprio
     # como a release de verdade: os dois arquivos, e a linha "SHA256:" do .exe antes da do .deb
     corpo = json.dumps({"tag_name": "v99.0.0", "name": "x", "html_url": "p",
                         "body": "SHA256: " + "ab" * 32 + "\nSHA256 (deb): " + "cd" * 32,

@@ -4,8 +4,9 @@ Monitor do computador para **Windows 10/11 e Linux** (Ubuntu, Debian e Mint), ma
 Modo Jogo, regras por programa, controle de ventoinhas, captura e gravação de tela no nível do ShareX, acesso
 remoto por ID e senha, acesso pelo celular e monitoramento de servidores (VPS).
 
-**Software livre e 100% gratuito**, sob a licença [GNU GPL v3](LICENSE): sem anúncios, sem conta, sem versão paga.
-Você pode usar, estudar, modificar e redistribuir, desde que as versões redistribuídas continuem livres sob a mesma licença.
+**Tudo o que existe hoje continua gratuito**, sem anúncios e sem conta. A partir da versão 3.12.0 o programa passa a ter
+uma [licença de uso própria](LICENSE) e funções **Premium para empresas**, contratadas à parte. As versões até a 3.11.1
+continuam livres sob a [GNU GPL v3](LICENSE-GPL-3.0-ate-3.11.txt) para quem as obteve.
 
 **Baixar:** https://cntoficial.com.br/baixar (entrega o arquivo do seu sistema) ou a
 [última versão](https://github.com/robsonsaldanha/cnt-monitor/releases/latest):
@@ -239,16 +240,16 @@ Testes automáticos (rodam sem tocar na tela):
 
 ## Contribuir
 
-Contribuições são bem-vindas: abra uma issue ou um pull request. Ao contribuir, você concorda em licenciar o seu
-código sob a GPL v3 (ou posterior).
+Contribuições dependem de acordo prévio com o autor: abra uma issue antes. Ao contribuir, você cede ao autor o direito
+de licenciar o seu código nos termos da licença de uso do projeto.
 
 ## Licença
 
 Copyright (C) 2026 Róbson Saldanha
 
-Este programa é software livre: você pode redistribuí-lo e/ou modificá-lo sob os termos da GNU General Public
-License, publicada pela Free Software Foundation, na versão 3 da licença ou (a seu critério) qualquer versão posterior.
-Ele é distribuído na esperança de ser útil, mas **sem nenhuma garantia**; veja o arquivo [LICENSE](LICENSE).
+A partir da versão 3.12.0, o uso é regido pela [Licença de Uso](LICENSE): funções gratuitas sem custo e sem prazo, funções
+Premium com licença da CNT. As versões até a 3.11.1 seguem sob a GNU General Public License v3
+([texto](LICENSE-GPL-3.0-ate-3.11.txt)), na versão 3 da licença ou (a seu critério) qualquer versão posterior.
 
 Componentes de terceiros mantêm as próprias licenças: LibreHardwareMonitor (MPL-2.0), PawnIO, PresentMon (MIT),
 ffmpeg (baixado à parte, GPL), aiortc e PyAV (BSD), paramiko e pystray (LGPL), python-xlib (LGPL), mss (MIT), jeepney (MIT), Pillow, psutil, pywin32, qrcode,
