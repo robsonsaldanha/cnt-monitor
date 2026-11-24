@@ -1,4 +1,7 @@
 [
+  {"versao": "3.11.1", "data": "2026-11-24", "itens": [
+    {"tipo": "correcao", "texto": "A página de novidades no site abria com erro; agora abre normalmente."}
+  ]},
   {"versao": "3.11.0", "data": "2026-11-24", "itens": [
     {"tipo": "novo", "texto": "Página de novidades no site: clicando no número da versão, dentro do CNT Monitor, você vê tudo o que mudou em cada versão."}
   ]},

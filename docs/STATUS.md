@@ -4,7 +4,7 @@ Atualizado em 2026-11-18. As funcionalidades completas estão no [README](../REA
 
 ## Versão atual
 
-- **3.11.0** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.11.0`. A release no GitHub traz
+- **3.11.1** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.11.1`. A release no GitHub traz
   `CNTMonitor-Setup-<versão>.exe`, `MonitorDoPC-Setup-<versão>.exe` (nome antigo, para instalações antigas) e
   `cnt-monitor_<versão>_amd64.deb`.
 - Repositório: `robsonsaldanha/cnt-monitor` (público, GPL v3 ou posterior).
@@ -38,6 +38,7 @@ Atualizado em 2026-11-18. As funcionalidades completas estão no [README](../REA
 | 3.9.0 | Tela **Chamadas** (Call flow, ligado em Configurações): captura SIP/PJSIP/WebSocket/HEP em qualquer porta, ladder e fluxo de cards, histórico com quem desligou, API com chave (validade padrão 6 h), monitoramento de outros PCs pelo ID do compartilhamento online (P2P, `aiortc`) com sincronização a cada 30 s por Call-ID; ID do acesso remoto passa a mudar só na virada do dia e clicar no ID/senha copia o valor. Exige `servidor-vps/encontro.js` novo na VPS. |
 | 3.10.0 | Chamadas: o fluxo abre em pop-up com resumo no topo (origem, destino, tempo total e de conversa, quem desligou); cards movíveis e setas que saem pelo lado e chegam por cima; textos e gráficos menores. PDF gerado pelo Chrome (ou Edge) em segundo plano (`src/monitorpc/pdf.py`, `POST /api/pdf`), com links clicáveis entre o fluxo e os detalhes de cada mensagem; sem navegador, cai na janela de impressão. ID do acesso remoto fixo por computador (UUID da placa-mãe, `src/monitorpc/maquina.py`), igual depois de formatar; a troca diária e a ação `ajuda_trocar_id` saíram (a senha continua nova a cada sessão). |
 | 3.11.0 | Fluxo Git por branches e PR (main protegida, skill `/monitor-tarefa`, gancho que bloqueia mexer na main) e changelog público em https://cntoficial.com.br/monitor/changelog/ (clicar na versão do rodapé abre a página); `servidor-vps/implantar.sh` atualiza a VPS depois de cada merge |
+| 3.11.1 | Corrige o nginx da página de changelog (dava erro 500) e o `implantar.sh` (não busca tags na VPS) |
 
 ## Como publicar uma versão
 
