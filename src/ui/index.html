@@ -768,7 +768,7 @@ body:not([data-so="linux"]) .so-lin{display:none!important}
   <div class="cnt-cartao"><div class="cnt-cartao__topo"><h2>Captura</h2><span class="cnt-cartao__apoio" id="voipInfo"></span></div>
     <div class="linha-bts"><button class="cnt-botao cnt-botao--pq cnt-botao--primario" id="voipLigar">Ligar captura</button><button class="cnt-botao cnt-botao--pq cnt-botao--secundario" id="voipCsv">Exportar relatório (CSV)</button><button class="cnt-botao cnt-botao--pq cnt-botao--secundario" id="voipSair" hidden>Parar de ver o outro computador</button><button class="cnt-botao cnt-botao--pq cnt-botao--perigo" id="voipApagar">Apagar chamadas</button></div>
     <p class="mut2" id="voipErro" style="font-size:12.5px;margin:0 14px 14px" hidden></p></div>
-  <div class="seg secao" id="segVoip" style="margin-bottom:14px"><button data-f="vivo" aria-pressed="true">Ao vivo</button><button data-f="hist" aria-pressed="false">Histórico</button><button data-f="mon" aria-pressed="false">Monitoramento</button><button data-f="api" aria-pressed="false">API</button></div>
+  <div class="seg secao" id="segVoip" style="margin-bottom:14px"><button data-f="vivo" aria-pressed="true">Ao vivo</button><button data-f="hist" aria-pressed="false">Histórico</button><button data-f="mon" aria-pressed="false">Monitoramento</button><button data-f="nuv" aria-pressed="false">Nuvem (Premium)</button><button data-f="api" aria-pressed="false">API</button></div>
 
   <div id="voipPLista">
     <div class="cnt-cartao"><div class="cnt-cartao__topo"><h2 id="voipTit">Chamadas ao vivo</h2><span class="cnt-cartao__apoio" id="voipCont"></span><div class="dir"><input class="cnt-campo__controle" id="voipBusca" type="search" placeholder="Filtrar (número, IP, Call-ID, estado, quem desligou)" aria-label="Filtrar chamadas" style="max-width:340px"></div></div>
@@ -783,6 +783,13 @@ body:not([data-so="linux"]) .so-lin{display:none!important}
     <div class="cnt-cartao"><div class="cnt-cartao__topo"><h2>Chamadas coletadas</h2><span class="cnt-cartao__apoio" id="vmCont"></span><div class="dir"><input class="cnt-campo__controle" id="vmBusca" type="search" placeholder="Filtrar (computador, número, IP, Call-ID…)" aria-label="Filtrar chamadas coletadas" style="max-width:340px"></div></div><div class="tw curta" id="vmChamadas"></div></div>
   </div>
 
+  <div id="voipPNuv" hidden>
+    <div class="cnt-cartao"><div class="cnt-cartao__topo"><h2>Histórico na nuvem da empresa</h2><span class="cnt-cartao__apoio" id="vnInfo"></span></div>
+      <div class="item"><b>Guardar na nuvem o histórico das chamadas deste computador</b><div class="ctl"><label class="sw"><input type="checkbox" id="vnLigar"><span></span></label></div>
+        <small>Função Premium para empresas. Desligado por padrão: nada sai deste computador sem você ligar. Os números e IPs vão cifrados, separados por empresa, e ficam pelo prazo da licença. Você pode apagar uma chamada ou tudo a qualquer momento.</small></div>
+      <p class="mut2" id="vnErro" hidden style="color:var(--cnt-cor-perigo);padding:0 14px 14px"></p></div>
+    <div class="cnt-cartao"><div class="cnt-cartao__topo"><h2>Chamadas na nuvem</h2><span class="cnt-cartao__apoio" id="vnCont"></span><div class="dir"><input class="cnt-campo__controle" id="vnBusca" type="search" placeholder="Filtrar (computador, número, IP, Call-ID…)" aria-label="Filtrar chamadas da nuvem" style="max-width:300px"><button class="cnt-botao cnt-botao--pq cnt-botao--perigo" id="vnApagarTudo" title="Apaga todo o histórico da empresa na nuvem">Apagar tudo da nuvem</button></div></div><div class="tw curta" id="vnLista"></div></div>
+  </div>
   <div id="voipPApi" hidden>
     <div class="cnt-cartao"><div class="cnt-cartao__topo"><h2>Chave deste computador</h2><span class="cnt-cartao__apoio" id="vaValid"></span></div>
       <p class="mut2" style="font-size:12.5px;margin:0 14px 10px">Passe esta chave para o outro computador. Com ela ele liga e desliga a captura daqui e lê o fluxo das chamadas. A chave muda sozinha todo dia e quando vence. O outro computador conecta pelo ID do compartilhamento online abaixo, direto e sem abrir porta; por isso este computador precisa estar online.</p>
@@ -3053,7 +3060,7 @@ function voipTopo(d){ const ts=[...(d.msgs||[]).map(m=>m.ts),...(d.rtp||[]).flat
     ['Quem desligou',d.desligou||(d.ativa?'em andamento':'—'),d.motivo],['Mensagens',(d.msgs||[]).length,rtp?rtp+' fluxo(s) de mídia (RTP)':''],['Programa',d.agente,d.pc_nome]];
   return it.filter(x=>x[1]!==''&&x[1]!=null).map(([r,v,s])=>`<div class="voip-topo__it"><span>${r}</span><b>${esc(String(v))}</b>${s?`<small>${esc(String(s))}</small>`:''}</div>`).join(''); }
 async function voipDetalhe(){ if(!VOIP_SEL||VOIP_ABA==='api') return voipFecharModal();
-  const q=encodeURIComponent(VOIP_SEL.id); let d; try{ d=await API(VOIP_SEL.pc?`voip/monitor/chamada?pc=${encodeURIComponent(VOIP_SEL.pc)}&id=${q}`:'voip/chamada?id='+q); }catch(_){ voipFecharModal(); return; }
+  const q=encodeURIComponent(VOIP_SEL.id); let d; try{ d=await API(VOIP_SEL.pc==='nuvem'?'voip/nuvem/chamada?id='+q:VOIP_SEL.pc?`voip/monitor/chamada?pc=${encodeURIComponent(VOIP_SEL.pc)}&id=${q}`:'voip/chamada?id='+q); }catch(_){ voipFecharModal(); return; }
   if(!VOIP_SEL) return;
   voipAbrirModal(); VOIP_DET=d; $('#voipTopo').innerHTML=voipTopo(d);
   $('#voipDetInfo').textContent=`${d.de||'?'} → ${d.para||'?'} · ${d.estado||'—'} · ${(d.msgs||[]).length} mensagens${d.pc_nome?' · '+d.pc_nome:''}${d.agente?' · '+d.agente:''}`;
@@ -3062,7 +3069,7 @@ async function voipDetalhe(){ if(!VOIP_SEL||VOIP_ABA==='api') return voipFecharM
 function voipResumo(l){ const ch=l.filter(c=>c.tipo==='chamada'), n={}; ch.forEach(c=>{ const k=c.desligou||'(em andamento)'; n[k]=(n[k]||0)+1; });
   return `${ch.length} chamada(s) · ${ch.filter(c=>c.duracao>0).length} atendida(s) · quem desligou: `+(Object.keys(n).map(k=>`${k} ${n[k]}`).join(' · ')||'—'); }
 async function vVoip(){ if(VOIP_OCUPADO||!CFG.callflow) return; VOIP_OCUPADO=true;
-  try{ const aba=VOIP_ABA; $('#voipPLista').hidden=!(aba==='vivo'||aba==='hist'); $('#voipPMon').hidden=aba!=='mon'; $('#voipPApi').hidden=aba!=='api';
+  try{ const aba=VOIP_ABA; $('#voipPLista').hidden=!(aba==='vivo'||aba==='hist'); $('#voipPMon').hidden=aba!=='mon'; $('#voipPNuv').hidden=aba!=='nuv'; $('#voipPApi').hidden=aba!=='api';
     const b=$('#voipBusca').value.trim(); let v; try{ v=await API('voip?busca='+encodeURIComponent(b)); }catch(_){ return; }
     const lig=v.ativo, r=v.recebidos||{}; $('#voipTag').hidden=!lig; $('#voipLigar').textContent=lig?'Desligar captura':'Ligar captura';
     $('#voipSair').hidden=!v.alvo; $('#voipApagar').hidden=!!v.alvo; $('#voipInfo').textContent=(v.alvo?`vendo ${v.alvo} · `:'')+(lig?`ligada · SIP ${r.sip} · WebSocket ${r.ws} · HEP ${r.hep} · RTP ${r.rtp}`:'desligada');
@@ -3070,13 +3077,20 @@ async function vVoip(){ if(VOIP_OCUPADO||!CFG.callflow) return; VOIP_OCUPADO=tru
     if(aba==='vivo'||aba==='hist'){ let lista=v.chamadas; if(aba==='hist'){ try{ lista=await API('voip/historico?busca='+encodeURIComponent(b)); }catch(_){ return; } }
       VOIP_LISTA=lista; $('#voipTit').textContent=aba==='vivo'?'Chamadas ao vivo':'Histórico e relatório (últimos 7 dias)'; $('#voipCont').textContent=lista.length+' registro(s)'+(aba==='vivo'?` · ${v.ativas} chamada(s) ativa(s)`:'');
       $('#voipResumo').hidden=aba!=='hist'; $('#voipResumo').textContent=voipResumo(lista); $('#voipLista').innerHTML=voipTabela(lista,false); }
-    else if(aba==='mon') await vVoipMon(); else await vVoipApi();
+    else if(aba==='mon') await vVoipMon(); else if(aba==='nuv') await vVoipNuv(); else await vVoipApi();
     await voipDetalhe();
   } finally { VOIP_OCUPADO=false; } }
 async function vVoipMon(){ let m, l; try{ m=await API('voip/monitor'); l=await API('voip/monitor/chamadas?busca='+encodeURIComponent($('#vmBusca').value.trim())); }catch(_){ return; } const pcs=m.computadores||[];
   VOIP_LISTA=l; $('#vmInfo').textContent=`${pcs.length} computador(es) · coleta a cada ${m.intervalo_s} s`; $('#vmCont').textContent=l.length+' registro(s)';
   $('#vmLista').innerHTML=pcs.length?'<table class="cnt-tabela"><thead><tr>'+['Computador','ID','Último Call-ID coletado','Chamadas','Última coleta','Situação',''].map(h=>`<th class="cnt-tabela__cab">${h}</th>`).join('')+'</tr></thead><tbody>'+pcs.map(p=>`<tr class="cnt-tabela__linha"><td class="cnt-tabela__cel e"><b>${esc(p.nome)}</b></td><td class="cnt-tabela__cel e">${esc(/^id:\d{9}$/.test(p.url)?ajFmtId(p.url.slice(3)):p.url)}</td><td class="cnt-tabela__cel e">${esc(p.ultimo)||'—'}</td><td class="cnt-tabela__cel e">${p.total}</td><td class="cnt-tabela__cel e">${p.sync?quando(p.sync):'aguardando'}</td><td class="cnt-tabela__cel e" style="color:${p.erro?'#d64545':'#2e9e5b'}">${p.sync?(p.erro?esc(p.erro):'em dia'):'—'}</td><td class="cnt-tabela__cel e"><button class="cnt-botao cnt-botao--pq cnt-botao--perigo" data-vmrem="${p.id}" data-nome="${esc(p.nome)}">Remover</button></td></tr>`).join('')+'</tbody></table>':'<p class="mut2" style="padding:0 14px 14px">Nenhum computador cadastrado.</p>';
   $('#vmChamadas').innerHTML=voipTabela(l,true); }
+async function vVoipNuv(){ let e; try{ e=await API('voip/nuvem'); }catch(_){ return; } const r=e.resumo;
+  $('#vnLigar').checked=!!e.ligado; $('#vnLigar').disabled=!e.licenciado; $('#vnApagarTudo').hidden=!e.licenciado; $('#vnBusca').hidden=!e.licenciado;
+  $('#vnInfo').textContent=!e.licenciado?'precisa de licença Premium: entre com a conta da empresa em Configurações':(e.ligado?'enviando as chamadas encerradas deste computador':'desligado')+(r?` · ${nf0.format(r.total)} chamada(s) na nuvem · ${fB(r.bytes)} de ${fB(r.cota_bytes)} · guardadas por ${r.retencao_dias} dias`:'')+(e.ultimo_envio?' · último envio '+quando(e.ultimo_envio):'');
+  $('#vnErro').hidden=!e.erro; $('#vnErro').textContent=e.erro||'';
+  if(!e.licenciado){ VOIP_LISTA=[]; $('#vnCont').textContent=''; $('#vnLista').innerHTML='<p class="mut2" style="padding:0 14px 14px">Em Configurações, na área Licença Premium (empresas), entre com o e-mail e a senha da conta CNT da sua empresa.</p>'; return; }
+  let l=[]; try{ l=await API('voip/nuvem/chamadas?busca='+encodeURIComponent($('#vnBusca').value.trim())); }catch(_){ }
+  l.forEach(c=>{ c.pc='nuvem'; }); VOIP_LISTA=l; $('#vnCont').textContent=l.length+' registro(s)'; $('#vnLista').innerHTML=voipTabela(l,true); }
 async function vVoipApi(){ let a; try{ a=await API('voip/api'); }catch(_){ return; } VOIP_CHAVE=a.chave;
   $('#vaValid').textContent=`vence ${quando(a.expira)} · em ${dur(a.expira-Date.now()/1000)}`; if(document.activeElement!==$('#vaHoras')) $('#vaHoras').value=a.horas;
   $('#vaEnd').innerHTML=`<button class="cnt-botao cnt-botao--pq cnt-botao--primario" data-cop="${esc(a.id_online)}" title="Clique para copiar o ID">${esc(a.id_online)}</button><span class="mut2" style="font-size:12.5px">${a.online==='online'?'online: o outro computador já pode conectar':'compartilhamento online '+esc(a.online||'desligado')+': o outro computador não consegue conectar agora'}</span>`
@@ -3086,17 +3100,19 @@ async function vVoipApi(){ let a; try{ a=await API('voip/api'); }catch(_){ retur
 async function voipAcao(corpo){ const r=await POST('acao',corpo).catch(()=>null); toast(r?r.msg:'O serviço não respondeu.',!(r&&r.ok)); return r; }
 seg($('#segVoipVisao'),d=>{ VOIP_VISAO=d.f; VOIP_ASSIN=''; voipDetalhe(); });
 seg($('#segVoip'),d=>{ VOIP_ABA=d.f; VOIP_SEL=null; VOIP_LADNO=null; if(VOIP_LAD){ VOIP_LAD.destruir(); VOIP_LAD=null; } VOIP_ASSIN=''; voipFecharModal(); vVoip(); });
-$('#voipBusca').addEventListener('input',()=>vVoip()); $('#vmBusca').addEventListener('input',()=>vVoip());
+$('#voipBusca').addEventListener('input',()=>vVoip()); $('#vmBusca').addEventListener('input',()=>vVoip()); $('#vnBusca').addEventListener('input',()=>vVoip());
 $('#voipDetFechar').onclick=voipFecharModal;
 $('#voipDet').addEventListener('click',e=>{ if(e.target===e.currentTarget) voipFecharModal(); });
 $('#voipDet').addEventListener('close',voipFecharModal);
 const voipClique=e=>{ const t=e.target.closest('[data-vid]'); if(!t) return; VOIP_SEL={id:t.dataset.vid,pc:t.dataset.pc||''}; VOIP_NO=null; VOIP_LADNO=null; VOIP_ASSIN=''; vVoip(); };
-$('#voipLista').addEventListener('click',voipClique); $('#vmChamadas').addEventListener('click',voipClique);
+$('#voipLista').addEventListener('click',voipClique); $('#vmChamadas').addEventListener('click',voipClique); $('#vnLista').addEventListener('click',voipClique);
+$('#vnLigar').addEventListener('change',async e=>{ const r=await POST('config',{chamadas_nuvem:e.target.checked}).catch(()=>null); if(r&&r.valores) CFG=r.valores; toast(e.target.checked?'Histórico na nuvem ligado.':'Histórico na nuvem desligado. O que já está lá continua guardado.',!r); vVoip(); });
+$('#vnApagarTudo').onclick=async()=>{ if(!await confirmar('Apagar todo o histórico da nuvem?','Todas as chamadas da empresa guardadas na nuvem serão apagadas, de todos os computadores. Não dá para desfazer.','Apagar',1)) return; const r=await POST('voip/nuvem/apagar',{tudo:true,confirmar:'APAGAR'}).catch(()=>null); toast(r&&r.ok?`${r.apagadas} chamada(s) apagada(s).`:(r&&r.erro)||'Não consegui apagar.',!(r&&r.ok)); VOIP_SEL=null; vVoip(); };
 $('#voipLigar').onclick=async()=>{ const lig=$('#voipLigar').textContent.startsWith('Desligar'); await voipAcao({tipo:lig?'voip_parar':'voip_iniciar'}); vVoip(); };
 $('#voipApagar').onclick=async()=>{ if(!await confirmar('Apagar as chamadas?','O histórico de chamadas deste computador será apagado.','Apagar',1)) return; const r=await voipAcao({tipo:'voip_apagar'}); if(r&&r.ok) VOIP_SEL=null; vVoip(); };
 $('#voipSair').onclick=async()=>{ await voipAcao({tipo:'voip_desconectar'}); VOIP_SEL=null; vVoip(); };
 $('#voipCsv').onclick=()=>{ if(!VOIP_LISTA.length) return toast('Não há chamadas para exportar.',1); const c=x=>'"'+String(x==null?'':x).replace(/"/g,'""')+'"';
-  const col=(VOIP_ABA==='mon'?[['Computador','pc_nome']]:[]).concat([['Call-ID','id'],['Início',null],['Tipo','tipo'],['De','de'],['Para','para'],['Origem','origem'],['Destino','destino'],['Estado','estado'],['Duração (s)','duracao'],['Quem desligou','desligou'],['Motivo','motivo'],['MOS','mos'],['Perda (%)','perda'],['Jitter (ms)','jitter_ms']]);
+  const col=(VOIP_ABA==='mon'||VOIP_ABA==='nuv'?[['Computador','pc_nome']]:[]).concat([['Call-ID','id'],['Início',null],['Tipo','tipo'],['De','de'],['Para','para'],['Origem','origem'],['Destino','destino'],['Estado','estado'],['Duração (s)','duracao'],['Quem desligou','desligou'],['Motivo','motivo'],['MOS','mos'],['Perda (%)','perda'],['Jitter (ms)','jitter_ms']]);
   const csv='﻿'+col.map(x=>c(x[0])).join(';')+'\n'+VOIP_LISTA.map(r=>col.map(([n,k])=>c(k?r[k]:new Date(r.inicio*1000).toLocaleString('pt-BR'))).join(';')).join('\n');
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})); a.download='chamadas-'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); };
 $('#vmAdd').onclick=async()=>{ const r=await voipAcao({tipo:'voip_mon_add',nome:$('#vmNome').value,url:$('#vmUrl').value,chave:$('#vmChave').value}); if(r&&r.ok){ $('#vmNome').value=$('#vmUrl').value=$('#vmChave').value=''; } vVoip(); };

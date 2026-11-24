@@ -19,7 +19,7 @@ import psutil
 from . import config, configuracao, banco, rede, temperatura, nt, gpu, discos, inicializacao
 from . import alertas, jogo, energia, servicos, atualizacao, sessao, regras, limpeza, vps, captura, ventoinhas, remoto, encontro, audio
 from . import rede_programa, sinalizacao, p2p
-from . import qualidade, licenca
+from . import qualidade, licenca, nuvem
 
 WIN = os.name == "nt"
 NCPU = psutil.cpu_count() or 1
@@ -194,6 +194,8 @@ class Motor:
                                        if not g.get("outros")],
             lambda: list(self.conns), maquina=self.info_maquina)
         self.voip = sinalizacao.Voip()
+        self.nuvem = nuvem.Nuvem(self.voip)
+        self._ult_nuvem = 0
         self.voip_chave = sinalizacao.ChaveApi()
         self.voip_mon = sinalizacao.Monitoramento(ativo=lambda: bool(configuracao.obter("callflow")))
         self.voip_alvo = sinalizacao.ClienteRemoto()      # outro PC cuja captura esta tela controla
@@ -304,6 +306,10 @@ class Motor:
                         self._thr_atu = threading.Thread(target=self._atualizar_sozinho, args=(time.time(),),
                                                          daemon=True, name="atualizacao-auto")
                         self._thr_atu.start()
+                if time.time() - self._ult_nuvem > nuvem.INTERVALO_S:      # Premium: histórico de chamadas na nuvem (desligado por padrão)
+                    self._ult_nuvem = time.time()
+                    if c["chamadas_nuvem"] and c["callflow"]:
+                        self.nuvem.sincronizar_ao_fundo()
                 if time.time() - self._ult_licenca > licenca.VERIFICAR_CADA:      # licença Premium: renova sozinha, sem travar o motor
                     self._ult_licenca = time.time()
                     threading.Thread(target=licenca.renovar_se_preciso, daemon=True, name="licenca").start()

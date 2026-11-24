@@ -1,4 +1,9 @@
 [
+  {"versao": "3.14.0", "data": "2026-11-24", "itens": [
+    {"tipo": "novo", "texto": "Premium para empresas: histórico das chamadas guardado na nuvem da empresa. Na tela Chamadas, a nova aba Nuvem mostra as chamadas de todos os computadores da empresa, com busca e detalhe."},
+    {"tipo": "novo", "texto": "Você escolhe se envia: vem desligado e nada sai do computador sem você ligar. Dá para apagar uma chamada ou todo o histórico da nuvem quando quiser."},
+    {"tipo": "melhoria", "texto": "Tudo o que já existia continua gratuito. Só a nuvem exige a licença da empresa."}
+  ]},
   {"versao": "3.13.0", "data": "2026-11-24", "itens": [
     {"tipo": "novo", "texto": "Nova área Licença Premium (empresas) em Configurações: a empresa entra com a conta CNT e ativa as funções Premium neste computador. A licença se renova sozinha."},
     {"tipo": "melhoria", "texto": "Tudo o que o programa já oferecia continua gratuito, sem conta e sem licença."}

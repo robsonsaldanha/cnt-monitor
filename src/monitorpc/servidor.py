@@ -19,7 +19,7 @@ import subprocess
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs, unquote
 
-from . import config, configuracao, banco, icones, energia, servicos, alertas, regras, limpeza, captura, envio, registro, sinalizacao, encontro, pdf, licenca
+from . import config, configuracao, banco, icones, energia, servicos, alertas, regras, limpeza, captura, envio, registro, sinalizacao, encontro, pdf, licenca, nuvem
 
 HOSTS_OK = {f"127.0.0.1:{config.PORTA}", f"localhost:{config.PORTA}"}
 ORIGENS_OK = {f"http://127.0.0.1:{config.PORTA}", f"http://localhost:{config.PORTA}"}
@@ -493,6 +493,16 @@ def fabrica(motor, TOKEN, remoto=False):
                                        "enderecos": [f'{x["ip"]}:{configuracao.obter("acesso_porta")}' for x in ips_rede()],
                                        "rodando": m.remoto_rodando(), "alvo": m.voip_alvo.rotulo() if m.voip_alvo.url else None,
                                        "id_online": encontro.formatar_id(m.encontro.id), "online": m.encontro.situacao})
+                if r in ("/api/voip/nuvem", "/api/voip/nuvem/chamadas", "/api/voip/nuvem/chamada"):
+                    try:
+                        if r == "/api/voip/nuvem":
+                            return self._json(m.nuvem.estado())
+                        if r == "/api/voip/nuvem/chamadas":
+                            return self._json(m.nuvem.chamadas(q.get("busca", ""), _num(q, "limite", 300, int)))
+                        d = m.nuvem.detalhe(q.get("id", ""))
+                        return self._json(d) if d else self._json({"erro": "chamada não encontrada"}, 404)
+                    except nuvem.NuvemErro as e:
+                        return self._json({"erro": str(e)}, 403 if e.status in (401, 403) else 502)
                 if r == "/api/voip/monitor":
                     return self._json({"computadores": m.voip_mon.listar(), "intervalo_s": sinalizacao.INTERVALO_MON_S})
                 if r == "/api/voip/monitor/chamadas":
@@ -778,6 +788,12 @@ def fabrica(motor, TOKEN, remoto=False):
                     else:
                         ok, msg = licenca.sair()
                     return self._json({"ok": ok, "msg": msg, "licenca": licenca.estado()})
+                if r == "/api/voip/nuvem/apagar":
+                    try:
+                        res = m.nuvem.apagar(str(corpo.get("id") or ""), bool(corpo.get("tudo")), str(corpo.get("confirmar") or ""))
+                        return self._json({"ok": True, "apagadas": res.get("apagadas", 0)})
+                    except nuvem.NuvemErro as e:
+                        return self._json({"ok": False, "erro": str(e)}, 403 if e.status in (401, 403) else 502)
                 if r == "/api/fila/resultado":
                     m.resultado(corpo.get("id", ""), {"ok": bool(corpo.get("ok")), "msg": corpo.get("msg", ""),
                                                      "dados": corpo.get("dados")})
