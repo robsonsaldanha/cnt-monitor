@@ -1,0 +1,109 @@
+[
+  {"versao": "3.11.0", "data": "2026-11-24", "itens": [
+    {"tipo": "novo", "texto": "Página de novidades no site: clicando no número da versão, dentro do CNT Monitor, você vê tudo o que mudou em cada versão."}
+  ]},
+  {"versao": "3.10.0", "data": "2026-11-23", "itens": [
+    {"tipo": "novo", "texto": "Chamadas: o fluxo da chamada agora abre numa janela própria, com um resumo no topo (quem ligou, para quem, tempo total, tempo de conversa e quem desligou)."},
+    {"tipo": "melhoria", "texto": "Chamadas: os cartões do fluxo podem ser movidos de lugar e as setas ficaram mais fáceis de acompanhar. Textos e gráficos ficaram menores para caber mais informação."},
+    {"tipo": "novo", "texto": "Chamadas: o relatório em PDF passou a ser gerado pelo Chrome ou Edge, com links clicáveis entre o fluxo e os detalhes de cada mensagem. Sem navegador, abre a janela de impressão."},
+    {"tipo": "melhoria", "texto": "Acesso remoto: o ID de cada computador agora é fixo e não muda mais todo dia."}
+  ]},
+  {"versao": "3.9.0", "data": "2026-11-20", "itens": [
+    {"tipo": "novo", "texto": "Nova tela Chamadas (ativada em Configurações): mostra o caminho de cada ligação de telefonia pela internet, com histórico e quem desligou."},
+    {"tipo": "novo", "texto": "Dá para acompanhar as chamadas de outros computadores pelo ID do acesso remoto, com atualização automática a cada 30 segundos."},
+    {"tipo": "melhoria", "texto": "Acesso remoto: clicar no ID ou na senha copia o valor."}
+  ]},
+  {"versao": "3.8.0", "data": "2026-11-19", "itens": [
+    {"tipo": "melhoria", "texto": "Acesso remoto funciona em mais redes, inclusive nas que só liberam navegação na web (empresas, hotéis, escolas)."},
+    {"tipo": "melhoria", "texto": "O diagnóstico do acesso remoto ganhou um teste dessa conexão segura."}
+  ]},
+  {"versao": "3.7.4", "data": "2026-11-18", "itens": [
+    {"tipo": "novo", "texto": "Nova tela Logs (aparece no menu com o Modo debug ligado): permite ver, filtrar e copiar os registros do programa, só neste computador."},
+    {"tipo": "melhoria", "texto": "No Modo debug, os registros ficam mais completos e trazem data e hora em cada linha, o que ajuda a achar a causa de problemas no acesso remoto."}
+  ]},
+  {"versao": "3.7.3", "data": "2026-11-18", "itens": [
+    {"tipo": "melhoria", "texto": "Mais informações para diagnosticar conexões do acesso remoto que demoram a abrir, incluindo o motivo do encerramento."}
+  ]},
+  {"versao": "3.7.2", "data": "2026-11-18", "itens": [
+    {"tipo": "novo", "texto": "Modo debug (desligado por padrão, em Configurações): grava mais detalhes do acesso remoto para ajudar no suporte."},
+    {"tipo": "melhoria", "texto": "O instalador baixado para atualização é apagado depois de usado, sem ocupar espaço à toa."},
+    {"tipo": "correcao", "texto": "Texto da atualização corrigido para \"a cada 1 hora\"."}
+  ]},
+  {"versao": "3.7.1", "data": "2026-11-18", "itens": [
+    {"tipo": "melhoria", "texto": "O acesso remoto passa a abrir dentro da janela do CNT Monitor, em vez de abrir no navegador."},
+    {"tipo": "melhoria", "texto": "A opção \"Janelas separadas\" por monitor foi retirada, pois não funciona dentro da janela do programa. Quem usava passa a ver os monitores lado a lado."}
+  ]},
+  {"versao": "3.7.0", "data": "2026-11-18", "itens": [
+    {"tipo": "novo", "texto": "O CNT Monitor agora tem janela própria, com o ícone da CNT, sem depender do Edge ou do Chrome."},
+    {"tipo": "melhoria", "texto": "A leitura dos dados acontece a cada 1 segundo por padrão em todos os computadores. As opções de 250 e 500 ms continuam disponíveis, e a sua escolha é respeitada."},
+    {"tipo": "melhoria", "texto": "A busca por atualização passa a ser feita a cada 1 hora, sem travar o monitor."},
+    {"tipo": "melhoria", "texto": "O acesso remoto pode durar até 12 horas."},
+    {"tipo": "correcao", "texto": "A rolagem automática do print agora rola só a região que está sob o mouse."}
+  ]},
+  {"versao": "3.6.1", "data": "2026-11-18", "itens": [
+    {"tipo": "melhoria", "texto": "Menu lateral mais compacto: cabe inteiro sem rolagem em telas menores."},
+    {"tipo": "melhoria", "texto": "Acesso remoto: cartões alinhados e centralizados; \"Copiar como texto\" virou \"Copiar informações\"; saiu o botão \"Copiar como imagem\"."}
+  ]},
+  {"versao": "3.6.0", "data": "2026-11-18", "itens": [
+    {"tipo": "melhoria", "texto": "Mais segurança: as atualizações só são instaladas quando vêm comprovadamente da CNT."},
+    {"tipo": "melhoria", "texto": "Mais segurança no acesso remoto: o pedido de acesso só pode ser aceito pelo programa instalado no computador."},
+    {"tipo": "melhoria", "texto": "O Modo Jogo não muda mais a prioridade dos programas, a menos que você ligue essa opção."},
+    {"tipo": "melhoria", "texto": "No Linux, os processos essenciais do sistema ficam protegidos contra encerramento acidental."}
+  ]},
+  {"versao": "3.5.2", "data": "2026-11-17", "itens": [
+    {"tipo": "correcao", "texto": "Linux: a janela do monitor se junta ao atalho do dock, sem parecer um segundo programa aberto."}
+  ]},
+  {"versao": "3.5.1", "data": "2026-11-17", "itens": [
+    {"tipo": "correcao", "texto": "Os gráficos não crescem nem encolhem mais sozinhos ao usar zoom do navegador ou escala de tela diferente de 100%."},
+    {"tipo": "correcao", "texto": "Gráficos agora respeitam a largura do painel em telas pequenas."}
+  ]},
+  {"versao": "3.5.0", "data": "2026-11-16", "itens": [
+    {"tipo": "novo", "texto": "Nova página Áudio, com modo Básico e Avançado: volume, silenciar, troca de aparelho de som, volume por programa, balanço entre os lados, formato do áudio e aparelho de chamadas."},
+    {"tipo": "novo", "texto": "É possível ligar e desligar aparelhos de áudio direto pelo programa."},
+    {"tipo": "melhoria", "texto": "Dicas (balões) em todos os botões e campos da interface."}
+  ]},
+  {"versao": "3.4.0", "data": "2026-11-14", "itens": [
+    {"tipo": "melhoria", "texto": "Interface mais compacta: textos, controles, menu e barra superior menores."},
+    {"tipo": "novo", "texto": "Visão em fluxo (somente leitura) em Alertas, Regras por programa e Fluxos de trabalho da Captura."}
+  ]},
+  {"versao": "3.3.0", "data": "2026-11-14", "itens": [
+    {"tipo": "melhoria", "texto": "Visual novo, no padrão da CNT: menu lateral que recolhe, barra superior, componentes e temas novos."},
+    {"tipo": "novo", "texto": "Nova opção \"Estilo da interface\" nas configurações."},
+    {"tipo": "melhoria", "texto": "Relatório, sessão remota e login pela rede ficaram com o mesmo visual."}
+  ]},
+  {"versao": "3.2.0", "data": "2026-11-13", "itens": [
+    {"tipo": "melhoria", "texto": "Acesso remoto conecta em mais situações, inclusive por redes mais restritas, e a credencial se renova sozinha."},
+    {"tipo": "novo", "texto": "Botão \"Testar conexão\" no acesso remoto e selo que mostra se a conexão é Direta ou Retransmitida."},
+    {"tipo": "correcao", "texto": "O Ctrl+C durante o acesso remoto não se perde mais."},
+    {"tipo": "novo", "texto": "Captura: dá para capturar partes das janelas e usar Ctrl+C, Enter e Esc na seleção."},
+    {"tipo": "melhoria", "texto": "Linux: ícone na bandeja do sistema."}
+  ]},
+  {"versao": "3.1.0", "data": "2026-11-12", "itens": [
+    {"tipo": "novo", "texto": "Nova página Personalizar: barra de tarefas e relógio do Windows, ícones ao lado do relógio, tema e papel de parede automáticos e perfis."},
+    {"tipo": "novo", "texto": "Lançador rápido, renomeação de arquivos em massa e remapeamento de teclas."}
+  ]},
+  {"versao": "3.0.0", "data": "2026-11-11", "itens": [
+    {"tipo": "novo", "texto": "Versão nativa para Linux (Ubuntu 22.04 ou mais novo, Debian 12 e Linux Mint 21), com suporte a X11 e Wayland."}
+  ]},
+  {"versao": "2.8.0 a 2.9.2", "data": "2026-11-11", "itens": [
+    {"tipo": "novo", "texto": "Estatísticas de rede por endereço e nova aba Análise de rede."},
+    {"tipo": "novo", "texto": "Monitoramento por programa, com qualidade de chamadas de voz."},
+    {"tipo": "novo", "texto": "Acesso remoto com vários monitores e transferência de arquivos."}
+  ]},
+  {"versao": "2.7.1 a 2.7.3", "data": "2026-11-10", "itens": [
+    {"tipo": "novo", "texto": "Mini painel que fica por cima dos jogos e FPS mesmo sem o Modo Jogo."},
+    {"tipo": "melhoria", "texto": "Programa livre sob a licença GPL v3, com README completo e janela de aceite."}
+  ]},
+  {"versao": "2.6.0 a 2.7.0", "data": "2026-11-10", "itens": [
+    {"tipo": "novo", "texto": "Acesso remoto de ponta a ponta, depois por ID e senha, com servidor de apoio para conectar computadores em redes diferentes."},
+    {"tipo": "melhoria", "texto": "Nova marca: CNT Monitor."}
+  ]},
+  {"versao": "2.5.0 a 2.5.2", "data": "2026-11-10", "itens": [
+    {"tipo": "melhoria", "texto": "Controle de ventoinhas sem conflito com outros programas."},
+    {"tipo": "correcao", "texto": "Correções de segurança."}
+  ]},
+  {"versao": "2.3.2 a 2.4.1", "data": "2026-11-07", "itens": [
+    {"tipo": "novo", "texto": "Captura de tela completa: atalhos, rolagem até o fim da página, anotações na seleção, tarefas depois de capturar e depois de enviar, editor de imagem e gravação de tela em MP4 ou GIF."},
+    {"tipo": "novo", "texto": "Envio dos prints e vídeos sem precisar de login."}
+  ]}
+]

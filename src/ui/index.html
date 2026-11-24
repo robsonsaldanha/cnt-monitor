@@ -1482,7 +1482,7 @@ function entrar(){ fecharMenu();
   if(vista==='jogo') vJogo(true); if(vista==='energia') vEnergia(); if(vista==='audio') vAudio(); if(vista==='servicos') vServicos(); if(vista==='alertas') vAlertas();
   if(vista==='otimizar') vOtimizar(); if(vista==='regras') vRegras(); if(vista==='vps') vVps(true); if(vista==='ajuda') vAjuda(); if(vista==='comparar') vComparar(); if(vista==='voip') vVoip();
   if(vista==='capturas'){ abaCaptura(CAP_ABA); vCapturas(true); } if(vista==='editor') vEditor(); }
-async function cicloStatus(){ try{ STATUS=await API('status'); definirSO(); avisos(); $('#rodInfo').innerHTML=`v${esc(STATUS.versao)} · histórico de ${STATUS.banco.desde?dur(Date.now()/1000-STATUS.banco.desde):'0 min'}<br>${fB(STATUS.banco.tamanho)} em disco`; }catch(_){} }
+async function cicloStatus(){ try{ STATUS=await API('status'); definirSO(); avisos(); $('#rodInfo').innerHTML=`<a href="https://cntoficial.com.br/monitor/changelog/#v${esc(STATUS.versao)}" target="_blank" rel="noopener" title="Ver o que mudou nesta versão" style="color:inherit">v${esc(STATUS.versao)}</a> · histórico de ${STATUS.banco.desde?dur(Date.now()/1000-STATUS.banco.desde):'0 min'}<br>${fB(STATUS.banco.tamanho)} em disco`; }catch(_){} }
 // Linux: os textos que falam deste computador dizem "Linux" e o que não existe lá (Captura de tela, ajustes e modo
 // de energia do Windows) some. O que fala do outro computador da sessão remota continua como está.
 function definirSO(){ if(!STATUS||STATUS.sistema!=='linux'||SO==='Linux') return; SO='Linux'; document.body.dataset.so='linux';

@@ -59,6 +59,9 @@ jobs:
       - name: Testes do controle de som
         run: python build/teste_audio.py
 
+      - name: Teste do changelog público
+        run: python build/teste_changelog.py
+
       - name: LibreHardwareMonitor (sensores)
         shell: pwsh
         run: ./build/baixar-lhm.ps1

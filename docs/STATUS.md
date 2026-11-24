@@ -4,7 +4,7 @@ Atualizado em 2026-11-18. As funcionalidades completas estão no [README](../REA
 
 ## Versão atual
 
-- **3.10.0** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.10.0`. A release no GitHub traz
+- **3.11.0** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.11.0`. A release no GitHub traz
   `CNTMonitor-Setup-<versão>.exe`, `MonitorDoPC-Setup-<versão>.exe` (nome antigo, para instalações antigas) e
   `cnt-monitor_<versão>_amd64.deb`.
 - Repositório: `robsonsaldanha/cnt-monitor` (público, GPL v3 ou posterior).
@@ -37,13 +37,17 @@ Atualizado em 2026-11-18. As funcionalidades completas estão no [README](../REA
 | 3.8.0 | Acesso remoto passa a usar o retransmissor TURN por TLS na porta 443 (coturn em 5349, atrás do `stream` do nginx por SNI `turn.cntoficial.com.br`), para redes que só liberam web. O agente testa as opções TCP e coloca primeiro a que responde (o aiortc só usa o primeiro TURN); o diagnóstico ganhou "Retransmissor seguro por TLS (porta 443)"; o ponto de encontro devolve também `turns:`. |
 | 3.9.0 | Tela **Chamadas** (Call flow, ligado em Configurações): captura SIP/PJSIP/WebSocket/HEP em qualquer porta, ladder e fluxo de cards, histórico com quem desligou, API com chave (validade padrão 6 h), monitoramento de outros PCs pelo ID do compartilhamento online (P2P, `aiortc`) com sincronização a cada 30 s por Call-ID; ID do acesso remoto passa a mudar só na virada do dia e clicar no ID/senha copia o valor. Exige `servidor-vps/encontro.js` novo na VPS. |
 | 3.10.0 | Chamadas: o fluxo abre em pop-up com resumo no topo (origem, destino, tempo total e de conversa, quem desligou); cards movíveis e setas que saem pelo lado e chegam por cima; textos e gráficos menores. PDF gerado pelo Chrome (ou Edge) em segundo plano (`src/monitorpc/pdf.py`, `POST /api/pdf`), com links clicáveis entre o fluxo e os detalhes de cada mensagem; sem navegador, cai na janela de impressão. ID do acesso remoto fixo por computador (UUID da placa-mãe, `src/monitorpc/maquina.py`), igual depois de formatar; a troca diária e a ação `ajuda_trocar_id` saíram (a senha continua nova a cada sessão). |
+| 3.11.0 | Fluxo Git por branches e PR (main protegida, skill `/monitor-tarefa`, gancho que bloqueia mexer na main) e changelog público em https://cntoficial.com.br/monitor/changelog/ (clicar na versão do rodapé abre a página); `servidor-vps/implantar.sh` atualiza a VPS depois de cada merge |
 
 ## Como publicar uma versão
 
-1. Mudar `VERSAO` em `src/monitorpc/config.py`.
-2. Branch `v<versão>`, PR para `main`; o CI (`.github/workflows/build.yml`) roda em PR, push na `main` e tag.
+O fluxo completo está em [FLUXO-GIT.md](FLUXO-GIT.md) e é conduzido pela skill `/monitor-tarefa`. Resumo:
+
+1. Branch `tipo/descricao-curta` a partir da `main` (`feature`, `fix`, `refactor`, `hotfix`, `featfix`); a `main` é protegida.
+2. Na PR: mudar `VERSAO` em `src/monitorpc/config.py`, acrescentar a entrada em `servidor-vps/changelog/changelog.json` e regenerar a página (`servidor-vps/changelog/gerar_changelog.py`). O CI (`.github/workflows/build.yml`) roda em PR, push na `main` e tag.
 3. Merge (squash) depois do CI passar; o GitHub não deixa o autor aprovar a própria PR.
 4. Tag `v<versão>` na `main` e push: o job `release` publica o `.exe` e o `.deb` com o SHA-256 de cada um.
+5. Todo merge termina na VPS: `ssh cnt-vps 'bash /var/www/html_cntmonitor/servidor-vps/implantar.sh'` (atalho `cnt-vps` no `~/.ssh/config` de cada computador, fora do Git).
 
 Push na `main` sem tag **não** gera release.
 
