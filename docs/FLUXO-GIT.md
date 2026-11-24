@@ -8,6 +8,7 @@ e, depois do merge, o instalador novo sai e a VPS é atualizada.
 1. **Nunca** commitar, dar push ou editar arquivos direto na `main`. Isso é bloqueado em dois lugares:
    - no GitHub, pela proteção da branch `main` (só aceita mudança por PR);
    - no Claude Code, pelo gancho `.claude/hooks/bloquear-main.py` (configurado em `.claude/settings.json`).
+     O gancho vale para o repositório em que o comando atua (`cd`, `git -C`), então também protege o hub.
 2. Toda tarefa começa baixando a `main` mais recente e criando uma branch **a partir dela**.
 3. Nome da branch: `tipo/descricao-curta`, em minúsculas, com hífens, sem acentos.
 

@@ -4,7 +4,7 @@ Atualizado em 2026-11-18. As funcionalidades completas estão no [README](../REA
 
 ## Versão atual
 
-- **3.12.0** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.12.0`. A release no GitHub traz
+- **3.12.1** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.12.1`. A release no GitHub traz
   `CNTMonitor-Setup-<versão>.exe`, `MonitorDoPC-Setup-<versão>.exe` (nome antigo, para instalações antigas) e
   `cnt-monitor_<versão>_amd64.deb`.
 - Repositório: `robsonsaldanha/cnt-monitor` (público por enquanto; até a 3.11.1 GPL v3, da 3.12.0 em diante Licença de Uso, veja [ESTRATEGIA-PREMIUM.md](ESTRATEGIA-PREMIUM.md)).
@@ -40,6 +40,7 @@ Atualizado em 2026-11-18. As funcionalidades completas estão no [README](../REA
 | 3.11.0 | Fluxo Git por branches e PR (main protegida, skill `/monitor-tarefa`, gancho que bloqueia mexer na main) e changelog público em https://cntoficial.com.br/monitor/changelog/ (clicar na versão do rodapé abre a página); `servidor-vps/implantar.sh` atualiza a VPS depois de cada merge |
 | 3.11.1 | Corrige o nginx da página de changelog (dava erro 500) e o `implantar.sh` (não busca tags na VPS) |
 | 3.12.0 | Licença de Uso própria (versões até a 3.11.1 seguem GPL); atualização buscada primeiro na VPS, com assinatura conferida, para permitir repositório privado depois; estratégia Premium para empresas em `docs/ESTRATEGIA-PREMIUM.md` |
+| 3.12.1 | Gancho que protege a main passa a olhar o repositório do comando (`cd`, `git -C`), ignora o que roda dentro de `ssh` e serve também ao hub |
 
 ## Como publicar uma versão
 
