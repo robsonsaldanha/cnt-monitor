@@ -1,4 +1,7 @@
 [
+  {"versao": "3.12.1", "data": "2026-11-24", "itens": [
+    {"tipo": "melhoria", "texto": "Ajustes internos de manutenção. Nada muda no uso do programa."}
+  ]},
   {"versao": "3.12.0", "data": "2026-11-24", "itens": [
     {"tipo": "melhoria", "texto": "Nova licença de uso a partir desta versão. Tudo o que o CNT Monitor já oferecia continua gratuito, e as versões anteriores seguem livres para quem já as tem."},
     {"tipo": "novo", "texto": "Preparação das futuras funções Premium para empresas. Nada muda para quem usa o programa hoje."},
