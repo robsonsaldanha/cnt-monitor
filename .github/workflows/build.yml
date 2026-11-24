@@ -62,6 +62,9 @@ jobs:
       - name: Teste do changelog público
         run: python build/teste_changelog.py
 
+      - name: Teste da atualização pela VPS
+        run: python build/teste_atualizacao_vps.py
+
       - name: LibreHardwareMonitor (sensores)
         shell: pwsh
         run: ./build/baixar-lhm.ps1

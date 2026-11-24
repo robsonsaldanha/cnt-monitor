@@ -30,7 +30,9 @@ def _arquivo(rel, padrao):
             digest = a.get("digest") or ""
             if not digest.startswith("sha256:"):
                 raise SystemExit(f"{a['name']}: o GitHub não informou o SHA-256; não dá para conferir")
-            return m.group(1), a["name"], a["browser_download_url"], int(a["size"]), digest[7:].lower()
+            sig = next((x for x in rel.get("assets", []) if x.get("name") == a["name"] + ".sig"), None)
+            return (m.group(1), a["name"], a["browser_download_url"], int(a["size"]), digest[7:].lower(),
+                    sig["browser_download_url"] if sig else None)
     return None
 
 
@@ -82,22 +84,32 @@ def versao(nome):
 
 def garantir(item):
     """Baixa (se ainda não está aqui, inteiro e conferido) e devolve as informações para o ultima.json."""
-    ver, nome, url, tamanho, sha = item
+    ver, nome, url, tamanho, sha, url_sig = item
     destino = os.path.join(PASTA, nome)
     if not (os.path.exists(destino) and os.path.getsize(destino) == tamanho and sha256_de(destino) == sha):
         baixar(url, destino, tamanho, sha)
         print(f"baixado {nome} ({tamanho} bytes, sha256 conferido)")
-    return {"versao": ver, "arquivo": nome, "tamanho": tamanho, "sha256": sha}
+    info = {"versao": ver, "arquivo": nome, "tamanho": tamanho, "sha256": sha}
+    if url_sig:  # assinatura Ed25519: o programa confere; é pequena e o GitHub não a lista com SHA-256
+        sig = os.path.join(PASTA, nome + ".sig")
+        with urllib.request.urlopen(urllib.request.Request(url_sig, headers={"User-Agent": "cnt-monitor-site"}), timeout=30) as r:
+            dados = r.read(4096)
+        with open(sig + ".parcial", "wb") as f:
+            f.write(dados)
+        os.chmod(sig + ".parcial", 0o644)
+        os.replace(sig + ".parcial", sig)
+        info["assinatura"] = nome + ".sig"
+    return info
 
 
 def main():
     os.makedirs(PASTA, exist_ok=True)
     exe, deb = ultima_release()
     info = garantir(exe)
-    atuais = {info["arquivo"]}
+    atuais = {info["arquivo"], info.get("assinatura")}
     if deb:
         info["linux"] = garantir(deb)
-        atuais.add(info["linux"]["arquivo"])
+        atuais |= {info["linux"]["arquivo"], info["linux"].get("assinatura")}
     tmp = os.path.join(PASTA, "ultima.json.tmp")
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(info, f)
@@ -107,7 +119,9 @@ def main():
         antigos = sorted((x for x in os.listdir(PASTA) if padrao.match(x)), key=versao, reverse=True)[MANTER:]
         for x in antigos:
             if x not in atuais:
-                os.remove(os.path.join(PASTA, x))
+                for y in (x, x + ".sig"):
+                    if os.path.exists(os.path.join(PASTA, y)):
+                        os.remove(os.path.join(PASTA, y))
                 print(f"removido {x}")
     print("atual: " + ", ".join(sorted(atuais)))
 
