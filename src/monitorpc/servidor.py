@@ -19,7 +19,7 @@ import subprocess
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs, unquote
 
-from . import config, configuracao, banco, icones, energia, servicos, alertas, regras, limpeza, captura, envio, registro, sinalizacao, encontro, pdf
+from . import config, configuracao, banco, icones, energia, servicos, alertas, regras, limpeza, captura, envio, registro, sinalizacao, encontro, pdf, licenca
 
 HOSTS_OK = {f"127.0.0.1:{config.PORTA}", f"localhost:{config.PORTA}"}
 ORIGENS_OK = {f"http://127.0.0.1:{config.PORTA}", f"http://localhost:{config.PORTA}"}
@@ -445,6 +445,8 @@ def fabrica(motor, TOKEN, remoto=False):
 
         def _get_api(self, r, q):
             m = motor
+            if r == "/api/licenca" and not remoto:      # só neste computador
+                return self._json(licenca.estado())
             if r == "/api/ping":
                 return self._json({"ok": True, "app": "monitor-pc", "versao": config.VERSAO})
             if r == "/api/agora":
@@ -768,6 +770,14 @@ def fabrica(motor, TOKEN, remoto=False):
                     return self._json({"ok": True})
                 if remoto:
                     return self._json({"erro": "só no próprio computador"}, 403)
+                if r in ("/api/licenca/entrar", "/api/licenca/renovar", "/api/licenca/sair"):
+                    if r.endswith("/entrar"):
+                        ok, msg = licenca.entrar(corpo.get("email"), corpo.get("senha"))
+                    elif r.endswith("/renovar"):
+                        ok, msg = licenca.renovar()
+                    else:
+                        ok, msg = licenca.sair()
+                    return self._json({"ok": ok, "msg": msg, "licenca": licenca.estado()})
                 if r == "/api/fila/resultado":
                     m.resultado(corpo.get("id", ""), {"ok": bool(corpo.get("ok")), "msg": corpo.get("msg", ""),
                                                      "dados": corpo.get("dados")})

@@ -1,4 +1,8 @@
 [
+  {"versao": "3.13.0", "data": "2026-11-24", "itens": [
+    {"tipo": "novo", "texto": "Nova área Licença Premium (empresas) em Configurações: a empresa entra com a conta CNT e ativa as funções Premium neste computador. A licença se renova sozinha."},
+    {"tipo": "melhoria", "texto": "Tudo o que o programa já oferecia continua gratuito, sem conta e sem licença."}
+  ]},
   {"versao": "3.12.1", "data": "2026-11-24", "itens": [
     {"tipo": "melhoria", "texto": "Ajustes internos de manutenção. Nada muda no uso do programa."}
   ]},

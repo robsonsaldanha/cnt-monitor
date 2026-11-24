@@ -19,7 +19,7 @@ import psutil
 from . import config, configuracao, banco, rede, temperatura, nt, gpu, discos, inicializacao
 from . import alertas, jogo, energia, servicos, atualizacao, sessao, regras, limpeza, vps, captura, ventoinhas, remoto, encontro, audio
 from . import rede_programa, sinalizacao, p2p
-from . import qualidade
+from . import qualidade, licenca
 
 WIN = os.name == "nt"
 NCPU = psutil.cpu_count() or 1
@@ -164,6 +164,7 @@ class Motor:
         self.atualizador = atualizacao.Atualizador()
         self._ult_atualizacao = 0
         self._thr_atu = None
+        self._ult_licenca = 0
         self._atu_falha = (None, 0)       # (versão, quando) da última instalação automática que falhou
         self.jogo = jogo.ModoJogo(self)
         self.regras = regras.MotorRegras()
@@ -303,6 +304,9 @@ class Motor:
                         self._thr_atu = threading.Thread(target=self._atualizar_sozinho, args=(time.time(),),
                                                          daemon=True, name="atualizacao-auto")
                         self._thr_atu.start()
+                if time.time() - self._ult_licenca > licenca.VERIFICAR_CADA:      # licença Premium: renova sozinha, sem travar o motor
+                    self._ult_licenca = time.time()
+                    threading.Thread(target=licenca.renovar_se_preciso, daemon=True, name="licenca").start()
             except Exception:
                 self.erros.append(traceback.format_exc())
             self.parar_ev.wait(2)

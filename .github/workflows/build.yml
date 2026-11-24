@@ -65,6 +65,9 @@ jobs:
       - name: Teste da atualização pela VPS
         run: python build/teste_atualizacao_vps.py
 
+      - name: Teste do cliente da licença Premium
+        run: python build/teste_licenca.py
+
       - name: LibreHardwareMonitor (sensores)
         shell: pwsh
         run: ./build/baixar-lhm.ps1
