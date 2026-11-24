@@ -11,7 +11,7 @@ VHOST=/etc/nginx/sites-available/cntoficial.com.br
 cd "$DIR"
 
 antes=$(git rev-parse HEAD)
-git fetch --quiet --tags origin
+git fetch --quiet origin   # sem --tags: a VPS só precisa da main
 git merge --ff-only --quiet origin/main
 depois=$(git rev-parse HEAD)
 echo "código: ${antes:0:7} -> ${depois:0:7}"
@@ -37,7 +37,7 @@ if [ "${recarregar:-0}" = 1 ]; then
 fi
 
 # trecho do changelog no vhost da home (o vhost mora fora do repositório)
-if ! sudo grep -q '/monitor/changelog' "$VHOST"; then
+if ! sudo grep -q 'rewrite ^ /index.html break' "$VHOST"; then
   sudo cp "$VHOST" "$HOME/backups/cntoficial.com.br.pre-changelog-$(date +%Y%m%d%H%M%S)" 2>/dev/null || sudo cp "$VHOST" "/tmp/cntoficial.pre-changelog"
   sudo python3 - "$DIR/servidor-vps/nginx-cntoficial.com.br-monitor.conf" "$VHOST" <<'PY'
 import sys
@@ -49,6 +49,9 @@ bloco = f[ini:fim]
 v = open(alvo, encoding="utf8").read()
 ancora = "    # CNT Monitor: download e encontro"
 assert ancora in v, "âncora não encontrada no vhost"
+if "    # changelog público" in v:  # versão antiga do trecho: tira antes de pôr a nova
+    i = v.index("    # changelog público")
+    v = v[:i] + v[v.index(ancora):]
 open(alvo, "w", encoding="utf8").write(v.replace(ancora, bloco + ancora, 1))
 PY
   if sudo nginx -t 2>/dev/null; then
