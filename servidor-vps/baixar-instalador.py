@@ -22,6 +22,7 @@ import os
 import re
 import shutil
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -89,38 +90,59 @@ def _descartar(*caminhos):
 
 
 def recebidos():
-    """(exe, deb) da pasta de recebimento: a versão mais nova do .exe e o .deb dela, só com assinatura válida. Cada item é
-    (versão, nome, caminho, tamanho, sha, caminho da .sig). Arquivo sem assinatura válida é apagado e nunca publicado."""
+    """Todos os arquivos da pasta de recebimento com assinatura válida: lista de (versão, nome, caminho, tamanho, sha, caminho da .sig).
+    O .exe e o .deb chegam em momentos diferentes e são tratados cada um por conta própria. Arquivo cuja assinatura não confere é
+    apagado (nunca é publicado); arquivo sem .sig espera (a .sig pode estar chegando)."""
     if not os.path.isdir(RECEBIDOS):
-        return None, None
+        return []
     publica = chave_publica()
     for velho in os.listdir(RECEBIDOS):           # nome antigo do instalador (para instalações até a 2.6): a VPS não o serve
         if velho.startswith("MonitorDoPC-Setup-"):
             _descartar(os.path.join(RECEBIDOS, velho))
-    validos = {}
+    validos = []
     for nome in sorted(os.listdir(RECEBIDOS)):
-        for padrao in (RE_NOME, RE_DEB):
-            m = padrao.match(nome)
-            if not m:
-                continue
-            arq, sig = os.path.join(RECEBIDOS, nome), os.path.join(RECEBIDOS, nome + ".sig")
-            if not os.path.isfile(sig):
-                break                                  # a .sig pode ainda estar chegando
-            sha = sha256_de(arq)
-            with open(sig, encoding="utf-8", errors="replace") as f:
-                ass = f.read(4096)
-            if assinatura_confere(nome, sha, ass, publica):
-                validos[nome] = (m.group(1), nome, arq, os.path.getsize(arq), sha, sig)
-            else:
-                print(f"recusado {nome}: assinatura não confere")
-                _descartar(arq, sig)
-            break
-    exes = sorted((v for n, v in validos.items() if RE_NOME.match(n)), key=lambda v: versao(v[1]), reverse=True)
-    if not exes:
-        return None, None
-    ver = exes[0][0]
-    deb = next((v for n, v in validos.items() if RE_DEB.match(n) and v[0] == ver), None)
-    return exes[0], deb
+        m = RE_NOME.match(nome) or RE_DEB.match(nome)
+        if not m:
+            continue
+        arq, sig = os.path.join(RECEBIDOS, nome), os.path.join(RECEBIDOS, nome + ".sig")
+        if not os.path.isfile(sig):
+            continue
+        sha = sha256_de(arq)
+        with open(sig, encoding="utf-8", errors="replace") as f:
+            ass = f.read(4096)
+        if assinatura_confere(nome, sha, ass, publica):
+            validos.append((m.group(1), nome, arq, os.path.getsize(arq), sha, sig))
+        else:
+            print(f"recusado {nome}: assinatura não confere")
+            _descartar(arq, sig)
+    return validos
+
+
+def limpar_recebidos(agora=None):
+    """Não deixa sobra no recebimento: o que já foi publicado (ou é de versão mais velha que a publicada), .sig sem arquivo há mais de
+    1 dia e arquivo que nunca recebeu a .sig em 2 dias. O que acabou de chegar e ainda espera a .sig fica."""
+    if not os.path.isdir(RECEBIDOS):
+        return
+    agora = agora or time.time()
+    publicado = {}
+    for padrao in (RE_NOME, RE_DEB):
+        vs = [versao(x) for x in os.listdir(PASTA) if padrao.match(x) and os.path.exists(os.path.join(PASTA, x + ".sig"))]
+        publicado[padrao] = max(vs) if vs else None
+    for nome in os.listdir(RECEBIDOS):
+        caminho = os.path.join(RECEBIDOS, nome)
+        if not os.path.isfile(caminho):
+            continue
+        idade = agora - os.path.getmtime(caminho)
+        base = nome[:-4] if nome.endswith(".sig") else nome
+        padrao = RE_NOME if RE_NOME.match(base) else RE_DEB if RE_DEB.match(base) else None
+        if padrao is None:
+            continue                                   # fora do padrão de nome (ex.: o instalador legado já foi tratado em recebidos())
+        velho = publicado[padrao] is not None and versao(base) <= publicado[padrao]
+        sem_par = (nome.endswith(".sig") and not os.path.exists(os.path.join(RECEBIDOS, base)) and idade > 86400) or \
+                  (not nome.endswith(".sig") and not os.path.exists(caminho + ".sig") and idade > 2 * 86400)
+        if velho or sem_par:
+            _descartar(caminho)
+            print(f"limpo do recebimento: {nome}")
 
 
 def baixar(url, destino, tamanho, sha):
@@ -188,37 +210,74 @@ def garantir(item):
     return info
 
 
-def main():
-    os.makedirs(PASTA, exist_ok=True)
-    exe, deb = recebidos()
-    if not exe and os.environ.get("CNT_GITHUB", "1") == "0":
-        print("nada novo no recebimento (GitHub desligado)")
-        return
-    if not exe:                       # nada novo no recebimento: o GitHub só serve enquanto o repositório for público
-        try:
-            exe, deb = ultima_release()
-        except (urllib.error.URLError, OSError) as e:
-            print(f"nada novo no recebimento e o GitHub não respondeu ({e}); fica como está")
-            return
-    info = garantir(exe)
-    atuais = {info["arquivo"], info.get("assinatura")}
+def _info(nome, antigo):
+    """Linha do ultima.json para um arquivo já publicado (a .sig precisa estar ao lado). Reaproveita o sha256 do manifesto
+    anterior quando é o mesmo arquivo, para não reler 100 MB a cada 30 minutos."""
+    caminho = os.path.join(PASTA, nome)
+    tamanho = os.path.getsize(caminho)
+    sha = antigo.get("sha256") if antigo.get("arquivo") == nome and antigo.get("tamanho") == tamanho else sha256_de(caminho)
+    m = RE_NOME.match(nome) or RE_DEB.match(nome)
+    return {"versao": m.group(1), "arquivo": nome, "tamanho": tamanho, "sha256": sha, "assinatura": nome + ".sig"}
+
+
+def montar_manifesto():
+    """ultima.json = o .exe mais novo publicado e, em "linux", o .deb mais novo (cada um com a sua versão)."""
+    arq = os.path.join(PASTA, "ultima.json")
+    try:
+        with open(arq, encoding="utf-8") as f:
+            antigo = json.load(f)
+    except (OSError, ValueError):
+        antigo = {}
+
+    def mais_novo(padrao):
+        nomes = sorted((x for x in os.listdir(PASTA) if padrao.match(x) and os.path.exists(os.path.join(PASTA, x + ".sig"))), key=versao, reverse=True)
+        return nomes[0] if nomes else None
+    exe, deb = mais_novo(RE_NOME), mais_novo(RE_DEB)
+    if not exe:
+        return None
+    info = _info(exe, antigo)
     if deb:
-        info["linux"] = garantir(deb)
-        atuais |= {info["linux"]["arquivo"], info["linux"].get("assinatura")}
-    tmp = os.path.join(PASTA, "ultima.json.tmp")
+        info["linux"] = _info(deb, antigo.get("linux") or {})
+    tmp = arq + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(info, f)
     os.chmod(tmp, 0o644)
-    os.replace(tmp, os.path.join(PASTA, "ultima.json"))
+    os.replace(tmp, arq)
+    return info
+
+
+def podar(info):
+    atuais = {info["arquivo"], info["assinatura"]}
+    if info.get("linux"):
+        atuais |= {info["linux"]["arquivo"], info["linux"]["assinatura"]}
     for padrao in (RE_NOME, RE_DEB):
         antigos = sorted((x for x in os.listdir(PASTA) if padrao.match(x)), key=versao, reverse=True)[MANTER:]
         for x in antigos:
             if x not in atuais:
-                for y in (x, x + ".sig"):
-                    if os.path.exists(os.path.join(PASTA, y)):
-                        os.remove(os.path.join(PASTA, y))
+                _descartar(os.path.join(PASTA, x), os.path.join(PASTA, x + ".sig"))
                 print(f"removido {x}")
-    print("atual: " + ", ".join(sorted(atuais)))
+
+
+def main():
+    os.makedirs(PASTA, exist_ok=True)
+    novos = recebidos()
+    for item in sorted(novos, key=lambda v: versao(v[1])):
+        garantir(item)                # move para a pasta publicada (a assinatura já foi conferida)
+    if not novos and os.environ.get("CNT_GITHUB", "1") != "0":
+        try:                          # nada novo no recebimento: o GitHub só serve enquanto o repositório for público
+            exe, deb = ultima_release()
+            garantir(exe)
+            if deb:
+                garantir(deb)
+        except (urllib.error.URLError, OSError) as e:
+            print(f"nada novo no recebimento e o GitHub não respondeu ({e}); fica como está")
+    info = montar_manifesto()
+    if info:
+        podar(info)
+        limpar_recebidos()
+        print("atual: " + ", ".join(sorted({info["arquivo"], info["assinatura"]} | ({info["linux"]["arquivo"], info["linux"]["assinatura"]} if info.get("linux") else set()))))
+    else:
+        print("nada publicado ainda")
 
 
 if __name__ == "__main__":
