@@ -196,6 +196,7 @@ class Motor:
         self.voip = sinalizacao.Voip()
         self.nuvem = nuvem.Nuvem(self.voip)
         self._ult_nuvem = 0
+        self._ult_vivo = 0
         self.voip_chave = sinalizacao.ChaveApi()
         self.voip_mon = sinalizacao.Monitoramento(ativo=lambda: bool(configuracao.obter("callflow")))
         self.voip_alvo = sinalizacao.ClienteRemoto()      # outro PC cuja captura esta tela controla
@@ -310,6 +311,9 @@ class Motor:
                     self._ult_nuvem = time.time()
                     if c["chamadas_nuvem"] and c["callflow"]:
                         self.nuvem.sincronizar_ao_fundo()
+                if time.time() - self._ult_vivo > nuvem.INTERVALO_AO_VIVO_S and c["chamadas_nuvem"] and c["callflow"]:
+                    self._ult_vivo = time.time()
+                    self.nuvem.publicar_ao_vivo_ao_fundo()      # Premium (vários computadores): chamadas em andamento
                 if time.time() - self._ult_licenca > licenca.VERIFICAR_CADA:      # licença Premium: renova sozinha, sem travar o motor
                     self._ult_licenca = time.time()
                     threading.Thread(target=licenca.renovar_se_preciso, daemon=True, name="licenca").start()

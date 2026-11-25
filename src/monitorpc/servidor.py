@@ -493,12 +493,21 @@ def fabrica(motor, TOKEN, remoto=False):
                                        "enderecos": [f'{x["ip"]}:{configuracao.obter("acesso_porta")}' for x in ips_rede()],
                                        "rodando": m.remoto_rodando(), "alvo": m.voip_alvo.rotulo() if m.voip_alvo.url else None,
                                        "id_online": encontro.formatar_id(m.encontro.id), "online": m.encontro.situacao})
-                if r in ("/api/voip/nuvem", "/api/voip/nuvem/chamadas", "/api/voip/nuvem/chamada"):
+                if r.startswith("/api/voip/nuvem"):
                     try:
                         if r == "/api/voip/nuvem":
                             return self._json(m.nuvem.estado())
                         if r == "/api/voip/nuvem/chamadas":
-                            return self._json(m.nuvem.chamadas(q.get("busca", ""), _num(q, "limite", 300, int)))
+                            return self._json(m.nuvem.chamadas(q.get("busca", ""), _num(q, "limite", 300, int), q.get("pc", "")))
+                        if r == "/api/voip/nuvem/relatorio":
+                            return self._json(m.nuvem.relatorio(_num(q, "de", 0, int), _num(q, "ate", 0, int), q.get("pc", "")))
+                        if r == "/api/voip/nuvem/exportar":
+                            return self._env(200, m.nuvem.exportar(_num(q, "de", 0, int), _num(q, "ate", 0, int), q.get("pc", "")),
+                                             "text/csv; charset=utf-8", {"Content-Disposition": 'attachment; filename="chamadas.csv"'})
+                        if r == "/api/voip/nuvem/computadores":
+                            return self._json({"computadores": m.nuvem.computadores(), "ao_vivo": m.nuvem.ao_vivo_empresa()})
+                        if r != "/api/voip/nuvem/chamada":
+                            return self._json({"erro": "não encontrado"}, 404)
                         d = m.nuvem.detalhe(q.get("id", ""))
                         return self._json(d) if d else self._json({"erro": "chamada não encontrada"}, 404)
                     except nuvem.NuvemErro as e:

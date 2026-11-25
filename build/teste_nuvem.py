@@ -22,7 +22,7 @@ def ok(c, m):
 
 
 # ---------------- hub falso
-hub = {"recebidas": [], "pedidos": 0, "auth": [], "modo": "ok"}
+hub = {"recebidas": [], "pedidos": 0, "auth": [], "modo": "ok", "gets": [], "vivo": []}
 
 
 class H(BaseHTTPRequestHandler):
@@ -33,6 +33,29 @@ class H(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b)
 
+    def do_GET(self):
+        hub["pedidos"] += 1
+        hub["gets"].append(self.path)
+        hub["auth"].append(self.headers.get("Authorization"))
+        if self.path.startswith("/v1/chamadas/exportar"):
+            b = "\ufeff\"Computador\";\"Call-ID\"\r\n".encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/csv; charset=utf-8")
+            self.send_header("Content-Length", str(len(b)))
+            self.end_headers()
+            return self.wfile.write(b)
+        if "/relatorio" in self.path:
+            return self._resp(200, {"totais": {"chamadas": 2}, "por_dia": [], "por_hora": [0] * 24})
+        if "/computadores" in self.path:
+            return self._resp(200, {"computadores": [{"id": "abc", "nome": "PC1"}]})
+        if "/ao-vivo" in self.path:
+            return self._resp(200, {"computadores": []})
+        if "/resumo" in self.path:
+            return self._resp(200, {"total": 7, "bytes": 10, "cota_bytes": 100, "retencao_dias": 90})
+        if "/lista" in self.path:
+            return self._resp(200, {"chamadas": []})
+        self._resp(404, {"erro": "?"})
+
     def do_POST(self):
         corpo = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
         hub["pedidos"] += 1
@@ -42,6 +65,9 @@ class H(BaseHTTPRequestHandler):
         if self.path.endswith("/enviar"):
             hub["recebidas"] += corpo["chamadas"]
             return self._resp(200, {"ok": True, "recebidas": len(corpo["chamadas"])})
+        if self.path.endswith("/ao-vivo"):
+            hub["vivo"].append(corpo)
+            return self._resp(200, {"ok": True})
         if self.path.endswith("/apagar"):
             return self._resp(200, {"ok": True, "apagadas": 3})
         self._resp(404, {"erro": "?"})
@@ -121,6 +147,47 @@ con.commit()
 con.close()
 gravar(200)
 ok(n.sincronizar() == 1 and hub["recebidas"][-1]["id"] == "call-200", "tabela esvaziada e preenchida de novo: o cursor não fica à frente")
+
+
+# ---------------- Premium: relatórios e vários computadores (cada função pede a sua licença)
+licenca.tem = lambda f: f == "chamadas-historico"
+e = n.estado()
+ok(e["licenciado"] and not e["relatorios"] and not e["varios_pcs"], "estado mostra quais funções Premium a licença tem")
+licenca.tem = lambda f: True
+e = n.estado()
+ok(e["relatorios"] and e["varios_pcs"] and e["resumo"]["total"] == 7, "licença completa libera relatórios e vários PCs")
+antes = hub["pedidos"]
+n.estado(); n.estado()
+ok(hub["pedidos"] == antes, "a tela atualiza toda hora: o resumo fica em cache e não sobrecarrega o hub")
+
+r = n.relatorio(1_800_000_000, 1_800_086_400, "abcd1234")
+ok(r["totais"]["chamadas"] == 2 and "de=1800000000" in hub["gets"][-1] and "ate=1800086400" in hub["gets"][-1] and "pc=abcd1234" in hub["gets"][-1], "relatório pede o período e o computador")
+csv = n.exportar(1_800_000_000, 1_800_086_400)
+ok(csv.startswith("\ufeff".encode("utf-8")) and b"Call-ID" in csv, "exportar devolve a planilha como bytes")
+ok(n.computadores()[0]["nome"] == "PC1" and n.ao_vivo_empresa() == [], "lista os computadores da empresa e o ao vivo")
+n.chamadas("busca", 50, "abcd1234")
+ok("pc=abcd1234" in hub["gets"][-1], "o histórico pode ser filtrado por computador")
+
+# ao vivo: só chamadas em andamento deste PC; sem a função, não publica
+viva = sinalizacao._nova("viva-1", 1_800_000_500, "chamada")
+viva.update(de="11999990001", para="1133334444", estado="Em andamento", inicio_conv=1_800_000_505)
+fim = sinalizacao._nova("fim-1", 1_800_000_100, "chamada")
+fim.update(final=True, estado="Encerrada")
+voip.chamadas["viva-1"], voip.chamadas["fim-1"] = viva, fim
+n.publicar_ao_vivo()
+ok(len(hub["vivo"]) == 1 and [c["id"] for c in hub["vivo"][-1]["chamadas"]] == ["viva-1"] and hub["vivo"][-1]["pc_nome"], "publica só a chamada em andamento, com o nome do computador")
+licenca.tem = lambda f: f != "chamadas-multi-pc"
+n.publicar_ao_vivo()
+ok(len(hub["vivo"]) == 1, "sem a função de vários PCs nada é publicado")
+licenca.tem = lambda f: True
+configuracao.salvar({"chamadas_nuvem": False})
+n.publicar_ao_vivo()
+ok(len(hub["vivo"]) == 1, "com a opção desligada nada é publicado")
+configuracao.salvar({"chamadas_nuvem": True})
+hub["modo"] = "403"
+n.publicar_ao_vivo()
+ok("licença" in n.vivo_erro.lower() and "licença" in n.estado()["erro"].lower(), "recusa do hub aparece como erro na tela")
+hub["modo"] = "ok"
 
 # ---------------- sem licença não chama nem para listar
 licenca.token = lambda: ""
