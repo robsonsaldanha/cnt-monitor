@@ -71,6 +71,9 @@ jobs:
       - name: Teste do histórico de chamadas na nuvem
         run: python build/teste_nuvem.py
 
+      - name: Teste de conectar à empresa e do uso do computador
+        run: python build/teste_empresa.py
+
       - name: LibreHardwareMonitor (sensores)
         shell: pwsh
         run: ./build/baixar-lhm.ps1
