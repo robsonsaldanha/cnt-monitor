@@ -4,7 +4,7 @@ Atualizado em 2026-11-18. As funcionalidades completas estão no [README](../REA
 
 ## Versão atual
 
-- **3.15.0** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.15.0`. A release no GitHub traz
+- **3.16.0** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.16.0`. A release no GitHub traz
   `CNTMonitor-Setup-<versão>.exe`, `MonitorDoPC-Setup-<versão>.exe` (nome antigo, para instalações antigas) e
   `cnt-monitor_<versão>_amd64.deb`.
 - Repositório: `robsonsaldanha/cnt-monitor` (público por enquanto; até a 3.11.1 GPL v3, da 3.12.0 em diante Licença de Uso, veja [ESTRATEGIA-PREMIUM.md](ESTRATEGIA-PREMIUM.md)).
@@ -44,6 +44,7 @@ Atualizado em 2026-11-18. As funcionalidades completas estão no [README](../REA
 | 3.13.0 | Cliente da licença Premium (`src/monitorpc/licenca.py`): entrar com a conta CNT da empresa em Configurações, permissão assinada Ed25519 (até 7 dias, renovada de hora em hora se faltarem menos de 3 dias), `licenca.tem("função")` para travar funções Premium; rotas locais `/api/licenca`. Nenhuma função existente foi travada |
 | 3.14.0 | Premium `chamadas-historico`: histórico de chamadas na nuvem da empresa (`src/monitorpc/nuvem.py`; hub `/v1/chamadas`, dados cifrados, retenção e cota por licença). Aba **Nuvem (Premium)** na tela Chamadas; opção `chamadas_nuvem` desligada por padrão; envio a cada 30 s só do que o Call flow já guardou |
 | 3.15.0 | Premium `chamadas-relatorios` (relatório da empresa por período, PDF e CSV completo) e `chamadas-multi-pc` (computadores da empresa, filtro por computador e chamadas ao vivo publicadas a cada 10 s, só na memória do hub). Hub 1.10.0 precisa estar no ar antes |
+| 3.16.0 | Modelo comercial por computador (R$ 9,90): **Configurações → Empresa (Premium)** conecta o PC ao endereço da empresa (`cntoficial.com.br/<empresa>`, ID cadastrado pelo administrador, sem digitar chave), envia chamadas e o uso do computador (`src/monitorpc/metricas.py`: CPU, memória, disco, ficha da máquina, sem nada pessoal); painel online no hub 1.11. Plano em `docs/PLANO-EMPRESAS.md` |
 
 ## Como publicar uma versão
 

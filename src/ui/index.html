@@ -1941,14 +1941,20 @@ function atuRender(){ const el=$('#atuPainel'); if(!el) return; const s=STATUS||
 /* licença Premium (empresas): entrar com a conta CNT da empresa; tudo o que já existia continua gratuito */
 let LIC=null;
 function licRender(){ const el=$('#licPainel'); if(!el||!LIC) return; const l=LIC;
-  if(l.valida) el.innerHTML=`<div class="item"><b>${esc(l.empresa||'Empresa')}</b><div class="ctl" style="display:flex;gap:8px"><button class="cnt-botao cnt-botao--pq" id="licRenovar">Renovar agora</button><button class="cnt-botao cnt-botao--pq" id="licSair">Sair</button></div><small>Conta ${esc(l.email||'—')} · a permissão é renovada sozinha; vale até ${esc(new Date(l.expira_em).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}))} se ficar sem internet.</small></div>
-    <div class="item"><b>Funções Premium liberadas</b><small>${l.funcoes.map(f=>esc(f.nome)).join('<br>')||'Nenhuma: fale com a CNT.'}</small></div>`;
-  else el.innerHTML=`<div class="item"><b>Entrar com a conta da empresa</b><div class="ctl" style="display:flex;gap:8px;flex-wrap:wrap"><input id="licEmail" type="email" placeholder="e-mail da conta CNT" autocomplete="username" class="cnt-campo__controle" value="${esc(l.email||'')}" style="width:210px"><input id="licSenha" type="password" placeholder="senha" autocomplete="current-password" class="cnt-campo__controle" style="width:150px"><button class="cnt-botao cnt-botao--pq cnt-botao--primario" id="licEntrar">Entrar</button></div><small>${esc(l.mensagem||'Só para as funções Premium, feitas para empresas. Tudo o que o programa já tem continua gratuito, sem conta e sem licença.')}</small></div>`; }
+  const aviso='<small>Ao conectar, este computador passa a enviar para a empresa: os dados das chamadas telefônicas (números, horários e qualidade) e o uso do computador (processador, memória e disco, modelo e sistema). Não envia tela, arquivos, senhas, teclas digitadas nem nomes de janelas ou de programas. Quem administra a empresa vê essas informações no painel online.</small>';
+  if(l.conectado){ const fs=(l.funcoes||[]).map(f=>esc(f.nome)).join('<br>');
+    el.innerHTML=`<div class="item"><b>Conectado a ${esc(l.empresa||l.empresa_slug)}</b><div class="ctl" style="display:flex;gap:8px"><button class="cnt-botao cnt-botao--pq" id="licRenovar">Atualizar agora</button><button class="cnt-botao cnt-botao--pq cnt-botao--perigo" id="licSair">Desconectar</button></div><small>Painel da empresa: <b>cntoficial.com.br/${esc(l.empresa_slug)}</b> · este computador: ${esc(l.computador||'—')} · ID ${esc(l.id_computador||'—')}</small></div>
+      <div class="item"><b>${l.valida?'Funções Premium liberadas':'Funções Premium bloqueadas'}</b><small>${l.valida?(fs||'Nenhuma: fale com a CNT.')+'<br>Vale até '+esc(new Date(l.expira_em).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}))+' se ficar sem internet; renova sozinho.':esc(l.mensagem||'Aguardando a assinatura da empresa.')}</small></div>
+      <div class="item"><b>O que este computador envia à empresa</b>${aviso}</div>`; }
+  else el.innerHTML=`<div class="item"><b>Conectar este computador à empresa</b><div class="ctl" style="display:flex;gap:8px;flex-wrap:wrap"><input id="licEnd" type="text" placeholder="cntoficial.com.br/nomedaempresa" autocomplete="off" class="cnt-campo__controle" style="width:260px"><button class="cnt-botao cnt-botao--pq cnt-botao--primario" id="licConectar">Conectar</button></div>
+      <small>${esc(l.mensagem||'Para empresas que contrataram o CNT Monitor. O administrador cadastra o ID deste computador no painel da empresa e você só digita o endereço dela aqui. Tudo o que o programa já tem continua gratuito, sem conta e sem licença.')}<br><b>ID deste computador: ${esc(l.id_computador||'—')}</b> (é este que o administrador cadastra)</small></div>
+      <div class="item"><b>O que será enviado à empresa</b>${aviso}</div>`; }
 function ligarLic(){ const el=$('#licPainel'); if(!el) return;
-  el.onclick=async e=>{ const b=e.target.closest('button'); if(!b) return; b.disabled=true;
-    const corpo=b.id==='licEntrar'?{email:$('#licEmail').value,senha:$('#licSenha').value}:{};
-    const r=await POST('licenca/'+({licEntrar:'entrar',licRenovar:'renovar',licSair:'sair'}[b.id]||'renovar'),corpo).catch(()=>null);
-    if(r&&r.licenca) LIC=r.licenca; toast(r?r.msg:'Não consegui falar com o programa.',r&&r.ok?0:1); licRender(); ligarLic(); }; }
+  el.onclick=async e=>{ const b=e.target.closest('button'); if(!b) return;
+    if(b.id==='licSair'&&!await confirmar('Desconectar este computador da empresa?','Ele deixa de enviar as chamadas e o uso do computador, e as funções Premium se fecham. O que já foi enviado continua com a empresa.','Desconectar',1)){ return; }
+    b.disabled=true; const corpo=b.id==='licConectar'?{endereco:$('#licEnd').value}:{};
+    const r=await POST('licenca/'+({licConectar:'conectar',licRenovar:'renovar',licSair:'sair'}[b.id]||'renovar'),corpo).catch(()=>null);
+    if(r&&r.licenca) LIC=r.licenca; toast(r?r.msg:'Não consegui falar com o programa.',r&&r.ok?0:1); if(r&&r.ok&&b.id==='licConectar') CFG=(await API('config').catch(()=>({valores:CFG}))).valores||CFG; licRender(); ligarLic(); }; }
 async function vConfig(){ try{ LIC=await API('licenca'); }catch(_){ LIC=null; } try{ CFG_ATU=await API('atualizacao'); }catch(_){} const s=STATUS||{};
   let h='<h2 class="secao" style="margin-bottom:8px">Atualizações</h2><div class="cnt-cartao" id="atuPainel"></div>';
   for(const [sec,itens] of CFG_DEF){ h+=`<h2 class="secao" style="margin-bottom:8px">${sec}</h2><div class="cnt-cartao">`;
@@ -1958,7 +1964,7 @@ async function vConfig(){ try{ LIC=await API('licenca'); }catch(_){ LIC=null; } 
       if(tipo==='num') ctl=`<input type="number" data-cfg="${k}" min="${op[0]}" max="${op[1]}" value="${CFG[k]}" style="width:90px" class="cnt-campo__controle">`;
       h+=`<div class="item"><b>${t}</b><div class="ctl">${ctl}</div>${d?`<small>${d}</small>`:''}</div>`; }
     h+='</div>'; }
-  if(LIC) h+='<h2 class="secao" style="margin-bottom:8px">Licença Premium (empresas)</h2><div class="cnt-cartao" id="licPainel"></div>';
+  if(LIC) h+='<h2 class="secao" style="margin-bottom:8px">Empresa (Premium)</h2><div class="cnt-cartao" id="licPainel"></div>';
   h+=`<h2 class="secao" style="margin-bottom:8px">Manutenção</h2><div class="cnt-cartao"><div class="item"><b>Apagar todo o histórico</b><div class="ctl"><button class="cnt-botao cnt-botao--pq cnt-botao--perigo" id="apagarHist">Apagar</button></div><small>Apaga gráficos, relatórios e momentos de lentidão guardados. O monitoramento continua.</small></div></div>`;
   h+=cfgExtras(); h+=`<h2 class="secao" style="margin-bottom:8px">Sobre</h2><div class="cnt-cartao"><dl class="kv">
     <dt>Versão</dt><dd>${esc(s.versao||'—')}</dd><dt>Serviço como administrador</dt><dd>${s.admin?'sim':'não'}</dd><dt>Leitura dos processos</dt><dd>${s.modo_coleta==='nt'?'rápida (Windows NT)':'padrão (psutil)'} · ${s.tempo_amostra_ms??'—'} ms por leitura (máx. ${s.tempo_amostra_max_ms??'—'} ms)</dd>
@@ -3116,11 +3122,11 @@ async function vnComputadores(){ let d; try{ d=await API('voip/nuvem/computadore
   $('#vnVivo').innerHTML=linhas.length?'<table class="cnt-tabela"><thead><tr>'+['Computador','Chamada','Estado','Duração'].map(h=>`<th class="cnt-tabela__cab">${h}</th>`).join('')+'</tr></thead><tbody>'+linhas.join('')+'</tbody></table>':'<p class="mut2" style="padding:0 14px 14px">Nenhuma chamada em andamento na empresa agora.</p>'; }
 async function vVoipNuv(){ let e; try{ e=await API('voip/nuvem'); }catch(_){ return; } const r=e.resumo;
   $('#vnLigar').checked=!!e.ligado; $('#vnLigar').disabled=!e.licenciado; $('#vnApagarTudo').hidden=!e.licenciado; $('#vnBusca').hidden=!e.licenciado;
-  $('#vnInfo').textContent=!e.licenciado?'precisa de licença Premium: entre com a conta da empresa em Configurações':(e.ligado?'enviando as chamadas encerradas deste computador':'desligado')+(r?` · ${nf0.format(r.total)} chamada(s) na nuvem · ${fB(r.bytes)} de ${fB(r.cota_bytes)} · guardadas por ${r.retencao_dias} dias`:'')+(e.ultimo_envio?' · último envio '+quando(e.ultimo_envio):'');
+  $('#vnInfo').textContent=!e.licenciado?'precisa de licença Premium: conecte este computador à empresa em Configurações':(e.ligado?'enviando as chamadas encerradas deste computador':'desligado')+(r?` · ${nf0.format(r.total)} chamada(s) na nuvem · ${fB(r.bytes)} de ${fB(r.cota_bytes)} · guardadas por ${r.retencao_dias} dias`:'')+(e.ultimo_envio?' · último envio '+quando(e.ultimo_envio):'');
   $('#vnErro').hidden=!e.erro; $('#vnErro').textContent=e.erro||'';
   $('#vnPcsC').hidden=!(e.licenciado&&e.varios_pcs); $('#vnRelC').hidden=!(e.licenciado&&e.relatorios);
   if(e.licenciado&&e.varios_pcs) await vnComputadores(); if(e.licenciado&&e.relatorios&&!VN_REL&&!$('#vnRel').dataset.carregado){ $('#vnRel').dataset.carregado='1'; vnRelCarregar(); }
-  if(!e.licenciado){ VOIP_LISTA=[]; $('#vnCont').textContent=''; $('#vnLista').innerHTML='<p class="mut2" style="padding:0 14px 14px">Em Configurações, na área Licença Premium (empresas), entre com o e-mail e a senha da conta CNT da sua empresa.</p>'; return; }
+  if(!e.licenciado){ VOIP_LISTA=[]; $('#vnCont').textContent=''; $('#vnLista').innerHTML='<p class="mut2" style="padding:0 14px 14px">Em Configurações, na área Empresa (Premium), conecte este computador ao endereço da sua empresa (cntoficial.com.br/nomedaempresa).</p>'; return; }
   let l=[]; try{ l=await API('voip/nuvem/chamadas?busca='+encodeURIComponent($('#vnBusca').value.trim())+(VN_PC?'&pc='+encodeURIComponent(VN_PC):'')); }catch(_){ }
   l.forEach(c=>{ c.pc='nuvem'; }); VOIP_LISTA=l; $('#vnCont').textContent=l.length+' registro(s)'; $('#vnLista').innerHTML=voipTabela(l,true); }
 async function vVoipApi(){ let a; try{ a=await API('voip/api'); }catch(_){ return; } VOIP_CHAVE=a.chave;

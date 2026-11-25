@@ -1,4 +1,10 @@
 [
+  {"versao": "3.16.0", "data": "2026-11-25", "itens": [
+    {"tipo": "novo", "texto": "Empresas: em Configurações, a nova área Empresa (Premium) conecta o computador à empresa só digitando o endereço dela (cntoficial.com.br/nomedaempresa). O administrador cadastra o ID do computador no painel da empresa e pronto, sem chaves para copiar."},
+    {"tipo": "novo", "texto": "Painel online da empresa: o administrador vê os computadores, o uso de processador, memória e disco, sugestões de upgrade, as chamadas e o relatório, sem precisar instalar o programa."},
+    {"tipo": "melhoria", "texto": "O programa mostra com clareza o que será enviado à empresa: dados das chamadas e uso do computador. Não envia tela, arquivos, senhas, teclas digitadas nem nomes de janelas ou programas."},
+    {"tipo": "melhoria", "texto": "Tudo o que já era gratuito continua gratuito, sem conta e sem licença."}
+  ]},
   {"versao": "3.15.0", "data": "2026-11-25", "itens": [
     {"tipo": "novo", "texto": "Premium para empresas: relatório das chamadas da empresa na aba Nuvem, com totais, chamadas por dia e por hora, quem desligou, números mais frequentes e as piores chamadas em qualidade. Dá para gerar o PDF e exportar tudo em planilha (CSV)."},
     {"tipo": "novo", "texto": "Premium para empresas: veja todos os computadores da empresa e as chamadas em andamento de cada um, sem trocar ID nem chave. Clique num computador para ver só as chamadas dele."},

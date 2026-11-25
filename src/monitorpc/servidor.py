@@ -446,7 +446,7 @@ def fabrica(motor, TOKEN, remoto=False):
         def _get_api(self, r, q):
             m = motor
             if r == "/api/licenca" and not remoto:      # só neste computador
-                return self._json(licenca.estado())
+                return self._json({**licenca.estado(), "id_computador": encontro.formatar_id(m.encontro.id), "uso_erro": m.uso_empresa.erro})
             if r == "/api/ping":
                 return self._json({"ok": True, "app": "monitor-pc", "versao": config.VERSAO})
             if r == "/api/agora":
@@ -789,14 +789,21 @@ def fabrica(motor, TOKEN, remoto=False):
                     return self._json({"ok": True})
                 if remoto:
                     return self._json({"erro": "só no próprio computador"}, 403)
-                if r in ("/api/licenca/entrar", "/api/licenca/renovar", "/api/licenca/sair"):
-                    if r.endswith("/entrar"):
+                if r in ("/api/licenca/entrar", "/api/licenca/renovar", "/api/licenca/sair", "/api/licenca/conectar"):
+                    if r.endswith("/conectar"):
+                        from . import metricas
+                        ok, msg = licenca.parear(corpo.get("endereco"), m.encontro.id, metricas.ficha((m.hardware() or {}).get("cpu_nome", "")))
+                        if ok:                          # conectar é o aviso e o aceite: o histórico de chamadas passa a ir para a empresa
+                            configuracao.salvar({"chamadas_nuvem": True})
+                            m.config_mudou()
+                            m.uso_empresa.enviar_ao_fundo()
+                    elif r.endswith("/entrar"):
                         ok, msg = licenca.entrar(corpo.get("email"), corpo.get("senha"))
                     elif r.endswith("/renovar"):
                         ok, msg = licenca.renovar()
                     else:
                         ok, msg = licenca.sair()
-                    return self._json({"ok": ok, "msg": msg, "licenca": licenca.estado()})
+                    return self._json({"ok": ok, "msg": msg, "licenca": {**licenca.estado(), "id_computador": encontro.formatar_id(m.encontro.id)}})
                 if r == "/api/voip/nuvem/apagar":
                     try:
                         res = m.nuvem.apagar(str(corpo.get("id") or ""), bool(corpo.get("tudo")), str(corpo.get("confirmar") or ""))

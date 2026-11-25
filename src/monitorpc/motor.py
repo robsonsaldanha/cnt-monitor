@@ -19,7 +19,7 @@ import psutil
 from . import config, configuracao, banco, rede, temperatura, nt, gpu, discos, inicializacao
 from . import alertas, jogo, energia, servicos, atualizacao, sessao, regras, limpeza, vps, captura, ventoinhas, remoto, encontro, audio
 from . import rede_programa, sinalizacao, p2p
-from . import qualidade, licenca, nuvem
+from . import qualidade, licenca, nuvem, metricas
 
 WIN = os.name == "nt"
 NCPU = psutil.cpu_count() or 1
@@ -197,6 +197,8 @@ class Motor:
         self.nuvem = nuvem.Nuvem(self.voip)
         self._ult_nuvem = 0
         self._ult_vivo = 0
+        self._ult_uso = 0
+        self.uso_empresa = metricas.Envio(cpu_nome=lambda: (self.hardware() or {}).get("cpu_nome", ""))
         self.voip_chave = sinalizacao.ChaveApi()
         self.voip_mon = sinalizacao.Monitoramento(ativo=lambda: bool(configuracao.obter("callflow")))
         self.voip_alvo = sinalizacao.ClienteRemoto()      # outro PC cuja captura esta tela controla
@@ -314,6 +316,9 @@ class Motor:
                 if time.time() - self._ult_vivo > nuvem.INTERVALO_AO_VIVO_S and c["chamadas_nuvem"] and c["callflow"]:
                     self._ult_vivo = time.time()
                     self.nuvem.publicar_ao_vivo_ao_fundo()      # Premium (vários computadores): chamadas em andamento
+                if time.time() - self._ult_uso > metricas.INTERVALO_S and licenca.conectado():     # uso do computador, só se conectado a uma empresa
+                    self._ult_uso = time.time()
+                    self.uso_empresa.enviar_ao_fundo()
                 if time.time() - self._ult_licenca > licenca.VERIFICAR_CADA:      # licença Premium: renova sozinha, sem travar o motor
                     self._ult_licenca = time.time()
                     threading.Thread(target=licenca.renovar_se_preciso, daemon=True, name="licenca").start()

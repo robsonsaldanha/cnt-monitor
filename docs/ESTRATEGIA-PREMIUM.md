@@ -45,6 +45,7 @@ vendido com licença por prazo (X dias), e começa pela tela Chamadas.
 | 4 | Cliente da licença no programa: login da empresa, permissão assinada, renovação automática (3.13.0) | feita |
 | 5a | `chamadas-historico`: histórico na nuvem da empresa, cifrado (hub 1.9, 3.14.0) | feita |
 | 5b | `chamadas-relatorios` e `chamadas-multi-pc`: relatório, PDF, CSV, computadores e ao vivo (hub 1.10, 3.15.0) | feita |
+| 5c | Modelo comercial por computador (R$ 9,90): endereço da empresa, cadastro por ID, conexão sem chave, uso do computador e painel online (hub 1.11, 3.16.0). Detalhes em [PLANO-EMPRESAS.md](PLANO-EMPRESAS.md) | feita |
 | 6 | Preços e cobrança | **a definir pelo Robson** (tabela de preços; nada foi inventado) |
 | 7 | Repositório do Monitor privado | **depende da adoção**: só depois que a maioria estiver na 3.12 ou mais nova, com token na VPS e deploy key para o `git pull` |
 
