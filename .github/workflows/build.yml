@@ -74,6 +74,9 @@ jobs:
       - name: Teste de conectar à empresa e do uso do computador
         run: python build/teste_empresa.py
 
+      - name: Teste da publicação assinada na VPS
+        run: python build/teste_publicar.py
+
       - name: LibreHardwareMonitor (sensores)
         shell: pwsh
         run: ./build/baixar-lhm.ps1
@@ -378,3 +381,25 @@ jobs:
             saida/*.exe
             saida/*.deb
             saida/*.sig
+
+      # A VPS entrega o download do site e as atualizações. A chave de envio só escreve na pasta de recebimento (rrsync) e a VPS só
+      # publica o que tem assinatura Ed25519 válida, então esta etapa não consegue colocar um instalador falso no ar.
+      # continue-on-error: se a VPS estiver fora do ar a release no GitHub continua valendo e o implantar.sh publica depois.
+      - name: Enviar os instaladores para a VPS (recebimento assinado)
+        continue-on-error: true
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          VPS_UPLOAD_KEY: ${{ secrets.VPS_UPLOAD_KEY }}
+        run: |
+          if [ -z "$VPS_HOST" ]; then echo "VPS não configurada neste repositório: etapa ignorada"; exit 0; fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_UPLOAD_KEY" > ~/.ssh/vps_upload
+          chmod 600 ~/.ssh/vps_upload
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts_vps
+          rsync -v --partial --timeout=300 \
+            -e "ssh -p $VPS_PORT -i $HOME/.ssh/vps_upload -o IdentitiesOnly=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts_vps -o StrictHostKeyChecking=yes" \
+            saida/*.exe saida/*.deb saida/*.sig "$VPS_USER@$VPS_HOST:"
+          rm -f ~/.ssh/vps_upload

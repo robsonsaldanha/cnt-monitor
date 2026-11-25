@@ -45,10 +45,18 @@ e, depois do merge, o instalador novo sai e a VPS é atualizada.
 1. Criar e enviar a tag `v<versão>` na `main`. O job `release` do CI (`.github/workflows/build.yml`) gera
    `CNTMonitor-Setup-<versão>.exe`, o `.deb` e as assinaturas, e publica a release no GitHub.
 2. Esperar o CI terminar com sucesso (Windows, Linux e release).
+   O CI também **envia os instaladores à VPS** (`rsync` por uma chave que só escreve na pasta de recebimento) e a VPS só publica
+   o que tem assinatura Ed25519 válida (`servidor-vps/baixar-instalador.py`). Isso permite o repositório ser **privado**: nem a VPS
+   nem os programas dependem mais do GitHub para baixar atualizações. Os programas buscam a atualização na VPS.
 3. Na VPS, rodar `servidor-vps/implantar.sh`: puxa a `main`, reinicia o que mudou, garante o trecho do nginx do
    changelog, copia o instalador da release para o download (`https://cntoficial.com.br/baixar`) e confere que tudo
    responde.
 4. Conferir: a versão nova aparece em `/baixar` e a página de novidades abre.
+
+Com o repositório privado, a VPS faz `git pull` por uma **deploy key somente leitura** (`~/.ssh/cnt_monitor_deploy`, remoto
+`git@github-cntmonitor:...`), e o CI usa os segredos `VPS_HOST`, `VPS_PORT`, `VPS_USER`, `VPS_KNOWN_HOSTS` e `VPS_UPLOAD_KEY`
+(só no GitHub). Chave de envio perdida ou vazada: remover a linha `cnt-monitor-ci-upload` do `~/.ssh/authorized_keys` da VPS e
+gerar outra.
 
 O acesso à VPS **não fica no Git**. Cada computador usa um atalho `cnt-vps` no `~/.ssh/config` (host, porta e usuário
 só existem lá). Sem o atalho, a skill pergunta os dados e o cria.
