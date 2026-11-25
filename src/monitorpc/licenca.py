@@ -141,6 +141,12 @@ def tem(funcao):
     return bool(p) and funcao in p["funcoes"]
 
 
+def token():
+    """A permissão atual (para falar com o hub em nome da licença), ou "" se não houver uma válida."""
+    d = _ler_arquivo()
+    return d["permissao"] if d.get("permissao") and ler_permissao(d["permissao"]) else ""
+
+
 def exigir(funcao):
     if not tem(funcao):
         raise PremiumNecessario(FUNCOES.get(funcao, funcao))

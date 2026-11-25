@@ -68,6 +68,9 @@ jobs:
       - name: Teste do cliente da licença Premium
         run: python build/teste_licenca.py
 
+      - name: Teste do histórico de chamadas na nuvem
+        run: python build/teste_nuvem.py
+
       - name: LibreHardwareMonitor (sensores)
         shell: pwsh
         run: ./build/baixar-lhm.ps1

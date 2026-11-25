@@ -4,7 +4,7 @@ Atualizado em 2026-11-18. As funcionalidades completas estão no [README](../REA
 
 ## Versão atual
 
-- **3.13.0** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.13.0`. A release no GitHub traz
+- **3.14.0** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.14.0`. A release no GitHub traz
   `CNTMonitor-Setup-<versão>.exe`, `MonitorDoPC-Setup-<versão>.exe` (nome antigo, para instalações antigas) e
   `cnt-monitor_<versão>_amd64.deb`.
 - Repositório: `robsonsaldanha/cnt-monitor` (público por enquanto; até a 3.11.1 GPL v3, da 3.12.0 em diante Licença de Uso, veja [ESTRATEGIA-PREMIUM.md](ESTRATEGIA-PREMIUM.md)).
@@ -42,6 +42,7 @@ Atualizado em 2026-11-18. As funcionalidades completas estão no [README](../REA
 | 3.12.0 | Licença de Uso própria (versões até a 3.11.1 seguem GPL); atualização buscada primeiro na VPS, com assinatura conferida, para permitir repositório privado depois; estratégia Premium para empresas em `docs/ESTRATEGIA-PREMIUM.md` |
 | 3.12.1 | Gancho que protege a main passa a olhar o repositório do comando (`cd`, `git -C`), ignora o que roda dentro de `ssh` e serve também ao hub |
 | 3.13.0 | Cliente da licença Premium (`src/monitorpc/licenca.py`): entrar com a conta CNT da empresa em Configurações, permissão assinada Ed25519 (até 7 dias, renovada de hora em hora se faltarem menos de 3 dias), `licenca.tem("função")` para travar funções Premium; rotas locais `/api/licenca`. Nenhuma função existente foi travada |
+| 3.14.0 | Premium `chamadas-historico`: histórico de chamadas na nuvem da empresa (`src/monitorpc/nuvem.py`; hub `/v1/chamadas`, dados cifrados, retenção e cota por licença). Aba **Nuvem (Premium)** na tela Chamadas; opção `chamadas_nuvem` desligada por padrão; envio a cada 30 s só do que o Call flow já guardou |
 
 ## Como publicar uma versão
 
