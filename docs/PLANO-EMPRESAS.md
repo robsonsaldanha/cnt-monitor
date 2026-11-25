@@ -50,7 +50,7 @@ conectar, e conectar é o aceite do funcionário/empresa: não há envio sem a p
 | Hub 1.11 e programa 3.16: endereço da empresa, cadastro por ID, conexão, métricas, painel online, cobrança calculada | feita (aguardando publicação) |
 | Pagamento (Pix/boleto/cartão), notas e cobrança recorrente | **a definir** (qual meio, qual emissor) |
 | Acesso remoto **sem senha** pelo painel da empresa | **a desenhar antes de codar** (abaixo) |
-| Repositório do Monitor privado | pipeline pronto no CI; troca de visibilidade depois de uma release testada |
+| Repositório do Monitor privado | feita (2026-11-25), depois da v3.16.0 passar pelo caminho novo |
 
 ### Acesso remoto sem senha (pedido, ainda não feito)
 

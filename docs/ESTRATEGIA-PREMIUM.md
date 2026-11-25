@@ -47,7 +47,7 @@ vendido com licença por prazo (X dias), e começa pela tela Chamadas.
 | 5b | `chamadas-relatorios` e `chamadas-multi-pc`: relatório, PDF, CSV, computadores e ao vivo (hub 1.10, 3.15.0) | feita |
 | 5c | Modelo comercial por computador (R$ 9,90): endereço da empresa, cadastro por ID, conexão sem chave, uso do computador e painel online (hub 1.11, 3.16.0). Detalhes em [PLANO-EMPRESAS.md](PLANO-EMPRESAS.md) | feita |
 | 6 | Preços e cobrança | **a definir pelo Robson** (tabela de preços; nada foi inventado) |
-| 7 | Repositório do Monitor privado | **depende da adoção**: só depois que a maioria estiver na 3.12 ou mais nova, com token na VPS e deploy key para o `git pull` |
+| 7 | Repositório do Monitor privado | **feita em 2026-11-25** (CI envia os instaladores à VPS por chave restrita; a VPS só publica com assinatura Ed25519 válida e faz `git pull` por deploy key somente leitura) |
 
 Funções Premium previstas além de Chamadas entram pelo mesmo caminho: um identificador novo em `FUNCOES` (hub `src/licenca.js` e
 `src/monitorpc/licenca.py`), o painel passa a oferecê-lo e o programa o trava com `licenca.tem("...")`.

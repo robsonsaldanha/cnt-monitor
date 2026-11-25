@@ -9,7 +9,7 @@ uma [licença de uso própria](LICENSE) e funções **Premium para empresas**, c
 continuam livres sob a [GNU GPL v3](LICENSE-GPL-3.0-ate-3.11.txt) para quem as obteve.
 
 **Baixar:** https://cntoficial.com.br/baixar (entrega o arquivo do seu sistema) ou a
-[última versão](https://github.com/robsonsaldanha/cnt-monitor/releases/latest):
+[última versão](https://cntoficial.com.br/baixar):
 
 - **Windows:** `CNTMonitor-Setup-x.y.z.exe`.
 - **Linux** (Ubuntu 22.04+, Debian 12+, Mint 21+, 64 bits): `cnt-monitor_x.y.z_amd64.deb`, instalado com
