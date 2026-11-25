@@ -446,7 +446,7 @@ def fabrica(motor, TOKEN, remoto=False):
         def _get_api(self, r, q):
             m = motor
             if r == "/api/licenca" and not remoto:      # só neste computador
-                return self._json(licenca.estado())
+                return self._json({**licenca.estado(), "id_computador": encontro.formatar_id(m.encontro.id), "uso_erro": m.uso_empresa.erro})
             if r == "/api/ping":
                 return self._json({"ok": True, "app": "monitor-pc", "versao": config.VERSAO})
             if r == "/api/agora":
@@ -493,12 +493,21 @@ def fabrica(motor, TOKEN, remoto=False):
                                        "enderecos": [f'{x["ip"]}:{configuracao.obter("acesso_porta")}' for x in ips_rede()],
                                        "rodando": m.remoto_rodando(), "alvo": m.voip_alvo.rotulo() if m.voip_alvo.url else None,
                                        "id_online": encontro.formatar_id(m.encontro.id), "online": m.encontro.situacao})
-                if r in ("/api/voip/nuvem", "/api/voip/nuvem/chamadas", "/api/voip/nuvem/chamada"):
+                if r.startswith("/api/voip/nuvem"):
                     try:
                         if r == "/api/voip/nuvem":
                             return self._json(m.nuvem.estado())
                         if r == "/api/voip/nuvem/chamadas":
-                            return self._json(m.nuvem.chamadas(q.get("busca", ""), _num(q, "limite", 300, int)))
+                            return self._json(m.nuvem.chamadas(q.get("busca", ""), _num(q, "limite", 300, int), q.get("pc", "")))
+                        if r == "/api/voip/nuvem/relatorio":
+                            return self._json(m.nuvem.relatorio(_num(q, "de", 0, int), _num(q, "ate", 0, int), q.get("pc", "")))
+                        if r == "/api/voip/nuvem/exportar":
+                            return self._env(200, m.nuvem.exportar(_num(q, "de", 0, int), _num(q, "ate", 0, int), q.get("pc", "")),
+                                             "text/csv; charset=utf-8", {"Content-Disposition": 'attachment; filename="chamadas.csv"'})
+                        if r == "/api/voip/nuvem/computadores":
+                            return self._json({"computadores": m.nuvem.computadores(), "ao_vivo": m.nuvem.ao_vivo_empresa()})
+                        if r != "/api/voip/nuvem/chamada":
+                            return self._json({"erro": "não encontrado"}, 404)
                         d = m.nuvem.detalhe(q.get("id", ""))
                         return self._json(d) if d else self._json({"erro": "chamada não encontrada"}, 404)
                     except nuvem.NuvemErro as e:
@@ -780,14 +789,21 @@ def fabrica(motor, TOKEN, remoto=False):
                     return self._json({"ok": True})
                 if remoto:
                     return self._json({"erro": "só no próprio computador"}, 403)
-                if r in ("/api/licenca/entrar", "/api/licenca/renovar", "/api/licenca/sair"):
-                    if r.endswith("/entrar"):
+                if r in ("/api/licenca/entrar", "/api/licenca/renovar", "/api/licenca/sair", "/api/licenca/conectar"):
+                    if r.endswith("/conectar"):
+                        from . import metricas
+                        ok, msg = licenca.parear(corpo.get("endereco"), m.encontro.id, metricas.ficha((m.hardware() or {}).get("cpu_nome", "")))
+                        if ok:                          # conectar é o aviso e o aceite: o histórico de chamadas passa a ir para a empresa
+                            configuracao.salvar({"chamadas_nuvem": True})
+                            m.config_mudou()
+                            m.uso_empresa.enviar_ao_fundo()
+                    elif r.endswith("/entrar"):
                         ok, msg = licenca.entrar(corpo.get("email"), corpo.get("senha"))
                     elif r.endswith("/renovar"):
                         ok, msg = licenca.renovar()
                     else:
                         ok, msg = licenca.sair()
-                    return self._json({"ok": ok, "msg": msg, "licenca": licenca.estado()})
+                    return self._json({"ok": ok, "msg": msg, "licenca": {**licenca.estado(), "id_computador": encontro.formatar_id(m.encontro.id)}})
                 if r == "/api/voip/nuvem/apagar":
                     try:
                         res = m.nuvem.apagar(str(corpo.get("id") or ""), bool(corpo.get("tudo")), str(corpo.get("confirmar") or ""))

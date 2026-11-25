@@ -19,10 +19,13 @@ import urllib.request
 from . import config, configuracao, licenca, sinalizacao
 
 FUNCAO = "chamadas-historico"
+FUNCAO_RELATORIOS = "chamadas-relatorios"
+FUNCAO_VARIOS_PCS = "chamadas-multi-pc"
 HUB = "https://cntoficial.com.br/v1/chamadas"
 CURSOR = os.path.join(config.BASE, "nuvem_chamadas.json")
 LOTE = 10                      # chamadas por envio (cada uma pode ter centenas de mensagens)
 INTERVALO_S = 30               # o motor chama sincronizar() neste ritmo
+INTERVALO_AO_VIVO_S = 10       # e publicar_ao_vivo() neste (Premium: vários computadores)
 
 
 class NuvemErro(Exception):
@@ -31,7 +34,7 @@ class NuvemErro(Exception):
         self.status = status
 
 
-def _chamar(metodo, rota, corpo=None, params=None, timeout=25):
+def _chamar(metodo, rota, corpo=None, params=None, timeout=25, bruto=False):
     token = licenca.token()
     if not token:
         raise NuvemErro("Sem licença Premium válida neste computador.", 401)
@@ -41,7 +44,8 @@ def _chamar(metodo, rota, corpo=None, params=None, timeout=25):
         "Authorization": "Bearer " + token, "Content-Type": "application/json", "User-Agent": "CNTMonitor/" + config.VERSAO})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
-            return json.loads(r.read(16 << 20))
+            dados_resp = r.read(32 << 20)
+            return dados_resp if bruto else json.loads(dados_resp)
     except urllib.error.HTTPError as e:
         try:
             msg = json.loads(e.read(1 << 14)).get("erro") or ""
@@ -85,6 +89,9 @@ class Nuvem:
         self.erro = ""
         self.ultimo_envio = 0
         self.enviadas = 0
+        self._cache = {}
+        self.vivo_ocupado = False
+        self.vivo_erro = ""
 
     def ativa(self):
         return bool(configuracao.obter("chamadas_nuvem")) and licenca.tem(FUNCAO)
@@ -167,20 +174,76 @@ class Nuvem:
                 self.ocupado = False
         threading.Thread(target=_correr, daemon=True, name="nuvem-chamadas").start()
 
-    # ---- o que a tela mostra
+    # ---- o que a tela mostra (a tela atualiza a cada poucos segundos: respostas do hub ficam em cache por pouco tempo)
+    def _em_cache(self, chave, ttl, fn):
+        v = self._cache.get(chave)
+        if v and time.time() - v[0] < ttl:
+            return v[1]
+        r = fn()
+        self._cache[chave] = (time.time(), r)
+        return r
+
     def estado(self):
         lic = licenca.tem(FUNCAO)
-        r = {"ligado": bool(configuracao.obter("chamadas_nuvem")), "licenciado": lic, "erro": self.erro,
-             "ultimo_envio": self.ultimo_envio or None, "enviadas": self.enviadas, "resumo": None}
+        r = {"ligado": bool(configuracao.obter("chamadas_nuvem")), "licenciado": lic, "erro": self.erro or self.vivo_erro,
+             "ultimo_envio": self.ultimo_envio or None, "enviadas": self.enviadas, "resumo": None,
+             "relatorios": licenca.tem(FUNCAO_RELATORIOS), "varios_pcs": licenca.tem(FUNCAO_VARIOS_PCS)}
         if lic:
             try:
-                r["resumo"] = _chamar("GET", "resumo", timeout=8)
+                r["resumo"] = self._em_cache("resumo", 20, lambda: _chamar("GET", "resumo", timeout=8))
             except NuvemErro as e:
                 r["erro"] = r["erro"] or str(e)
         return r
 
-    def chamadas(self, busca="", limite=300):
-        return _chamar("GET", "lista", params={"busca": busca or "", "limite": int(limite)})["chamadas"]
+    def chamadas(self, busca="", limite=300, pc=""):
+        return _chamar("GET", "lista", params={"busca": busca or "", "limite": int(limite), **({"pc": pc} if pc else {})})["chamadas"]
+
+    # ---- Premium: relatórios avançados (hub calcula; o programa mostra, exporta e gera o PDF)
+    @staticmethod
+    def _periodo(de, ate, pc):
+        p = {k: int(v) for k, v in (("de", de), ("ate", ate)) if v}
+        if pc:
+            p["pc"] = pc
+        return p
+
+    def relatorio(self, de=0, ate=0, pc=""):
+        return _chamar("GET", "relatorio", params=self._periodo(de, ate, pc), timeout=60)
+
+    def exportar(self, de=0, ate=0, pc=""):
+        return _chamar("GET", "exportar", params=self._periodo(de, ate, pc), timeout=120, bruto=True)
+
+    # ---- Premium: vários computadores da empresa
+    def computadores(self):
+        return self._em_cache("pcs", 5, lambda: _chamar("GET", "computadores", timeout=10))["computadores"]
+
+    def ao_vivo_empresa(self):
+        return self._em_cache("vivo", 4, lambda: _chamar("GET", "ao-vivo", timeout=10))["computadores"]
+
+    def publicar_ao_vivo(self):
+        """Publica as chamadas em andamento DESTE computador para os outros da empresa (ficam só na memória do hub, 90 s)."""
+        if not (configuracao.obter("chamadas_nuvem") and licenca.tem(FUNCAO_VARIOS_PCS)):
+            return
+        try:
+            vivas = [c for c in self.voip.ao_vivo()["chamadas"] if c.get("ativa") and c.get("tipo") == "chamada"]
+            campos = ("id", "inicio", "de", "para", "origem", "destino", "estado", "duracao", "desligou", "motivo", "tipo", "agente", "mos")
+            _chamar("POST", "ao-vivo", {"chamadas": [{k: c.get(k) for k in campos} for c in vivas[:50]], "pc_nome": _nome_pc()}, timeout=8)
+            self.vivo_erro = ""
+        except NuvemErro as e:
+            self.vivo_erro = str(e)
+        except Exception as e:  # noqa: BLE001
+            self.vivo_erro = f"Falha ao publicar chamadas ao vivo: {e}"
+
+    def publicar_ao_vivo_ao_fundo(self):
+        if self.vivo_ocupado:
+            return
+        self.vivo_ocupado = True
+
+        def _correr():
+            try:
+                self.publicar_ao_vivo()
+            finally:
+                self.vivo_ocupado = False
+        threading.Thread(target=_correr, daemon=True, name="nuvem-ao-vivo").start()
 
     def detalhe(self, id_):
         try:

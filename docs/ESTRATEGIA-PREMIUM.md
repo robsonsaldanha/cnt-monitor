@@ -37,13 +37,20 @@ vendido com licença por prazo (X dias), e começa pela tela Chamadas.
 
 ## Fases
 
-1. **3.12.0 (feita aqui):** licença de uso nova e atualização pela VPS (pré-requisito para tornar o repo privado depois).
-2. **Hub no GitHub:** repositório privado `cnt-hub` com proteção da `main`, CI e skill do mesmo fluxo.
-3. **Contas e licenças no hub:** migração `008`, papel master, painel e API `/v1/licenca`.
-4. **Cliente no programa:** login da empresa, permissão assinada, trava das funções Premium.
-5. **Funções Premium de Chamadas:** histórico na VPS, PDF/exportação avançados, vários PCs.
-6. **Preços e cobrança.**
-7. **Repositório privado** (depois da adoção da 3.12).
+| # | Fase | Situação |
+|---|---|---|
+| 1 | Licença de uso própria e atualização pela VPS (3.12.0) | feita |
+| 2 | Hub no GitHub (`robsonsaldanha/cnt-hub`, privado) com o mesmo fluxo de branches e PR | feita |
+| 3 | Contas por empresa e licenças no hub: migração 008, painel `/admin` aba Licenças, API `/v1/licenca` (hub 1.8) | feita |
+| 4 | Cliente da licença no programa: login da empresa, permissão assinada, renovação automática (3.13.0) | feita |
+| 5a | `chamadas-historico`: histórico na nuvem da empresa, cifrado (hub 1.9, 3.14.0) | feita |
+| 5b | `chamadas-relatorios` e `chamadas-multi-pc`: relatório, PDF, CSV, computadores e ao vivo (hub 1.10, 3.15.0) | feita |
+| 5c | Modelo comercial por computador (R$ 9,90): endereço da empresa, cadastro por ID, conexão sem chave, uso do computador e painel online (hub 1.11, 3.16.0). Detalhes em [PLANO-EMPRESAS.md](PLANO-EMPRESAS.md) | feita |
+| 6 | Preços e cobrança | **a definir pelo Robson** (tabela de preços; nada foi inventado) |
+| 7 | Repositório do Monitor privado | **depende da adoção**: só depois que a maioria estiver na 3.12 ou mais nova, com token na VPS e deploy key para o `git pull` |
+
+Funções Premium previstas além de Chamadas entram pelo mesmo caminho: um identificador novo em `FUNCOES` (hub `src/licenca.js` e
+`src/monitorpc/licenca.py`), o painel passa a oferecê-lo e o programa o trava com `licenca.tem("...")`.
 
 ## Segurança
 

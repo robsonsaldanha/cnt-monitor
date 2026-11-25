@@ -1,23 +1,36 @@
 #!/usr/bin/env python3
-"""Copia para a VPS os instaladores da release mais nova do CNT Monitor, para o site entregar o download daqui.
+"""Publica na VPS os instaladores da release mais nova do CNT Monitor, para o site entregar o download daqui.
 
-Roda pelo cnt-monitor-baixar.timer. Baixa da última release do GitHub o CNTMonitor-Setup-<versão>.exe (Windows) e,
+DUAS ORIGENS, nesta ordem:
+  1. PASTA DE RECEBIMENTO (`.recebidos`, dentro de DOWNLOADS): o CI do GitHub envia ali, por uma chave que só escreve nessa pasta
+     (rrsync), os .exe/.deb e as .sig da release. Cada arquivo só é publicado se a assinatura Ed25519 CONFERE com a chave pública
+     do programa (a mesma que os computadores usam para aceitar atualizações): quem tiver a chave de envio não consegue publicar
+     um instalador falso. É o caminho do repositório privado.
+  2. GitHub (só enquanto o repositório for público): o que o script sempre fez, descrito abaixo.
+
+Roda pelo cnt-monitor-baixar.timer (e pelo implantar.sh logo depois de cada release). No GitHub: baixa da última release o CNTMonitor-Setup-<versão>.exe (Windows) e,
 se existir, o cnt-monitor_<versão>_amd64.deb (Linux); confere o SHA-256 que o GitHub publica para cada arquivo e
 só então o põe na pasta (troca atômica). Depois grava ultima.json ({"arquivo": .exe, "linux": {"arquivo": .deb}}),
 que o encontro.js lê para redirecionar /baixar. Mantém as 3 versões mais novas de cada um.
 
-Variável: DOWNLOADS (padrão /var/www/cntmonitor_downloads).
+Variáveis: DOWNLOADS (padrão /var/www/cntmonitor_downloads); CNT_GITHUB=0 desliga o plano B do GitHub (use depois que o repositório for privado).
 """
+import base64
 import hashlib
 import json
 import os
 import re
+import shutil
 import sys
+import urllib.error
 import urllib.request
 
 REPO = "robsonsaldanha/cnt-monitor"
 PASTA = os.environ.get("DOWNLOADS", "/var/www/cntmonitor_downloads")
 MANTER = 3
+RECEBIDOS = os.path.join(PASTA, ".recebidos")
+# a chave pública que confere as assinaturas é a embutida no programa; o checkout do repositório na VPS a traz
+FONTE_CHAVE = os.environ.get("CNT_FONTE_CHAVE", "/var/www/html_cntmonitor/src/monitorpc/atualizacao.py")
 RE_NOME = re.compile(r"^CNTMonitor-Setup-(\d+(?:\.\d+)*)\.exe$")
 RE_DEB = re.compile(r"^cnt-monitor_(\d+(?:\.\d+)*)_amd64\.deb$")
 CABECALHO = {"User-Agent": "cnt-monitor-site", "Accept": "application/vnd.github+json"}
@@ -45,6 +58,66 @@ def ultima_release():
     if not exe:
         raise SystemExit(f"release {rel.get('tag_name')} sem CNTMonitor-Setup-*.exe")
     return exe, _arquivo(rel, RE_DEB)
+
+
+def chave_publica():
+    with open(FONTE_CHAVE, encoding="utf-8") as f:
+        m = re.search(r'^PUBLICA = "([^"]+)"', f.read(), re.M)
+    if not m:
+        raise SystemExit(f"não achei a chave pública em {FONTE_CHAVE}")
+    return m.group(1)
+
+
+def assinatura_confere(nome, sha, assinatura_b64, publica):
+    """Mesma conta do programa (src/monitorpc/atualizacao.py): Ed25519 sobre 'cnt-monitor-release-v1\\n<nome>\\n<sha256>\\n'."""
+    from cryptography.exceptions import InvalidSignature
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+    try:
+        Ed25519PublicKey.from_public_bytes(base64.b64decode(publica)).verify(
+            base64.b64decode(assinatura_b64.strip()), f"cnt-monitor-release-v1\n{nome}\n{sha.lower()}\n".encode())
+        return True
+    except (InvalidSignature, ValueError):
+        return False
+
+
+def _descartar(*caminhos):
+    for c in caminhos:
+        try:
+            os.remove(c)
+        except FileNotFoundError:
+            pass
+
+
+def recebidos():
+    """(exe, deb) da pasta de recebimento: a versão mais nova do .exe e o .deb dela, só com assinatura válida. Cada item é
+    (versão, nome, caminho, tamanho, sha, caminho da .sig). Arquivo sem assinatura válida é apagado e nunca publicado."""
+    if not os.path.isdir(RECEBIDOS):
+        return None, None
+    publica = chave_publica()
+    validos = {}
+    for nome in sorted(os.listdir(RECEBIDOS)):
+        for padrao in (RE_NOME, RE_DEB):
+            m = padrao.match(nome)
+            if not m:
+                continue
+            arq, sig = os.path.join(RECEBIDOS, nome), os.path.join(RECEBIDOS, nome + ".sig")
+            if not os.path.isfile(sig):
+                break                                  # a .sig pode ainda estar chegando
+            sha = sha256_de(arq)
+            with open(sig, encoding="utf-8", errors="replace") as f:
+                ass = f.read(4096)
+            if assinatura_confere(nome, sha, ass, publica):
+                validos[nome] = (m.group(1), nome, arq, os.path.getsize(arq), sha, sig)
+            else:
+                print(f"recusado {nome}: assinatura não confere")
+                _descartar(arq, sig)
+            break
+    exes = sorted((v for n, v in validos.items() if RE_NOME.match(n)), key=lambda v: versao(v[1]), reverse=True)
+    if not exes:
+        return None, None
+    ver = exes[0][0]
+    deb = next((v for n, v in validos.items() if RE_DEB.match(n) and v[0] == ver), None)
+    return exes[0], deb
 
 
 def baixar(url, destino, tamanho, sha):
@@ -86,6 +159,16 @@ def garantir(item):
     """Baixa (se ainda não está aqui, inteiro e conferido) e devolve as informações para o ultima.json."""
     ver, nome, url, tamanho, sha, url_sig = item
     destino = os.path.join(PASTA, nome)
+    if os.path.isabs(url):             # veio da pasta de recebimento (já conferido, com assinatura válida): só põe no lugar
+        shutil.copyfile(url, destino + ".parcial")
+        os.chmod(destino + ".parcial", 0o644)
+        os.replace(destino + ".parcial", destino)
+        shutil.copyfile(url_sig, destino + ".sig.parcial")
+        os.chmod(destino + ".sig.parcial", 0o644)
+        os.replace(destino + ".sig.parcial", destino + ".sig")
+        _descartar(url, url_sig)
+        print(f"publicado {nome} ({tamanho} bytes, assinatura conferida)")
+        return {"versao": ver, "arquivo": nome, "tamanho": tamanho, "sha256": sha, "assinatura": nome + ".sig"}
     if not (os.path.exists(destino) and os.path.getsize(destino) == tamanho and sha256_de(destino) == sha):
         baixar(url, destino, tamanho, sha)
         print(f"baixado {nome} ({tamanho} bytes, sha256 conferido)")
@@ -104,7 +187,16 @@ def garantir(item):
 
 def main():
     os.makedirs(PASTA, exist_ok=True)
-    exe, deb = ultima_release()
+    exe, deb = recebidos()
+    if not exe and os.environ.get("CNT_GITHUB", "1") == "0":
+        print("nada novo no recebimento (GitHub desligado)")
+        return
+    if not exe:                       # nada novo no recebimento: o GitHub só serve enquanto o repositório for público
+        try:
+            exe, deb = ultima_release()
+        except (urllib.error.URLError, OSError) as e:
+            print(f"nada novo no recebimento e o GitHub não respondeu ({e}); fica como está")
+            return
     info = garantir(exe)
     atuais = {info["arquivo"], info.get("assinatura")}
     if deb:
