@@ -1,4 +1,7 @@
 [
+  {"versao": "3.16.1", "data": "2026-11-25", "itens": [
+    {"tipo": "melhoria", "texto": "Ajustes internos de manutenção. Nada muda no uso do programa."}
+  ]},
   {"versao": "3.16.0", "data": "2026-11-25", "itens": [
     {"tipo": "novo", "texto": "Empresas: em Configurações, a nova área Empresa (Premium) conecta o computador à empresa só digitando o endereço dela (cntoficial.com.br/nomedaempresa). O administrador cadastra o ID do computador no painel da empresa e pronto, sem chaves para copiar."},
     {"tipo": "novo", "texto": "Painel online da empresa: o administrador vê os computadores, o uso de processador, memória e disco, sugestões de upgrade, as chamadas e o relatório, sem precisar instalar o programa."},

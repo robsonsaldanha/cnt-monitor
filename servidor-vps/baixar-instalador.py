@@ -94,6 +94,9 @@ def recebidos():
     if not os.path.isdir(RECEBIDOS):
         return None, None
     publica = chave_publica()
+    for velho in os.listdir(RECEBIDOS):           # nome antigo do instalador (para instalações até a 2.6): a VPS não o serve
+        if velho.startswith("MonitorDoPC-Setup-"):
+            _descartar(os.path.join(RECEBIDOS, velho))
     validos = {}
     for nome in sorted(os.listdir(RECEBIDOS)):
         for padrao in (RE_NOME, RE_DEB):
