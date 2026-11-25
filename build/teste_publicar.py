@@ -98,4 +98,39 @@ ok(os.path.exists(os.path.join(bi.RECEBIDOS, "qualquer-coisa.exe")), "arquivo fo
 receber("MonitorDoPC-Setup-9.9.9.exe", b"nome-antigo")
 bi.main()
 ok(not any(x.startswith("MonitorDoPC-Setup-") for x in os.listdir(bi.RECEBIDOS)) and not any(x.startswith("MonitorDoPC-Setup-") for x in os.listdir(PASTA)), "o instalador de nome antigo é descartado do recebimento e não é publicado")
+
+# ---- o .exe chega antes do .deb (caso real da 3.16.1): cada um é publicado quando chega e não sobra nada no recebimento
+receber("CNTMonitor-Setup-10.0.0.exe", b"exe-dez")
+bi.main()
+m = manifesto()
+ok(m["versao"] == "10.0.0" and m["linux"]["versao"] != "10.0.0", "só o .exe chegou: ele é publicado e o .deb anterior segue no manifesto")
+ok(os.listdir(bi.RECEBIDOS) == [] or all(x.startswith("qualquer") for x in os.listdir(bi.RECEBIDOS)), "e o recebimento não guarda o .exe já publicado")
+receber("cnt-monitor_10.0.0_amd64.deb", b"deb-dez")
+bi.main()
+m = manifesto()
+ok(m["linux"]["versao"] == "10.0.0" and m["linux"]["arquivo"] == "cnt-monitor_10.0.0_amd64.deb" and m["versao"] == "10.0.0", "o .deb que chega depois é publicado sozinho (sem precisar de outro .exe)")
+ok(not any(x.startswith("cnt-monitor_") or x.startswith("CNTMonitor-") for x in os.listdir(bi.RECEBIDOS)), "nada de instalador sobra no recebimento")
+
+# ---- sobras antigas somem
+receber("CNTMonitor-Setup-9.0.0.exe", b"velho")           # versão já ultrapassada e assinada
+receber("cnt-monitor_9.0.0_amd64.deb", b"velho-deb")
+bi.main()
+ok(not any(x.startswith("cnt-monitor_") or x.startswith("CNTMonitor-") for x in os.listdir(bi.RECEBIDOS)), "arquivo de versão mais velha que a publicada é descartado, mesmo assinado")
+ok(manifesto()["versao"] == "10.0.0", "e não derruba o manifesto para a versão antiga")
+
+import time
+def envelhecer(nome, dias):
+    t = time.time() - dias * 86400
+    os.utime(os.path.join(bi.RECEBIDOS, nome), (t, t))
+os.makedirs(bi.RECEBIDOS, exist_ok=True)
+for nome in ("CNTMonitor-Setup-11.0.0.exe.sig", "CNTMonitor-Setup-11.1.0.exe.sig", "CNTMonitor-Setup-11.2.0.exe", "CNTMonitor-Setup-11.3.0.exe"):
+    with open(os.path.join(bi.RECEBIDOS, nome), "wb") as f:
+        f.write(b"x")
+envelhecer("CNTMonitor-Setup-11.0.0.exe.sig", 2)    # .sig sem arquivo há 2 dias: sai
+envelhecer("CNTMonitor-Setup-11.2.0.exe", 3)        # arquivo sem .sig há 3 dias: nunca vai completar, sai
+bi.main()
+sobra = set(os.listdir(bi.RECEBIDOS))
+ok("CNTMonitor-Setup-11.0.0.exe.sig" not in sobra and "CNTMonitor-Setup-11.2.0.exe" not in sobra, ".sig órfã antiga e arquivo que nunca recebeu a .sig são limpos")
+ok("CNTMonitor-Setup-11.1.0.exe.sig" in sobra and "CNTMonitor-Setup-11.3.0.exe" in sobra, "o que acabou de chegar e ainda espera o par não é apagado")
+
 print("publicação assinada na VPS ok")

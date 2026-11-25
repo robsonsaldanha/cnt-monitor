@@ -4,7 +4,7 @@ Atualizado em 2026-11-18. As funcionalidades completas estão no [README](../REA
 
 ## Versão atual
 
-- **3.16.1** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.16.1`. A release no GitHub traz
+- **3.16.2** (`src/monitorpc/config.py`, `VERSAO`), tag `v3.16.2`. A release no GitHub traz
   `CNTMonitor-Setup-<versão>.exe`, `MonitorDoPC-Setup-<versão>.exe` (nome antigo, para instalações antigas) e
   `cnt-monitor_<versão>_amd64.deb`.
 - Repositório: `robsonsaldanha/cnt-monitor` (**privado** desde 2026-11-25; até a 3.11.1 GPL v3, da 3.12.0 em diante Licença de Uso, veja [ESTRATEGIA-PREMIUM.md](ESTRATEGIA-PREMIUM.md)). Os instaladores saem da VPS, não do GitHub.
@@ -46,6 +46,7 @@ Atualizado em 2026-11-18. As funcionalidades completas estão no [README](../REA
 | 3.15.0 | Premium `chamadas-relatorios` (relatório da empresa por período, PDF e CSV completo) e `chamadas-multi-pc` (computadores da empresa, filtro por computador e chamadas ao vivo publicadas a cada 10 s, só na memória do hub). Hub 1.10.0 precisa estar no ar antes |
 | 3.16.0 | Modelo comercial por computador (R$ 9,90): **Configurações → Empresa (Premium)** conecta o PC ao endereço da empresa (`cntoficial.com.br/<empresa>`, ID cadastrado pelo administrador, sem digitar chave), envia chamadas e o uso do computador (`src/monitorpc/metricas.py`: CPU, memória, disco, ficha da máquina, sem nada pessoal); painel online no hub 1.11. Plano em `docs/PLANO-EMPRESAS.md` |
 | 3.16.1 | Repositório privado: o CI envia os instaladores à VPS e a VPS só publica com assinatura válida; documentação atualizada; instalador de nome antigo não fica no recebimento |
+| 3.16.2 | Publicação na VPS: o .exe e o .deb chegam em momentos diferentes e cada um é publicado quando chega; o recebimento não guarda sobras (versão já publicada ou mais velha, .sig sem arquivo há 1 dia, arquivo sem .sig há 2 dias) |
 
 ## Como publicar uma versão
 
